@@ -1,0 +1,57 @@
+Checks: >
+  *,
+  -llvmlibc-*,
+  -modernize-use-trailing-return-type,
+  -altera-unroll-loops,
+  -fuchsia-default-arguments-calls,
+  -llvm-else-after-return,
+  -readability-else-after-return,
+  -fuchsia-default-arguments-declarations,
+  -altera-id-dependent-backward-branch,
+  -altera-struct-pack-align,
+  -readability-redundant-access-specifiers,
+  -google-readability-todo,
+  -hicpp-uppercase-literal-suffix,
+  -readability-uppercase-literal-suffix,
+  -fuchsia-overloaded-operator,
+  -readability-identifier-length,
+  -modernize-use-auto,
+  -misc-non-private-member-variables-in-classes,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -hicpp-special-member-functions,
+  -readability-named-parameter,
+  -hicpp-named-parameter,
+  -hicpp-use-auto,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-magic-numbers,
+  -cppcoreguidelines-pro-type-union-access,
+  -llvm-header-guard,
+  -abseil-string-find-startswith,
+  -modernize-use-default-member-init,
+  -cppcoreguidelines-use-default-member-init,
+  -fuchsia-trailing-return,
+  -modernize-use-emplace,
+  -hicpp-use-emplace,
+  -cppcoreguidelines-avoid-do-while
+  
+CheckOptions:
+  - { key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor, value: true       }
+  - { key: readability-identifier-naming.NamespaceCase,                     value: camelBack  }
+  - { key: readability-identifier-naming.ClassCase,                         value: CamelCase  }
+  - { key: readability-identifier-naming.StructCase,                        value: CamelCase  }
+  - { key: readability-identifier-naming.TypeAliasCase,                     value: CamelCase  }
+  - { key: readability-identifier-naming.TypedefCase,                       value: CamelCase  }
+  - { key: readability-identifier-naming.ValueTemplateParameterCase,        value: CamelCase  }
+  - { key: readability-identifier-naming.TemplateParameterCase,             value: CamelCase  }
+  - { key: readability-identifier-naming.FunctionCase,                      value: camelBack  }
+  - { key: readability-identifier-naming.LocalVariableCase,                 value: camelBack  }
+  - { key: readability-identifier-naming.MemberCase,                        value: lower_case }
+  - { key: readability-identifier-naming.ParameterCase,                     value: camelBack  } 
+  - { key: readability-identifier-naming.ParameterIgnoredRegexp,            value: ".*_$"     } # ignore constructor parameters ending in underscore, this is for shadowing deduplication 
+  - { key: readability-identifier-naming.MethodCase,                        value: camelBack  }
+  - { key: readability-identifier-naming.MacroDefinitionCase,               value: UPPER_CASE }
+  - { key: readability-identifier-naming.EnumConstantCase,                  value: CamelCase  }
+  - { key: readability-identifier-naming.ConstexprVariableCase,             value: CamelCase  }
+  - { key: readability-identifier-naming.GlobalConstantCase,                value: CamelCase  }
+  - { key: readability-identifier-naming.MemberConstantCase,                value: CamelCase  }
+  - { key: readability-identifier-naming.StaticConstantCase,                value: CamelCase  }
