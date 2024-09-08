@@ -16,6 +16,7 @@ namespace gfx
         Window& operator= (Window&&)      = delete;
 
         void beginFrame();
+        bool shouldWindowClose();
     private:
         GLFWwindow* window;
     };

@@ -1,3 +1,4 @@
+#include "gfx/renderer.hpp"
 #include "util/log.hpp"
 #include <cstdlib>
 
@@ -5,10 +6,9 @@ int main()
 {
     util::installGlobalLoggerRacy();
 
-    for (int i = 0; i < 10000; ++i)
-    {
-        util::logTrace("Hello, World!");
-    }
+    gfx::Renderer renderer {};
+
+    renderer.renderOnThread();
 
     util::removeGlobalLoggerRacy();
 

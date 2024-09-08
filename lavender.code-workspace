@@ -11,9 +11,10 @@
 			120
 		],
 		"cSpell.words": [
+			"glfw",
 			"moodycamel",
-			"Wwindow",
-			"NOLINTNEXTLINE"
+			"NOLINTNEXTLINE",
+			"Wwindow"
 		]
 	}
 }

@@ -8,4 +8,13 @@ namespace util
         // TODO:
     }
 
+    consteval bool isDebugBuild()
+    {
+#ifdef NDEBUG
+        return false;
+#else
+        return true;
+#endif
+    }
+
 } // namespace util

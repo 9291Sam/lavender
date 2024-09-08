@@ -28,10 +28,13 @@ add_executable(lavender
 
     src/main.cpp
 
+    src/gfx/renderer.cpp
     src/gfx/window.cpp
 
     src/util/log.cpp
 )
+
+target_include_directories(lavender PUBLIC src)
 
 target_link_libraries(lavender glfw concurrentqueue)
 
