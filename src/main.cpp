@@ -1,9 +1,9 @@
-#include <cstdio>
+#include "util/log.hpp"
 #include <cstdlib>
 
 int main()
 {
-    puts("Hello, World!");
+    util::logTrace("Hello, World!");
 
     return EXIT_SUCCESS;
 }
