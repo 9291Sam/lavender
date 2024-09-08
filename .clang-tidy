@@ -57,4 +57,4 @@ CheckOptions:
   - { key: readability-identifier-naming.StaticConstantCase,                value: CamelCase  }
 
 ExtraArgs: 
- - "-std=c++23"
+ - "-std=c++20"

@@ -223,17 +223,17 @@ namespace util
             {
                 std::string workingString {31, ' '}; // NOLINT
 
-                auto t = std::chrono::system_clock::to_time_t(time);
-                auto r = std::localtime(&t);
+                // auto t = std::chrono::system_clock::to_time_t(time);
+                // auto r = std::localtime(&t);
 
-                std::strftime(
-                    workingString.data(),
-                    workingString.size(),
-                    "%b %m/%d/%Y %I:%M",
-                    r)
+                // std::strftime(
+                //     workingString.data(),
+                //     workingString.size(),
+                //     "%b %m/%d/%Y %I:%M",
+                //     r)
 
-                    std::string workingString =
-                        std::format("{:0%b %m/%d/%Y %I:%M}:{:%S}", r, time);
+                //     std::string workingString =
+                //         std::format("{:0%b %m/%d/%Y %I:%M}:{:%S}", r, time);
 
                 workingString.erase(30, std::string::npos); // NOLINT
 
