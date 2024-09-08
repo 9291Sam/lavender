@@ -12,7 +12,8 @@
 		],
 		"cSpell.words": [
 			"moodycamel",
-			"Wwindow"
+			"Wwindow",
+			"NOLINTNEXTLINE"
 		]
 	}
 }

@@ -3,7 +3,14 @@
 
 int main()
 {
-    util::logTrace("Hello, World!");
+    util::installGlobalLoggerRacy();
+
+    for (int i = 0; i < 10000; ++i)
+    {
+        util::logTrace("Hello, World!");
+    }
+
+    util::removeGlobalLoggerRacy();
 
     return EXIT_SUCCESS;
 }

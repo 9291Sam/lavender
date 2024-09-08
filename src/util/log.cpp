@@ -1,10 +1,16 @@
 #include "log.hpp"
 #include "threads.hpp"
+#include <__chrono/duration.h>
 #include <atomic>
+#include <cassert>
+#include <chrono>
 #include <concurrentqueue.h>
+#include <cstdio>
 #include <ctime>
 #include <fstream>
 #include <latch>
+#include <ratio>
+#include <sys/qos.h>
 #include <thread>
 
 namespace util
@@ -65,8 +71,8 @@ namespace util
         this->worker_thread = std::thread {
             [this, loggerConstructionLatch = &threadStartLatch]
             {
-                std::ofstream logFileHandle {"verdigris_log.txt"};
-                std::string   temporaryString {"INVALID MESSAGE"};
+                const std::ofstream logFileHandle {"verdigris_log.txt"};
+                std::string         temporaryString {"INVALID MESSAGE"};
 
                 std::atomic<bool>* shouldThreadStop {
                     this->should_thread_close.get()};
@@ -174,11 +180,11 @@ namespace util
     void installGlobalLoggerRacy()
     {
         LOGGER.store(
-            new Logger {}, std::memory_order_seq_cst); // NOLINT: Wwning pointer
+            new Logger {}, std::memory_order_seq_cst); // NOLINT: Owning pointer
 
-        // this thread fence means that reading from LOGGER, even when
-        // using Relaxed is guaranteed to acquire this new value. This is a non
-        // trivial optimization and led to about a 10% performance uplift
+        // Bro, I don't even remember anymore, I benchmarked it and it was
+        // actually like a 10% improvement on reads from being able to use
+        // relaxed
         std::atomic_thread_fence(std::memory_order_seq_cst);
     }
 
@@ -191,6 +197,7 @@ namespace util
         // reading, but still to actually flush the change
         std::atomic_thread_fence(std::memory_order_seq_cst);
 
+        // NOLINTNEXTLINE
         assert(currentLogger != nullptr && "Logger was already nullptr!");
 
         delete currentLogger; // NOLINT: Owning pointer
@@ -221,36 +228,48 @@ namespace util
             "[{0}] [{1}] [{2}] {3}\n",
             [&] // 0 time
             {
-                std::string workingString {31, ' '}; // NOLINT
+                // NOLINTBEGIN
+                // I love not having proper string utilities :)
+                std::array<char, 32> buf {};
 
-                // auto t = std::chrono::system_clock::to_time_t(time);
-                // auto r = std::localtime(&t);
+                const std::time_t t =
+                    std::chrono::system_clock::to_time_t(time);
 
-                // std::strftime(
-                //     workingString.data(),
-                //     workingString.size(),
-                //     "%b %m/%d/%Y %I:%M",
-                //     r)
+                const std::size_t idx = std::strftime(
+                    buf.data(),
+                    buf.size(),
+                    "%b %m/%d/%Y %I:%M:%S",
+                    std::localtime(&t)); // NOLINT
 
-                //     std::string workingString =
-                //         std::format("{:0%b %m/%d/%Y %I:%M}:{:%S}", r, time);
+                std::array<char, 32> outBuffer {};
 
-                workingString.erase(30, std::string::npos); // NOLINT
+                const int milis =
+                    std::chrono::duration_cast<std::chrono::milliseconds>(
+                        time.time_since_epoch())
+                        .count()
+                    % 1000;
+                const int micros = time.time_since_epoch().count() % 1000;
 
-                workingString.at(workingString.size() - 7) = ':'; // NOLINT
-                workingString.insert(workingString.size() - 3, ":");
+                const std::size_t dateStringLength = std::snprintf(
+                    outBuffer.data(),
+                    outBuffer.size(),
+                    "%s:%03u:%03u",
+                    buf.data(),
+                    milis,
+                    micros);
 
-                return workingString;
+                return std::string {outBuffer.data(), dateStringLength};
+                // NOLINTEND
             }(),
             [&] // 1 location
             {
                 constexpr std::array<std::string_view, 2> FolderIdentifiers {
                     "/src/", "/inc/"};
-                std::string rawFileName {location.file_name()};
+                const std::string rawFileName {location.file_name()};
 
                 std::size_t index = std::string::npos;
 
-                for (std::string_view str : FolderIdentifiers)
+                for (const std::string_view str : FolderIdentifiers)
                 {
                     if (index != std::string::npos)
                     {
