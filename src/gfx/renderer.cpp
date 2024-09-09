@@ -1,4 +1,5 @@
 #include "renderer.hpp"
+#include "instance.hpp"
 #include "window.hpp"
 
 namespace gfx
@@ -6,6 +7,7 @@ namespace gfx
 
     Renderer::Renderer()
         : window {std::make_unique<Window>()}
+        , instance {std::make_unique<Instance>()}
     {}
 
     Renderer::~Renderer() noexcept = default;

@@ -5,6 +5,7 @@
 namespace gfx
 {
     class Window;
+    class Instance;
 
     class Renderer
     {
@@ -20,6 +21,7 @@ namespace gfx
         void renderOnThread();
 
     private:
-        std::unique_ptr<Window> window;
+        std::unique_ptr<Window>   window;
+        std::unique_ptr<Instance> instance;
     };
 } // namespace gfx

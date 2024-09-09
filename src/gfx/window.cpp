@@ -1,6 +1,7 @@
 #include "window.hpp"
 #include "util/misc.hpp"
 #include <GLFW/glfw3.h>
+#include <span>
 #include <util/log.hpp>
 
 static constexpr int DefaultWindowWidth  = 1280;
@@ -76,5 +77,15 @@ namespace gfx
     bool Window::shouldWindowClose()
     {
         return glfwWindowShouldClose(this->window) != 0;
+    }
+
+    std::span<const char*> Window::getRequiredExtensions()
+    {
+        U32 numberOfExtensions = 0;
+
+        const char** extensions =
+            glfwGetRequiredInstanceExtensions(&numberOfExtensions);
+
+        return std::span {extensions, numberOfExtensions};
     }
 } // namespace gfx

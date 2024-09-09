@@ -1,5 +1,7 @@
 #pragma once
 
+#include <span>
+
 struct GLFWwindow;
 
 namespace gfx
@@ -15,8 +17,11 @@ namespace gfx
         Window& operator= (const Window&) = delete;
         Window& operator= (Window&&)      = delete;
 
-        void beginFrame();
-        bool shouldWindowClose();
+        [[nodiscard]] static std::span<const char*> getRequiredExtensions();
+
+        [[nodiscard]] bool shouldWindowClose();
+        void               beginFrame();
+
     private:
         GLFWwindow* window;
     };
