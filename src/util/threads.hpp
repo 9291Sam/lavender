@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <future>
 #include <mutex>
 #include <optional>

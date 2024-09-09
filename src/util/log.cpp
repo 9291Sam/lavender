@@ -1,6 +1,5 @@
 #include "log.hpp"
 #include "threads.hpp"
-#include <__chrono/duration.h>
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -9,8 +8,6 @@
 #include <ctime>
 #include <fstream>
 #include <latch>
-#include <ratio>
-#include <sys/qos.h>
 #include <thread>
 
 namespace util
