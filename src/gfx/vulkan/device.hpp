@@ -2,9 +2,7 @@
 
 #include "util/log.hpp"
 #include "util/misc.hpp"
-#include <__utility/to_underlying.h>
 #include <thread>
-#include <unordered_map>
 #include <util/threads.hpp>
 #include <vulkan/vulkan_format_traits.hpp>
 #include <vulkan/vulkan_handles.hpp>
@@ -33,6 +31,8 @@ namespace gfx::vulkan
                 return "AsyncCompute";
             case QueueType::AsyncTransfer:
                 return "AsyncTransfer";
+            case QueueType::NumberOfQueueTypes:
+                [[fallthrough]];
             default:
                 return "";
             }
@@ -64,12 +64,12 @@ namespace gfx::vulkan
                 "Tried to lookup an invalid queue of type {}",
                 idx);
 
-            const std::vector<util::Mutex<vk::Queue>>& queues =
+            const std::vector<util::Mutex<vk::Queue>>& qs =
                 this->queues.at(util::toUnderlying(queueType));
 
             while (true)
             {
-                for (const util::Mutex<vk::Queue>& q : queues)
+                for (const util::Mutex<vk::Queue>& q : qs)
                 {
                     const bool wasLockedAndExecuted = q.tryLock(
                         [&](vk::Queue lockedQueue)

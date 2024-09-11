@@ -3,7 +3,6 @@
 #include "util/threads.hpp"
 #include <algorithm>
 #include <optional>
-#include <ranges>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
@@ -45,9 +44,16 @@ namespace gfx::vulkan
         std::optional<U32> asyncComputeFamily  = std::nullopt;
         std::optional<U32> asyncTransferFamily = std::nullopt;
 
-        for (std::size_t i = 0; i < queueFamilyProperties.size(); ++i)
+        for (U32 i = 0; i < queueFamilyProperties.size(); ++i)
         {
             const vk::QueueFlags flags = queueFamilyProperties[i].queueFlags;
+
+            if (flags & vk::QueueFlagBits::eVideoDecodeKHR
+                || flags & vk::QueueFlagBits::eVideoEncodeKHR
+                || flags & vk::QueueFlagBits::eOpticalFlowNV)
+            {
+                continue;
+            }
 
             if (flags & vk::QueueFlagBits::eGraphics
                 && graphicsFamily == std::nullopt)
@@ -95,7 +101,7 @@ namespace gfx::vulkan
 
         auto getStringOfFamily = [](std::optional<U32> f) -> std::string
         {
-            if (f.has_value())
+            if (f.has_value()) // NOLINT
             {
                 return std::to_string(*f);
             }
@@ -214,19 +220,19 @@ namespace gfx::vulkan
         std::vector<util::Mutex<vk::Queue>> asyncComputeQueues {};
         std::vector<util::Mutex<vk::Queue>> asyncTransferQueues {};
 
-        for (std::size_t idx = 0; idx < numberOfGraphicsQueues; ++idx)
+        for (U32 idx = 0; idx < numberOfGraphicsQueues; ++idx)
         {
             graphicsQueues.push_back( // NOLINTNEXTLINE
                 util::Mutex {this->device->getQueue(*graphicsFamily, idx)});
         }
 
-        for (std::size_t idx = 0; idx < numberOfAsyncComputeQueues; ++idx)
+        for (U32 idx = 0; idx < numberOfAsyncComputeQueues; ++idx)
         {
             asyncComputeQueues.push_back( // NOLINTNEXTLINE
                 util::Mutex {this->device->getQueue(*asyncComputeFamily, idx)});
         }
 
-        for (std::size_t idx = 0; idx < numberOfAsyncTransferQueues; ++idx)
+        for (U32 idx = 0; idx < numberOfAsyncTransferQueues; ++idx)
         {
             asyncTransferQueues.push_back(util::Mutex {
                 // NOLINTNEXTLINE

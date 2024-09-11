@@ -1,9 +1,7 @@
 #pragma once
 
-#include <cmath>
-#include <concepts>
+#include <cstdint>
 #include <type_traits>
-#include <utility>
 
 using U8   = std::uint8_t;
 using U16  = std::uint16_t;

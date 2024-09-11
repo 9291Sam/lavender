@@ -1,5 +1,5 @@
 #include "log.hpp"
-#include "threads.hpp"
+#include "util/threads.hpp"
 #include <atomic>
 #include <cassert>
 #include <chrono>
@@ -58,6 +58,7 @@ namespace util
 
     Logger::Logger()
         : should_thread_close {std::make_unique<std::atomic<bool>>(false)}
+        , worker_thread {} // NOLINT
         , message_queue {std::make_unique<
               moodycamel::ConcurrentQueue<std::string>>()}
         , log_file_handle {std::make_unique<util::Mutex<std::ofstream>>(
@@ -232,11 +233,14 @@ namespace util
                 const std::time_t t =
                     std::chrono::system_clock::to_time_t(time);
 
-                const std::size_t idx = std::strftime(
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+                std::ignore = std::strftime(
                     buf.data(),
                     buf.size(),
                     "%b %m/%d/%Y %I:%M:%S",
                     std::localtime(&t)); // NOLINT
+#pragma clang diagnostic pop
 
                 std::array<char, 32> outBuffer {};
 
@@ -247,13 +251,14 @@ namespace util
                     % 1000;
                 const int micros = time.time_since_epoch().count() % 1000;
 
-                const std::size_t dateStringLength = std::snprintf(
-                    outBuffer.data(),
-                    outBuffer.size(),
-                    "%s:%03u:%03u",
-                    buf.data(),
-                    milis,
-                    micros);
+                const std::size_t dateStringLength =
+                    static_cast<std::size_t>(std::snprintf(
+                        outBuffer.data(),
+                        outBuffer.size(),
+                        "%s:%03u:%03u",
+                        buf.data(),
+                        milis,
+                        micros));
 
                 return std::string {outBuffer.data(), dateStringLength};
                 // NOLINTEND
@@ -264,7 +269,7 @@ namespace util
                     "/src/", "/inc/"};
                 const std::string rawFileName {location.file_name()};
 
-                std::size_t index = std::string::npos;
+                std::size_t index = std::string::npos; // NOLINT
 
                 for (const std::string_view str : FolderIdentifiers)
                 {

@@ -56,14 +56,18 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(lavender PUBLIC
         -Weverything
         -Wno-c++98-compat
+        -Wno-c++98-compat-pedantic
+        -Wno-c++20-compat
+        -Wno-pre-c++20-compat-pedantic
         -Wno-covered-switch-default
         -Wno-ctad-maybe-unsupported
         -Wno-pre-c++17-compat
         -Wno-braced-scalar-init
-        -fsanitize=address
+        -Wno-unsafe-buffer-usage
+        # -fsanitize=address
     )
 
-    target_link_options(lavender PUBLIC -fsanitize=address)
+    # target_link_options(lavender PUBLIC -fsanitize=address)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(lavender PUBLIC
         -Wno-braced-scalar-init
@@ -76,3 +80,6 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   # using Visual Studio C++
 endif()
 
+# find_program(CLANG_TIDY_EXE NAMES "clang-tidy" REQUIRED)
+# set(CLANG_TIDY_COMMAND ${CLANG_TIDY_EXE} "--config-file=../.clang-tidy")
+# set_target_properties(lavender PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}")

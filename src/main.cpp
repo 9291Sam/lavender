@@ -1,14 +1,26 @@
 #include "gfx/renderer.hpp"
 #include "util/log.hpp"
 #include <cstdlib>
+#include <exception>
 
 int main()
 {
     util::installGlobalLoggerRacy();
 
-    gfx::Renderer renderer {};
+    try
+    {
+        gfx::Renderer renderer {};
 
-    renderer.renderOnThread();
+        renderer.renderOnThread();
+    }
+    catch (const std::exception& e)
+    {
+        util::logFatal("Lavender has crashed! | {}", e.what());
+    }
+    catch (...)
+    {
+        util::logFatal("Lavender has crashed! | Non Exception Thrown!");
+    }
 
     util::removeGlobalLoggerRacy();
 

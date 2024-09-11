@@ -1,8 +1,8 @@
 #include "misc.hpp"
-#include <optional>
+#include <cstdio>
+#include <stdexcept>
 #include <thread>
 #include <tuple>
-#include <utility>
 
 namespace util
 {
@@ -10,7 +10,7 @@ namespace util
     {
         std::ignore = std::fputs("util::debugBreak()\n", stderr);
 
-        std::this_thread::sleep_for(std::chrono::milliseconds {100});
+        std::this_thread::sleep_for(std::chrono::milliseconds {250});
 
         if constexpr (isDebugBuild())
         {

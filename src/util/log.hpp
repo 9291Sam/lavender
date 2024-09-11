@@ -44,8 +44,8 @@ namespace util
                        std::source_location::current())                        \
         {                                                                      \
             using enum LoggingLevel;                                           \
-            if (std::to_underlying(getCurrentLevel())                          \
-                <= std::to_underlying(LEVEL))                                  \
+            if (util::toUnderlying(getCurrentLevel())                          \
+                <= util::toUnderlying(LEVEL))                                  \
             {                                                                  \
                 asynchronouslyLog(                                             \
                     std::format(fmt, std::forward<Ts>(args)...),               \
@@ -79,8 +79,8 @@ namespace util
         {                                                                      \
             using enum LoggingLevel;                                           \
             if (!condition                                                     \
-                && std::to_underlying(getCurrentLevel())                       \
-                       <= std::to_underlying(LEVEL)) [[unlikely]]              \
+                && util::toUnderlying(getCurrentLevel())                       \
+                       <= util::toUnderlying(LEVEL)) [[unlikely]]              \
             {                                                                  \
                 if constexpr (THROW_ON_FAIL)                                   \
                 {                                                              \

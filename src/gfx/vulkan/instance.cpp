@@ -77,7 +77,6 @@ namespace gfx::vulkan
         if constexpr (util::isDebugBuild())
         {
             extensions.push_back(vk::EXTDebugUtilsExtensionName);
-            extensions.push_back(vk::EXTLayerSettingsExtensionName);
         }
 
         const std::vector<vk::ExtensionProperties> availableExtensions =
@@ -135,6 +134,8 @@ namespace gfx::vulkan
                 break;
             case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
                 util::logFatal("{}", pCallbackData->pMessage);
+                break;
+            default:
                 break;
             }
             // util::panic("kill");

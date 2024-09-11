@@ -1,6 +1,8 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
+#include <cstring>
 #include <future>
 #include <memory>
 #include <mutex>
