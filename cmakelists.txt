@@ -29,7 +29,9 @@ add_executable(lavender
 
     src/main.cpp
 
-    src/gfx/instance.cpp
+    src/gfx/vulkan/instance.cpp
+    src/gfx/vulkan/device.cpp
+
     src/gfx/renderer.cpp
     src/gfx/window.cpp
 

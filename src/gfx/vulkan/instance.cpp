@@ -1,6 +1,6 @@
 #include "instance.hpp"
 #include "util/misc.hpp"
-#include "window.hpp"
+#include <gfx/window.hpp>
 #include <util/log.hpp>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_core.h>
@@ -10,7 +10,7 @@
 // NOLINTNEXTLINE
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
-namespace gfx
+namespace gfx::vulkan
 {
     Instance::Instance()
         : vulkan_api_version(vk::ApiVersion12)
@@ -19,9 +19,7 @@ namespace gfx
             this->vulkan_loader.success(),
             "Failed to load Vulkan, is it supported on your system?");
 
-        VULKAN_HPP_DEFAULT_DISPATCHER.init(
-            this->vulkan_loader.getProcAddress<PFN_vkGetInstanceProcAddr>(
-                "vkGetInstanceProcAddr"));
+        vk::defaultDispatchLoaderDynamic.init(this->vulkan_loader);
 
         const vk::ApplicationInfo applicationInfo {
             .sType {vk::StructureType::eApplicationInfo},
@@ -172,7 +170,7 @@ namespace gfx
 
         this->instance = vk::createInstanceUnique(instanceCreateInfo);
 
-        VULKAN_HPP_DEFAULT_DISPATCHER.init(*this->instance);
+        vk::defaultDispatchLoaderDynamic.init(*this->instance);
 
         if constexpr (util::isDebugBuild())
         {
@@ -191,4 +189,4 @@ namespace gfx
     {
         return this->vulkan_api_version;
     }
-} // namespace gfx
+} // namespace gfx::vulkan

@@ -2,6 +2,7 @@
 
 #include <concepts>
 #include <future>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <shared_mutex>
@@ -18,7 +19,8 @@ namespace util
 
         explicit Mutex() = default;
         explicit Mutex(T&&... t) // NOLINT
-            : tuple {std::forward<T>(t)...}
+            : mutex {std::make_unique<std::mutex>()}
+            , tuple {std::forward<T>(t)...}
         {}
         ~Mutex() = default;
 
@@ -30,7 +32,7 @@ namespace util
         decltype(auto) lock(std::invocable<T&...> auto func) const
             noexcept(noexcept(std::apply(func, this->tuple)))
         {
-            std::unique_lock lock {this->mutex};
+            std::unique_lock lock {*this->mutex};
 
             return std::apply(func, this->tuple);
         }
@@ -43,7 +45,7 @@ namespace util
                       void,
                       std::invoke_result_t<decltype(func), T&...>>)
         {
-            std::unique_lock<std::mutex> lock {this->mutex, std::defer_lock};
+            std::unique_lock<std::mutex> lock {*this->mutex, std::defer_lock};
 
             if (lock.try_lock())
             {
@@ -61,7 +63,7 @@ namespace util
             requires std::
                 same_as<void, std::invoke_result_t<decltype(func), T&...>>
         {
-            std::unique_lock<std::mutex> lock {this->mutex, std::defer_lock};
+            std::unique_lock<std::mutex> lock {*this->mutex, std::defer_lock};
 
             if (lock.try_lock())
             {
@@ -91,8 +93,8 @@ namespace util
         }
 
     private:
-        mutable std::mutex       mutex;
-        mutable std::tuple<T...> tuple;
+        mutable std::unique_ptr<std::mutex> mutex;
+        mutable std::tuple<T...>            tuple;
     }; // class Mutex
 
     template<class... T>
@@ -101,7 +103,8 @@ namespace util
     public:
 
         explicit RwLock(T&&... t) // NOLINT
-            : tuple {std::forward<T>(t)...}
+            : rwlock {std::make_unique<std::shared_mutex>()}
+            , tuple {std::forward<T>(t)...}
         {}
         ~RwLock() = default;
 
@@ -113,7 +116,7 @@ namespace util
         decltype(auto) writeLock(std::invocable<T&...> auto func) const
             noexcept(noexcept(std::apply(func, this->tuple)))
         {
-            std::unique_lock lock {this->rwlock};
+            std::unique_lock lock {*this->rwlock};
 
             return std::apply(func, this->tuple);
         }
@@ -126,7 +129,7 @@ namespace util
                       void,
                       std::invoke_result_t<decltype(func), T&...>>)
         {
-            std::unique_lock lock {this->rwlock, std::defer_lock};
+            std::unique_lock lock {*this->rwlock, std::defer_lock};
 
             if (lock.try_lock())
             {
@@ -142,7 +145,7 @@ namespace util
         decltype(auto) readLock(std::invocable<const T&...> auto func) const
             noexcept(noexcept(std::apply(func, this->tuple)))
         {
-            std::shared_lock lock {this->rwlock};
+            std::shared_lock lock {*this->rwlock};
 
             return std::apply(func, this->tuple);
         }
@@ -155,7 +158,7 @@ namespace util
                       void,
                       std::invoke_result_t<decltype(func), T&...>>)
         {
-            std::shared_lock lock {this->rwlock, std::defer_lock};
+            std::shared_lock lock {*this->rwlock, std::defer_lock};
 
             if (lock.try_lock())
             {
@@ -185,8 +188,8 @@ namespace util
         }
 
     private:
-        mutable std::shared_mutex rwlock;
-        mutable std::tuple<T...>  tuple;
+        mutable std::unique_ptr<std::shared_mutex> rwlock;
+        mutable std::tuple<T...>                   tuple;
     }; // class Mutex
 
     inline std::byte*

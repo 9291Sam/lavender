@@ -1,4 +1,5 @@
 #include "misc.hpp"
+#include <optional>
 #include <thread>
 #include <tuple>
 #include <utility>

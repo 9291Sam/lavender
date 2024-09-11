@@ -3,6 +3,12 @@
 #include <GLFW/glfw3.h>
 #include <span>
 #include <util/log.hpp>
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan_enums.hpp>
+#include <vulkan/vulkan_handles.hpp>
+#include <vulkan/vulkan_hpp_macros.hpp>
+#include <vulkan/vulkan_to_string.hpp>
 
 static constexpr int DefaultWindowWidth  = 1280;
 static constexpr int DefaultWindowHeight = 720;
@@ -87,5 +93,21 @@ namespace gfx
             glfwGetRequiredInstanceExtensions(&numberOfExtensions);
 
         return std::span {extensions, numberOfExtensions};
+    }
+
+    vk::UniqueSurfaceKHR Window::createSurface(vk::Instance instance)
+    {
+        VkSurfaceKHR surface = nullptr;
+
+        const vk::Result result = vk::Result {
+            glfwCreateWindowSurface(instance, this->window, nullptr, &surface)};
+
+        if (result != vk::Result::eSuccess)
+        {
+            util::panic(
+                "Surface creation failed! | Error: {}", vk::to_string(result));
+        }
+
+        return vk::UniqueSurfaceKHR {surface, instance};
     }
 } // namespace gfx

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <span>
+#include <vulkan/vulkan_format_traits.hpp>
+#include <vulkan/vulkan_handles.hpp>
 
 struct GLFWwindow;
 
@@ -18,6 +20,7 @@ namespace gfx
         Window& operator= (Window&&)      = delete;
 
         [[nodiscard]] static std::span<const char*> getRequiredExtensions();
+        [[nodiscard]] vk::UniqueSurfaceKHR          createSurface(vk::Instance);
 
         [[nodiscard]] bool shouldWindowClose();
         void               beginFrame();

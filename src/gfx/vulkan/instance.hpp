@@ -4,12 +4,12 @@
 #include <vulkan/vulkan_format_traits.hpp>
 #include <vulkan/vulkan_handles.hpp>
 
-namespace gfx
+namespace gfx::vulkan
 {
     class Instance
     {
     public:
-        explicit Instance();
+        Instance();
         ~Instance() = default;
 
         Instance(const Instance&)             = delete;
@@ -26,4 +26,4 @@ namespace gfx
         vk::UniqueDebugUtilsMessengerEXT debug_messenger;
         U32                              vulkan_api_version;
     };
-} // namespace gfx
+} // namespace gfx::vulkan

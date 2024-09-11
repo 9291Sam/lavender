@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cmath>
+#include <concepts>
 #include <type_traits>
+#include <utility>
 
 using U8   = std::uint8_t;
 using U16  = std::uint16_t;
@@ -29,6 +31,12 @@ namespace util
 #else
         return true;
 #endif
+    }
+
+    template<class T>
+    constexpr std::underlying_type_t<T> toUnderlying(T t) noexcept
+    {
+        return static_cast<std::underlying_type_t<T>>(t);
     }
 
 } // namespace util
