@@ -32,10 +32,12 @@ namespace gfx::vulkan
         Frame& operator= (const Frame&) = delete;
         Frame& operator= (Frame&&)      = delete;
 
-        std::expected<void, Frame::ResizeNeeded> recordAndDisplay(
+        [[nodiscard]] std::expected<void, Frame::ResizeNeeded> recordAndDisplay(
             std::optional<vk::Fence> previousFrameFence,
             // U32 is the swapchain image's index
             std::function<void(vk::CommandBuffer, U32)>);
+
+        [[nodiscard]] vk::Fence getFrameInFlightFence() const noexcept;
 
     private:
         vk::UniqueSemaphore image_available;
@@ -45,15 +47,15 @@ namespace gfx::vulkan
         vk::UniqueCommandBuffer command_buffer;
         vk::UniqueCommandPool   command_pool;
 
-        vk::Device       device;
-        vk::SwapchainKHR swapchain;
+        const vulkan::Device* device;
+        vk::SwapchainKHR      swapchain;
     };
 
     class FrameManager
     {
     public:
 
-        FrameManager(vk::Instance, vk::SurfaceKHR);
+        FrameManager(const Device&, vk::SwapchainKHR);
         ~FrameManager() = default;
 
         FrameManager(const FrameManager&)             = delete;
@@ -66,7 +68,7 @@ namespace gfx::vulkan
         [[nodiscard]] std::expected<void, Frame::ResizeNeeded> recordAndDisplay(
             std::function<void(std::size_t, vk::CommandBuffer, U32)>);
     private:
-        vk::Fence                         previous_frame_finished_fence;
+        std::optional<vk::Fence>          previous_frame_finished_fence;
         std::array<Frame, FramesInFlight> flying_frames;
         std::size_t                       flying_frame_index;
     };

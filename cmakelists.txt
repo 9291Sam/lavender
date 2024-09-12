@@ -54,8 +54,11 @@ add_executable(lavender
     src/main.cpp
 
     src/gfx/vulkan/allocator.cpp
-    src/gfx/vulkan/instance.cpp
+    src/gfx/vulkan/buffer.cpp
     src/gfx/vulkan/device.cpp
+    src/gfx/vulkan/frame_manager.cpp
+    src/gfx/vulkan/instance.cpp
+    src/gfx/vulkan/swapchain.cpp
 
     src/gfx/renderer.cpp
     src/gfx/window.cpp
