@@ -18,11 +18,16 @@ namespace gfx
 
     Renderer::~Renderer() noexcept = default;
 
-    void Renderer::renderOnThread()
+    void
+    Renderer::recordOnThread(std::function<void(vk::CommandBuffer)> func) const
     {
-        while (!this->window->shouldWindowClose())
-        {
-            this->window->beginFrame();
-        }
+        this->window->beginFrame();
+
+        std::ignore = std::move(func);
+    }
+
+    bool Renderer::shouldWindowClose() const noexcept
+    {
+        return this->window->shouldWindowClose();
     }
 } // namespace gfx

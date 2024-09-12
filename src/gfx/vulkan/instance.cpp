@@ -1,4 +1,5 @@
 #include "instance.hpp"
+#include "allocator.hpp"
 #include "util/misc.hpp"
 #include <gfx/window.hpp>
 #include <util/log.hpp>
@@ -7,8 +8,23 @@
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_hpp_macros.hpp>
 
-// NOLINTNEXTLINE
+// NOLINTBEGIN clang-format off
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
+
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
+#define VMA_IMPLEMENTATION           1
+#define VMA_STATIC_VULKAN_FUNCTIONS  0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+#include <vk_mem_alloc.h>
+#undef VMA_IMPLEMENTATION
+#undef VMA_STATIC_VULKAN_FUNCTIONS
+#undef VMA_DYNAMIC_VULKAN_FUNCTIONS
+
+#pragma clang diagnostic pop
+// NOLINTEND clang-format on
 
 namespace gfx::vulkan
 {

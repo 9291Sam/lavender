@@ -51,6 +51,10 @@ namespace gfx::vulkan
         [[nodiscard]] U32 getNumberOfQueues(QueueType) const noexcept;
         [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const noexcept;
         [[nodiscard]] vk::Device         getDevice() const noexcept;
+        [[nodiscard]] const vk::Device*  operator->() const noexcept
+        {
+            return &*this->device;
+        }
 
         void acquireQueue(
             QueueType                      queueType,

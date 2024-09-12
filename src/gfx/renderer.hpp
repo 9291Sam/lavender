@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <vulkan/vulkan_format_traits.hpp>
 #include <vulkan/vulkan_handles.hpp>
@@ -25,7 +26,8 @@ namespace gfx
         Renderer& operator= (const Renderer&) = delete;
         Renderer& operator= (Renderer&&)      = delete;
 
-        void renderOnThread();
+        void recordOnThread(std::function<void(vk::CommandBuffer)>) const;
+        [[nodiscard]] bool shouldWindowClose() const noexcept;
 
     private:
         std::unique_ptr<Window>           window;

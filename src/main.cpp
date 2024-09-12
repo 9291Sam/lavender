@@ -2,6 +2,7 @@
 #include "util/log.hpp"
 #include <cstdlib>
 #include <exception>
+#include <vulkan/vulkan_handles.hpp>
 
 int main()
 {
@@ -11,7 +12,10 @@ int main()
     {
         gfx::Renderer renderer {};
 
-        renderer.renderOnThread();
+        while (!renderer.shouldWindowClose())
+        {
+            renderer.recordOnThread([](vk::CommandBuffer) {});
+        }
     }
     catch (const std::exception& e)
     {

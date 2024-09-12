@@ -207,7 +207,7 @@ namespace util
 
         for (std::size_t i = 0; i < numberOfThreads; ++i)
         {
-            std::size_t writeBlockStartOffset = threadDelegationSize * i;
+            const std::size_t writeBlockStartOffset = threadDelegationSize * i;
 
             std::size_t writeBlockSize = threadDelegationSize;
 
