@@ -37,4 +37,11 @@ namespace util
         return static_cast<std::underlying_type_t<T>>(t);
     }
 
+    constexpr inline void
+    hashCombine(std::size_t& seed_, std::size_t hash_) noexcept
+    {
+        hash_ += 0x9e3779b9 + (seed_ << 6UZ) + (seed_ >> 2UZ);
+        seed_ ^= hash_;
+    }
+
 } // namespace util
