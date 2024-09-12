@@ -84,6 +84,7 @@ namespace gfx::vulkan
         this->images    = device->getSwapchainImagesKHR(*this->swapchain);
 
         this->image_views.reserve(this->images.size());
+        this->dense_image_views.reserve(this->images.size());
 
         for (vk::Image i : this->images)
         {
@@ -108,8 +109,32 @@ namespace gfx::vulkan
                     .layerCount {1}}},
             };
 
-            this->image_views.push_back(
-                device->createImageViewUnique(swapchainImageViewCreateInfo));
+            vk::UniqueImageView imageView =
+                device->createImageViewUnique(swapchainImageViewCreateInfo);
+
+            this->dense_image_views.push_back(*imageView);
+            this->image_views.push_back(std::move(imageView));
         }
     }
+
+    std::span<const vk::ImageView> Swapchain::getViews() const noexcept
+    {
+        return this->dense_image_views;
+    }
+
+    std::span<const vk::Image> Swapchain::getImages() const noexcept
+    {
+        return this->images;
+    }
+
+    vk::Extent2D Swapchain::getExtent() const noexcept
+    {
+        return this->extent;
+    }
+
+    vk::SwapchainKHR Swapchain::operator* () const noexcept
+    {
+        return *this->swapchain;
+    }
+
 } // namespace gfx::vulkan

@@ -238,6 +238,13 @@ namespace gfx::vulkan
                 // NOLINTNEXTLINE
                 this->device->getQueue(*asyncTransferFamily, idx)});
         }
+
+        this->queues[static_cast<std::size_t>(QueueType::Graphics)] =
+            std::move(graphicsQueues);
+        this->queues[static_cast<std::size_t>(QueueType::AsyncCompute)] =
+            std::move(asyncComputeQueues);
+        this->queues[static_cast<std::size_t>(QueueType::AsyncTransfer)] =
+            std::move(asyncTransferQueues);
     }
 
     std::optional<U32> Device::getFamilyOfQueueType(QueueType t) const noexcept

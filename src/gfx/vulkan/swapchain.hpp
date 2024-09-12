@@ -12,7 +12,7 @@ namespace gfx::vulkan
     {
     public:
         Swapchain(const Device&, vk::SurfaceKHR, vk::Extent2D);
-        ~Swapchain() noexcept;
+        ~Swapchain() noexcept = default;
 
         Swapchain(const Swapchain&)             = delete;
         Swapchain(Swapchain&&)                  = delete;
@@ -22,8 +22,11 @@ namespace gfx::vulkan
         [[nodiscard]] std::span<const vk::ImageView> getViews() const noexcept;
         [[nodiscard]] std::span<const vk::Image>     getImages() const noexcept;
         [[nodiscard]] vk::Extent2D                   getExtent() const noexcept;
+        [[nodiscard]] vk::SwapchainKHR operator* () const noexcept;
+
     private:
         std::vector<vk::UniqueImageView> image_views;
+        std::vector<vk::ImageView>       dense_image_views;
         std::vector<vk::Image>           images;
         vk::UniqueSwapchainKHR           swapchain;
         vk::Extent2D                     extent;

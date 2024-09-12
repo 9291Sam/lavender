@@ -8,6 +8,7 @@
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_hpp_macros.hpp>
+#include <vulkan/vulkan_structs.hpp>
 #include <vulkan/vulkan_to_string.hpp>
 
 static constexpr int DefaultWindowWidth  = 1280;
@@ -109,5 +110,17 @@ namespace gfx
         }
 
         return vk::UniqueSurfaceKHR {surface, instance};
+    }
+
+    vk::Extent2D Window::getFramebufferSize() const
+    {
+        int width  = 0;
+        int height = 0;
+
+        glfwGetFramebufferSize(this->window, &width, &height);
+
+        return vk::Extent2D {
+            .width {static_cast<U32>(width)},
+            .height {static_cast<U32>(height)}};
     }
 } // namespace gfx

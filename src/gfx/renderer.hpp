@@ -1,12 +1,10 @@
 #pragma once
 
+#include "util/misc.hpp"
 #include <functional>
 #include <memory>
+#include <util/threads.hpp>
 #include <vulkan/vulkan.hpp>
-#include <vulkan/vulkan_enums.hpp>
-#include <vulkan/vulkan_format_traits.hpp>
-#include <vulkan/vulkan_handles.hpp>
-#include <vulkan/vulkan_structs.hpp>
 
 namespace gfx
 {
@@ -16,6 +14,9 @@ namespace gfx
     {
         class Instance;
         class Device;
+        class Allocator;
+        class FrameManager;
+        class Swapchain;
     } // namespace vulkan
 
     class Renderer
@@ -23,7 +24,7 @@ namespace gfx
     public:
         static constexpr vk::SurfaceFormatKHR ColorFormat =
             vk::SurfaceFormatKHR {
-                .format {vk::Format::eR8G8B8A8Srgb},
+                .format {vk::Format::eB8G8R8A8Srgb},
                 .colorSpace {vk::ColorSpaceKHR::eSrgbNonlinear}};
         static constexpr vk::Format DepthFormat = vk::Format::eD32Sfloat;
     public:
@@ -35,13 +36,31 @@ namespace gfx
         Renderer& operator= (const Renderer&) = delete;
         Renderer& operator= (Renderer&&)      = delete;
 
-        void recordOnThread(std::function<void(vk::CommandBuffer)>) const;
+        // Returns true if a resize occurred
+        bool recordOnThread(
+            std::function<
+                // Flying Frame Idx, command buffer, swapchain idx, swapchain
+                void(std::size_t, vk::CommandBuffer, U32, vulkan::Swapchain&)>)
+            const;
         [[nodiscard]] bool shouldWindowClose() const noexcept;
 
     private:
-        std::unique_ptr<Window>           window;
-        std::unique_ptr<vulkan::Instance> instance;
-        vk::UniqueSurfaceKHR              surface;
-        std::unique_ptr<vulkan::Device>   device;
+        struct RenderingCriticalSection
+        {
+            std::unique_ptr<vulkan::FrameManager> frame_manager;
+            std::unique_ptr<vulkan::Swapchain>    swapchain;
+        };
+
+        static std::unique_ptr<RenderingCriticalSection> makeCriticalSection(
+            const vulkan::Device&, vk::SurfaceKHR, const Window&);
+
+        std::unique_ptr<Window> window;
+
+        std::unique_ptr<vulkan::Instance>  instance;
+        vk::UniqueSurfaceKHR               surface;
+        std::unique_ptr<vulkan::Device>    device;
+        std::unique_ptr<vulkan::Allocator> allocator;
+
+        util::Mutex<std::unique_ptr<RenderingCriticalSection>> critical_section;
     };
 } // namespace gfx

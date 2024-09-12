@@ -21,6 +21,7 @@ namespace gfx
 
         [[nodiscard]] static std::span<const char*> getRequiredExtensions();
         [[nodiscard]] vk::UniqueSurfaceKHR          createSurface(vk::Instance);
+        [[nodiscard]] vk::Extent2D                  getFramebufferSize() const;
 
         [[nodiscard]] bool shouldWindowClose();
         void               beginFrame();

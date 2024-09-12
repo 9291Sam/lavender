@@ -1,4 +1,5 @@
 #include "gfx/renderer.hpp"
+#include "gfx/vulkan/swapchain.hpp"
 #include "util/log.hpp"
 #include <cstdlib>
 #include <exception>
@@ -14,7 +15,10 @@ int main()
 
         while (!renderer.shouldWindowClose())
         {
-            renderer.recordOnThread([](vk::CommandBuffer) {});
+            renderer.recordOnThread([](std::size_t,
+                                       vk::CommandBuffer,
+                                       U32,
+                                       gfx::vulkan::Swapchain&) {});
         }
     }
     catch (const std::exception& e)

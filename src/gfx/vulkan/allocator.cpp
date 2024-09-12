@@ -86,6 +86,69 @@ namespace gfx::vulkan
         return this->allocator;
     }
 
+    void Allocator::trimCaches() const
+    {
+        this->descriptor_set_layout_cache.lock(
+            [](std::unordered_map<
+                gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo,
+                std::shared_ptr<vk::UniqueDescriptorSetLayout>>& cache)
+            {
+                std::erase_if(
+                    cache,
+                    [](const std::pair<
+                        gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo,
+                        std::shared_ptr<vk::UniqueDescriptorSetLayout>>& ptr)
+                    {
+                        return ptr.second.use_count() == 1;
+                    });
+            });
+
+        this->pipeline_layout_cache.lock(
+            [](std::unordered_map<
+                gfx::vulkan::CacheablePipelineLayoutCreateInfo,
+                std::shared_ptr<vk::UniquePipelineLayout>>& cache)
+            {
+                std::erase_if(
+                    cache,
+                    [](const std::pair<
+                        gfx::vulkan::CacheablePipelineLayoutCreateInfo,
+                        std::shared_ptr<vk::UniquePipelineLayout>>& ptr)
+                    {
+                        return ptr.second.use_count() == 1;
+                    });
+            });
+
+        this->graphics_pipeline_cache.lock(
+            [](std::unordered_map<
+                gfx::vulkan::CacheableGraphicsPipelineCreateInfo,
+                std::shared_ptr<vk::UniquePipeline>>& cache)
+            {
+                std::erase_if(
+                    cache,
+                    [](const std::pair<
+                        gfx::vulkan::CacheableGraphicsPipelineCreateInfo,
+                        std::shared_ptr<vk::UniquePipeline>>& ptr)
+                    {
+                        return ptr.second.use_count() == 1;
+                    });
+            });
+
+        this->shader_module_cache.lock(
+            [](std::unordered_map<
+                std::string,
+                std::shared_ptr<vk::UniqueShaderModule>>& cache)
+            {
+                std::erase_if(
+                    cache,
+                    [](const std::pair<
+                        std::string,
+                        std::shared_ptr<vk::UniqueShaderModule>>& ptr)
+                    {
+                        return ptr.second.use_count() == 1;
+                    });
+            });
+    }
+
     vk::DescriptorSet
     Allocator::allocateDescriptorSet(vk::DescriptorSetLayout layout) const
     {

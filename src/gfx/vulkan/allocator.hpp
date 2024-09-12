@@ -204,6 +204,8 @@ namespace gfx::vulkan
 
         [[nodiscard]] VmaAllocator operator* () const;
 
+        void trimCaches() const;
+
         [[nodiscard]] vk::DescriptorSet
              allocateDescriptorSet(vk::DescriptorSetLayout) const;
         void earlyDeallocateDescriptorSet(vk::DescriptorSet) const;
