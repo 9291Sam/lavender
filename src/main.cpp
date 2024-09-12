@@ -3,7 +3,9 @@
 #include "util/log.hpp"
 #include <cstdlib>
 #include <exception>
+#include <gfx/vulkan/device.hpp>
 #include <vulkan/vulkan_handles.hpp>
+#include <vulkan/vulkan_structs.hpp>
 
 int main()
 {
@@ -15,10 +17,10 @@ int main()
 
         while (!renderer.shouldWindowClose())
         {
-            renderer.recordOnThread([](std::size_t,
-                                       vk::CommandBuffer,
-                                       U32,
-                                       gfx::vulkan::Swapchain&) {});
+            renderer.recordOnThread([&](std::size_t,
+                                        vk::CommandBuffer commandBuffer,
+                                        U32,
+                                        gfx::vulkan::Swapchain&) {});
         }
     }
     catch (const std::exception& e)

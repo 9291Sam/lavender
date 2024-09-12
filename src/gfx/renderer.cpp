@@ -72,8 +72,7 @@ namespace gfx
                 }
             });
 
-#warning fix this
-        // this->allocator->trimCaches();
+        this->allocator->trimCaches();
 
         util::logTrace("Frame end!");
 

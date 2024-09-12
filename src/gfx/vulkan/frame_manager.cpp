@@ -20,7 +20,7 @@ namespace gfx::vulkan
         const vk::FenceCreateInfo fenceCreateInfo {
             .sType {vk::StructureType::eFenceCreateInfo},
             .pNext {nullptr},
-            .flags {},
+            .flags {vk::FenceCreateFlagBits::eSignaled},
         };
 
         const vk::CommandPoolCreateInfo commandPoolCreateInfo {

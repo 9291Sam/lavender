@@ -2,6 +2,7 @@
 #include "device.hpp"
 #include "instance.hpp"
 #include <memory>
+#include <string>
 #include <util/log.hpp>
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
@@ -93,14 +94,22 @@ namespace gfx::vulkan
                 gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo,
                 std::shared_ptr<vk::UniqueDescriptorSetLayout>>& cache)
             {
-                std::erase_if(
-                    cache,
-                    [](const std::pair<
-                        gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo,
-                        std::shared_ptr<vk::UniqueDescriptorSetLayout>>& ptr)
+                std::vector<gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo>
+                    createInfosToRemove {};
+
+                for (const auto& [info, ptr] : cache)
+                {
+                    if (ptr.use_count() == 1)
                     {
-                        return ptr.second.use_count() == 1;
-                    });
+                        createInfosToRemove.push_back(info);
+                    }
+                }
+
+                for (const gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo&
+                         i : createInfosToRemove)
+                {
+                    cache.erase(i);
+                }
             });
 
         this->pipeline_layout_cache.lock(
@@ -108,14 +117,22 @@ namespace gfx::vulkan
                 gfx::vulkan::CacheablePipelineLayoutCreateInfo,
                 std::shared_ptr<vk::UniquePipelineLayout>>& cache)
             {
-                std::erase_if(
-                    cache,
-                    [](const std::pair<
-                        gfx::vulkan::CacheablePipelineLayoutCreateInfo,
-                        std::shared_ptr<vk::UniquePipelineLayout>>& ptr)
+                std::vector<gfx::vulkan::CacheablePipelineLayoutCreateInfo>
+                    createInfosToRemove {};
+
+                for (const auto& [info, ptr] : cache)
+                {
+                    if (ptr.use_count() == 1)
                     {
-                        return ptr.second.use_count() == 1;
-                    });
+                        createInfosToRemove.push_back(info);
+                    }
+                }
+
+                for (const gfx::vulkan::CacheablePipelineLayoutCreateInfo& i :
+                     createInfosToRemove)
+                {
+                    cache.erase(i);
+                }
             });
 
         this->graphics_pipeline_cache.lock(
@@ -123,14 +140,22 @@ namespace gfx::vulkan
                 gfx::vulkan::CacheableGraphicsPipelineCreateInfo,
                 std::shared_ptr<vk::UniquePipeline>>& cache)
             {
-                std::erase_if(
-                    cache,
-                    [](const std::pair<
-                        gfx::vulkan::CacheableGraphicsPipelineCreateInfo,
-                        std::shared_ptr<vk::UniquePipeline>>& ptr)
+                std::vector<gfx::vulkan::CacheableGraphicsPipelineCreateInfo>
+                    createInfosToRemove {};
+
+                for (const auto& [info, ptr] : cache)
+                {
+                    if (ptr.use_count() == 1)
                     {
-                        return ptr.second.use_count() == 1;
-                    });
+                        createInfosToRemove.push_back(info);
+                    }
+                }
+
+                for (const gfx::vulkan::CacheableGraphicsPipelineCreateInfo& i :
+                     createInfosToRemove)
+                {
+                    cache.erase(i);
+                }
             });
 
         this->shader_module_cache.lock(
@@ -138,14 +163,20 @@ namespace gfx::vulkan
                 std::string,
                 std::shared_ptr<vk::UniqueShaderModule>>& cache)
             {
-                std::erase_if(
-                    cache,
-                    [](const std::pair<
-                        std::string,
-                        std::shared_ptr<vk::UniqueShaderModule>>& ptr)
+                std::vector<std::string> createInfosToRemove {};
+
+                for (const auto& [info, ptr] : cache)
+                {
+                    if (ptr.use_count() == 1)
                     {
-                        return ptr.second.use_count() == 1;
-                    });
+                        createInfosToRemove.push_back(info);
+                    }
+                }
+
+                for (const std::string& i : createInfosToRemove)
+                {
+                    cache.erase(i);
+                }
             });
     }
 
