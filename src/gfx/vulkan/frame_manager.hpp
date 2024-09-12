@@ -25,7 +25,7 @@ namespace gfx::vulkan
         {};
     public:
         Frame(const Device&, vk::SwapchainKHR);
-        ~Frame() = default;
+        ~Frame() noexcept;
 
         Frame(const Frame&)             = delete;
         Frame(Frame&&)                  = delete;

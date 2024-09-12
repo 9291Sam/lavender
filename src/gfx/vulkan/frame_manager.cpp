@@ -57,6 +57,11 @@ namespace gfx::vulkan
             this->device->getDevice().createFenceUnique(fenceCreateInfo);
     }
 
+    Frame::~Frame() noexcept
+    {
+        this->device->getDevice().waitIdle();
+    }
+
     std::expected<void, Frame::ResizeNeeded> Frame::recordAndDisplay(
         std::optional<vk::Fence>                    previousFrameFence,
         std::function<void(vk::CommandBuffer, U32)> withCommandBuffer)
@@ -118,11 +123,12 @@ namespace gfx::vulkan
 
                 queue.submit(queueSubmitInfo);
 
-                if (previousFrameFence.has_value())
-                {
-                    std::ignore = device.waitForFences(
-                        *previousFrameFence, vk::True, TimeoutNs);
-                }
+// if (previousFrameFence.has_value())
+// {
+//     std::ignore = device.waitForFences(
+//         *previousFrameFence, vk::True, TimeoutNs);
+// }
+#warning fix this
 
                 const vk::PresentInfoKHR presentInfo {
                     .sType {vk::StructureType::ePresentInfoKHR},

@@ -28,7 +28,10 @@ namespace gfx
             *this->device, *this->surface, *this->window)};
     }
 
-    Renderer::~Renderer() noexcept = default;
+    Renderer::~Renderer() noexcept
+    {
+        this->device->getDevice().waitIdle();
+    }
 
     bool Renderer::recordOnThread(
         std::function<
