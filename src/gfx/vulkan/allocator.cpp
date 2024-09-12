@@ -1,8 +1,10 @@
 #include "allocator.hpp"
 #include "device.hpp"
 #include "instance.hpp"
+#include <memory>
 #include <util/log.hpp>
 #include <vk_mem_alloc.h>
+#include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
@@ -10,9 +12,9 @@
 
 namespace gfx::vulkan
 {
-    Allocator::Allocator(const Instance& instance, const Device& device)
-        : allocator {nullptr}
-        , device {device.getDevice()}
+    Allocator::Allocator(const Instance& instance, const Device& device_)
+        : device {device_.getDevice()}
+        , allocator {nullptr}
     {
         VmaVulkanFunctions vulkanFunctions {};
         vulkanFunctions.vkGetInstanceProcAddr =
@@ -22,8 +24,8 @@ namespace gfx::vulkan
 
         const VmaAllocatorCreateInfo allocatorCreateInfo {
             .flags {},
-            .physicalDevice {device.getPhysicalDevice()},
-            .device {device.getDevice()},
+            .physicalDevice {device_.getPhysicalDevice()},
+            .device {this->device},
             .preferredLargeHeapBlockSize {0}, // chosen by VMA
             .pAllocationCallbacks {nullptr},
             .pDeviceMemoryCallbacks {nullptr},
@@ -71,7 +73,7 @@ namespace gfx::vulkan
         };
 
         this->descriptor_pool =
-            device->createDescriptorPoolUnique(descriptorPoolCreateInfo);
+            this->device.createDescriptorPoolUnique(descriptorPoolCreateInfo);
     }
 
     Allocator::~Allocator()
@@ -256,6 +258,116 @@ namespace gfx::vulkan
                             .primitiveRestartEnable {false},
                         };
 
+                    const vk::Viewport nullDynamicViewport {};
+                    const vk::Rect2D   nullDynamicScissor {};
+
+                    const vk::PipelineViewportStateCreateInfo
+                        pipelineViewportStateCreateInfo {
+                            .sType {vk::StructureType::
+                                        ePipelineViewportStateCreateInfo},
+                            .pNext {nullptr},
+                            .flags {},
+                            .viewportCount {1},
+                            .pViewports {&nullDynamicViewport},
+                            .scissorCount {1},
+                            .pScissors {&nullDynamicScissor},
+                        };
+
+                    const vk::PipelineRasterizationStateCreateInfo
+                        pipelineRasterizationStateCreateInfo {
+                            .sType {vk::StructureType::
+                                        ePipelineRasterizationStateCreateInfo},
+                            .pNext {nullptr},
+                            .flags {},
+                            .depthClampEnable {vk::False},
+                            .rasterizerDiscardEnable {info.discard_enable},
+                            .polygonMode {info.polygon_mode},
+                            .cullMode {info.cull_mode},
+                            .frontFace {info.front_face},
+                            .depthBiasEnable {vk::False},
+                            .depthBiasConstantFactor {0.0},
+                            .depthBiasClamp {0.0},
+                            .depthBiasSlopeFactor {0.0},
+                            .lineWidth {1.0},
+                        };
+
+                    const vk::PipelineMultisampleStateCreateInfo
+                        pipelineMultisampleStateCreateInfo {
+                            .sType {vk::StructureType::
+                                        ePipelineMultisampleStateCreateInfo},
+                            .pNext {nullptr},
+                            .flags {},
+                            .rasterizationSamples {vk::SampleCountFlagBits::e1},
+                            .sampleShadingEnable {vk::False},
+                            .minSampleShading {1.0},
+                            .pSampleMask {nullptr},
+                            .alphaToCoverageEnable {vk::False},
+                            .alphaToOneEnable {vk::False},
+                        };
+
+                    const vk::PipelineDepthStencilStateCreateInfo
+                        pipelineDepthStencilStateCreateInfo {
+                            .sType {vk::StructureType::
+                                        ePipelineDepthStencilStateCreateInfo},
+                            .pNext {nullptr},
+                            .flags {},
+                            .depthTestEnable {info.depth_test_enable},
+                            .depthWriteEnable {info.depth_write_enable},
+                            .depthCompareOp {info.depth_compare_op},
+                            .depthBoundsTestEnable {vk::False}, // TODO: expose?
+                            .stencilTestEnable {vk::False},
+                            .front {},
+                            .back {},
+                            .minDepthBounds {0.0}, // TODO: expose?
+                            .maxDepthBounds {1.0}, // TODO: expose?
+                        };
+
+                    const vk::PipelineColorBlendAttachmentState
+                        pipelineColorBlendAttachmentState {
+                            .blendEnable {vk::True},
+                            .srcColorBlendFactor {vk::BlendFactor::eSrcAlpha},
+                            .dstColorBlendFactor {
+                                vk::BlendFactor::eOneMinusSrcAlpha},
+                            .colorBlendOp {vk::BlendOp::eAdd},
+                            .srcAlphaBlendFactor {vk::BlendFactor::eOne},
+                            .dstAlphaBlendFactor {vk::BlendFactor::eZero},
+                            .alphaBlendOp {vk::BlendOp::eAdd},
+                            .colorWriteMask {
+                                vk::ColorComponentFlagBits::eR
+                                | vk::ColorComponentFlagBits::eG
+                                | vk::ColorComponentFlagBits::eB
+                                | vk::ColorComponentFlagBits::eA},
+                        };
+
+                    const vk::PipelineColorBlendStateCreateInfo
+                        pipelineColorBlendStateCreateInfo {
+                            .sType {vk::StructureType::
+                                        ePipelineColorBlendStateCreateInfo},
+                            .pNext {nullptr},
+                            .flags {},
+                            .logicOpEnable {vk::False},
+                            .logicOp {vk::LogicOp::eCopy},
+                            .attachmentCount {1},
+                            .pAttachments {&pipelineColorBlendAttachmentState},
+                            .blendConstants {{0.0, 0.0, 0.0, 0.0}},
+                        };
+
+                    const std::array pipelineDynamicStates {
+                        vk::DynamicState::eScissor,
+                        vk::DynamicState::eViewport,
+                    };
+
+                    const vk::PipelineDynamicStateCreateInfo
+                        pipelineDynamicStateCreateInfo {
+                            .sType {vk::StructureType::
+                                        ePipelineDynamicStateCreateInfo},
+                            .pNext {nullptr},
+                            .flags {},
+                            .dynamicStateCount {
+                                static_cast<U32>(pipelineDynamicStates.size())},
+                            .pDynamicStates {pipelineDynamicStates.data()},
+                        };
+
                     const vk::GraphicsPipelineCreateInfo pipelineCreateInfo {
                         .sType {vk::StructureType::eGraphicsPipelineCreateInfo},
                         .pNext {nullptr},
@@ -267,17 +379,20 @@ namespace gfx::vulkan
                         .pInputAssemblyState {
                             &pipelineInputAssemblyStateCreateInfo},
                         .pTessellationState {nullptr},
-                        .pViewportState {},
-                        .pRasterizationState {},
-                        .pMultisampleState {},
-                        .pDepthStencilState {},
-                        .pColorBlendState {},
-                        .pDynamicState {},
-                        .layout {},
-                        .renderPass {},
-                        .subpass {},
-                        .basePipelineHandle {},
-                        .basePipelineIndex {},
+                        .pViewportState {&pipelineViewportStateCreateInfo},
+                        .pRasterizationState {
+                            &pipelineRasterizationStateCreateInfo},
+                        .pMultisampleState {
+                            &pipelineMultisampleStateCreateInfo},
+                        .pDepthStencilState {
+                            &pipelineDepthStencilStateCreateInfo},
+                        .pColorBlendState {&pipelineColorBlendStateCreateInfo},
+                        .pDynamicState {&pipelineDynamicStateCreateInfo},
+                        .layout {**info.layout},
+                        .renderPass {nullptr},
+                        .subpass {0},
+                        .basePipelineHandle {nullptr},
+                        .basePipelineIndex {0},
                     };
 
                     auto [result, pipelines] =
@@ -301,11 +416,57 @@ namespace gfx::vulkan
                 }
             });
     }
-    // std::shared_ptr<vk::UniquePipelineLayout>
-    //     cachePipelineLayout(CacheablePipelineLayoutCreateInfo) const;
-    // std::shared_ptr<vk::UniquePipeline>
-    //     cachePipeline(CacheableGraphicsPipelineCreateInfo) const;
-    // std::shared_ptr<vk::UniqueShaderModule>
-    //     cacheShaderModule(std::span<const std::byte>);
+
+    std::shared_ptr<vk::UniqueShaderModule>
+    Allocator::cacheShaderModule(std::span<const std::byte> shaderCode)
+    {
+        std::string shaderString {
+            // this is fine NOLINTNEXTLINE
+            reinterpret_cast<const char*>(shaderCode.data()),
+            shaderCode.size_bytes()};
+
+        return this->shader_module_cache.lock(
+            [&](auto& cache)
+            {
+                if (cache.contains(shaderString))
+                {
+                    return cache.at(shaderString);
+                }
+                else
+                {
+                    util::assertFatal( // this is also fine NOLINTNEXTLINE
+                        reinterpret_cast<std::uintptr_t>(shaderCode.data()) % 4
+                            == 0,
+                        "shaderCode is underaligned!");
+
+                    const vk::ShaderModuleCreateInfo shaderModuleCreateInfo {
+
+                        .sType {vk::StructureType::eShaderModuleCreateInfo},
+                        .pNext {nullptr},
+                        .flags {},
+                        .codeSize {shaderString.size()},
+                        // this is just straight up a strict aliasing violation
+                        // this is not fine, however given a provenance barrier
+                        // like std::start_lifetime_as_array + ensuring
+                        // alignment means that we're fine on x86 and arm which
+                        // is all we care about 😍
+                        // NOLINTNEXTLINE
+                        .pCode {reinterpret_cast<U32*>(shaderString.data())},
+                    };
+
+                    vk::UniqueShaderModule layout =
+                        this->device.createShaderModuleUnique(
+                            shaderModuleCreateInfo);
+
+                    std::shared_ptr<vk::UniqueShaderModule> // NOLINT
+                        sharedLayout {
+                            new vk::UniqueShaderModule {std::move(layout)}};
+
+                    cache[std::move(shaderString)] = sharedLayout;
+
+                    return sharedLayout;
+                }
+            });
+    }
 
 } // namespace gfx::vulkan

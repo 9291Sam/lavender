@@ -2,8 +2,11 @@
 
 #include <functional>
 #include <memory>
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_format_traits.hpp>
 #include <vulkan/vulkan_handles.hpp>
+#include <vulkan/vulkan_structs.hpp>
 
 namespace gfx
 {
@@ -17,6 +20,12 @@ namespace gfx
 
     class Renderer
     {
+    public:
+        static constexpr vk::SurfaceFormatKHR ColorFormat =
+            vk::SurfaceFormatKHR {
+                .format {vk::Format::eR8G8B8A8Srgb},
+                .colorSpace {vk::ColorSpaceKHR::eSrgbNonlinear}};
+        static constexpr vk::Format DepthFormat = vk::Format::eD32Sfloat;
     public:
         Renderer();
         ~Renderer() noexcept;
