@@ -135,6 +135,27 @@ namespace gfx::vulkan
                 }
             });
 
+        this->pipeline_layout_lookup.lock(
+            [](std::unordered_map<
+                vk::Pipeline,
+                std::weak_ptr<vk::UniquePipelineLayout>>& cache)
+            {
+                std::vector<vk::Pipeline> pipelinesToRemove {};
+
+                for (const auto& [pipeline, ptr] : cache)
+                {
+                    if (ptr.expired())
+                    {
+                        pipelinesToRemove.push_back(pipeline);
+                    }
+                }
+
+                for (const vk::Pipeline& i : pipelinesToRemove)
+                {
+                    cache.erase(i);
+                }
+            });
+
         this->graphics_pipeline_cache.lock(
             [](std::unordered_map<
                 gfx::vulkan::CacheableGraphicsPipelineCreateInfo,
@@ -517,6 +538,14 @@ namespace gfx::vulkan
                         sharedPipeline {
                             new vk::UniquePipeline {std::move(pipeline)}};
 
+                    this->pipeline_layout_lookup.lock(
+                        [&](std::unordered_map<
+                            vk::Pipeline,
+                            std::weak_ptr<vk::UniquePipelineLayout>>& cache)
+                        {
+                            cache[**sharedPipeline] = info.layout;
+                        });
+
                     cache[info] = sharedPipeline;
 
                     return sharedPipeline;
@@ -573,6 +602,24 @@ namespace gfx::vulkan
 
                     return sharedLayout;
                 }
+            });
+    }
+
+    std::shared_ptr<vk::UniquePipelineLayout>
+    Allocator::lookupPipelineLayout(vk::Pipeline pipeline) const
+    {
+        return this->pipeline_layout_lookup.lock(
+            [&](std::unordered_map<
+                vk::Pipeline,
+                std::weak_ptr<vk::UniquePipelineLayout>>& cache)
+            {
+                std::shared_ptr shouldBeLayout = cache.at(pipeline).lock();
+
+                util::assertFatal(
+                    shouldBeLayout != nullptr,
+                    "Tried to lookup pipeline layout of expired pipeline");
+
+                return shouldBeLayout;
             });
     }
 

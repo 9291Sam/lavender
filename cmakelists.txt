@@ -133,7 +133,7 @@ function(compile_shader target)
                 $<$<BOOL:${arg_ENV}>:--target-env=${arg_ENV}>
                 $<$<BOOL:${arg_SPV}>:--target-spv=${arg_SPV}>
                 $<$<BOOL:${arg_FORMAT}>:-mfmt=${arg_FORMAT}>
-                $<$<BOOL:${arg_INCLUDE_DIRS}>:-I${CMAKE_SOURCE_DIR}/src/gfx/vulkan/shaders/include>
+                # $<$<BOOL:${arg_INCLUDE_DIRS}>:-I${CMAKE_SOURCE_DIR}/src/gfx/vulkan/shaders/include>
                 -O -g # enable opts & debug symbols
                 -MD -MF ${source}.d
                 -o ${source}.${arg_FORMAT}
@@ -147,7 +147,7 @@ compile_shader(lavender
     ENV vulkan1.2
     SPV spv1.6
     FORMAT bin
-    INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/src/gfx/vulkan/shaders/include"
+    # INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/src/gfx/vulkan/shaders/include"
     SOURCES
     src/vertex.vert
     src/frag.frag

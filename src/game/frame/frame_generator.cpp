@@ -1,4 +1,5 @@
 #include "frame_generator.hpp"
+#include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/device.hpp"
 #include "util/misc.hpp"
 #include <compare>
@@ -98,6 +99,46 @@ namespace game::frame
             device // NOLINT
                 .getFamilyOfQueueType(gfx::vulkan::Device::QueueType::Graphics)
                 .value();
+
+        vk::Pipeline                     currentlyBoundPipeline = nullptr;
+        std::array<vk::DescriptorSet, 4> currentlyBoundDescriptors {
+            nullptr, nullptr, nullptr, nullptr};
+
+        auto updateBindings = [&](const RecordObject& o)
+        {
+            if (currentlyBoundPipeline != **o.pipeline)
+            {
+                commandBuffer.bindPipeline(
+                    vk::PipelineBindPoint::eGraphics, **o.pipeline);
+            }
+
+            for (std::size_t i = 0; i < 4; ++i)
+            {
+                if (currentlyBoundDescriptors[i] != o.descriptors[i]) // NOLINT
+                {
+                    currentlyBoundDescriptors[i] = o.descriptors[i]; // NOLINT
+
+                    for (std::size_t j = i + 1; j < 4; ++j)
+                    {
+                        currentlyBoundDescriptors[i] = nullptr; // NOLINT
+                    }
+
+                    commandBuffer.bindDescriptorSets(
+                        vk::PipelineBindPoint::eGraphics,
+                        **this->renderer->getAllocator()->lookupPipelineLayout(
+                            **o.pipeline),
+                        i,
+                        {o.descriptors[i]},
+                        {0});
+                }
+            }
+        };
+
+        auto clearBindings = [&]
+        {
+            currentlyBoundPipeline    = nullptr;
+            currentlyBoundDescriptors = {nullptr, nullptr, nullptr, nullptr};
+        };
 
         if (this->needs_resize_transitions)
         {
@@ -213,8 +254,7 @@ namespace game::frame
         for (const RecordObject* o : recordablesByPass.at(
                  static_cast<std::size_t>(DynamicRenderingPass::SimpleColor)))
         {
-            commandBuffer.bindPipeline(
-                vk::PipelineBindPoint::eGraphics, **o->pipeline);
+            updateBindings(*o);
 
             o->record_func(commandBuffer);
         }

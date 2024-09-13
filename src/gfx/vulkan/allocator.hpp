@@ -215,6 +215,8 @@ namespace gfx::vulkan
             cachePipeline(CacheableGraphicsPipelineCreateInfo) const;
         [[nodiscard]] std::shared_ptr<vk::UniqueShaderModule>
             cacheShaderModule(std::span<const std::byte>) const;
+        [[nodiscard]] std::shared_ptr<vk::UniquePipelineLayout>
+            lookupPipelineLayout(vk::Pipeline) const;
 
     private:
         vk::Device               device;
@@ -229,6 +231,11 @@ namespace gfx::vulkan
             CacheablePipelineLayoutCreateInfo,
             std::shared_ptr<vk::UniquePipelineLayout>>>
             pipeline_layout_cache;
+
+        util::Mutex<std::unordered_map<
+            vk::Pipeline,
+            std::weak_ptr<vk::UniquePipelineLayout>>>
+            pipeline_layout_lookup;
 
         util::Mutex<std::unordered_map<
             CacheableGraphicsPipelineCreateInfo,
