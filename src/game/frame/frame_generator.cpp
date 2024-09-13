@@ -37,6 +37,7 @@ namespace game::frame
         U32                           swapchainImageIdx,
         const gfx::vulkan::Swapchain& swapchain,
         const gfx::vulkan::Device&    device,
+        bool                          needsResizeBarriers,
         std::span<RecordObject>       recordObjects)
     {
         std::array<
@@ -80,6 +81,44 @@ namespace game::frame
                 .getFamilyOfQueueType(gfx::vulkan::Device::QueueType::Graphics)
                 .value();
 
+        if (needsResizeBarriers)
+        {
+            const std::span<const vk::Image> swapchainImages =
+                swapchain.getImages();
+
+            std::vector<vk::ImageMemoryBarrier> swapchainMemoryBarriers {};
+            swapchainMemoryBarriers.reserve(swapchainImages.size());
+
+            for (const vk::Image i : swapchainImages)
+            {
+                swapchainMemoryBarriers.push_back(vk::ImageMemoryBarrier {
+                    .sType {vk::StructureType::eImageMemoryBarrier},
+                    .pNext {nullptr},
+                    .srcAccessMask {vk::AccessFlagBits::eNone},
+                    .dstAccessMask {vk::AccessFlagBits::eNone},
+                    .oldLayout {vk::ImageLayout::eUndefined},
+                    .newLayout {vk::ImageLayout::ePresentSrcKHR},
+                    .srcQueueFamilyIndex {graphicsQueueIndex},
+                    .dstQueueFamilyIndex {graphicsQueueIndex},
+                    .image {i},
+                    .subresourceRange {vk::ImageSubresourceRange {
+                        .aspectMask {vk::ImageAspectFlagBits::eColor},
+                        .baseMipLevel {0},
+                        .levelCount {1},
+                        .baseArrayLayer {0},
+                        .layerCount {1}}},
+                });
+            }
+
+            commandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                {},
+                {},
+                {},
+                swapchainMemoryBarriers);
+        }
+
         commandBuffer.pipelineBarrier(
             vk::PipelineStageFlagBits::eColorAttachmentOutput,
             vk::PipelineStageFlagBits::eColorAttachmentOutput,
@@ -103,52 +142,6 @@ namespace game::frame
                     .baseArrayLayer {0},
                     .layerCount {1}}},
             }});
-
-        // renderer.device.dynamic_rendering_fns.cmd_begin_rendering(
-        //     command_buffer, &vk::RenderingInfo {
-        //         s_type: vk::StructureType::RENDERING_INFO,
-        //         p_next: std::ptr::null(),
-        //         flags: vk::RenderingFlags::empty(),
-        //         render_area: render_rect,
-        //         layer_count: 1,
-        //         view_mask: 0,
-        //         color_attachment_count: 1,
-        //         p_color_attachments: &vk::RenderingAttachmentInfo {
-        //             s_type: vk::StructureType::RENDERING_ATTACHMENT_INFO,
-        //             p_next: std::ptr::null(),
-        //             image_view:
-        //                 swapchain.get_views()[swapchain_image_idx as usize],
-        //             image_layout: vk::ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-        //             resolve_mode: vk::ResolveModeFlags::NONE,
-        //             resolve_image_view: vk::ImageView::null(),
-        //             resolve_image_layout: vk::ImageLayout::UNDEFINED,
-        //             load_op: vk::AttachmentLoadOp::CLEAR,
-        //             store_op: vk::AttachmentStoreOp::STORE,
-        //             clear_value: vk::ClearValue {
-        //                 color: vk::
-        //                 ClearColorValue {float32: [0.1, 0.4, 0.3, 0.0]}
-        //             },
-        //             _marker: std::marker::PhantomData
-        //         },
-        //         p_depth_attachment: &vk::RenderingAttachmentInfo {
-        //             s_type: vk::StructureType::RENDERING_ATTACHMENT_INFO,
-        //             p_next: std::ptr::null(),
-        //             image_view: depth_buffer.get_image_view(),
-        //             image_layout: vk::ImageLayout::DEPTH_ATTACHMENT_OPTIMAL,
-        //             resolve_mode: vk::ResolveModeFlags::NONE,
-        //             resolve_image_view: vk::ImageView::null(),
-        //             resolve_image_layout: vk::ImageLayout::UNDEFINED,
-        //             load_op: vk::AttachmentLoadOp::CLEAR,
-        //             store_op: vk::AttachmentStoreOp::STORE,
-        //             clear_value: vk::ClearValue {
-        //                 depth_stencil: vk::
-        //                 ClearDepthStencilValue {depth: 1.0, stencil: 0}
-        //             },
-        //             _marker: std::marker::PhantomData
-        //         },
-        //         p_stencil_attachment: std::ptr::null(),
-        //         _marker: std::marker::PhantomData
-        //     });
 
         commandBuffer.setViewport(0, {renderViewport});
         commandBuffer.setScissor(0, {scissor});

@@ -199,14 +199,16 @@ namespace gfx::vulkan
         vk::PhysicalDeviceFeatures features {};
         features.shaderInt16 = vk::True;
 
-        vk::PhysicalDeviceVulkan13Features features13 {};
-        features13.sType = vk::StructureType::ePhysicalDeviceVulkan13Features;
-        features13.pNext = nullptr;
-        features13.dynamicRendering = vk::True;
+        const vk::PhysicalDeviceDynamicRenderingFeatures
+            dynamicRenderingFeatures {
+                .sType {
+                    vk::StructureType::ePhysicalDeviceDynamicRenderingFeatures},
+                .pNext {nullptr},
+                .dynamicRendering {vk::True}};
 
         const vk::DeviceCreateInfo deviceCreateInfo {
             .sType {vk::StructureType::eDeviceCreateInfo},
-            .pNext {&features13},
+            .pNext {&dynamicRenderingFeatures},
             .flags {},
             .queueCreateInfoCount {static_cast<U32>(queuesToCreate.size())},
             .pQueueCreateInfos {queuesToCreate.data()},

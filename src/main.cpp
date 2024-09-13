@@ -16,10 +16,11 @@ int main()
     try
     {
         gfx::Renderer renderer {};
+        bool          resizeOcurredPreviousFrame = true;
 
         while (!renderer.shouldWindowClose())
         {
-            renderer.recordOnThread(
+            resizeOcurredPreviousFrame = renderer.recordOnThread(
                 [&](vk::CommandBuffer       commandBuffer,
                     U32                     swapchainImageIdx,
                     gfx::vulkan::Swapchain& swapchain)
@@ -29,6 +30,7 @@ int main()
                         swapchainImageIdx,
                         swapchain,
                         renderer.getDevice(),
+                        resizeOcurredPreviousFrame,
                         {});
                 });
         }

@@ -38,6 +38,7 @@ namespace game::frame
         U32 swapchainImageIdx,
         const gfx::vulkan::Swapchain&,
         const gfx::vulkan::Device&,
+        bool needsResizeBarriers,
         std::span<RecordObject>);
 
 } // namespace game::frame
