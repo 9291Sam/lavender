@@ -42,7 +42,8 @@ namespace gfx
                 // Flying Frame Idx, command buffer, swapchain idx, swapchain
                 void(vk::CommandBuffer, U32, vulkan::Swapchain&)>) const;
         [[nodiscard]] bool                  shouldWindowClose() const noexcept;
-        [[nodiscard]] const vulkan::Device& getDevice() const noexcept;
+        // lives as long as the renderer
+        [[nodiscard]] const vulkan::Device* getDevice() const noexcept;
 
     private:
         struct RenderingCriticalSection

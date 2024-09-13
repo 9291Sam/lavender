@@ -15,24 +15,12 @@ int main()
 
     try
     {
-        gfx::Renderer renderer {};
-        bool          resizeOcurredPreviousFrame = true;
+        const gfx::Renderer         renderer {};
+        game::frame::FrameGenerator frameGenerator {&renderer};
 
         while (!renderer.shouldWindowClose())
         {
-            resizeOcurredPreviousFrame = renderer.recordOnThread(
-                [&](vk::CommandBuffer       commandBuffer,
-                    U32                     swapchainImageIdx,
-                    gfx::vulkan::Swapchain& swapchain)
-                {
-                    game::frame::generateFrame(
-                        commandBuffer,
-                        swapchainImageIdx,
-                        swapchain,
-                        renderer.getDevice(),
-                        resizeOcurredPreviousFrame,
-                        {});
-                });
+            frameGenerator.generateFrame({});
         }
     }
     catch (const std::exception& e)

@@ -3,13 +3,16 @@
 #include "util/misc.hpp"
 #include <compare>
 #include <cstddef>
+#include <gfx/renderer.hpp>
 #include <gfx/vulkan/swapchain.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
 namespace game::frame
 {
-    std::strong_ordering RecordObject::RecordObject::operator<=> (
+
+    std::strong_ordering
+    FrameGenerator::RecordObject::RecordObject::operator<=> (
         const RecordObject& other) const noexcept
     {
         if (util::toUnderlying(this->render_pass)
@@ -32,28 +35,32 @@ namespace game::frame
         return std::strong_ordering::equal;
     }
 
-    void generateFrame(
-        vk::CommandBuffer             commandBuffer,
-        U32                           swapchainImageIdx,
-        const gfx::vulkan::Swapchain& swapchain,
-        const gfx::vulkan::Device&    device,
-        bool                          needsResizeBarriers,
-        std::span<RecordObject>       recordObjects)
+    FrameGenerator::FrameGenerator(const gfx::Renderer* renderer_)
+        : renderer {renderer_}
+        , needs_resize_transitions {true}
+    {}
+
+    void FrameGenerator::internalGenerateFrame(
+        vk::CommandBuffer                       commandBuffer,
+        U32                                     swapchainImageIdx,
+        const gfx::vulkan::Swapchain&           swapchain,
+        std::span<FrameGenerator::RecordObject> recordObjects)
     {
         std::array<
-            std::vector<RecordObject>,
-            static_cast<std::size_t>(
-                DynamicRenderingPass::DynamicRenderingPassMaxValue)>
+            std::vector<FrameGenerator::RecordObject>,
+            static_cast<std::size_t>(FrameGenerator::DynamicRenderingPass::
+                                         DynamicRenderingPassMaxValue)>
             recordablesByPass;
 
-        for (RecordObject& o : recordObjects)
+        for (FrameGenerator::RecordObject& o : recordObjects)
         {
             recordablesByPass
                 .at(static_cast<std::size_t>(util::toUnderlying(o.render_pass)))
                 .push_back(std::move(o));
         }
 
-        for (std::vector<RecordObject>& recordVec : recordablesByPass)
+        for (std::vector<FrameGenerator::RecordObject>& recordVec :
+             recordablesByPass)
         {
             std::sort(recordVec.begin(), recordVec.end());
         }
@@ -72,16 +79,18 @@ namespace game::frame
             .maxDepth {1.0},
         };
 
+        const gfx::vulkan::Device& device = *this->renderer->getDevice();
+
         const vk::Image thisSwapchainImage =
             swapchain.getImages()[swapchainImageIdx];
         const vk::ImageView thisSwapchainImageView =
             swapchain.getViews()[swapchainImageIdx];
         const U32 graphicsQueueIndex =
-            device
+            device // NOLINT
                 .getFamilyOfQueueType(gfx::vulkan::Device::QueueType::Graphics)
                 .value();
 
-        if (needsResizeBarriers)
+        if (this->needs_resize_transitions)
         {
             const std::span<const vk::Image> swapchainImages =
                 swapchain.getImages();
@@ -219,4 +228,15 @@ namespace game::frame
             }});
     }
 
+    void FrameGenerator::generateFrame(std::span<RecordObject> recordObjects)
+    {
+        this->needs_resize_transitions = this->renderer->recordOnThread(
+            [&](vk::CommandBuffer       commandBuffer,
+                U32                     swapchainImageIdx,
+                gfx::vulkan::Swapchain& swapchain)
+            {
+                this->internalGenerateFrame(
+                    commandBuffer, swapchainImageIdx, swapchain, recordObjects);
+            });
+    }
 } // namespace game::frame

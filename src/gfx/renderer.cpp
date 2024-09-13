@@ -101,8 +101,8 @@ namespace gfx
             });
     }
 
-    const vulkan::Device& Renderer::getDevice() const noexcept
+    const vulkan::Device* Renderer::getDevice() const noexcept
     {
-        return *this->device;
+        return &*this->device;
     }
 } // namespace gfx
