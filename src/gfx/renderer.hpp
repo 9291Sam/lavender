@@ -40,8 +40,7 @@ namespace gfx
         bool recordOnThread(
             std::function<
                 // Flying Frame Idx, command buffer, swapchain idx, swapchain
-                void(std::size_t, vk::CommandBuffer, U32, vulkan::Swapchain&)>)
-            const;
+                void(vk::CommandBuffer, U32, vulkan::Swapchain&)>) const;
         [[nodiscard]] bool                  shouldWindowClose() const noexcept;
         [[nodiscard]] const vulkan::Device& getDevice() const noexcept;
 

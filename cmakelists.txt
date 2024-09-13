@@ -52,6 +52,8 @@ find_package(Vulkan REQUIRED)
 
 add_executable(lavender
     src/main.cpp
+    
+    src/game/frame/frame_generator.cpp
 
     src/gfx/vulkan/allocator.cpp
     src/gfx/vulkan/buffer.cpp

@@ -34,15 +34,12 @@ namespace gfx
     }
 
     bool Renderer::recordOnThread(
-        std::function<
-            void(std::size_t, vk::CommandBuffer, U32, vulkan::Swapchain&)>
+        std::function<void(vk::CommandBuffer, U32, vulkan::Swapchain&)>
             recordFunc) const
     {
         this->window->beginFrame();
 
         bool resizeOcurred = false;
-
-        util::logTrace("Frame Begin!");
 
         this->critical_section.lock(
             [&](std::unique_ptr<RenderingCriticalSection>&
@@ -51,12 +48,11 @@ namespace gfx
                 const std::expected<void, vulkan::Frame::ResizeNeeded>
                     drawFrameResult =
                         lockedCriticalSection->frame_manager->recordAndDisplay(
-                            [&](std::size_t       flyingFrameIdx,
+                            [&](std::size_t /*flyingFrameIdx*/,
                                 vk::CommandBuffer commandBuffer,
                                 U32               swapchainImageIdx)
                             {
                                 recordFunc(
-                                    flyingFrameIdx,
                                     commandBuffer,
                                     swapchainImageIdx,
                                     *lockedCriticalSection->swapchain);
@@ -76,8 +72,6 @@ namespace gfx
             });
 
         this->allocator->trimCaches();
-
-        util::logTrace("Frame end!");
 
         return resizeOcurred;
     }
@@ -102,7 +96,13 @@ namespace gfx
 
         return std::make_unique<RenderingCriticalSection>(
             RenderingCriticalSection {
+                .frame_manager {std::move(frameManager)},
                 .swapchain {std::move(swapchain)},
-                .frame_manager {std::move(frameManager)}});
+            });
+    }
+
+    const vulkan::Device& Renderer::getDevice() const noexcept
+    {
+        return *this->device;
     }
 } // namespace gfx

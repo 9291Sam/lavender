@@ -1,6 +1,6 @@
 #include "frame_manager.hpp"
 #include "device.hpp"
-#include <__expected/unexpected.h>
+#include <expected>
 #include <optional>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
@@ -150,6 +150,7 @@ namespace gfx::vulkan
                     [[fallthrough]];
                 case vk::Result::eErrorOutOfDateKHR:
                     shouldResize = true;
+                    break;
                 default:
                     util::panic(
                         "acquireNextImage returned {}", vk::to_string(result));

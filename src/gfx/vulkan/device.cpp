@@ -189,18 +189,24 @@ namespace gfx::vulkan
             numberOfAsyncTransferQueues};
 
         std::array requiredExtensions {
+            "VK_KHR_dynamic_rendering",
             vk::KHRSwapchainExtensionName,
 #ifdef __APPLE__
             "VK_KHR_portability_subset",
-#endif // __APPLE__
+#endif // __APPLE__,
         };
 
         vk::PhysicalDeviceFeatures features {};
         features.shaderInt16 = vk::True;
 
+        vk::PhysicalDeviceVulkan13Features features13 {};
+        features13.sType = vk::StructureType::ePhysicalDeviceVulkan13Features;
+        features13.pNext = nullptr;
+        features13.dynamicRendering = vk::True;
+
         const vk::DeviceCreateInfo deviceCreateInfo {
             .sType {vk::StructureType::eDeviceCreateInfo},
-            .pNext {nullptr},
+            .pNext {&features13},
             .flags {},
             .queueCreateInfoCount {static_cast<U32>(queuesToCreate.size())},
             .pQueueCreateInfos {queuesToCreate.data()},

@@ -3,6 +3,7 @@
 #include "util/log.hpp"
 #include <cstdlib>
 #include <exception>
+#include <game/frame/frame_generator.hpp>
 #include <gfx/vulkan/device.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
@@ -19,23 +20,16 @@ int main()
         while (!renderer.shouldWindowClose())
         {
             renderer.recordOnThread(
-                [&](std::size_t,
-                    vk::CommandBuffer       commandBuffer,
+                [&](vk::CommandBuffer       commandBuffer,
                     U32                     swapchainImageIdx,
                     gfx::vulkan::Swapchain& swapchain)
                 {
-                    ;
-
-                    commandBuffer.clearColorImage(
-                        swapchain.getImages()[swapchainImageIdx],
-                        vk::ImageLayout::eUndefined,
-                        vk::ClearColorValue {.float32 {{0.0, 1.0, 0.0, 1.0}}},
-                        vk::ImageSubresourceRange {
-                            .aspectMask {vk::ImageAspectFlagBits::eColor},
-                            .baseMipLevel {0},
-                            .levelCount {1},
-                            .baseArrayLayer {0},
-                            .layerCount {1}});
+                    game::frame::generateFrame(
+                        commandBuffer,
+                        swapchainImageIdx,
+                        swapchain,
+                        renderer.getDevice(),
+                        {});
                 });
         }
     }
@@ -47,6 +41,8 @@ int main()
     {
         util::logFatal("Lavender has crashed! | Non Exception Thrown!");
     }
+
+    util::logLog("lavender exited successfully!");
 
     util::removeGlobalLoggerRacy();
 

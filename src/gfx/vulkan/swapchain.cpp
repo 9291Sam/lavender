@@ -1,5 +1,6 @@
 #include "swapchain.hpp"
 #include "device.hpp"
+#include "frame_manager.hpp"
 #include "gfx/renderer.hpp"
 #include "util/log.hpp"
 #include <vulkan/vulkan.hpp>
@@ -54,10 +55,9 @@ namespace gfx::vulkan
 
         const vk::SurfaceCapabilitiesKHR surfaceCapabilities =
             device.getPhysicalDevice().getSurfaceCapabilitiesKHR(surface);
-        const U32 numberOfSwapchainImages =
-            surfaceCapabilities.maxImageCount == 0
-                ? surfaceCapabilities.minImageCount + 1
-                : surfaceCapabilities.maxImageCount;
+        const U32 numberOfSwapchainImages = std::min(
+            {std::max({4U, surfaceCapabilities.minImageCount}),
+             surfaceCapabilities.maxImageCount});
 
         const vk::SwapchainCreateInfoKHR swapchainCreateInfo {
             .sType {vk::StructureType::eSwapchainCreateInfoKHR},
