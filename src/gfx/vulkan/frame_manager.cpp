@@ -121,14 +121,13 @@ namespace gfx::vulkan
                     .pSignalSemaphores {&*this->render_finished},
                 };
 
-                queue.submit(queueSubmitInfo);
+                queue.submit(queueSubmitInfo, *this->frame_in_flight);
 
-// if (previousFrameFence.has_value())
-// {
-//     std::ignore = device.waitForFences(
-//         *previousFrameFence, vk::True, TimeoutNs);
-// }
-#warning fix this
+                if (previousFrameFence.has_value())
+                {
+                    std::ignore = device.waitForFences(
+                        *previousFrameFence, vk::True, TimeoutNs);
+                }
 
                 const vk::PresentInfoKHR presentInfo {
                     .sType {vk::StructureType::ePresentInfoKHR},

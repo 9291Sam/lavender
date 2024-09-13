@@ -44,8 +44,8 @@ namespace gfx::vulkan
         vk::UniqueSemaphore render_finished;
         vk::UniqueFence     frame_in_flight;
 
-        vk::UniqueCommandBuffer command_buffer;
         vk::UniqueCommandPool   command_pool;
+        vk::UniqueCommandBuffer command_buffer;
 
         const vulkan::Device* device;
         vk::SwapchainKHR      swapchain;
