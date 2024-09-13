@@ -326,6 +326,10 @@ namespace gfx::vulkan
                             });
                     }
 
+                    util::assertFatal(
+                        denseStages.size() >= 1,
+                        "All pipelines must have at least one shader!");
+
                     const vk::PipelineVertexInputStateCreateInfo
                         pipelineVertexInputStateCreateInfo {
                             .sType {vk::StructureType::
@@ -462,10 +466,21 @@ namespace gfx::vulkan
                             .pDynamicStates {pipelineDynamicStates.data()},
                         };
 
+                    const vk::PipelineRenderingCreateInfo renderingInfo {
+                        .sType {
+                            vk::StructureType::ePipelineRenderingCreateInfo},
+                        .pNext {nullptr},
+                        .viewMask {0},
+                        .colorAttachmentCount {1},
+                        .pColorAttachmentFormats {&info.color_format},
+                        .depthAttachmentFormat {info.depth_format},
+                        .stencilAttachmentFormat {},
+                    };
+
                     const vk::GraphicsPipelineCreateInfo pipelineCreateInfo {
                         .sType {vk::StructureType::eGraphicsPipelineCreateInfo},
-                        .pNext {nullptr},
-                        .flags {info.pipeline_flags},
+                        .pNext {&renderingInfo},
+                        .flags {},
                         .stageCount {static_cast<U32>(denseStages.size())},
                         .pStages {denseStages.data()},
                         .pVertexInputState {
@@ -489,16 +504,14 @@ namespace gfx::vulkan
                         .basePipelineIndex {0},
                     };
 
-                    auto [result, pipelines] =
-                        this->device.createGraphicsPipelinesUnique(
+                    auto [result, pipeline] =
+                        this->device.createGraphicsPipelineUnique(
                             nullptr, pipelineCreateInfo);
 
                     util::assertFatal(
                         result == vk::Result::eSuccess,
                         "Graphics Pipeline Construction Failed! | {}",
                         vk::to_string(result));
-
-                    vk::UniquePipeline pipeline = std::move(pipelines.at(0));
 
                     std::shared_ptr<vk::UniquePipeline> // NOLINT
                         sharedPipeline {
@@ -512,7 +525,7 @@ namespace gfx::vulkan
     }
 
     std::shared_ptr<vk::UniqueShaderModule>
-    Allocator::cacheShaderModule(std::span<const std::byte> shaderCode)
+    Allocator::cacheShaderModule(std::span<const std::byte> shaderCode) const
     {
         std::string shaderString {
             // this is fine NOLINTNEXTLINE

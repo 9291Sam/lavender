@@ -57,7 +57,7 @@ namespace game::frame
             vk::CommandBuffer,
             U32 swapchainImageIdx,
             const gfx::vulkan::Swapchain&,
-            std::span<RecordObject>);
+            std::span<const RecordObject>);
 
         const gfx::Renderer* renderer;
         bool                 needs_resize_transitions;

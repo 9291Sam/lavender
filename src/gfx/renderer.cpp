@@ -105,4 +105,9 @@ namespace gfx
     {
         return &*this->device;
     }
+
+    const vulkan::Allocator* Renderer::getAllocator() const noexcept
+    {
+        return &*this->allocator;
+    }
 } // namespace gfx

@@ -37,13 +37,14 @@ namespace gfx
         Renderer& operator= (Renderer&&)      = delete;
 
         // Returns true if a resize occurred
+        // Command buffer, swapchain idx, swapchain
         bool recordOnThread(
-            std::function<
-                // Flying Frame Idx, command buffer, swapchain idx, swapchain
-                void(vk::CommandBuffer, U32, vulkan::Swapchain&)>) const;
+            std::function<void(vk::CommandBuffer, U32, vulkan::Swapchain&)>)
+            const;
         [[nodiscard]] bool                  shouldWindowClose() const noexcept;
         // lives as long as the renderer
         [[nodiscard]] const vulkan::Device* getDevice() const noexcept;
+        [[nodiscard]] const vulkan::Allocator* getAllocator() const noexcept;
 
     private:
         struct RenderingCriticalSection

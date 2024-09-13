@@ -45,7 +45,6 @@ namespace gfx::vulkan
 
     struct CacheableGraphicsPipelineCreateInfo
     {
-        vk::PipelineCreateFlags                             pipeline_flags;
         std::vector<CacheablePipelineShaderStageCreateInfo> stages;
         std::vector<vk::VertexInputAttributeDescription>    vertex_attributes;
         std::vector<vk::VertexInputBindingDescription>      vertex_bindings;
@@ -139,9 +138,6 @@ struct std::hash<gfx::vulkan::CacheableGraphicsPipelineCreateInfo>
     {
         std::size_t result = 5783547893548971;
 
-        util::hashCombine(
-            result, std::hash<vk::PipelineCreateFlags> {}(i.pipeline_flags));
-
         for (const gfx::vulkan::CacheablePipelineShaderStageCreateInfo& d :
              i.stages)
         {
@@ -218,7 +214,7 @@ namespace gfx::vulkan
         [[nodiscard]] std::shared_ptr<vk::UniquePipeline>
             cachePipeline(CacheableGraphicsPipelineCreateInfo) const;
         [[nodiscard]] std::shared_ptr<vk::UniqueShaderModule>
-            cacheShaderModule(std::span<const std::byte>);
+            cacheShaderModule(std::span<const std::byte>) const;
 
     private:
         vk::Device               device;

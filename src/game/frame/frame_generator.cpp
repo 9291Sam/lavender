@@ -6,6 +6,7 @@
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/swapchain.hpp>
 #include <vulkan/vulkan_enums.hpp>
+#include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
 namespace game::frame
@@ -41,28 +42,36 @@ namespace game::frame
     {}
 
     void FrameGenerator::internalGenerateFrame(
-        vk::CommandBuffer                       commandBuffer,
-        U32                                     swapchainImageIdx,
-        const gfx::vulkan::Swapchain&           swapchain,
-        std::span<FrameGenerator::RecordObject> recordObjects)
+        vk::CommandBuffer                             commandBuffer,
+        U32                                           swapchainImageIdx,
+        const gfx::vulkan::Swapchain&                 swapchain,
+        std::span<const FrameGenerator::RecordObject> recordObjects)
     {
         std::array<
-            std::vector<FrameGenerator::RecordObject>,
+            std::vector<const FrameGenerator::RecordObject*>,
             static_cast<std::size_t>(FrameGenerator::DynamicRenderingPass::
                                          DynamicRenderingPassMaxValue)>
             recordablesByPass;
 
-        for (FrameGenerator::RecordObject& o : recordObjects)
+        for (const FrameGenerator::RecordObject& o : recordObjects)
         {
+            util::assertFatal(o.pipeline != nullptr, "Nullpipeline");
+
             recordablesByPass
                 .at(static_cast<std::size_t>(util::toUnderlying(o.render_pass)))
-                .push_back(std::move(o));
+                .push_back(&o);
         }
 
-        for (std::vector<FrameGenerator::RecordObject>& recordVec :
+        for (std::vector<const FrameGenerator::RecordObject*>& recordVec :
              recordablesByPass)
         {
-            std::sort(recordVec.begin(), recordVec.end());
+            std::sort(
+                recordVec.begin(),
+                recordVec.end(),
+                [](auto* l, auto* r)
+                {
+                    return *l < *r;
+                });
         }
 
         const vk::Extent2D renderExtent = swapchain.getExtent();
@@ -200,6 +209,15 @@ namespace game::frame
         };
 
         commandBuffer.beginRendering(simpleColorRenderingInfo);
+
+        for (const RecordObject* o : recordablesByPass.at(
+                 static_cast<std::size_t>(DynamicRenderingPass::SimpleColor)))
+        {
+            commandBuffer.bindPipeline(
+                vk::PipelineBindPoint::eGraphics, **o->pipeline);
+
+            o->record_func(commandBuffer);
+        }
 
         commandBuffer.endRendering();
 
