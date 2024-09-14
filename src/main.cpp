@@ -9,12 +9,6 @@ int main()
 
     try
     {
-        util::logTrace(
-            "{} {} {}",
-            game::FooComponent {}.getId(),
-            game::BarComponent {}.getId(),
-            game::FooComponent {}.getId());
-
         game::Game game {};
 
         game.run();

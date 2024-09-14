@@ -6,7 +6,6 @@
 #include <shaders/shaders.hpp>
 #include <util/log.hpp>
 
-
 namespace game
 {
     Game::Game()
@@ -19,12 +18,6 @@ namespace game
 
     void Game::run()
     {
-        util::logTrace(
-            "{} {} {}",
-            game::BarComponent {}.getId(),
-            game::FooComponent {}.getId(),
-            game::FooComponent {}.getId());
-
         std::shared_ptr<vk::UniquePipeline> trianglePipeline =
             this->renderer->getAllocator()->cachePipeline(
                 gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
