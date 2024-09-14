@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 project(lavender VERSION 0.0.0.0)
 
+include(CMakeRC.cmake)
 include(FetchContent)
 
 set(CMAKE_CXX_STANDARD 23)
@@ -50,6 +51,7 @@ FetchContent_MakeAvailable(Boost)
 
 find_package(Vulkan REQUIRED)
 
+
 add_executable(lavender
     src/main.cpp
     
@@ -61,6 +63,8 @@ add_executable(lavender
     src/gfx/vulkan/frame_manager.cpp
     src/gfx/vulkan/instance.cpp
     src/gfx/vulkan/swapchain.cpp
+
+    src/shaders/shaders.cpp
 
     src/gfx/renderer.cpp
     src/gfx/window.cpp
@@ -149,6 +153,16 @@ compile_shader(lavender
     FORMAT bin
     # INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/src/gfx/vulkan/shaders/include"
     SOURCES
-    src/vertex.vert
-    src/frag.frag
+    src/shaders/triangle.vert
+    src/shaders/triangle.frag
 )
+
+cmrc_add_resource_library(
+    lavender_resources
+    ALIAS lav2
+    NAMESPACE lav
+    build/src/shaders/triangle.frag.bin
+    build/src/shaders/triangle.vert.bin
+)
+
+target_link_libraries(lavender lav2)

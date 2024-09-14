@@ -570,7 +570,7 @@ namespace gfx::vulkan
                 }
                 else
                 {
-                    util::assertFatal( // this is also fine NOLINTNEXTLINE
+                    util::assertWarn( // this is also fine NOLINTNEXTLINE
                         reinterpret_cast<std::uintptr_t>(shaderCode.data()) % 4
                             == 0,
                         "shaderCode is underaligned!");
