@@ -1,6 +1,7 @@
 #include "game/game.hpp"
 #include "util/log.hpp"
 #include <functional>
+#include <game/ec_manager.hpp>
 
 int main()
 {
@@ -9,11 +10,10 @@ int main()
     try
     {
         util::logTrace(
-            "{} {} {}", type_id<int>, type_id<double>, type_id<float>);
-        util::logTrace(
-            "{} {} {}", type_id<int>, type_id<double>, type_id<float>);
-        util::logTrace(
-            "{} {} {}", type_id<int>, type_id<double>, type_id<float>);
+            "{} {} {}",
+            game::FooComponent {}.getId(),
+            game::BarComponent {}.getId(),
+            game::FooComponent {}.getId());
 
         game::Game game {};
 

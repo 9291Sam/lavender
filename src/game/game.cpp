@@ -1,9 +1,11 @@
 #include "game.hpp"
+#include "ec_manager.hpp"
 #include "frame_generator.hpp"
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/allocator.hpp>
 #include <shaders/shaders.hpp>
 #include <util/log.hpp>
+
 
 namespace game
 {
@@ -18,7 +20,10 @@ namespace game
     void Game::run()
     {
         util::logTrace(
-            "{} {} {}", type_id<double>, type_id<int>, type_id<float>);
+            "{} {} {}",
+            game::BarComponent {}.getId(),
+            game::FooComponent {}.getId(),
+            game::FooComponent {}.getId());
 
         std::shared_ptr<vk::UniquePipeline> trianglePipeline =
             this->renderer->getAllocator()->cachePipeline(

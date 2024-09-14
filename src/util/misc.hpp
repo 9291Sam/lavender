@@ -18,14 +18,6 @@ using I64 = std::int64_t;
 using F32 = float;
 using F64 = double;
 
-namespace detail
-{
-    static inline int monotonicTypeIdCounter = 0; // NOLINT
-} // namespace detail
-
-template<typename T>
-inline const int type_id = detail::monotonicTypeIdCounter++;
-
 namespace util
 {
     void debugBreak();
