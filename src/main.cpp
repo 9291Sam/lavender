@@ -19,34 +19,28 @@ int main()
 
     try
     {
-        // std::string message {f.cbegin(), f.cend()};
-
-        // util::logTrace("Message: {}", message);
-        // game::Game game {};
-
-        // game.run();
         const gfx::Renderer         renderer {};
         game::frame::FrameGenerator frameGenerator {&renderer};
-
-        std::vector shaders = {
-            gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-                .stage {vk::ShaderStageFlagBits::eVertex},
-                .shader {renderer.getAllocator()->cacheShaderModule(
-                    shaders::load("build/src/shaders/triangle.vert.bin"))},
-                .entry_point {"main"},
-            },
-            gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-                .stage {vk::ShaderStageFlagBits::eFragment},
-                .shader {renderer.getAllocator()->cacheShaderModule(
-                    shaders::load("build/src/shaders/triangle.frag.bin"))},
-                .entry_point {"main"},
-            },
-        };
 
         std::shared_ptr<vk::UniquePipeline> trianglePipeline =
             renderer.getAllocator()->cachePipeline(
                 gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
-                    .stages {shaders},
+                    .stages {{
+                        gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                            .stage {vk::ShaderStageFlagBits::eVertex},
+                            .shader {renderer.getAllocator()->cacheShaderModule(
+                                shaders::load(
+                                    "build/src/shaders/triangle.vert.bin"))},
+                            .entry_point {"main"},
+                        },
+                        gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                            .stage {vk::ShaderStageFlagBits::eFragment},
+                            .shader {renderer.getAllocator()->cacheShaderModule(
+                                shaders::load(
+                                    "build/src/shaders/triangle.frag.bin"))},
+                            .entry_point {"main"},
+                        },
+                    }},
                     .vertex_attributes {},
                     .vertex_bindings {},
                     .topology {vk::PrimitiveTopology::eTriangleList},

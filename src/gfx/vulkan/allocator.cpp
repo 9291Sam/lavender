@@ -87,7 +87,7 @@ namespace gfx::vulkan
         return this->allocator;
     }
 
-    void Allocator::trimCaches() const
+    void Allocator::trimCaches() const // NOLINT
     {
         this->descriptor_set_layout_cache.lock(
             [](std::unordered_map<
@@ -348,7 +348,7 @@ namespace gfx::vulkan
                     }
 
                     util::assertFatal(
-                        denseStages.size() >= 1,
+                        !denseStages.empty(),
                         "All pipelines must have at least one shader!");
 
                     const vk::PipelineVertexInputStateCreateInfo
