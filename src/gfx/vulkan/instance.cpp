@@ -58,10 +58,10 @@ namespace gfx::vulkan
         const std::vector<vk::LayerProperties> availableLayers =
             vk::enumerateInstanceLayerProperties();
 
-        for (const vk::LayerProperties& l : availableLayers)
-        {
-            util::logTrace("Layer {} is available", l.layerName.data());
-        }
+        // for (const vk::LayerProperties& l : availableLayers)
+        // {
+        //     util::logTrace("Layer {} is available", l.layerName.data());
+        // }
 
         const std::array layers {
             "VK_LAYER_KHRONOS_validation",
@@ -82,7 +82,7 @@ namespace gfx::vulkan
             util::assertFatal(
                 false, "Required layer {} was not available!", requestedLayer);
         next_layer:
-            util::logTrace("Requesting layer {}", requestedLayer);
+            // util::logTrace("Requesting layer {}", requestedLayer);
         }
 
         std::vector<const char*> extensions {};
@@ -98,13 +98,13 @@ namespace gfx::vulkan
         const std::vector<vk::ExtensionProperties> availableExtensions =
             vk::enumerateInstanceExtensionProperties();
 
-        for (const vk::ExtensionProperties& availableExtension :
-             availableExtensions)
-        {
-            util::logTrace(
-                "Instance extension {} is available",
-                availableExtension.extensionName.data());
-        }
+        // for (const vk::ExtensionProperties& availableExtension :
+        //      availableExtensions)
+        // {
+        //     util::logTrace(
+        //         "Instance extension {} is available",
+        //         availableExtension.extensionName.data());
+        // }
 
         for (const char* requestedExtension : extensions)
         {
@@ -126,8 +126,8 @@ namespace gfx::vulkan
                 requestedExtension);
         next_extension:
 
-            util::logTrace(
-                "Requesting instance extension {}", requestedExtension);
+            // util::logTrace(
+            //     "Requesting instance extension {}", requestedExtension);
         }
 
         static auto debugMessengerCallback =
