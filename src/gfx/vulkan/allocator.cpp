@@ -541,9 +541,9 @@ namespace gfx::vulkan
                     this->pipeline_layout_lookup.lock(
                         [&](std::unordered_map<
                             vk::Pipeline,
-                            std::weak_ptr<vk::UniquePipelineLayout>>& cache)
+                            std::weak_ptr<vk::UniquePipelineLayout>>& lookup)
                         {
-                            cache[**sharedPipeline] = info.layout;
+                            lookup[**sharedPipeline] = info.layout;
                         });
 
                     cache[info] = sharedPipeline;

@@ -10,7 +10,7 @@
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
-namespace game::frame
+namespace game
 {
 
     std::strong_ordering
@@ -112,13 +112,13 @@ namespace game::frame
                     vk::PipelineBindPoint::eGraphics, **o.pipeline);
             }
 
-            for (std::size_t i = 0; i < 4; ++i)
+            for (U32 i = 0; i < 4; ++i)
             {
                 if (currentlyBoundDescriptors[i] != o.descriptors[i]) // NOLINT
                 {
                     currentlyBoundDescriptors[i] = o.descriptors[i]; // NOLINT
 
-                    for (std::size_t j = i + 1; j < 4; ++j)
+                    for (U32 j = i + 1; j < 4; ++j)
                     {
                         currentlyBoundDescriptors[i] = nullptr; // NOLINT
                     }
@@ -128,7 +128,7 @@ namespace game::frame
                         **this->renderer->getAllocator()->lookupPipelineLayout(
                             **o.pipeline),
                         i,
-                        {o.descriptors[i]},
+                        {o.descriptors[i]}, // NOLINT
                         {0});
                 }
             }
@@ -249,6 +249,8 @@ namespace game::frame
             .pStencilAttachment {nullptr},
         };
 
+        clearBindings();
+
         commandBuffer.beginRendering(simpleColorRenderingInfo);
 
         for (const RecordObject* o : recordablesByPass.at(
@@ -297,4 +299,4 @@ namespace game::frame
                     commandBuffer, swapchainImageIdx, swapchain, recordObjects);
             });
     }
-} // namespace game::frame
+} // namespace game

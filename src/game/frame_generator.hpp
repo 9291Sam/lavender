@@ -18,7 +18,7 @@ namespace gfx
     } // namespace vulkan
 } // namespace gfx
 
-namespace game::frame
+namespace game
 {
     class FrameGenerator
     {
@@ -35,6 +35,7 @@ namespace game::frame
             DynamicRenderingPass                   render_pass;
             std::shared_ptr<vk::UniquePipeline>    pipeline;
             std::array<vk::DescriptorSet, 4>       descriptors;
+            // TODO: replace with a pointer to member
             std::function<void(vk::CommandBuffer)> record_func;
 
             std::strong_ordering
@@ -64,4 +65,4 @@ namespace game::frame
         // TODO: depth buffer
     };
 
-} // namespace game::frame
+} // namespace game
