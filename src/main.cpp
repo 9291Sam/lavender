@@ -55,7 +55,8 @@ int main()
                     .depth_format {},
                     .layout {renderer.getAllocator()->cachePipelineLayout(
                         gfx::vulkan::CacheablePipelineLayoutCreateInfo {
-                            .push_constants {std::nullopt}, .descriptors {}})},
+                            .descriptors {}, .push_constants {std::nullopt},
+                        })},
                 });
 
         game::frame::FrameGenerator::RecordObject triangleRecordObject {

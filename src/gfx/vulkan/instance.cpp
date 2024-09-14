@@ -81,7 +81,7 @@ namespace gfx::vulkan
 
             util::assertFatal(
                 false, "Required layer {} was not available!", requestedLayer);
-        next_layer:
+        next_layer: {}
             // util::logTrace("Requesting layer {}", requestedLayer);
         }
 
@@ -124,7 +124,7 @@ namespace gfx::vulkan
                 false,
                 "Required extension {} was not available!",
                 requestedExtension);
-        next_extension:
+        next_extension: {}
 
             // util::logTrace(
             //     "Requesting instance extension {}", requestedExtension);

@@ -140,7 +140,12 @@ namespace gfx::vulkan
                     .pResults {nullptr},
                 };
 
-                const vk::Result presentResult = queue.presentKHR(presentInfo);
+                const vk::Result result = vk::Result {
+                    vk::defaultDispatchLoaderDynamic.vkQueuePresentKHR(
+                        queue,
+                        reinterpret_cast<const VkPresentInfoKHR*>(
+                            &presentInfo))};
+
 
                 switch (result) // NOLINT
                 {
