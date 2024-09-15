@@ -1,5 +1,6 @@
 #pragma once
 
+#include "game/render/render_manager.hpp"
 #include <atomic>
 #include <memory>
 
@@ -14,6 +15,11 @@ namespace game
     {
         class ECManager;
     } // namespace ec
+
+    namespace render
+    {
+        class RenderManager;
+    } // namespace render
 
     class FrameGenerator;
 
@@ -32,13 +38,14 @@ namespace game
         [[nodiscard]] float getFovXRadians() const noexcept;
         [[nodiscard]] float getFovYRadians() const noexcept;
         [[nodiscard]] float getAspectRatio() const noexcept;
+
+        const gfx::Renderer* getRenderer() const noexcept;
+        const ec::ECManager* getECManager() const noexcept;
     private:
         // Rendering abstraction
-        std::unique_ptr<gfx::Renderer>  renderer;
-        std::unique_ptr<FrameGenerator> frame_generator;
-        // The thing that actually iterates over all of the game components
-        // and constructs the vulkan objects that are needed to render them
-        // std::unique_ptr<render::RecordObjectGenerator> renderable_manager;
+        std::unique_ptr<gfx::Renderer>         renderer;
+        std::unique_ptr<FrameGenerator>        frame_generator;
+        std::unique_ptr<render::RenderManager> renderable_manager;
 
         // std::unique_ptr<ec::ECManager> ec_manager;
 

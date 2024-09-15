@@ -1,81 +1,80 @@
 #include "game.hpp"
-#include "ec_manager.hpp"
+#include "camera.hpp"
+#include "ec/ec_manager.hpp"
 #include "frame_generator.hpp"
+#include "game/ec/components.hpp"
+#include "game/render/render_manager.hpp"
+#include "render/triangle_component.hpp"
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/allocator.hpp>
+#include <gfx/window.hpp>
+#include <memory>
 #include <shaders/shaders.hpp>
 #include <util/log.hpp>
+#include <vulkan/vulkan_structs.hpp>
 
 namespace game
 {
     Game::Game()
         : renderer {std::make_unique<gfx::Renderer>()}
         , frame_generator {std::make_unique<FrameGenerator>(&*this->renderer)}
+        , renderable_manager {std::make_unique<render::RenderManager>(&*this)}
+        // , ec_manager {std::make_unique<ec::ECManager>()}
         , should_game_keep_ticking {true}
-    {}
+    {
+        // const ec::ECManager::Entity entity =
+        // this->ec_manager->createEntity(1);
+
+        // this->ec_manager->addComponent(entity, render::TriangleComponent {});
+    }
 
     Game::~Game() noexcept = default;
 
     void Game::run()
     {
-        std::shared_ptr<vk::UniquePipeline> trianglePipeline =
-            this->renderer->getAllocator()->cachePipeline(
-                gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
-                    .stages {{
-                        gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-                            .stage {vk::ShaderStageFlagBits::eVertex},
-                            .shader {this->renderer->getAllocator()
-                                         ->cacheShaderModule(shaders::load(
-                                             "build/src/shaders/"
-                                             "triangle.vert.bin"))},
-                            .entry_point {"main"},
-                        },
-                        gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-                            .stage {vk::ShaderStageFlagBits::eFragment},
-                            .shader {this->renderer->getAllocator()
-                                         ->cacheShaderModule(shaders::load(
-                                             "build/src/shaders/"
-                                             "triangle.frag.bin"))},
-                            .entry_point {"main"},
-                        },
-                    }},
-                    .vertex_attributes {},
-                    .vertex_bindings {},
-                    .topology {vk::PrimitiveTopology::eTriangleList},
-                    .discard_enable {false},
-                    .polygon_mode {vk::PolygonMode::eFill},
-                    .cull_mode {vk::CullModeFlagBits::eNone},
-                    .front_face {vk::FrontFace::eClockwise},
-                    .depth_test_enable {false},
-                    .depth_write_enable {false},
-                    .depth_compare_op {vk::CompareOp::eNever},
-                    .color_format {gfx::Renderer::ColorFormat.format},
-                    .depth_format {},
-                    .layout {
-                        this->renderer->getAllocator()->cachePipelineLayout(
-                            gfx::vulkan::CacheablePipelineLayoutCreateInfo {
-                                .descriptors {},
-                                .push_constants {std::nullopt},
-                            })},
-                });
+        const Camera workingCamera {glm::vec3 {0.0, 0.0, 0.0}};
 
-        game::FrameGenerator::RecordObject triangleRecordObject {
-            .render_pass {
-                game::FrameGenerator::DynamicRenderingPass::SimpleColor},
-            .pipeline {trianglePipeline},
-            .descriptors {{nullptr, nullptr, nullptr, nullptr}},
-            .record_func {[](vk::CommandBuffer commandBuffer)
-                          {
-                              commandBuffer.draw(3, 1, 0, 0);
-                          }},
-        };
-
-        std::vector<game::FrameGenerator::RecordObject> draws {};
-        draws.push_back(triangleRecordObject);
+        // this->ec_manager->addComponent<ec::FooComponent>({}, {});
 
         while (!this->renderer->shouldWindowClose())
         {
-            this->frame_generator->generateFrame(draws);
+            // this->ec_manager->flush();
+
+            this->renderable_manager->setCamera(workingCamera);
+
+            std::vector<FrameGenerator::RecordObject> recordObjects =
+                this->renderable_manager->generateFrameObjects();
+
+            this->frame_generator->generateFrame(recordObjects);
         }
     }
+
+    float Game::getFovXRadians() const noexcept
+    {
+        return this->getAspectRatio() * this->getFovYRadians();
+    }
+
+    float Game::getFovYRadians() const noexcept // NOLINT: may change
+    {
+        return glm::radians(70.0f);
+    }
+
+    float Game::getAspectRatio() const noexcept
+    {
+        const vk::Extent2D frameBufferSize =
+            this->renderer->getWindow()->getFramebufferSize();
+
+        return static_cast<float>(frameBufferSize.width)
+             / static_cast<float>(frameBufferSize.height);
+    }
+
+    const gfx::Renderer* Game::getRenderer() const noexcept
+    {
+        return this->renderer.get();
+    }
+
+    // const ec::ECManager* Game::getECManager() const noexcept
+    // {
+    //     return this->ec_manager.get();
+    // }
 } // namespace game

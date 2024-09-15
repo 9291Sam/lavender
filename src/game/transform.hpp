@@ -13,8 +13,8 @@ namespace game
         static constexpr glm::vec3 RightVector {1.0f, 0.0f, 0.0f};
         static constexpr glm::vec3 UpVector {0.0f, 1.0f, 0.0f};
 
-        glm::vec3 translation {0.0f, 0.0f, 0.0f};
         glm::quat rotation {1.0f, 0.0f, 0.0f, 0.0f};
+        glm::vec3 translation {0.0f, 0.0f, 0.0f};
         glm::vec3 scale {1.0f, 1.0f, 1.0f};
 
         [[nodiscard]] glm::mat4 asModelMatrix() const;

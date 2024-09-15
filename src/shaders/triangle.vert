@@ -2,6 +2,12 @@
 
 layout(location = 0) out vec4 outColor;
 
+layout(push_constant) uniform PushConstants
+{
+    mat4 model_view_proj;
+}
+in_push_constants;
+
 void main()
 {
 	const vec4 positions[3] = vec4[3](
@@ -18,5 +24,5 @@ void main()
 
 	outColor = colors[gl_VertexIndex];
     
-	gl_Position = positions[gl_VertexIndex];
+	gl_Position = in_push_constants.model_view_proj * positions[gl_VertexIndex];
 }

@@ -110,4 +110,9 @@ namespace gfx
     {
         return &*this->allocator;
     }
+
+    const Window* Renderer::getWindow() const noexcept
+    {
+        return &*this->window;
+    }
 } // namespace gfx

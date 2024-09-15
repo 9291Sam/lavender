@@ -6,6 +6,10 @@
 
 namespace game
 {
+    Camera::Camera()
+        : Camera {glm::vec3 {0.0, 0.0, 0.0}}
+    {}
+
     Camera::Camera(glm::vec3 position)
         : pitch {0.0f}
         , yaw {0.0f} // clang-format off
@@ -16,25 +20,24 @@ namespace game
     // clang-format on
     {}
 
-    // glm::mat4 Camera::getPerspectiveMatrix(
-    //     const Game& game, const Transform& transform_) const
-    // {
-    //     // TODO: replace
-    //     // https://gist.github.com/pezcode/1609b61a1eedd207ec8c5acf6f94f53a
-    //     glm::mat4 projection = glm::perspective(
-    //         game.getFovYRadians(),
-    //         game.getAspectRatio(),
-    //         //! sync with shader
-    //         0.1f,       // NOLINT
-    //         100000.0f); // NOLINT
+    glm::mat4 Camera::getPerspectiveMatrix(
+        const Game& game, const Transform& transform_) const
+    {
+        // TODO: replace
+        // https://gist.github.com/pezcode/1609b61a1eedd207ec8c5acf6f94f53a
+        glm::mat4 projection = glm::perspective(
+            game.getFovYRadians(),
+            game.getAspectRatio(),
+            //! sync with shader
+            0.1f,       // NOLINT
+            100000.0f); // NOLINT
 
-    //     // glm is designed for openGL, vulkan's Y coordinate is flipped in
-    //     // comparison
-    //     projection[1][1] *= -1;
+        // glm is designed for openGL, vulkan's Y coordinate is flipped in
+        // comparison
+        projection[1][1] *= -1;
 
-    //     return projection * this->getViewMatrix() *
-    //     transform_.asModelMatrix();
-    // }
+        return projection * this->getViewMatrix() * transform_.asModelMatrix();
+    }
 
     glm::mat4 Camera::getViewMatrix() const
     {

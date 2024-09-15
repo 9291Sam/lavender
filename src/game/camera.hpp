@@ -10,6 +10,7 @@ namespace game
     {
     public:
 
+        Camera();
         explicit Camera(glm::vec3 position);
 
         [[nodiscard]] glm::mat4

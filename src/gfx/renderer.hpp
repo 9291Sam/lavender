@@ -41,10 +41,11 @@ namespace gfx
         bool recordOnThread(
             std::function<void(vk::CommandBuffer, U32, vulkan::Swapchain&)>)
             const;
-        [[nodiscard]] bool                  shouldWindowClose() const noexcept;
-        // lives as long as the renderer
-        [[nodiscard]] const vulkan::Device* getDevice() const noexcept;
+        [[nodiscard]] bool shouldWindowClose() const noexcept;
+
+        [[nodiscard]] const vulkan::Device*    getDevice() const noexcept;
         [[nodiscard]] const vulkan::Allocator* getAllocator() const noexcept;
+        [[nodiscard]] const Window*            getWindow() const noexcept;
 
     private:
         struct RenderingCriticalSection
