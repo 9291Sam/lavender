@@ -32,13 +32,88 @@ namespace game
 
     void Game::run()
     {
-        const Camera workingCamera {glm::vec3 {0.0, 0.0, 0.0}};
+        Camera workingCamera {glm::vec3 {0.0, 0.0, 0.0}};
+        // this->game.renderer.getMenu().setPlayerPosition(
+        //     workingCamera.getPosition());
 
         // this->ec_manager->addComponent<ec::FooComponent>({}, {});
 
         while (!this->renderer->shouldWindowClose())
         {
             // this->ec_manager->flush();
+
+            const float deltaTime =
+                this->renderer->getWindow()->getDeltaTimeSeconds();
+
+            // TODO: moving diaginally is faster
+            const float moveScale = this->renderer->getWindow()->isActionActive(
+                                        gfx::Window::Action::PlayerSprint)
+                                      ? 25.0f
+                                      : 10.0f;
+            const float rotateSpeedScale = 6.0f;
+
+            workingCamera.addPosition(
+                workingCamera.getForwardVector() * deltaTime * moveScale
+                * (this->renderer->getWindow()->isActionActive(
+                       gfx::Window::Action::PlayerMoveForward)
+                       ? 1.0f
+                       : 0.0f));
+
+            workingCamera.addPosition(
+                -workingCamera.getForwardVector() * deltaTime * moveScale
+                * (this->renderer->getWindow()->isActionActive(
+                       gfx::Window::Action::PlayerMoveBackward)
+                       ? 1.0f
+                       : 0.0f));
+
+            workingCamera.addPosition(
+                -workingCamera.getRightVector() * deltaTime * moveScale
+                * (this->renderer->getWindow()->isActionActive(
+                       gfx::Window::Action::PlayerMoveLeft)
+                       ? 1.0f
+                       : 0.0f));
+
+            workingCamera.addPosition(
+                workingCamera.getRightVector() * deltaTime * moveScale
+                * (this->renderer->getWindow()->isActionActive(
+                       gfx::Window::Action::PlayerMoveRight)
+                       ? 1.0f
+                       : 0.0f));
+
+            workingCamera.addPosition(
+                Transform::UpVector * deltaTime * moveScale
+                * (this->renderer->getWindow()->isActionActive(
+                       gfx::Window::Action::PlayerMoveUp)
+                       ? 1.0f
+                       : 0.0f));
+
+            workingCamera.addPosition(
+                -Transform::UpVector * deltaTime * moveScale
+                * (this->renderer->getWindow()->isActionActive(
+                       gfx::Window::Action::PlayerMoveDown)
+                       ? 1.0f
+                       : 0.0f));
+
+            auto getMouseDeltaRadians = [&]
+            {
+                // each value from -1.0 -> 1.0 representing how much it moved on
+                // the screen
+                const auto [nDeltaX, nDeltaY] =
+                    this->renderer->getWindow()->getScreenSpaceMouseDelta();
+
+                const auto deltaRadiansX =
+                    (nDeltaX / 2) * this->getFovXRadians();
+                const auto deltaRadiansY =
+                    (nDeltaY / 2) * this->getFovYRadians();
+
+                return gfx::Window::Delta {
+                    .x {deltaRadiansX}, .y {deltaRadiansY}};
+            };
+
+            auto [xDelta, yDelta] = getMouseDeltaRadians();
+
+            workingCamera.addYaw(xDelta * rotateSpeedScale);
+            workingCamera.addPitch(yDelta * rotateSpeedScale);
 
             this->renderable_manager->setCamera(workingCamera);
 

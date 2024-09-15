@@ -32,10 +32,6 @@ namespace game
             0.1f,       // NOLINT
             100000.0f); // NOLINT
 
-        // glm is designed for openGL, vulkan's Y coordinate is flipped in
-        // comparison
-        projection[1][1] *= -1;
-
         return projection * this->getViewMatrix() * transform_.asModelMatrix();
     }
 

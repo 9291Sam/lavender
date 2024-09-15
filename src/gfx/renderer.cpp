@@ -8,6 +8,7 @@
 #include "vulkan/frame_manager.hpp"
 #include "vulkan/instance.hpp"
 #include "window.hpp"
+#include <glfw/glfw3.h>
 #include <memory>
 #include <vulkan/vulkan_handles.hpp>
 
@@ -16,7 +17,56 @@ namespace gfx
 
     Renderer::Renderer()
     {
-        this->window   = std::make_unique<Window>();
+        this->window = std::make_unique<Window>(
+            std::map<gfx::Window::Action, gfx::Window::ActionInformation> {
+                {Window::Action::PlayerMoveForward,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_W},
+                     .method {Window::InteractionMethod::EveryFrame}}},
+
+                {Window::Action::PlayerMoveBackward,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_S},
+                     .method {Window::InteractionMethod::EveryFrame}}},
+
+                {Window::Action::PlayerMoveLeft,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_A},
+                     .method {Window::InteractionMethod::EveryFrame}}},
+
+                {Window::Action::PlayerMoveRight,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_D},
+                     .method {Window::InteractionMethod::EveryFrame}}},
+
+                {Window::Action::PlayerMoveUp,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_SPACE},
+                     .method {Window::InteractionMethod::EveryFrame}}},
+
+                {Window::Action::PlayerMoveDown,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_LEFT_CONTROL},
+                     .method {Window::InteractionMethod::EveryFrame}}},
+
+                {Window::Action::PlayerSprint,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_LEFT_SHIFT},
+                     .method {Window::InteractionMethod::EveryFrame}}},
+
+                {Window::Action::ToggleConsole,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_GRAVE_ACCENT},
+                     .method {Window::InteractionMethod::SinglePress}}},
+
+                {Window::Action::ToggleCursorAttachment,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_BACKSLASH},
+                     .method {Window::InteractionMethod::SinglePress}}},
+
+            },
+            vk::Extent2D {1280, 720}, // NOLINT
+            "Verdigris");
         this->instance = std::make_unique<vulkan::Instance>();
         this->surface  = this->window->createSurface(**this->instance);
         this->device =
@@ -37,8 +87,6 @@ namespace gfx
         std::function<void(vk::CommandBuffer, U32, vulkan::Swapchain&)>
             recordFunc) const
     {
-        this->window->beginFrame();
-
         bool resizeOcurred = false;
 
         this->critical_section.lock(
@@ -73,12 +121,14 @@ namespace gfx
 
         this->allocator->trimCaches();
 
+        this->window->endFrame();
+
         return resizeOcurred;
     }
 
     bool Renderer::shouldWindowClose() const noexcept
     {
-        return this->window->shouldWindowClose();
+        return this->window->shouldClose();
     }
 
     std::unique_ptr<Renderer::RenderingCriticalSection>

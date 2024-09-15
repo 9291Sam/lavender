@@ -107,9 +107,6 @@ namespace game::render
                         *this->game,
                         Transform {.translation {camera.getForwardVector()}});
 
-                    util::logTrace(
-                        "set c {}", static_cast<std::string>(camera));
-
                     commandBuffer.pushConstants(
                         **layout,
                         vk::ShaderStageFlagBits::eVertex,
