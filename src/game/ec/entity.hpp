@@ -1,5 +1,6 @@
 #pragma once
 
+#include "game/ec/entity_storage.hpp"
 #include <compare>
 #include <functional>
 #include <util/misc.hpp>
@@ -22,6 +23,8 @@ namespace game::ec
         constexpr std::strong_ordering
         operator<=> (const Entity&) const = default;
     private:
+        friend class EntityStorage;
+
         U32 id;
         U32 generation;
     };

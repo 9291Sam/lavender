@@ -38,7 +38,7 @@ namespace game::ec
             C      component;
             Entity parent;
 
-            bool isAlive() const
+            [[nodiscard]] bool isAlive() const
             {
                 return !this->parent.isNull();
             }
@@ -74,45 +74,44 @@ namespace game::ec
 
         // Entity createEntity(std::size_t componentEstimate = 3) const;
 
-        // template<Component C>
-        // void addComponent(Entity entity, C component) const
-        //     requires std::is_trivially_copyable_v<C>
-        //           && std::is_standard_layout_v<C>
-        // {
-        //     const std::shared_lock lock {this->access_lock};
+        template<Component C>
+        void addComponent(Entity entity, C component) const
+            requires std::is_trivially_copyable_v<C>
+                  && std::is_standard_layout_v<C>
+        {
+            const std::shared_lock lock {this->access_lock};
 
-        //     const std::span<const std::byte> componentBytes =
-        //         component.asBytes();
+            const std::span<const std::byte> componentBytes =
+                component.asBytes();
 
-        //     this->components_to_add.insert(MuckedComponent {
-        //         .entity {entity},
-        //         .id {C::Id},
-        //         .component {boost::container::small_vector<std::byte, 64> {
-        //             componentBytes.begin(), componentBytes.end()}}});
-        // }
+            this->components_to_add.insert(MuckedComponent {
+                .entity {entity},
+                .id {C::Id},
+                .component {boost::container::small_vector<std::byte, 64> {
+                    componentBytes.begin(), componentBytes.end()}}});
+        }
 
-        // template<Component C>
-        // void iterateComponents(std::invocable<Entity, const C&> auto func)
-        // const
-        // {
-        //     const std::size_t componentId = static_cast<std::size_t>(C::Id);
+        template<Component C>
+        void iterateComponents(std::invocable<Entity, const C&> auto func) const
+        {
+            const std::size_t componentId = static_cast<std::size_t>(C::Id);
 
-        //     const ComponentArray<C>* componentStorage =
-        //         reinterpret_cast<const ComponentArray<C>*>(
-        //             this->component_storage[componentId].get());
+            const ComponentArray<C>* componentStorage =
+                reinterpret_cast<const ComponentArray<C>*>(
+                    this->component_storage[componentId].get());
 
-        //     for (std::size_t i = 0;
-        //          i < componentStorage->number_of_valid_components;
-        //          ++i)
-        //     {
-        //         if (componentStorage->storage[i].isAlive())
-        //         {
-        //             func(
-        //                 componentStorage->storage[i].parent,
-        //                 componentStorage->storage[i].component);
-        //         }
-        //     }
-        // }
+            for (std::size_t i = 0;
+                 i < componentStorage->number_of_valid_components;
+                 ++i)
+            {
+                if (componentStorage->storage[i].isAlive())
+                {
+                    func(
+                        componentStorage->storage[i].parent,
+                        componentStorage->storage[i].component);
+                }
+            }
+        }
 
         void flush();
 
