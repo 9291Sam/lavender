@@ -9,6 +9,7 @@
 #include <gfx/vulkan/allocator.hpp>
 #include <gfx/window.hpp>
 #include <memory>
+#include <random>
 #include <shaders/shaders.hpp>
 #include <util/log.hpp>
 #include <vulkan/vulkan_structs.hpp>
@@ -48,6 +49,9 @@ namespace game
         //     workingCamera.getPosition());
 
         // this->ec_manager->addComponent<ec::FooComponent>({}, {});
+
+        std::mt19937_64                 gen {std::random_device {}()};
+        std::normal_distribution<float> dist {-10, 10};
 
         while (!this->renderer->shouldWindowClose()
                && this->should_game_keep_ticking.load())
@@ -130,6 +134,11 @@ namespace game
 
             workingCamera.addYaw(xDelta * rotateSpeedScale);
             workingCamera.addPitch(yDelta * rotateSpeedScale);
+
+            this->ec_manager->addComponent(
+                this->ec_manager->createEntity(),
+                render::TriangleComponent {.transform.translation {
+                    glm::vec3 {dist(gen), dist(gen), dist(gen)}}});
 
             this->renderable_manager->setCamera(workingCamera);
 

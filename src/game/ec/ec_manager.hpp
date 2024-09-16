@@ -7,7 +7,6 @@
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
 #include "util/threads.hpp"
-#include <__concepts/invocable.h>
 #include <array>
 #include <boost/container/small_vector.hpp>
 #include <boost/unordered/concurrent_flat_set.hpp>
@@ -33,7 +32,6 @@ namespace game::ec
 
     static_assert(FooComponent::Id == 0);
     static_assert(BarComponent::Id == 1);
-    static_assert(FooComponent::getSize() == 1);
 
     class ECManager
     {
@@ -41,12 +39,12 @@ namespace game::ec
 
         explicit ECManager()
             : component_storage {
-                  util::Mutex {MuckedComponentStorage(
-                      128, util::ZSTTypeWrapper<FooComponent> {})},
-                  util::Mutex {MuckedComponentStorage(
-                      128, util::ZSTTypeWrapper<BarComponent> {})},
-                  util::Mutex {MuckedComponentStorage(
-                      128, util::ZSTTypeWrapper<render::TriangleComponent> {})}}
+                  util::Mutex {
+                      MuckedComponentStorage(128, getComponentSize<0>())},
+                  util::Mutex {
+                      MuckedComponentStorage(128, getComponentSize<1>())},
+                  util::Mutex {
+                      MuckedComponentStorage(128, getComponentSize<2>())}}
         {}
         ~ECManager() noexcept = default;
 
@@ -66,9 +64,10 @@ namespace game::ec
 
         template<Component C>
         void addComponent(Entity entity, C component) const
-            requires std::is_trivially_copyable_v<C>
-                  && std::is_standard_layout_v<C>
-                  && std::is_trivially_destructible_v<C>
+            requires (
+                std::is_trivially_copyable_v<C> && std::is_standard_layout_v<C>
+                && std::is_trivially_destructible_v<C>
+                && getComponentSize<getComponentId<C>()>() == sizeof(C))
         {
             const std::span<const std::byte> componentBytes =
                 component.asBytes();
@@ -108,11 +107,10 @@ namespace game::ec
         class MuckedComponentStorage
         {
         public:
-            template<Component C>
             MuckedComponentStorage(
-                U32 componentsToAllocate, util::ZSTTypeWrapper<C>)
+                U32 componentsToAllocate, std::size_t componentSize) // NOLINT
                 : allocator {componentsToAllocate}
-                , component_size {sizeof(C)}
+                , component_size {static_cast<U32>(componentSize)}
             {
                 this->parent_entities.resize(componentsToAllocate, Entity {});
                 this->component_storage.resize(static_cast<std::size_t>(

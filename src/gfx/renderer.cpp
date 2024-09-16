@@ -72,7 +72,7 @@ namespace gfx
 
             },
             vk::Extent2D {1280, 720}, // NOLINT
-            "Verdigris");
+            "lavender");
         this->instance = std::make_unique<vulkan::Instance>();
         this->surface  = this->window->createSurface(**this->instance);
         this->device =

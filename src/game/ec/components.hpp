@@ -13,6 +13,9 @@ namespace game
     template<class T>
     consteval U8 getComponentId() noexcept = delete;
 
+    template<U8 ID>
+    consteval std::size_t getComponentSize() noexcept = delete;
+
     template<class T>
     concept Component = requires() {
         { getComponentId<T>() } -> std::same_as<U8>;
@@ -23,16 +26,6 @@ namespace game
     {
         static constinit const U8 Id = getComponentId<C>();
 
-        [[nodiscard]] static consteval U8 getSize()
-        {
-            return sizeof(C);
-        }
-
-        [[nodiscard]] static consteval U8 getAlign()
-        {
-            return alignof(C);
-        }
-
         [[nodiscard]] std::span<const std::byte> asBytes() const
         {
             // NOLINTNEXTLINE
@@ -41,7 +34,7 @@ namespace game
     };
 } // namespace game
 
-#define DECLARE_COMPONENT(NAMESPACE, DECLARATION, TYPE) /* NOLINT */           \
+#define DECLARE_COMPONENT(NAMESPACE, DECLARATION, TYPE, SIZE) /* NOLINT */     \
     namespace NAMESPACE                                                        \
     {                                                                          \
         DECLARATION TYPE;                                                      \
@@ -50,12 +43,18 @@ namespace game
     consteval U8 game::getComponentId<NAMESPACE::TYPE>() noexcept              \
     {                                                                          \
         return static_cast<U8>(__LINE__);                                      \
+    }                                                                          \
+    template<>                                                                 \
+    consteval std::size_t                                                      \
+    game::getComponentSize<game::getComponentId<NAMESPACE::TYPE>()>() noexcept \
+    {                                                                          \
+        return static_cast<std::size_t>(SIZE);                                 \
     }
 
 #line 0
-DECLARE_COMPONENT(game::ec, struct, FooComponent);
-DECLARE_COMPONENT(game::ec, struct, BarComponent);
-DECLARE_COMPONENT(game::render, struct, TriangleComponent);
+DECLARE_COMPONENT(game::ec, struct, FooComponent, 1);
+DECLARE_COMPONENT(game::ec, struct, BarComponent, 1);
+DECLARE_COMPONENT(game::render, struct, TriangleComponent, 40);
 static constinit const U32 NumberOfGameComponents = __LINE__;
 // DECLARE_COMPONENT(game, struct, TickComponent);
 #undef DECLARE_COMPONENT

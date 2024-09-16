@@ -62,14 +62,14 @@ namespace util
         , message_queue {std::make_unique<
               moodycamel::ConcurrentQueue<std::string>>()}
         , log_file_handle {std::make_unique<util::Mutex<std::ofstream>>(
-              std::ofstream {"verdigris_log.txt"})}
+              std::ofstream {"lavender_log.txt"})}
     {
         std::latch threadStartLatch {1};
 
         this->worker_thread = std::thread {
             [this, loggerConstructionLatch = &threadStartLatch]
             {
-                const std::ofstream logFileHandle {"verdigris_log.txt"};
+                const std::ofstream logFileHandle {"lavender_log.txt"};
                 std::string         temporaryString {"INVALID MESSAGE"};
 
                 std::atomic<bool>* shouldThreadStop {
