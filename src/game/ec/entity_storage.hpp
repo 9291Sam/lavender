@@ -1,8 +1,11 @@
 #pragma once
 
 #include "entity.hpp"
+#include <array>
 #include <bit>
+#include <memory>
 #include <type_traits>
+#include <util/index_allocator.hpp>
 
 namespace game::ec
 {
@@ -11,27 +14,77 @@ namespace game::ec
     public:
         struct EntityMetadata
         {
-            U32 generation;
-            U32 number_of_components;
+            U32 number_of_components : 8;
+            U32 generation           : 24;
         };
+        static_assert(sizeof(EntityMetadata) == sizeof(U32));
 
-        struct EntityComponentStorage // TODO: this could be packed into a U8
-                                      // and a U24
+        struct EntityComponentStorage
         {
-            // This is the constexpr determined at compile time id
-            U32 component_type_id;
-            // this is the component;s offset in whatever else stores it
-            U32 component_storage_offset;
+            U32 component_type_id        : 8;
+            U32 component_storage_offset : 24;
         };
-        static_assert(std::has_unique_object_representations_v<EntityMetadata>);
         static_assert(
             std::has_unique_object_representations_v<EntityComponentStorage>);
         static constexpr U8 MaxComponentsPerEntity = 255;
-        static constexpr std::size_t
-        getStoragePoolId(std::size_t numberOfComponents)
+        static constexpr U8 getStoragePoolId(U8 numberOfComponents)
         {
-            return std::bit_width(numberOfComponents);
+            return static_cast<U8>(
+                std::max({1, std::bit_width(numberOfComponents)}) - 1);
         }
+
+        template<std::size_t N>
+        struct StoredEntityComponents
+        {
+            std::array<EntityComponentStorage, N> storage;
+        };
+
+        template<std::size_t N>
+        class StoredEntityComponentsList
+        {
+        public:
+
+            explicit StoredEntityComponentsList(U32 numberOfEntitiesToStore)
+                : internal_allocator {numberOfEntitiesToStore}
+                , storage {}
+            {
+                this->storage.resize(numberOfEntitiesToStore);
+            }
+
+            StoredEntityComponents<N>& lookup(U32 id)
+            {
+                return this->storage[id];
+            }
+
+            U32 allocate()
+            {
+                if (std::expected<U32, util::IndexAllocator::OutOfBlocks> id =
+                        this->internal_allocator.allocate();
+                    id.has_value())
+                {
+                    return *id;
+                }
+                else
+                {
+                    this->internal_allocator.updateAvailableBlockAmount(
+                        this->storage.size() * 2);
+                    this->storage.resize(this->storage.size() * 2);
+
+                    return this->internal_allocator.allocate()
+                        .value(); // NOLINT
+                }
+            }
+            void free(U32 id)
+            {
+                this->internal_allocator.free(id);
+            }
+
+        private:
+
+            util::IndexAllocator                   internal_allocator;
+            std::vector<StoredEntityComponents<N>> storage;
+        };
+
     public:
 
         EntityStorage();
@@ -42,8 +95,10 @@ namespace game::ec
         EntityStorage& operator= (const EntityStorage&) = delete;
         EntityStorage& operator= (EntityStorage&&)      = delete;
 
-        [[nodiscard]] Entity createEntity(std::size_t componentEstimate);
+        [[nodiscard]] Entity createEntity();
         void                 deleteEntity(Entity);
+
+        bool isEntityAlive(Entity);
 
         void addComponentToEntity(Entity, EntityComponentStorage);
         void removeComponentFromEntity(Entity, EntityComponentStorage);
@@ -54,10 +109,17 @@ namespace game::ec
 
         static constexpr std::size_t MaxEntities = 1048576;
 
+        // TODO: make this auto resize instead
+        util::IndexAllocator entity_id_allocator;
         std::unique_ptr<std::array<EntityMetadata, MaxEntities>> metadata;
-        std::unique_ptr < std::array <
 
-        // Entity -> EntityMetadata
-        // EntityMetadata -> Component Lists
+        StoredEntityComponentsList<1>   storage_0;
+        StoredEntityComponentsList<3>   storage_1;
+        StoredEntityComponentsList<7>   storage_2;
+        StoredEntityComponentsList<15>  storage_3;
+        StoredEntityComponentsList<31>  storage_4;
+        StoredEntityComponentsList<63>  storage_5;
+        StoredEntityComponentsList<127> storage_6;
+        StoredEntityComponentsList<255> storage_7;
     };
 } // namespace game::ec

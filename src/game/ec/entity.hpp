@@ -1,6 +1,6 @@
 #pragma once
 
-#include "game/ec/entity_storage.hpp"
+#include <bit>
 #include <compare>
 #include <functional>
 #include <util/misc.hpp>

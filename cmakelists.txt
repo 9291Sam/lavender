@@ -69,6 +69,7 @@ add_executable(lavender
     src/main.cpp
 
     src/game/ec/ec_manager.cpp
+    src/game/ec/entity_storage.cpp
 
     src/game/render/render_manager.cpp
     

@@ -2,5 +2,5 @@
 
 namespace game::ec
 {
-    Ec
+    // Ec
 }
