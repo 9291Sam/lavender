@@ -16,8 +16,9 @@ namespace game::ec
         {
             U32 number_of_components : 8;
             U32 generation           : 24;
+            U32 component_storage_offset;
         };
-        static_assert(sizeof(EntityMetadata) == sizeof(U32));
+        static_assert(sizeof(EntityMetadata) == sizeof(U64));
 
         struct EntityComponentStorage
         {
