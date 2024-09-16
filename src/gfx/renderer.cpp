@@ -8,6 +8,7 @@
 #include "vulkan/frame_manager.hpp"
 #include "vulkan/instance.hpp"
 #include "window.hpp"
+#include <GLFW/glfw3.h>
 #include <glfw/glfw3.h>
 #include <memory>
 #include <vulkan/vulkan_handles.hpp>
@@ -57,6 +58,11 @@ namespace gfx
                 {Window::Action::ToggleConsole,
                  Window::ActionInformation {
                      .key {GLFW_KEY_GRAVE_ACCENT},
+                     .method {Window::InteractionMethod::SinglePress}}},
+
+                {Window::Action::CloseWindow,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_ESCAPE},
                      .method {Window::InteractionMethod::SinglePress}}},
 
                 {Window::Action::ToggleCursorAttachment,

@@ -24,6 +24,9 @@ namespace game::ec
         {
             U32 component_type_id        : 8;
             U32 component_storage_offset : 24;
+
+            constexpr bool
+            operator== (const EntityComponentStorage&) const noexcept = default;
         };
         static_assert(
             std::has_unique_object_representations_v<EntityComponentStorage>);
@@ -107,6 +110,8 @@ namespace game::ec
         bool entityHasComponent(Entity, EntityComponentStorage);
 
     private:
+
+        std::optional<U8> getIndexOfComponent(Entity, EntityComponentStorage);
 
         static constexpr std::size_t MaxEntities = 1048576;
 

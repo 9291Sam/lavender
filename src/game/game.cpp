@@ -19,13 +19,24 @@ namespace game
         : renderer {std::make_unique<gfx::Renderer>()}
         , frame_generator {std::make_unique<FrameGenerator>(&*this->renderer)}
         , renderable_manager {std::make_unique<render::RenderManager>(&*this)}
-        // , ec_manager {std::make_unique<ec::ECManager>()}
+        , ec_manager {std::make_unique<ec::ECManager>()}
         , should_game_keep_ticking {true}
     {
-        // const ec::ECManager::Entity entity =
-        // this->ec_manager->createEntity(1);
+        const ec::Entity entity = this->ec_manager->createEntity();
 
-        // this->ec_manager->addComponent(entity, render::TriangleComponent {});
+        this->ec_manager->addComponent(entity, render::TriangleComponent {});
+        this->ec_manager->addComponent(
+            entity,
+            render::TriangleComponent {
+                .transform.translation {glm::vec3 {10.8, 3.0, -1.4}}});
+        this->ec_manager->addComponent(
+            entity,
+            render::TriangleComponent {
+                .transform.translation {glm::vec3 {-1.8, 2.1, -9.3}}});
+        this->ec_manager->addComponent(
+            entity,
+            render::TriangleComponent {
+                .transform.translation {glm::vec3 {1.3, 3.0, 3.0}}});
     }
 
     Game::~Game() noexcept = default;
@@ -38,10 +49,9 @@ namespace game
 
         // this->ec_manager->addComponent<ec::FooComponent>({}, {});
 
-        while (!this->renderer->shouldWindowClose())
+        while (!this->renderer->shouldWindowClose()
+               && this->should_game_keep_ticking.load())
         {
-            // this->ec_manager->flush();
-
             const float deltaTime =
                 this->renderer->getWindow()->getDeltaTimeSeconds();
 
@@ -51,6 +61,12 @@ namespace game
                                       ? 25.0f
                                       : 10.0f;
             const float rotateSpeedScale = 6.0f;
+
+            if (this->renderer->getWindow()->isActionActive(
+                    gfx::Window::Action::CloseWindow))
+            {
+                this->should_game_keep_ticking = false;
+            }
 
             workingCamera.addPosition(
                 workingCamera.getForwardVector() * deltaTime * moveScale
@@ -148,8 +164,8 @@ namespace game
         return this->renderer.get();
     }
 
-    // const ec::ECManager* Game::getECManager() const noexcept
-    // {
-    //     return this->ec_manager.get();
-    // }
+    const ec::ECManager* Game::getECManager() const noexcept
+    {
+        return this->ec_manager.get();
+    }
 } // namespace game

@@ -41,7 +41,8 @@ namespace gfx
             PlayerSprint           = 6,
             ToggleConsole          = 7,
             ToggleCursorAttachment = 8,
-            MaxActionValue         = 9,
+            CloseWindow            = 9,
+            MaxActionValue         = 10,
         };
 
         enum class InteractionMethod

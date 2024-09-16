@@ -85,39 +85,37 @@ namespace game::render
         Camera camera = this->camera.copyInner();
         std::vector<game::FrameGenerator::RecordObject> draws {};
 
-        // util::logTrace("{}", static_cast<std::string>(camera));
+        this->game->getECManager()->iterateComponents<TriangleComponent>(
+            [&](ec::Entity, const TriangleComponent& c)
+            {
+                draws.push_back(game::FrameGenerator::RecordObject {
+                    .render_pass {game::FrameGenerator::DynamicRenderingPass::
+                                      SimpleColor},
+                    .pipeline {this->triangle_pipeline},
+                    .descriptors {{nullptr, nullptr, nullptr, nullptr}},
+                    .record_func {[=](vk::CommandBuffer commandBuffer)
+                                  {
+                                      const auto layout =
+                                          this->game->getRenderer()
+                                              ->getAllocator()
+                                              ->lookupPipelineLayout(
+                                                  **this->triangle_pipeline);
 
-        // this->game->getECManager()->iterateComponents<TriangleComponent>(
-        //     [&](ec::ECManager::Entity, const TriangleComponent& c)
-        //     {
-        draws.push_back(game::FrameGenerator::RecordObject {
-            .render_pass {
-                game::FrameGenerator::DynamicRenderingPass::SimpleColor},
-            .pipeline {this->triangle_pipeline},
-            .descriptors {{nullptr, nullptr, nullptr, nullptr}},
-            .record_func {
-                [=](vk::CommandBuffer commandBuffer)
-                {
-                    const auto layout =
-                        this->game->getRenderer()
-                            ->getAllocator()
-                            ->lookupPipelineLayout(**this->triangle_pipeline);
+                                      const glm::mat4 mvpMatrix =
+                                          camera.getPerspectiveMatrix(
+                                              *this->game, c.transform);
 
-                    const glm::mat4 mvpMatrix = camera.getPerspectiveMatrix(
-                        *this->game,
-                        Transform {.translation {camera.getForwardVector()}});
+                                      commandBuffer.pushConstants(
+                                          **layout,
+                                          vk::ShaderStageFlagBits::eVertex,
+                                          0,
+                                          sizeof(glm::mat4),
+                                          &mvpMatrix);
 
-                    commandBuffer.pushConstants(
-                        **layout,
-                        vk::ShaderStageFlagBits::eVertex,
-                        0,
-                        sizeof(glm::mat4),
-                        &mvpMatrix);
-
-                    commandBuffer.draw(3, 1, 0, 0);
-                }},
-        });
-        // });
+                                      commandBuffer.draw(3, 1, 0, 0);
+                                  }},
+                });
+            });
 
         return draws;
     }

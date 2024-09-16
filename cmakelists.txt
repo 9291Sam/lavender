@@ -90,6 +90,7 @@ add_executable(lavender
     src/gfx/renderer.cpp
     src/gfx/window.cpp
 
+    src/util/index_allocator.cpp
     src/util/log.cpp
     src/util/misc.cpp
 )

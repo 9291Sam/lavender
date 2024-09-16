@@ -2,6 +2,12 @@
 
 #include "components.hpp"
 #include "entity.hpp"
+#include "game/ec/entity_storage.hpp"
+#include "game/render/triangle_component.hpp"
+#include "util/index_allocator.hpp"
+#include "util/log.hpp"
+#include "util/threads.hpp"
+#include <__concepts/invocable.h>
 #include <array>
 #include <boost/container/small_vector.hpp>
 #include <boost/unordered/concurrent_flat_set.hpp>
@@ -32,107 +38,158 @@ namespace game::ec
     class ECManager
     {
     public:
-        template<Component C>
-        struct StoredComponent
-        {
-            C      component;
-            Entity parent;
 
-            [[nodiscard]] bool isAlive() const
-            {
-                return !this->parent.isNull();
-            }
-        };
-
-        template<Component C>
-        struct ComponentArray
-        {
-            std::size_t        number_of_valid_components;
-            std::size_t        number_of_allocated_components;
-            // util::IndexAllocator index_allocator;
-            StoredComponent<C> storage[]; // NOLINT
-        };
-
-        struct MuckedComponent
-        {
-            Entity                                        entity;
-            ComponentId                                   id;
-            boost::container::small_vector<std::byte, 64> component;
-
-            bool operator== (const MuckedComponent&) const = default;
-        };
-
-    public:
-
-        explicit ECManager();
-        ~ECManager() noexcept;
+        explicit ECManager()
+            : component_storage {
+                  util::Mutex {MuckedComponentStorage(
+                      128, util::ZSTTypeWrapper<FooComponent> {})},
+                  util::Mutex {MuckedComponentStorage(
+                      128, util::ZSTTypeWrapper<BarComponent> {})},
+                  util::Mutex {MuckedComponentStorage(
+                      128, util::ZSTTypeWrapper<render::TriangleComponent> {})}}
+        {}
+        ~ECManager() noexcept = default;
 
         ECManager(const ECManager&)             = delete;
         ECManager(ECManager&&)                  = delete;
         ECManager& operator= (const ECManager&) = delete;
         ECManager& operator= (ECManager&&)      = delete;
 
-        // Entity createEntity(std::size_t componentEstimate = 3) const;
+        Entity createEntity() const
+        {
+            return this->entity_storage.lock(
+                [](EntityStorage& storage)
+                {
+                    return storage.createEntity();
+                });
+        }
 
-        // template<Component C>
-        // void addComponent(Entity entity, C component) const
-        //     requires std::is_trivially_copyable_v<C>
-        //           && std::is_standard_layout_v<C>
-        // {
-        //     const std::shared_lock lock {this->access_lock};
+        template<Component C>
+        void addComponent(Entity entity, C component) const
+            requires std::is_trivially_copyable_v<C>
+                  && std::is_standard_layout_v<C>
+                  && std::is_trivially_destructible_v<C>
+        {
+            const std::span<const std::byte> componentBytes =
+                component.asBytes();
 
-        //     const std::span<const std::byte> componentBytes =
-        //         component.asBytes();
+            const U32 componentStorageOffset =
+                this->component_storage[C::Id].lock(
+                    [&](MuckedComponentStorage& storage)
+                    {
+                        return storage.insertComponent(entity, component);
+                    });
 
-        //     this->components_to_add.insert(MuckedComponent {
-        //         .entity {entity},
-        //         .id {C::Id},
-        //         .component {boost::container::small_vector<std::byte, 64> {
-        //             componentBytes.begin(), componentBytes.end()}}});
-        // }
+            this->entity_storage.lock(
+                [&](EntityStorage& storage)
+                {
+                    storage.addComponentToEntity(
+                        entity,
+                        EntityStorage::EntityComponentStorage {
+                            .component_storage_offset {componentStorageOffset},
+                            .component_type_id {C::Id}});
+                });
+        }
 
-        // template<Component C>
-        // void iterateComponents(std::invocable<Entity, const C&> auto func)
-        // const
-        // {
-        //     const std::size_t componentId = static_cast<std::size_t>(C::Id);
+        template<Component C>
+        void iterateComponents(std::invocable<Entity, const C&> auto func) const
+        {
+            const std::size_t componentId = static_cast<std::size_t>(C::Id);
 
-        //     const ComponentArray<C>* componentStorage =
-        //         reinterpret_cast<const ComponentArray<C>*>(
-        //             this->component_storage[componentId].get());
-
-        //     for (std::size_t i = 0;
-        //          i < componentStorage->number_of_valid_components;
-        //          ++i)
-        //     {
-        //         if (componentStorage->storage[i].isAlive())
-        //         {
-        //             func(
-        //                 componentStorage->storage[i].parent,
-        //                 componentStorage->storage[i].component);
-        //         }
-        //     }
-        // }
-
-        void flush();
+            this->component_storage[C::Id].lock(
+                [&](MuckedComponentStorage& storage)
+                {
+                    storage.iterateComponents<C>(func);
+                });
+        }
 
     private:
-        mutable std::shared_mutex access_lock;
-        std::array<std::unique_ptr<U8[]>, NumberOfGameComponents>
-            component_storage;
-        mutable boost::unordered::concurrent_flat_set<MuckedComponent>
-            component_deltas;
+
+        class MuckedComponentStorage
+        {
+        public:
+            template<Component C>
+            MuckedComponentStorage(
+                U32 componentsToAllocate, util::ZSTTypeWrapper<C>)
+                : allocator {componentsToAllocate}
+                , component_size {sizeof(C)}
+            {
+                this->parent_entities.resize(componentsToAllocate, Entity {});
+                this->component_storage.resize(static_cast<std::size_t>(
+                    componentsToAllocate * this->component_size));
+            }
+
+            template<Component C>
+            U32 insertComponent(Entity parentEntity, C c)
+            {
+                util::assertFatal(sizeof(C) == this->component_size, "oops");
+
+                std::expected<U32, util::IndexAllocator::OutOfBlocks> id =
+                    this->allocator.allocate();
+
+                if (!id.has_value())
+                {
+                    const std::size_t newSize =
+                        this->parent_entities.size() * 2;
+
+                    this->allocator.updateAvailableBlockAmount(newSize);
+                    this->parent_entities.resize(newSize);
+                    this->component_storage.resize(
+                        newSize * this->component_size);
+
+                    id = this->allocator.allocate();
+                }
+
+                const U32 componentId = id.value();
+
+                this->parent_entities[componentId] = parentEntity;
+                reinterpret_cast<C*>(
+                    this->component_storage.data())[componentId] = c;
+
+                return componentId;
+            }
+
+            void deleteComponent(U32 index)
+            {
+                this->parent_entities[index] = Entity {};
+                this->allocator.free(index);
+            }
+
+            template<Component C>
+            void iterateComponents(std::invocable<Entity, C&> auto func)
+            {
+                util::assertFatal(sizeof(C) == this->component_size, "oops");
+                C* storedComponents =
+                    reinterpret_cast<C*>(this->component_storage.data());
+
+                for (int i = 0;
+                     i < this->allocator.getAllocatedBlocksUpperBound();
+                     ++i)
+                {
+                    if (!this->parent_entities[i].isNull())
+                    {
+                        func(this->parent_entities[i], storedComponents[i]);
+                    }
+                }
+            }
+
+            MuckedComponentStorage(const MuckedComponentStorage&) = delete;
+            MuckedComponentStorage(MuckedComponentStorage&&)      = default;
+            MuckedComponentStorage&
+            operator= (const MuckedComponentStorage&) = delete;
+            MuckedComponentStorage&
+            operator= (MuckedComponentStorage&&) = default;
+
+        private:
+            util::IndexAllocator allocator;
+            U32                  component_size;
+            std::vector<Entity>  parent_entities;
+            std::vector<U8>      component_storage;
+        };
+
+        std::array<util::Mutex<MuckedComponentStorage>, NumberOfGameComponents>
+                                   component_storage;
+        util::Mutex<EntityStorage> entity_storage;
     };
 
-    // NOLINTNEXTLINE
-    inline std::size_t hash_value(const game::ec::ECManager::MuckedComponent& m)
-    {
-        std::size_t seed = 8234897234798432;
-
-        util::hashCombine(seed, hash_value(m.entity));
-        util::hashCombine(seed, boost::hash_value(m.id));
-        util::hashCombine(seed, boost::hash_value(m.component));
-
-        return seed;
-    }
 } // namespace game::ec

@@ -47,7 +47,7 @@ namespace game
         std::unique_ptr<FrameGenerator>        frame_generator;
         std::unique_ptr<render::RenderManager> renderable_manager;
 
-        // std::unique_ptr<ec::ECManager> ec_manager;
+        std::unique_ptr<ec::ECManager> ec_manager;
 
         std::atomic<bool> should_game_keep_ticking;
     };

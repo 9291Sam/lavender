@@ -40,12 +40,17 @@ namespace util
         ~IndexAllocator() = default;
 
         IndexAllocator(const IndexAllocator&)             = delete;
-        IndexAllocator(IndexAllocator&&)                  = delete;
+        IndexAllocator(IndexAllocator&&)                  = default;
         IndexAllocator& operator= (const IndexAllocator&) = delete;
-        IndexAllocator& operator= (IndexAllocator&&)      = delete;
+        IndexAllocator& operator= (IndexAllocator&&)      = default;
 
         void updateAvailableBlockAmount(IndexType newAmount);
         // TODO: float getPercentAllocated() const;
+        // NOT INCLUSIVE
+        U32  getAllocatedBlocksUpperBound() const
+        {
+            return this->next_available_block;
+        }
 
         std::expected<IndexType, OutOfBlocks> allocate();
         void                                  free(IndexType);
