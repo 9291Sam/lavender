@@ -3,7 +3,6 @@
 #include <concepts>
 #include <cstddef>
 #include <span>
-#include <type_traits>
 #include <util/misc.hpp>
 
 namespace game

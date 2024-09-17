@@ -1,5 +1,4 @@
-#ifndef SRC_UTIL_BLOCK_ALLOCATOR_HPP
-#define SRC_UTIL_BLOCK_ALLOCATOR_HPP
+#pragma once
 
 #include "misc.hpp"
 #include <boost/container/flat_set.hpp>
@@ -61,5 +60,3 @@ namespace util
         IndexType                             max_number_of_blocks;
     };
 } // namespace util
-
-#endif // SRC_UTIL_BLOCK_ALLOCATOR_HPP

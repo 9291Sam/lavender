@@ -240,14 +240,14 @@ namespace gfx
         }
     }
 
-    void Window::attachCursor()
+    void Window::attachCursor() const
     {
         glfwSetInputMode(this->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
         this->is_cursor_attached.store(true, std::memory_order_release);
     }
 
-    void Window::detachCursor()
+    void Window::detachCursor() const
     {
         const vk::Extent2D currentSize =
             this->framebuffer_size.load(std::memory_order_acquire);

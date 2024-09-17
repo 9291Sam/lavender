@@ -88,8 +88,8 @@ namespace gfx
         [[nodiscard]] static std::span<const char*> getRequiredExtensions();
 
         void blockThisThreadWhileMinimized();
-        void attachCursor();
-        void detachCursor();
+        void attachCursor() const;
+        void detachCursor() const;
         void endFrame();
         // TODO: void updateKeyBindings();
 
@@ -117,6 +117,6 @@ namespace gfx
         std::atomic<Delta>               previous_mouse_position;
         std::atomic<Delta>               mouse_delta_pixels;
         std::atomic<Delta>               screen_space_mouse_delta;
-        std::atomic<bool>                is_cursor_attached;
+        mutable std::atomic<bool>        is_cursor_attached;
     };
 } // namespace gfx

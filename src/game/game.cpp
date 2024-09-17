@@ -4,6 +4,7 @@
 #include "frame_generator.hpp"
 #include "game/ec/components.hpp"
 #include "game/render/render_manager.hpp"
+#include "game/transform.hpp"
 #include "render/triangle_component.hpp"
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/allocator.hpp>
@@ -44,6 +45,8 @@ namespace game
 
     void Game::run()
     {
+        this->renderer->getWindow()->attachCursor();
+
         Camera workingCamera {glm::vec3 {0.0, 0.0, 0.0}};
         // this->game.renderer.getMenu().setPlayerPosition(
         //     workingCamera.getPosition());
@@ -62,8 +65,8 @@ namespace game
             // TODO: moving diaginally is faster
             const float moveScale = this->renderer->getWindow()->isActionActive(
                                         gfx::Window::Action::PlayerSprint)
-                                      ? 25.0f
-                                      : 10.0f;
+                                      ? 125.0f
+                                      : 50.0f;
             const float rotateSpeedScale = 6.0f;
 
             if (this->renderer->getWindow()->isActionActive(
@@ -135,10 +138,18 @@ namespace game
             workingCamera.addYaw(xDelta * rotateSpeedScale);
             workingCamera.addPitch(yDelta * rotateSpeedScale);
 
+            auto get = [&]
+            {
+                return dist(gen);
+            };
+
             this->ec_manager->addComponent(
                 this->ec_manager->createEntity(),
-                render::TriangleComponent {.transform.translation {
-                    glm::vec3 {dist(gen), dist(gen), dist(gen)}}});
+                render::TriangleComponent {.transform {Transform {
+                    .rotation {glm::quat {glm::vec3 {get(), get(), get()}}},
+                    .translation {glm::vec3 {get(), get(), get()}},
+                    .scale {get() * 3, get() * -3, get() * 8},
+                }}});
 
             this->renderable_manager->setCamera(workingCamera);
 
