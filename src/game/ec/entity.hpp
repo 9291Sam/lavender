@@ -24,7 +24,7 @@ namespace game::ec
         operator<=> (const Entity&) const = default;
     private:
         friend class EntityStorage;
-        friend class ECManager;
+        friend class EntityComponentManager;
 
         U32 id;
         U32 generation;

@@ -1,7 +1,7 @@
 #include "game/game.hpp"
 #include "util/log.hpp"
 #include <functional>
-#include <game/ec/ec_manager.hpp>
+#include <game/ec/entity_component_manager.hpp>
 
 int main()
 {

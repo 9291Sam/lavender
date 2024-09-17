@@ -1,9 +1,11 @@
 #include "entity_storage.hpp"
 #include "entity.hpp"
+#include <__expected/unexpected.h>
 #include <memory>
 #include <optional>
 #include <type_traits>
 #include <util/log.hpp>
+#include <utility>
 
 namespace game::ec
 {
@@ -23,7 +25,7 @@ namespace game::ec
 
     EntityStorage::~EntityStorage() noexcept = default;
 
-    Entity EntityStorage::createEntity()
+    Entity EntityStorage::create()
     {
         const U32 thisEntityId = this->entity_id_allocator.allocate().value();
 
@@ -40,12 +42,14 @@ namespace game::ec
         return e;
     }
 
-    void EntityStorage::deleteEntity(Entity e)
+    std::expected<void, EntityStorage::EntityDead>
+    EntityStorage::destroy(Entity e)
     {
-        if (!this->isEntityAlive(e))
+        if (!this->isAlive(e))
         {
-            util::logWarn("Tried to delete already deleted entity!");
+            return std::unexpected(EntityDead {});
         }
+
         this->entity_id_allocator.free(e.id);
 
         EntityMetadata& entityMetadata = (*this->metadata)[e.id];
@@ -93,19 +97,22 @@ namespace game::ec
         default:
             util::panic("storage too high!");
         }
+
+        util::panic("unreachable!");
+        return {};
     }
 
-    bool EntityStorage::isEntityAlive(Entity e)
+    bool EntityStorage::isAlive(Entity e)
     {
         return (*this->metadata)[e.id].generation == e.generation;
     }
 
-    void EntityStorage::addComponentToEntity(Entity e, EntityComponentStorage c)
+    std::expected<void, EntityStorage::ComponentModificationError>
+    EntityStorage::addComponent(Entity e, EntityComponentStorage c)
     {
-        if (!this->isEntityAlive(e))
+        if (!this->isAlive(e))
         {
-            util::logWarn("tried to add component to dead entity!");
-            return;
+            return std::unexpected(ComponentModificationError::EntityDead);
         }
 
         EntityMetadata& entityMetadata = (*this->metadata)[e.id];
@@ -115,10 +122,11 @@ namespace game::ec
             util::panic("tried to add too many components");
         }
 
-        util::assertFatal(
-            !this->entityHasComponent(e, c),
-            "tried to add multiple components of the same type to the same "
-            "entity!");
+        if (this->hasComponent(e, c))
+        {
+            return std::unexpected(
+                ComponentModificationError::ComponentConflict);
+        }
 
         const U8 currentNumberOfComponents =
             static_cast<U8>(entityMetadata.number_of_components);
@@ -225,21 +233,20 @@ namespace game::ec
         }
     }
 
-    void
-    EntityStorage::removeComponentFromEntity(Entity e, EntityComponentStorage c)
+    std::expected<void, EntityStorage::ComponentModificationError>
+    EntityStorage::removeComponent(Entity e, EntityComponentStorage c)
     {
-        const std::optional<U8> idx = this->getIndexOfComponent(e, c);
-
-        if (!idx.has_value())
+        if (!this->isAlive(e))
         {
-            util::logWarn("Tried to remove component which doesn't exist!");
-
-            return;
+            return std::unexpected(ComponentModificationError::EntityDead);
         }
 
-        if (!this->isEntityAlive(e))
+        const std::optional<U8> idx = this->getIndexOfComponentUnchecked(e, c);
+
+        if (idx.has_value())
         {
-            util::logWarn("Tried to remove component on dead entity");
+            return std::unexpected(
+                ComponentModificationError::ComponentConflict);
         }
 
         EntityMetadata& entityMetadata         = (*this->metadata)[e.id];
@@ -349,19 +356,20 @@ namespace game::ec
         }
     }
 
-    bool EntityStorage::entityHasComponent(Entity e, EntityComponentStorage c)
+    std::expected<bool, EntityStorage::EntityDead>
+    EntityStorage::hasComponent(Entity e, EntityComponentStorage c)
     {
-        return this->getIndexOfComponent(e, c).has_value();
-    }
-
-    std::optional<U8>
-    EntityStorage::getIndexOfComponent(Entity e, EntityComponentStorage c)
-    {
-        if (!this->isEntityAlive(e))
+        if (!this->isAlive(e))
         {
-            util::logWarn("Tried to read components of dead entity");
+            return std::unexpected(EntityDead {});
         }
 
+        return this->getIndexOfComponentUnchecked(e, c).has_value();
+    }
+
+    std::optional<U8> EntityStorage::getIndexOfComponentUnchecked(
+        Entity e, EntityComponentStorage c)
+    {
         const EntityMetadata& entityMetadata = (*this->metadata)[e.id];
 
         const U8 pool = getStoragePoolId(entityMetadata.number_of_components);

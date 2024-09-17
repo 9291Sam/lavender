@@ -1,6 +1,5 @@
 #pragma once
 
-#include "game/ec/ec_manager.hpp"
 #include "util/threads.hpp"
 #include <game/camera.hpp>
 #include <game/frame_generator.hpp>
@@ -12,7 +11,7 @@ namespace gfx
 
 namespace game::ec
 {
-    class ECManager;
+    class EntityComponentManager;
 }
 
 namespace game::render

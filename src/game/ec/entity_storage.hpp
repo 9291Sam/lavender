@@ -1,6 +1,7 @@
 #pragma once
 
 #include "entity.hpp"
+#include <__expected/expected.h>
 #include <array>
 #include <bit>
 #include <memory>
@@ -90,6 +91,15 @@ namespace game::ec
             std::vector<StoredEntityComponents<N>> storage;
         };
 
+        enum class ComponentModificationError
+        {
+            EntityDead,
+            ComponentConflict
+        };
+
+        struct EntityDead
+        {};
+
     public:
 
         EntityStorage();
@@ -100,18 +110,23 @@ namespace game::ec
         EntityStorage& operator= (const EntityStorage&) = delete;
         EntityStorage& operator= (EntityStorage&&)      = delete;
 
-        [[nodiscard]] Entity create();
-        [[nodiscard]] bool   destroy(Entity);
+        [[nodiscard]] Entity                          create();
+        [[nodiscard]] std::expected<void, EntityDead> destroy(Entity);
 
         [[nodiscard]] bool isAlive(Entity);
 
-        [[nodiscard]] bool addComponent(Entity, EntityComponentStorage);
-        [[nodiscard]] bool removeComponent(Entity, EntityComponentStorage);
-        [[nodiscard]] bool hasComponent(Entity, EntityComponentStorage);
+        [[nodiscard]] std::expected<void, ComponentModificationError>
+            addComponent(Entity, EntityComponentStorage);
+        [[nodiscard]] std::expected<void, ComponentModificationError>
+            removeComponent(Entity, EntityComponentStorage);
+
+        [[nodiscard]] std::expected<bool, EntityDead>
+            hasComponent(Entity, EntityComponentStorage);
 
     private:
 
-        std::optional<U8> getIndexOfComponent(Entity, EntityComponentStorage);
+        std::optional<U8>
+            getIndexOfComponentUnchecked(Entity, EntityComponentStorage);
 
         static constexpr std::size_t MaxEntities = 1048576;
 

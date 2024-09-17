@@ -1,6 +1,6 @@
 #include "game.hpp"
 #include "camera.hpp"
-#include "ec/ec_manager.hpp"
+#include "ec/entity_component_manager.hpp"
 #include "frame_generator.hpp"
 #include "game/ec/components.hpp"
 #include "game/render/render_manager.hpp"
@@ -22,7 +22,7 @@ namespace game
         : renderer {std::make_unique<gfx::Renderer>()}
         , frame_generator {std::make_unique<FrameGenerator>(&*this->renderer)}
         , renderable_manager {std::make_unique<render::RenderManager>(&*this)}
-        , ec_manager {std::make_unique<ec::ECManager>()}
+        , ec_manager {std::make_unique<ec::EntityComponentManager>()}
         , should_game_keep_ticking {true}
     {
         const ec::Entity entity = this->ec_manager->createEntity();
@@ -188,7 +188,8 @@ namespace game
         return this->renderer.get();
     }
 
-    const ec::ECManager* Game::getECManager() const noexcept
+    const ec::EntityComponentManager*
+    Game::getEntityComponentManager() const noexcept
     {
         return this->ec_manager.get();
     }

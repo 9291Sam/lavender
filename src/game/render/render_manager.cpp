@@ -1,7 +1,7 @@
 #include "render_manager.hpp"
 #include "game/camera.hpp"
 #include "game/ec/components.hpp"
-#include "game/ec/ec_manager.hpp"
+#include "game/ec/entity_component_manager.hpp"
 #include "game/frame_generator.hpp"
 #include "triangle_component.hpp"
 #include "util/log.hpp"
@@ -85,37 +85,39 @@ namespace game::render
         Camera camera = this->camera.copyInner();
         std::vector<game::FrameGenerator::RecordObject> draws {};
 
-        this->game->getECManager()->iterateComponents<TriangleComponent>(
-            [&](ec::Entity, const TriangleComponent& c)
-            {
-                draws.push_back(game::FrameGenerator::RecordObject {
-                    .render_pass {game::FrameGenerator::DynamicRenderingPass::
-                                      SimpleColor},
-                    .pipeline {this->triangle_pipeline},
-                    .descriptors {{nullptr, nullptr, nullptr, nullptr}},
-                    .record_func {[=](vk::CommandBuffer commandBuffer)
-                                  {
-                                      const auto layout =
-                                          this->game->getRenderer()
-                                              ->getAllocator()
-                                              ->lookupPipelineLayout(
-                                                  **this->triangle_pipeline);
+        this->game->getEntityComponentManager()
+            ->iterateComponents<TriangleComponent>(
+                [&](ec::Entity, const TriangleComponent& c)
+                {
+                    draws.push_back(game::FrameGenerator::RecordObject {
+                        .render_pass {game::FrameGenerator::
+                                          DynamicRenderingPass::SimpleColor},
+                        .pipeline {this->triangle_pipeline},
+                        .descriptors {{nullptr, nullptr, nullptr, nullptr}},
+                        .record_func {
+                            [=](vk::CommandBuffer commandBuffer)
+                            {
+                                const auto layout =
+                                    this->game->getRenderer()
+                                        ->getAllocator()
+                                        ->lookupPipelineLayout(
+                                            **this->triangle_pipeline);
 
-                                      const glm::mat4 mvpMatrix =
-                                          camera.getPerspectiveMatrix(
-                                              *this->game, c.transform);
+                                const glm::mat4 mvpMatrix =
+                                    camera.getPerspectiveMatrix(
+                                        *this->game, c.transform);
 
-                                      commandBuffer.pushConstants(
-                                          **layout,
-                                          vk::ShaderStageFlagBits::eVertex,
-                                          0,
-                                          sizeof(glm::mat4),
-                                          &mvpMatrix);
+                                commandBuffer.pushConstants(
+                                    **layout,
+                                    vk::ShaderStageFlagBits::eVertex,
+                                    0,
+                                    sizeof(glm::mat4),
+                                    &mvpMatrix);
 
-                                      commandBuffer.draw(3, 1, 0, 0);
-                                  }},
+                                commandBuffer.draw(3, 1, 0, 0);
+                            }},
+                    });
                 });
-            });
 
         return draws;
     }

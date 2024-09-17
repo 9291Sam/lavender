@@ -13,7 +13,7 @@ namespace game
 {
     namespace ec
     {
-        class ECManager;
+        class EntityComponentManager;
     } // namespace ec
 
     namespace render
@@ -40,7 +40,8 @@ namespace game
         [[nodiscard]] float getAspectRatio() const noexcept;
 
         const gfx::Renderer* getRenderer() const noexcept;
-        const ec::ECManager* getECManager() const noexcept;
+        const ec::EntityComponentManager*
+        getEntityComponentManager() const noexcept;
     private:
         // Rendering abstraction
         // lowest level - gfx::Renderer constructs the command buffer
@@ -51,7 +52,7 @@ namespace game
         std::unique_ptr<FrameGenerator>        frame_generator;
         std::unique_ptr<render::RenderManager> renderable_manager;
 
-        std::unique_ptr<ec::ECManager> ec_manager;
+        std::unique_ptr<ec::EntityComponentManager> ec_manager;
 
         std::atomic<bool> should_game_keep_ticking;
     };

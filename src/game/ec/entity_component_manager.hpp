@@ -49,81 +49,77 @@ namespace game::ec
         operator= (const EntityComponentManager&)                    = delete;
         EntityComponentManager& operator= (EntityComponentManager&&) = delete;
 
-        /// Creates a new entity without any components
-        [[nodiscard]] Entity createEntity() const;
+        // /// Creates a new entity without any components
+        // [[nodiscard]] Entity createEntity() const;
 
-        /// Tries to destroy a given entity
-        /// Returns:
-        ///    true - the entity was successfully destroyed
-        ///    false - the entity was already destroyed
-        [[nodiscard]] bool tryDestroyEntity(Entity) const;
-        /// Warns on failure
-        void               destroyEntity(Entity) const;
+        // /// Tries to destroy a given entity
+        // /// Returns:
+        // ///    true - the entity was successfully destroyed
+        // ///    false - the entity was already destroyed
+        // [[nodiscard]] bool tryDestroyEntity(Entity) const;
+        // /// Warns on failure
+        // void               destroyEntity(Entity) const;
 
-        /// Returns whether or not this entity is alive
-        bool isEntityAlive(Entity) const;
+        // /// Returns whether or not this entity is alive
+        // bool isEntityAlive(Entity) const;
 
-        template<Component C>
-        [[nodiscard]] bool tryAddComponent(Entity, C) const;
-        template<Component C>
-        void addComponent(Entity, C) const;
+        // template<Component C>
+        // [[nodiscard]] bool tryAddComponent(Entity, C) const;
+        // template<Component C>
+        // void addComponent(Entity, C) const;
 
-        template<Component C>
-        [[nodiscard]] std::optional<C> tryRemoveComponent(Entity) const;
-        template<Component C>
-        C removeComponent(Entity) const;
+        // template<Component C>
+        // [[nodiscard]] std::optional<C> tryRemoveComponent(Entity) const;
+        // template<Component C>
+        // C removeComponent(Entity) const;
 
-        template<Component... C>
-        [[nodiscard]] bool tryModifyComponent(std::invocable<C...> auto) const;
-        template<Component... C>
-        void modifyComponent(std::invocable<C...> auto) const;
+        // template<Component... C>
+        // [[nodiscard]] bool tryModifyComponent(std::invocable<C...> auto)
+        // const; template<Component... C> void
+        // modifyComponent(std::invocable<C...> auto) const;
 
-        template<Component C>
-        [[nodiscard]] bool hasComponent(Entity) const;
+        // template<Component C>
+        // [[nodiscard]] bool hasComponent(Entity) const;
 
-        bool tryAddComponent
+        // bool tryAddComponent
 
-            Entity
-            createEntity() const
+        Entity createEntity() const
         {
             return this->entity_storage.lock(
                 [](EntityStorage& storage)
                 {
-                    return storage.createEntity();
+                    return storage.create();
                 });
         }
 
         // Returns true if the entity was destroyed, otherwise the entity wasn't
         // alive
-        bool tryDestroyEntity(Entity e) const
-        {
-            return this->entity_storage.lock(
-                [&](EntityStorage& storage)
-                {
-                    if (!storage.isEntityAlive(e))
-                    {
-                        return false;
-                    }
+        // bool tryDestroyEntity(Entity e) const
+        // {
+        //     return this->entity_storage.lock(
+        //         [&](EntityStorage& storage)
+        //         {
+        //             if (!storage.isEntityAlive(e))
+        //             {
+        //                 return false;
+        //             }
 
-                    storage.deleteEntity(e);
+        //             storage.deleteEntity(e);
 
-                    return true;
-                });
-        }
+        //             return true;
+        //         });
+        // }
 
-        void destroyEntity(
-            Entity               e,
-            std::source_location caller = std::source_location::current()) const
-        {
-            util::assertWarn<>(
-                this->tryDestroyEntity(e),
-                "Tried to destroy already destroyed entity!",
-                caller);
-        }
-
-        template<Component C>
-        bool tryAddComponent(Entity e, C c) const
-        {}
+        // void destroyEntity(
+        //     Entity               e,
+        //     std::source_location caller = std::source_location::current())
+        //     const
+        // {
+        //     util::assertWarn<>(
+        //         this->tryDestroyEntity(e),
+        //         "Tried to destroy already destroyed entity!",
+        //         caller);
+        // }
 
         template<Component C>
         void addComponent(Entity entity, C component) const
@@ -144,7 +140,7 @@ namespace game::ec
                     this->entity_storage.lock(
                         [&](EntityStorage& entityStorage)
                         {
-                            entityStorage.addComponentToEntity(
+                            entityStorage.addComponent(
                                 entity,
                                 EntityStorage::EntityComponentStorage {
                                     .component_storage_offset {
