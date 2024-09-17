@@ -17,5 +17,13 @@ Component:
     static SIZE: USize
     static ALIGN: USize
 
+    require noexcept moves
+    requires noexcept destruction
+
+    if trivially moveable
+        memcpy
+    else
+        std::uninotalize_move
+
     deal with virtual / non trivially constructable
     require moveability
