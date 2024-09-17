@@ -2,10 +2,12 @@
 #include "entity.hpp"
 #include <memory>
 #include <optional>
+#include <type_traits>
 #include <util/log.hpp>
 
 namespace game::ec
 {
+
     EntityStorage::EntityStorage()
         : entity_id_allocator {MaxEntities}
         , metadata {std::make_unique<std::array<EntityMetadata, MaxEntities>>()}
@@ -19,7 +21,7 @@ namespace game::ec
         , storage_7 {128}
     {}
 
-    EntityStorage::~EntityStorage() = default;
+    EntityStorage::~EntityStorage() noexcept = default;
 
     Entity EntityStorage::createEntity()
     {
@@ -112,6 +114,11 @@ namespace game::ec
         {
             util::panic("tried to add too many components");
         }
+
+        util::assertFatal(
+            !this->entityHasComponent(e, c),
+            "tried to add multiple components of the same type to the same "
+            "entity!");
 
         const U8 currentNumberOfComponents =
             static_cast<U8>(entityMetadata.number_of_components);

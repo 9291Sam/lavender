@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <memory>
 #include <shared_mutex>
+#include <source_location>
 #include <string>
 #include <type_traits>
 #include <util/misc.hpp>
@@ -54,6 +55,38 @@ namespace game::ec
                     return storage.createEntity();
                 });
         }
+
+        // Returns true if the entity was destroyed, otherwise the entity wasn't
+        // alive
+        bool tryDestroyEntity(Entity e) const
+        {
+            return this->entity_storage.lock(
+                [&](EntityStorage& storage)
+                {
+                    if (!storage.isEntityAlive(e))
+                    {
+                        return false;
+                    }
+
+                    storage.deleteEntity(e);
+
+                    return true;
+                });
+        }
+
+        void destroyEntity(
+            Entity               e,
+            std::source_location caller = std::source_location::current()) const
+        {
+            util::assertWarn<>(
+                this->tryDestroyEntity(e),
+                "Tried to destroy already destroyed entity!",
+                caller);
+        }
+
+        template<Component C>
+        bool tryAddComponent(Entity e, C c) const
+        {}
 
         template<Component C>
         void addComponent(Entity entity, C component) const
