@@ -3,6 +3,7 @@
 #include <concepts>
 #include <cstddef>
 #include <span>
+#include <string_view>
 #include <util/misc.hpp>
 
 namespace game
@@ -14,6 +15,9 @@ namespace game
 
     template<U8 ID>
     consteval std::size_t getComponentSize() noexcept = delete;
+
+    template<U8 ID>
+    consteval std::string_view getComponentName() noexcept = delete;
 
     template<class T>
     concept Component = requires() {
@@ -48,6 +52,12 @@ namespace game
     game::getComponentSize<game::getComponentId<NAMESPACE::TYPE>()>() noexcept \
     {                                                                          \
         return static_cast<std::size_t>(SIZE);                                 \
+    }                                                                          \
+    template<>                                                                 \
+    consteval std::string_view                                                 \
+    game::getComponentName<game::getComponentId<NAMESPACE::TYPE>()>() noexcept \
+    {                                                                          \
+        return #TYPE;                                                          \
     }
 
 #line 0

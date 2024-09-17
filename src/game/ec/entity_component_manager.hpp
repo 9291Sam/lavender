@@ -4,24 +4,15 @@
 #include "components.hpp"
 #include "entity.hpp"
 #include "game/ec/entity_storage.hpp"
-#include "game/render/triangle_component.hpp"
-#include "util/index_allocator.hpp"
-#include "util/log.hpp"
 #include "util/threads.hpp"
-#include <__concepts/invocable.h>
+#include <__expected/expected.h>
 #include <array>
 #include <boost/container/small_vector.hpp>
 #include <boost/unordered/concurrent_flat_set.hpp>
-#include <concepts>
 #include <cstddef>
-#include <memory>
-#include <shared_mutex>
 #include <source_location>
-#include <string>
 #include <type_traits>
 #include <util/misc.hpp>
-#include <variant>
-#include <vector>
 
 namespace game::ec
 {
@@ -49,24 +40,84 @@ namespace game::ec
         operator= (const EntityComponentManager&)                    = delete;
         EntityComponentManager& operator= (EntityComponentManager&&) = delete;
 
-        // /// Creates a new entity without any components
-        // [[nodiscard]] Entity createEntity() const;
+        /// Creates a new entity without any components attached
+        [[nodiscard]] Entity createEntity() const;
 
-        // /// Tries to destroy a given entity
-        // /// Returns:
-        // ///    true - the entity was successfully destroyed
-        // ///    false - the entity was already destroyed
-        // [[nodiscard]] bool tryDestroyEntity(Entity) const;
-        // /// Warns on failure
-        // void               destroyEntity(Entity) const;
+        /// Tries to destroy a given entity
+        /// Returns:
+        ///    true - the entity was successfully destroyed
+        ///    false - the entity was already destroyed
+        [[nodiscard]] bool tryDestroyEntity(Entity) const;
+
+        /// Destroys the given entity, warns on failure
+        void destroyEntity(
+            Entity,
+            std::source_location = std::source_location::current()) const;
 
         // /// Returns whether or not this entity is alive
-        // bool isEntityAlive(Entity) const;
+        bool isEntityAlive(Entity) const;
 
-        // template<Component C>
-        // [[nodiscard]] bool tryAddComponent(Entity, C) const;
-        // template<Component C>
-        // void addComponent(Entity, C) const;
+        template<Component C>
+        [[nodiscard]] std::expected<void, ComponentModificationError>
+        tryAddComponent(Entity e, C c) const
+        {
+            return this->component_storage[C::Id].lock(
+                [&](MuckedComponentStorage& componentStorage)
+                {
+                    const U32 storedOffset =
+                        componentStorage.insertComponent(e, c);
+
+                    std::expected<void, ComponentModificationError>
+                        wasComponentAddedToEntity = this->entity_storage.lock(
+                            [&](EntityStorage& entityStorage)
+                            {
+                                return entityStorage.addComponent(
+                                    e,
+                                    EntityStorage::EntityComponentStorage {
+                                        .component_type_id {C::Id},
+                                        .component_storage_offset {
+                                            storedOffset}});
+                            });
+
+                    // if we failed to add the component to the entity for some
+                    // reason, delete the component from storage
+                    if (!wasComponentAddedToEntity.has_value())
+                    {
+                        componentStorage.deleteComponent(storedOffset);
+                    }
+
+                    return wasComponentAddedToEntity;
+                });
+        }
+        template<Component C>
+        void addComponent(
+            Entity               e,
+            C                    c,
+            std::source_location location =
+                std::source_location::current()) const
+        {
+            std::expected<void, ComponentModificationError> tryAddResult =
+                this->tryAddComponent(e, c);
+
+            if (!tryAddResult.has_value())
+            {
+                switch (tryAddResult.error())
+                {
+                case ComponentModificationError::ComponentConflict:
+                    util::logWarn<std::string_view>(
+                        "Tried to add multiple components of type {} to entity",
+                        getComponentName<C::Id>(),
+                        location);
+                    break;
+                case ComponentModificationError::EntityDead:
+                    util::logWarn<std::string_view>(
+                        "Tried to add component of type {} to dead entity",
+                        getComponentName<C::Id>(),
+                        location);
+                    break;
+                }
+            }
+        }
 
         // template<Component C>
         // [[nodiscard]] std::optional<C> tryRemoveComponent(Entity) const;
@@ -82,15 +133,6 @@ namespace game::ec
         // [[nodiscard]] bool hasComponent(Entity) const;
 
         // bool tryAddComponent
-
-        Entity createEntity() const
-        {
-            return this->entity_storage.lock(
-                [](EntityStorage& storage)
-                {
-                    return storage.create();
-                });
-        }
 
         // Returns true if the entity was destroyed, otherwise the entity wasn't
         // alive
@@ -110,46 +152,6 @@ namespace game::ec
         //         });
         // }
 
-        // void destroyEntity(
-        //     Entity               e,
-        //     std::source_location caller = std::source_location::current())
-        //     const
-        // {
-        //     util::assertWarn<>(
-        //         this->tryDestroyEntity(e),
-        //         "Tried to destroy already destroyed entity!",
-        //         caller);
-        // }
-
-        template<Component C>
-        void addComponent(Entity entity, C component) const
-            requires (
-                std::is_trivially_copyable_v<C> && std::is_standard_layout_v<C>
-                && std::is_trivially_destructible_v<C>
-                && getComponentSize<getComponentId<C>()>() == sizeof(C))
-        {
-            const std::span<const std::byte> componentBytes =
-                component.asBytes();
-
-            this->component_storage[C::Id].lock(
-                [&](MuckedComponentStorage& componentStorage)
-                {
-                    const U32 componentStorageOffset =
-                        componentStorage.insertComponent(entity, component);
-
-                    this->entity_storage.lock(
-                        [&](EntityStorage& entityStorage)
-                        {
-                            entityStorage.addComponent(
-                                entity,
-                                EntityStorage::EntityComponentStorage {
-                                    .component_storage_offset {
-                                        componentStorageOffset},
-                                    .component_type_id {C::Id}});
-                        });
-                });
-        }
-
         template<Component C>
         void iterateComponents(std::invocable<Entity, const C&> auto func) const
         {
@@ -162,9 +164,11 @@ namespace game::ec
 
     private:
 
-        std::array<util::Mutex<MuckedComponentStorage>, NumberOfGameComponents>
-                                   component_storage;
-        util::Mutex<EntityStorage> entity_storage;
+        std::array<
+            util::RecursiveMutex<MuckedComponentStorage>,
+            NumberOfGameComponents>
+                                            component_storage;
+        util::RecursiveMutex<EntityStorage> entity_storage;
     };
 
 } // namespace game::ec

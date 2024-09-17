@@ -47,7 +47,7 @@ namespace gfx::vulkan
             }
         }
 
-        util::logTrace(
+        util::logLog(
             "Selected {} as present mode with inital size of {}x{}",
             vk::to_string(selectedPresentMode),
             this->extent.width,

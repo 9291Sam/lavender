@@ -28,18 +28,21 @@ namespace game
         const ec::Entity entity = this->ec_manager->createEntity();
 
         this->ec_manager->addComponent(entity, render::TriangleComponent {});
-        this->ec_manager->addComponent(
-            entity,
-            render::TriangleComponent {
-                .transform.translation {glm::vec3 {10.8, 3.0, -1.4}}});
-        this->ec_manager->addComponent(
-            entity,
-            render::TriangleComponent {
-                .transform.translation {glm::vec3 {-1.8, 2.1, -9.3}}});
-        this->ec_manager->addComponent(
-            entity,
-            render::TriangleComponent {
-                .transform.translation {glm::vec3 {1.3, 3.0, 3.0}}});
+        this->ec_manager->tryAddComponent(entity, render::TriangleComponent {});
+
+        this->ec_manager->destroyEntity(entity);
+        // this->ec_manager->addComponent(
+        //     entity,
+        //     render::TriangleComponent {
+        //         .transform.translation {glm::vec3 {10.8, 3.0, -1.4}}});
+        // this->ec_manager->addComponent(
+        //     entity,
+        //     render::TriangleComponent {
+        //         .transform.translation {glm::vec3 {-1.8, 2.1, -9.3}}});
+        // this->ec_manager->addComponent(
+        //     entity,
+        //     render::TriangleComponent {
+        //         .transform.translation {glm::vec3 {1.3, 3.0, 3.0}}});
     }
 
     Game::~Game() noexcept
@@ -58,7 +61,7 @@ namespace game
         // this->ec_manager->addComponent<ec::FooComponent>({}, {});
 
         std::mt19937_64                 gen {std::random_device {}()};
-        std::normal_distribution<float> dist {-10, 10};
+        std::normal_distribution<float> dist {64, 3};
 
         while (!this->renderer->shouldWindowClose()
                && this->should_game_keep_ticking.load())

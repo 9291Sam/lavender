@@ -111,7 +111,7 @@ namespace gfx::vulkan
             }
         };
 
-        util::logTrace(
+        util::logLog(
             "Discovered queues! | Graphics: {} | Async Compute: {} | Async "
             "Transfer: {}",
             getStringOfFamily(graphicsFamily),
@@ -176,7 +176,7 @@ namespace gfx::vulkan
             });
         }
 
-        util::logTrace(
+        util::logLog(
             "Instantiating queues! | Graphics: {} | Async Compute: {} | Async "
             "Transfer: {}",
             numberOfGraphicsQueues,

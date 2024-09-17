@@ -133,7 +133,7 @@ namespace gfx
                 std::memory_order_release);
         }
 
-        util::logTrace("Initalized window");
+        util::logLog("Initalized window");
     }
 
     Window::~Window()

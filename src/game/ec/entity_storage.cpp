@@ -1,11 +1,12 @@
 #include "entity_storage.hpp"
 #include "entity.hpp"
+#include "util/misc.hpp"
 #include <__expected/unexpected.h>
 #include <memory>
 #include <optional>
-#include <type_traits>
 #include <util/log.hpp>
-#include <utility>
+
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
 
 namespace game::ec
 {
@@ -42,12 +43,73 @@ namespace game::ec
         return e;
     }
 
-    std::expected<void, EntityStorage::EntityDead>
-    EntityStorage::destroy(Entity e)
+    std::span<const EntityStorage::EntityComponentStorage>
+    EntityStorage::getAllComponents(Entity e)
     {
         if (!this->isAlive(e))
         {
-            return std::unexpected(EntityDead {});
+            return {};
+        }
+
+        EntityMetadata& entityMetadata = (*this->metadata)[e.id];
+
+        const std::size_t numberOfComponents =
+            entityMetadata.number_of_components;
+
+        switch (getStoragePoolId(numberOfComponents))
+        {
+        case 0:
+            return {
+                this->storage_0.lookup(entityMetadata.component_storage_offset)
+                    .storage.data(),
+                numberOfComponents};
+        case 1:
+            return {
+                this->storage_1.lookup(entityMetadata.component_storage_offset)
+                    .storage.data(),
+                numberOfComponents};
+        case 2:
+            return {
+                this->storage_2.lookup(entityMetadata.component_storage_offset)
+                    .storage.data(),
+                numberOfComponents};
+        case 3:
+            return {
+                this->storage_3.lookup(entityMetadata.component_storage_offset)
+                    .storage.data(),
+                numberOfComponents};
+        case 4:
+            return {
+                this->storage_4.lookup(entityMetadata.component_storage_offset)
+                    .storage.data(),
+                numberOfComponents};
+        case 5:
+            return {
+                this->storage_5.lookup(entityMetadata.component_storage_offset)
+                    .storage.data(),
+                numberOfComponents};
+        case 6:
+            return {
+                this->storage_6.lookup(entityMetadata.component_storage_offset)
+                    .storage.data(),
+                numberOfComponents};
+        case 7:
+            return {
+                this->storage_7.lookup(entityMetadata.component_storage_offset)
+                    .storage.data(),
+                numberOfComponents};
+        default:
+            util::panic("out of boundsasfd");
+        }
+
+        return {};
+    }
+
+    bool EntityStorage::destroy(Entity e)
+    {
+        if (!this->isAlive(e))
+        {
+            return false;
         }
 
         this->entity_id_allocator.free(e.id);
@@ -72,28 +134,28 @@ namespace game::ec
         {
         case 0:
             this->storage_0.free(entityMetadata.component_storage_offset);
-            break;
+            return true;
         case 1:
             this->storage_1.free(entityMetadata.component_storage_offset);
-            break;
+            return true;
         case 2:
             this->storage_2.free(entityMetadata.component_storage_offset);
-            break;
+            return true;
         case 3:
             this->storage_3.free(entityMetadata.component_storage_offset);
-            break;
+            return true;
         case 4:
             this->storage_4.free(entityMetadata.component_storage_offset);
-            break;
+            return true;
         case 5:
             this->storage_5.free(entityMetadata.component_storage_offset);
-            break;
+            return true;
         case 6:
             this->storage_6.free(entityMetadata.component_storage_offset);
-            break;
+            return true;
         case 7:
             this->storage_7.free(entityMetadata.component_storage_offset);
-            break;
+            return true;
         default:
             util::panic("storage too high!");
         }
@@ -107,12 +169,20 @@ namespace game::ec
         return (*this->metadata)[e.id].generation == e.generation;
     }
 
-    std::expected<void, EntityStorage::ComponentModificationError>
+    std::expected<void, ComponentModificationError>
     EntityStorage::addComponent(Entity e, EntityComponentStorage c)
     {
-        if (!this->isAlive(e))
+        const std::expected<bool, EntityDead> alreadyHasComponent =
+            this->hasComponent(e, c);
+
+        if (!alreadyHasComponent.has_value())
         {
             return std::unexpected(ComponentModificationError::EntityDead);
+        }
+        else if (*alreadyHasComponent)
+        {
+            return std::unexpected(
+                ComponentModificationError::ComponentConflict);
         }
 
         EntityMetadata& entityMetadata = (*this->metadata)[e.id];
@@ -120,12 +190,6 @@ namespace game::ec
         if (entityMetadata.number_of_components == MaxComponentsPerEntity)
         {
             util::panic("tried to add too many components");
-        }
-
-        if (this->hasComponent(e, c))
-        {
-            return std::unexpected(
-                ComponentModificationError::ComponentConflict);
         }
 
         const U8 currentNumberOfComponents =
@@ -231,9 +295,11 @@ namespace game::ec
         default:
             util::panic("pool too high!");
         }
+
+        return {};
     }
 
-    std::expected<void, EntityStorage::ComponentModificationError>
+    std::expected<void, ComponentModificationError>
     EntityStorage::removeComponent(Entity e, EntityComponentStorage c)
     {
         if (!this->isAlive(e))
@@ -354,9 +420,11 @@ namespace game::ec
                     poolAfterRemoval);
             }
         }
+
+        return {};
     }
 
-    std::expected<bool, EntityStorage::EntityDead>
+    std::expected<bool, EntityDead>
     EntityStorage::hasComponent(Entity e, EntityComponentStorage c)
     {
         if (!this->isAlive(e))
@@ -364,7 +432,9 @@ namespace game::ec
             return std::unexpected(EntityDead {});
         }
 
-        return this->getIndexOfComponentUnchecked(e, c).has_value();
+        auto res = this->getIndexOfComponentUnchecked(e, c).has_value();
+
+        return res;
     }
 
     std::optional<U8> EntityStorage::getIndexOfComponentUnchecked(
@@ -384,7 +454,7 @@ namespace game::ec
             for (std::size_t i = 0; i < entityMetadata.number_of_components;
                  ++i)
             {
-                if (components[i] == c)
+                if (components[i].component_type_id == c.component_type_id)
                 {
                     return i;
                 }
@@ -418,3 +488,5 @@ namespace game::ec
         return std::nullopt;
     }
 } // namespace game::ec
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)

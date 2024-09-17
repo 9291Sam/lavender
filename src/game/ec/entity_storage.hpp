@@ -1,16 +1,28 @@
 #pragma once
 
 #include "entity.hpp"
-#include <__expected/expected.h>
 #include <array>
 #include <bit>
+#include <expected>
+#include <format>
 #include <memory>
 #include <optional>
+#include <span>
 #include <type_traits>
 #include <util/index_allocator.hpp>
 
 namespace game::ec
 {
+
+    enum class ComponentModificationError
+    {
+        EntityDead,
+        ComponentConflict
+    };
+
+    struct EntityDead
+    {};
+
     class EntityStorage
     {
     public:
@@ -19,6 +31,16 @@ namespace game::ec
             U32 number_of_components : 8;
             U32 generation           : 24;
             U32 component_storage_offset;
+
+            constexpr operator std::string () const
+            {
+                return std::format(
+                    "EntityMetadata | {} Components | Generation {} | Offset: "
+                    "{}",
+                    this->number_of_components,
+                    this->generation,
+                    this->component_storage_offset);
+            }
         };
         static_assert(sizeof(EntityMetadata) == sizeof(U64));
 
@@ -91,14 +113,6 @@ namespace game::ec
             std::vector<StoredEntityComponents<N>> storage;
         };
 
-        enum class ComponentModificationError
-        {
-            EntityDead,
-            ComponentConflict
-        };
-
-        struct EntityDead
-        {};
 
     public:
 
@@ -110,8 +124,9 @@ namespace game::ec
         EntityStorage& operator= (const EntityStorage&) = delete;
         EntityStorage& operator= (EntityStorage&&)      = delete;
 
-        [[nodiscard]] Entity                          create();
-        [[nodiscard]] std::expected<void, EntityDead> destroy(Entity);
+        [[nodiscard]] Entity create();
+        // Returns true if the entity was succesfully destroyed
+        [[nodiscard]] bool   destroy(Entity);
 
         [[nodiscard]] bool isAlive(Entity);
 
@@ -122,6 +137,9 @@ namespace game::ec
 
         [[nodiscard]] std::expected<bool, EntityDead>
             hasComponent(Entity, EntityComponentStorage);
+
+        [[nodiscard]] std::span<const EntityComponentStorage>
+            getAllComponents(Entity);
 
     private:
 
