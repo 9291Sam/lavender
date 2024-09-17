@@ -100,15 +100,14 @@ namespace game::ec
         EntityStorage& operator= (const EntityStorage&) = delete;
         EntityStorage& operator= (EntityStorage&&)      = delete;
 
-        [[nodiscard]] Entity createEntity();
-        void                 deleteEntity(Entity);
+        [[nodiscard]] Entity create();
+        [[nodiscard]] bool   destroy(Entity);
 
-        bool isEntityAlive(Entity);
+        [[nodiscard]] bool isAlive(Entity);
 
-        void addComponentToEntity(Entity, EntityComponentStorage);
-        void removeComponentFromEntity(Entity, EntityComponentStorage);
-
-        bool entityHasComponent(Entity, EntityComponentStorage);
+        [[nodiscard]] bool addComponent(Entity, EntityComponentStorage);
+        [[nodiscard]] bool removeComponent(Entity, EntityComponentStorage);
+        [[nodiscard]] bool hasComponent(Entity, EntityComponentStorage);
 
     private:
 

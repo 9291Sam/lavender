@@ -8,6 +8,7 @@
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
 #include "util/threads.hpp"
+#include <__concepts/invocable.h>
 #include <array>
 #include <boost/container/small_vector.hpp>
 #include <boost/unordered/concurrent_flat_set.hpp>
@@ -35,19 +36,55 @@ namespace game::ec
     static_assert(FooComponent::Id == 0);
     static_assert(BarComponent::Id == 1);
 
-    class ECManager
+    class EntityComponentManager
     {
     public:
 
-        explicit ECManager();
-        ~ECManager() noexcept = default;
+        explicit EntityComponentManager();
+        ~EntityComponentManager() noexcept = default;
 
-        ECManager(const ECManager&)             = delete;
-        ECManager(ECManager&&)                  = delete;
-        ECManager& operator= (const ECManager&) = delete;
-        ECManager& operator= (ECManager&&)      = delete;
+        EntityComponentManager(const EntityComponentManager&) = delete;
+        EntityComponentManager(EntityComponentManager&&)      = delete;
+        EntityComponentManager&
+        operator= (const EntityComponentManager&)                    = delete;
+        EntityComponentManager& operator= (EntityComponentManager&&) = delete;
 
-        Entity createEntity() const
+        /// Creates a new entity without any components
+        [[nodiscard]] Entity createEntity() const;
+
+        /// Tries to destroy a given entity
+        /// Returns:
+        ///    true - the entity was successfully destroyed
+        ///    false - the entity was already destroyed
+        [[nodiscard]] bool tryDestroyEntity(Entity) const;
+        /// Warns on failure
+        void               destroyEntity(Entity) const;
+
+        /// Returns whether or not this entity is alive
+        bool isEntityAlive(Entity) const;
+
+        template<Component C>
+        [[nodiscard]] bool tryAddComponent(Entity, C) const;
+        template<Component C>
+        void addComponent(Entity, C) const;
+
+        template<Component C>
+        [[nodiscard]] std::optional<C> tryRemoveComponent(Entity) const;
+        template<Component C>
+        C removeComponent(Entity) const;
+
+        template<Component... C>
+        [[nodiscard]] bool tryModifyComponent(std::invocable<C...> auto) const;
+        template<Component... C>
+        void modifyComponent(std::invocable<C...> auto) const;
+
+        template<Component C>
+        [[nodiscard]] bool hasComponent(Entity) const;
+
+        bool tryAddComponent
+
+            Entity
+            createEntity() const
         {
             return this->entity_storage.lock(
                 [](EntityStorage& storage)

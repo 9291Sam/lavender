@@ -102,6 +102,95 @@ namespace util
     }; // class Mutex
 
     template<class... T>
+    class RecursiveMutex
+    {
+    public:
+
+        explicit RecursiveMutex()
+            : mutex {std::make_unique<std::recursive_mutex>()}
+        {}
+        explicit RecursiveMutex(T&&... t) // NOLINT
+            : mutex {std::make_unique<std::recursive_mutex>()}
+            , tuple {std::forward<T>(t)...}
+        {}
+        ~RecursiveMutex() = default;
+
+        RecursiveMutex(const RecursiveMutex&)                 = delete;
+        RecursiveMutex(RecursiveMutex&&) noexcept             = default;
+        RecursiveMutex& operator= (const RecursiveMutex&)     = delete;
+        RecursiveMutex& operator= (RecursiveMutex&&) noexcept = default;
+
+        decltype(auto) lock(std::invocable<T&...> auto func) const
+            noexcept(noexcept(std::apply(func, this->tuple)))
+        {
+            std::unique_lock lock {*this->mutex};
+
+            return std::apply(func, this->tuple);
+        }
+
+        auto tryLock(std::invocable<T&...> auto&& func) const
+            noexcept(noexcept(std::apply(func, this->tuple)))
+                -> std::optional<
+                    std::decay_t<std::invoke_result_t<decltype(func), T&...>>>
+            requires (!std::same_as<
+                      void,
+                      std::invoke_result_t<decltype(func), T&...>>)
+        {
+            std::unique_lock<std::recursive_mutex> lock {
+                *this->mutex, std::defer_lock};
+
+            if (lock.try_lock())
+            {
+                return std::optional {std::apply(
+                    std::forward<decltype(func)>(func), this->tuple)};
+            }
+            else
+            {
+                return std::nullopt;
+            }
+        }
+
+        bool tryLock(std::invocable<T&...> auto&& func) const
+            noexcept(noexcept(std::apply(func, this->tuple)))
+            requires std::
+                same_as<void, std::invoke_result_t<decltype(func), T&...>>
+        {
+            std::unique_lock<std::recursive_mutex> lock {
+                *this->mutex, std::defer_lock};
+
+            if (lock.try_lock())
+            {
+                std::apply(std::forward<decltype(func)>(func), this->tuple);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        std::tuple_element_t<0, std::tuple<T...>> copyInner() const
+            requires (sizeof...(T) == 1)
+        {
+            using V = std::tuple_element_t<0, std::tuple<T...>>;
+
+            V output {};
+
+            this->lock(
+                [&](const V& data)
+                {
+                    output = data;
+                });
+
+            return output;
+        }
+
+    private:
+        mutable std::unique_ptr<std::recursive_mutex> mutex;
+        mutable std::tuple<T...>                      tuple;
+    }; // class RecursiveMutex
+
+    template<class... T>
     class RwLock
     {
     public:
