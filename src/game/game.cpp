@@ -8,6 +8,7 @@
 #include "render/triangle_component.hpp"
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/allocator.hpp>
+#include <gfx/vulkan/device.hpp>
 #include <gfx/window.hpp>
 #include <memory>
 #include <random>
@@ -41,7 +42,10 @@ namespace game
                 .transform.translation {glm::vec3 {1.3, 3.0, 3.0}}});
     }
 
-    Game::~Game() noexcept = default;
+    Game::~Game() noexcept
+    {
+        this->renderer->getDevice()->getDevice().waitIdle();
+    }
 
     void Game::run()
     {
@@ -65,8 +69,8 @@ namespace game
             // TODO: moving diaginally is faster
             const float moveScale = this->renderer->getWindow()->isActionActive(
                                         gfx::Window::Action::PlayerSprint)
-                                      ? 125.0f
-                                      : 50.0f;
+                                      ? 50.0f
+                                      : 10.0f;
             const float rotateSpeedScale = 6.0f;
 
             if (this->renderer->getWindow()->isActionActive(

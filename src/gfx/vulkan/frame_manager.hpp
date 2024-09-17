@@ -56,7 +56,7 @@ namespace gfx::vulkan
     public:
 
         FrameManager(const Device&, vk::SwapchainKHR);
-        ~FrameManager() = default;
+        ~FrameManager() noexcept;
 
         FrameManager(const FrameManager&)             = delete;
         FrameManager(FrameManager&&)                  = delete;
@@ -68,6 +68,7 @@ namespace gfx::vulkan
         [[nodiscard]] std::expected<void, Frame::ResizeNeeded> recordAndDisplay(
             std::function<void(std::size_t, vk::CommandBuffer, U32)>);
     private:
+        vk::Device                        device;
         std::optional<vk::Fence>          previous_frame_finished_fence;
         std::array<Frame, FramesInFlight> flying_frames;
         std::size_t                       flying_frame_index;

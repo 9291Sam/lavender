@@ -3,6 +3,7 @@
 #include "gfx/vulkan/swapchain.hpp"
 #include <compare>
 #include <functional>
+#include <gfx/vulkan/image.hpp>
 #include <memory>
 #include <util/misc.hpp>
 #include <vulkan/vulkan_format_traits.hpp>
@@ -62,7 +63,7 @@ namespace game
 
         const gfx::Renderer* renderer;
         bool                 needs_resize_transitions;
-        // TODO: depth buffer
+        gfx::vulkan::Image2D depth_buffer;
     };
 
 } // namespace game

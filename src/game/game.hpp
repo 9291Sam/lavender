@@ -43,6 +43,10 @@ namespace game
         const ec::ECManager* getECManager() const noexcept;
     private:
         // Rendering abstraction
+        // lowest level - gfx::Renderer constructs the command buffer
+        // middle level - FrameGenerator records the command buffer
+        // highest level - render::RenderManager grabs all things that need to
+        // be drawn before forwarding them to FrameGenerator
         std::unique_ptr<gfx::Renderer>         renderer;
         std::unique_ptr<FrameGenerator>        frame_generator;
         std::unique_ptr<render::RenderManager> renderable_manager;

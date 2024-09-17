@@ -65,21 +65,22 @@ namespace game::ec
             const std::span<const std::byte> componentBytes =
                 component.asBytes();
 
-            const U32 componentStorageOffset =
-                this->component_storage[C::Id].lock(
-                    [&](MuckedComponentStorage& storage)
-                    {
-                        return storage.insertComponent(entity, component);
-                    });
-
-            this->entity_storage.lock(
-                [&](EntityStorage& storage)
+            this->component_storage[C::Id].lock(
+                [&](MuckedComponentStorage& componentStorage)
                 {
-                    storage.addComponentToEntity(
-                        entity,
-                        EntityStorage::EntityComponentStorage {
-                            .component_storage_offset {componentStorageOffset},
-                            .component_type_id {C::Id}});
+                    const U32 componentStorageOffset =
+                        componentStorage.insertComponent(entity, component);
+
+                    this->entity_storage.lock(
+                        [&](EntityStorage& entityStorage)
+                        {
+                            entityStorage.addComponentToEntity(
+                                entity,
+                                EntityStorage::EntityComponentStorage {
+                                    .component_storage_offset {
+                                        componentStorageOffset},
+                                    .component_type_id {C::Id}});
+                        });
                 });
         }
 

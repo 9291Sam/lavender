@@ -1,7 +1,9 @@
 #include "frame_manager.hpp"
 #include "device.hpp"
+#include "gfx/vulkan/frame_manager.hpp"
 #include <expected>
 #include <optional>
+#include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
@@ -146,7 +148,6 @@ namespace gfx::vulkan
                         reinterpret_cast<const VkPresentInfoKHR*>(
                             &presentInfo))};
 
-
                 switch (result) // NOLINT
                 {
                 case vk::Result::eSuccess:
@@ -177,11 +178,15 @@ namespace gfx::vulkan
         return *this->frame_in_flight;
     }
 
-    FrameManager::FrameManager(const Device& device, vk::SwapchainKHR swapchain)
-        : previous_frame_finished_fence {std::nullopt}
-        , flying_frames {Frame {device, swapchain}, Frame {device, swapchain}, Frame {device, swapchain}}
+    FrameManager::FrameManager(
+        const Device& device_, vk::SwapchainKHR swapchain)
+        : device {device_.getDevice()}
+        , previous_frame_finished_fence {std::nullopt}
+        , flying_frames {Frame {device_, swapchain}, Frame {device_, swapchain}, Frame {device_, swapchain}}
         , flying_frame_index {0}
     {}
+
+    FrameManager::~FrameManager() noexcept = default;
 
     std::expected<void, Frame::ResizeNeeded> FrameManager::recordAndDisplay(
         std::function<void(std::size_t, vk::CommandBuffer, U32)> recordFunc)

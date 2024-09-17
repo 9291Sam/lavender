@@ -154,7 +154,12 @@ namespace gfx::vulkan
             default:
                 break;
             }
-            // util::panic("kill");
+            // static int count = 0;
+            // count++;
+            // if (count == 7)
+            // {
+            //     util::panic("kill");
+            // }
 
             return vk::False;
         };

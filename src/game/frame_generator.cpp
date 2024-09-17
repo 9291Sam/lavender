@@ -1,17 +1,36 @@
 #include "frame_generator.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/device.hpp"
+#include "gfx/vulkan/image.hpp"
 #include "util/misc.hpp"
 #include <compare>
 #include <cstddef>
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/swapchain.hpp>
+#include <gfx/window.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
 namespace game
 {
+    gfx::vulkan::Image2D makeDepthBuffer(
+        const gfx::vulkan::Allocator* allocator,
+        vk::Device                    device,
+        vk::Extent2D                  extent)
+    {
+        return gfx::vulkan::Image2D {
+            allocator,
+            device,
+            extent,
+            vk::Format::eD32Sfloat,
+            vk::ImageLayout::eUndefined,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment,
+            vk::ImageAspectFlagBits::eDepth,
+            vk::ImageTiling::eOptimal,
+            vk::MemoryPropertyFlagBits::eDeviceLocal,
+            "Depth buffer"};
+    }
 
     std::strong_ordering
     FrameGenerator::RecordObject::RecordObject::operator<=> (
@@ -40,6 +59,10 @@ namespace game
     FrameGenerator::FrameGenerator(const gfx::Renderer* renderer_)
         : renderer {renderer_}
         , needs_resize_transitions {true}
+        , depth_buffer {makeDepthBuffer(
+              this->renderer->getAllocator(),
+              this->renderer->getDevice()->getDevice(),
+              this->renderer->getWindow()->getFramebufferSize())}
     {}
 
     void FrameGenerator::internalGenerateFrame(
@@ -176,6 +199,31 @@ namespace game
                 {},
                 {},
                 swapchainMemoryBarriers);
+
+            commandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                vk::PipelineStageFlagBits::eEarlyFragmentTests,
+                {},
+                {},
+                {},
+                {vk::ImageMemoryBarrier {
+                    .sType {vk::StructureType::eImageMemoryBarrier},
+                    .pNext {nullptr},
+                    .srcAccessMask {vk::AccessFlagBits::eNone},
+                    .dstAccessMask {
+                        vk::AccessFlagBits::eDepthStencilAttachmentRead},
+                    .oldLayout {vk::ImageLayout::eUndefined},
+                    .newLayout {vk::ImageLayout::eDepthAttachmentOptimal},
+                    .srcQueueFamilyIndex {graphicsQueueIndex},
+                    .dstQueueFamilyIndex {graphicsQueueIndex},
+                    .image {*this->depth_buffer},
+                    .subresourceRange {vk::ImageSubresourceRange {
+                        .aspectMask {vk::ImageAspectFlagBits::eDepth},
+                        .baseMipLevel {0},
+                        .levelCount {1},
+                        .baseArrayLayer {0},
+                        .layerCount {1}}},
+                }});
         }
 
         commandBuffer.pipelineBarrier(
@@ -202,6 +250,32 @@ namespace game
                     .layerCount {1}}},
             }});
 
+        commandBuffer.pipelineBarrier(
+            vk::PipelineStageFlagBits::eEarlyFragmentTests,
+            vk::PipelineStageFlagBits::eEarlyFragmentTests,
+            vk::DependencyFlags {},
+            {},
+            {},
+            {vk::ImageMemoryBarrier {
+                .sType {vk::StructureType::eImageMemoryBarrier},
+                .pNext {nullptr},
+                .srcAccessMask {
+                    vk::AccessFlagBits::eDepthStencilAttachmentRead},
+                .dstAccessMask {
+                    vk::AccessFlagBits::eDepthStencilAttachmentWrite},
+                .oldLayout {vk::ImageLayout::eDepthAttachmentOptimal},
+                .newLayout {vk::ImageLayout::eDepthAttachmentOptimal},
+                .srcQueueFamilyIndex {graphicsQueueIndex},
+                .dstQueueFamilyIndex {graphicsQueueIndex},
+                .image {*this->depth_buffer},
+                .subresourceRange {vk::ImageSubresourceRange {
+                    .aspectMask {vk::ImageAspectFlagBits::eDepth},
+                    .baseMipLevel {0},
+                    .levelCount {1},
+                    .baseArrayLayer {0},
+                    .layerCount {1}}},
+            }});
+
         commandBuffer.setViewport(0, {renderViewport});
         commandBuffer.setScissor(0, {scissor});
 
@@ -220,21 +294,20 @@ namespace game
             },
         };
 
-        // const vk::RenderingAttachmentInfo depthAttachmentInfo {
-        //     .sType {vk::StructureType::eRenderingAttachmentInfo},
-        //     .pNext {nullptr},
-        //     .imageView {thisSwapchainImageView},
-        //     .imageLayout {vk::ImageLayout::eColorAttachmentOptimal},
-        //     .resolveMode {vk::ResolveModeFlagBits::eNone},
-        //     .resolveImageView {nullptr},
-        //     .resolveImageLayout {},
-        //     .loadOp {vk::AttachmentLoadOp::eClear},
-        //     .storeOp {vk::AttachmentStoreOp::eStore},
-        //     .clearValue {
-        //         vk::ClearColorValue {.float32 {{0.709f, 0.494f,
-        //         0.862f, 1.0f}}},
-        //     },
-        // };
+        const vk::RenderingAttachmentInfo depthAttachmentInfo {
+            .sType {vk::StructureType::eRenderingAttachmentInfo},
+            .pNext {nullptr},
+            .imageView {this->depth_buffer.getView()},
+            .imageLayout {vk::ImageLayout::eDepthAttachmentOptimal},
+            .resolveMode {vk::ResolveModeFlagBits::eNone},
+            .resolveImageView {nullptr},
+            .resolveImageLayout {},
+            .loadOp {vk::AttachmentLoadOp::eClear},
+            .storeOp {vk::AttachmentStoreOp::eStore},
+            .clearValue {
+                .depthStencil {
+                    vk::ClearDepthStencilValue {.depth {1.0}, .stencil {0}}},
+            }}; // namespace game
 
         const vk::RenderingInfo simpleColorRenderingInfo {
             .sType {vk::StructureType::eRenderingInfo},
@@ -245,7 +318,7 @@ namespace game
             .viewMask {0},
             .colorAttachmentCount {1},
             .pColorAttachments {&colorAttachmentInfo},
-            .pDepthAttachment {nullptr},
+            .pDepthAttachment {&depthAttachmentInfo},
             .pStencilAttachment {nullptr},
         };
 
@@ -286,11 +359,37 @@ namespace game
                     .baseArrayLayer {0},
                     .layerCount {1}}},
             }});
+
+        commandBuffer.pipelineBarrier(
+            vk::PipelineStageFlagBits::eLateFragmentTests,
+            vk::PipelineStageFlagBits::eLateFragmentTests,
+            vk::DependencyFlags {},
+            {},
+            {},
+            {vk::ImageMemoryBarrier {
+                .sType {vk::StructureType::eImageMemoryBarrier},
+                .pNext {nullptr},
+                .srcAccessMask {
+                    vk::AccessFlagBits::eDepthStencilAttachmentWrite},
+                .dstAccessMask {
+                    vk::AccessFlagBits::eDepthStencilAttachmentRead},
+                .oldLayout {vk::ImageLayout::eDepthAttachmentOptimal},
+                .newLayout {vk::ImageLayout::eDepthAttachmentOptimal},
+                .srcQueueFamilyIndex {graphicsQueueIndex},
+                .dstQueueFamilyIndex {graphicsQueueIndex},
+                .image {*this->depth_buffer},
+                .subresourceRange {vk::ImageSubresourceRange {
+                    .aspectMask {vk::ImageAspectFlagBits::eDepth},
+                    .baseMipLevel {0},
+                    .levelCount {1},
+                    .baseArrayLayer {0},
+                    .layerCount {1}}},
+            }});
     }
 
     void FrameGenerator::generateFrame(std::span<RecordObject> recordObjects)
     {
-        this->needs_resize_transitions = this->renderer->recordOnThread(
+        const bool resizeOcurred = this->renderer->recordOnThread(
             [&](vk::CommandBuffer       commandBuffer,
                 U32                     swapchainImageIdx,
                 gfx::vulkan::Swapchain& swapchain)
@@ -298,5 +397,15 @@ namespace game
                 this->internalGenerateFrame(
                     commandBuffer, swapchainImageIdx, swapchain, recordObjects);
             });
+
+        this->needs_resize_transitions = resizeOcurred;
+
+        if (resizeOcurred)
+        {
+            this->depth_buffer = makeDepthBuffer(
+                this->renderer->getAllocator(),
+                this->renderer->getDevice()->getDevice(),
+                this->renderer->getWindow()->getFramebufferSize());
+        }
     }
 } // namespace game

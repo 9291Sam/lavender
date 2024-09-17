@@ -50,11 +50,11 @@ namespace game::render
                     .polygon_mode {vk::PolygonMode::eFill},
                     .cull_mode {vk::CullModeFlagBits::eNone},
                     .front_face {vk::FrontFace::eClockwise},
-                    .depth_test_enable {false},
-                    .depth_write_enable {false},
-                    .depth_compare_op {vk::CompareOp::eNever},
+                    .depth_test_enable {true},
+                    .depth_write_enable {true},
+                    .depth_compare_op {vk::CompareOp::eLess},
                     .color_format {gfx::Renderer::ColorFormat.format},
-                    .depth_format {},
+                    .depth_format {gfx::Renderer::DepthFormat},
                     .layout {
                         this->game->getRenderer()
                             ->getAllocator()
