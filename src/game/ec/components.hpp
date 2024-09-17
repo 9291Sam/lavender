@@ -8,7 +8,7 @@
 
 namespace game
 {
-    using ComponentId = U8;
+    using ComponentTypeId = U8;
 
     template<class T>
     consteval U8 getComponentId() noexcept = delete;

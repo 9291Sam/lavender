@@ -1,6 +1,7 @@
 #pragma once
 
 #include "entity.hpp"
+#include "game/ec/components.hpp"
 #include <array>
 #include <bit>
 #include <expected>
@@ -132,19 +133,23 @@ namespace game::ec
 
         [[nodiscard]] std::expected<void, ComponentModificationError>
             addComponent(Entity, EntityComponentStorage);
-        [[nodiscard]] std::expected<void, ComponentModificationError>
-            removeComponent(Entity, EntityComponentStorage);
+        [[nodiscard]] std::
+            expected<EntityComponentStorage, ComponentModificationError>
+                removeComponent(Entity, ComponentTypeId);
 
         [[nodiscard]] std::expected<bool, EntityDead>
-            hasComponent(Entity, EntityComponentStorage);
+            hasComponent(Entity, ComponentTypeId);
+
+        [[nodiscard]] std::
+            expected<EntityComponentStorage, ComponentModificationError>
+                readComponent(Entity, ComponentTypeId);
 
         [[nodiscard]] std::span<const EntityComponentStorage>
             getAllComponents(Entity);
 
     private:
 
-        std::optional<U8>
-            getIndexOfComponentUnchecked(Entity, EntityComponentStorage);
+        std::optional<U8> getIndexOfComponentUnchecked(Entity, ComponentTypeId);
 
         static constexpr std::size_t MaxEntities = 1048576;
 

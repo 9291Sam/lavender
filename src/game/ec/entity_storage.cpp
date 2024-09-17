@@ -307,7 +307,8 @@ namespace game::ec
             return std::unexpected(ComponentModificationError::EntityDead);
         }
 
-        const std::optional<U8> idx = this->getIndexOfComponentUnchecked(e, c);
+        const std::optional<U8> idx =
+            this->getIndexOfComponentUnchecked(e, c.component_type_id);
 
         if (idx.has_value())
         {
@@ -424,8 +425,7 @@ namespace game::ec
         return {};
     }
 
-    std::expected<bool, EntityDead>
-    EntityStorage::hasComponent(Entity e, EntityComponentStorage c)
+    std::expected<bool, EntityDead> EntityStorage::hasComponent(Entity e, U8 c)
     {
         if (!this->isAlive(e))
         {
@@ -437,8 +437,8 @@ namespace game::ec
         return res;
     }
 
-    std::optional<U8> EntityStorage::getIndexOfComponentUnchecked(
-        Entity e, EntityComponentStorage c)
+    std::optional<U8>
+    EntityStorage::getIndexOfComponentUnchecked(Entity e, U8 componentTypeId)
     {
         const EntityMetadata& entityMetadata = (*this->metadata)[e.id];
 
@@ -454,7 +454,7 @@ namespace game::ec
             for (std::size_t i = 0; i < entityMetadata.number_of_components;
                  ++i)
             {
-                if (components[i].component_type_id == c.component_type_id)
+                if (components[i].component_type_id == componentTypeId)
                 {
                     return i;
                 }

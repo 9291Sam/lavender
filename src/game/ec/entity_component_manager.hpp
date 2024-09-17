@@ -89,6 +89,7 @@ namespace game::ec
                     return wasComponentAddedToEntity;
                 });
         }
+
         template<Component C>
         void addComponent(
             Entity               e,
@@ -129,28 +130,15 @@ namespace game::ec
         // const; template<Component... C> void
         // modifyComponent(std::invocable<C...> auto) const;
 
-        // template<Component C>
-        // [[nodiscard]] bool hasComponent(Entity) const;
-
-        // bool tryAddComponent
-
-        // Returns true if the entity was destroyed, otherwise the entity wasn't
-        // alive
-        // bool tryDestroyEntity(Entity e) const
-        // {
-        //     return this->entity_storage.lock(
-        //         [&](EntityStorage& storage)
-        //         {
-        //             if (!storage.isEntityAlive(e))
-        //             {
-        //                 return false;
-        //             }
-
-        //             storage.deleteEntity(e);
-
-        //             return true;
-        //         });
-        // }
+        template<Component C>
+        [[nodiscard]] bool hasComponent(Entity e) const
+        {
+            return this->entity_storage.lock(
+                [&](EntityStorage& storage)
+                {
+                    return storage.hasComponent(e, C::Id);
+                });
+        }
 
         template<Component C>
         void iterateComponents(std::invocable<Entity, const C&> auto func) const
