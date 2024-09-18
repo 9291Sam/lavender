@@ -4,6 +4,7 @@
 #include "components.hpp"
 #include "entity.hpp"
 #include "game/ec/entity_storage.hpp"
+#include "type_erased_component_storage.hpp"
 #include "util/threads.hpp"
 #include <array>
 #include <boost/container/small_vector.hpp>
@@ -59,13 +60,13 @@ namespace game::ec
 
         template<Component C>
         [[nodiscard]] std::expected<void, ComponentModificationError>
-        tryAddComponent(Entity e, C c) const
+        tryAddComponent(Entity e, C&& c) const
         {
             return this->component_storage[C::Id].lock(
-                [&](MuckedComponentStorage& componentStorage)
+                [&](TypeErasedComponentStorage& componentStorage)
                 {
                     const U32 storedOffset =
-                        componentStorage.insertComponent(e, c);
+                        componentStorage.addComponent(e, std::forward<C>(c));
 
                     std::expected<void, ComponentModificationError>
                         wasComponentAddedToEntity = this->entity_storage.lock(
@@ -83,7 +84,7 @@ namespace game::ec
                     // reason, delete the component from storage
                     if (!wasComponentAddedToEntity.has_value())
                     {
-                        componentStorage.deleteComponent<C>(storedOffset);
+                        componentStorage.deleteComponent(storedOffset);
                     }
 
                     return wasComponentAddedToEntity;
@@ -93,12 +94,12 @@ namespace game::ec
         template<Component C>
         void addComponent(
             Entity               e,
-            C                    c,
+            C&&                  c,
             std::source_location location =
                 std::source_location::current()) const
         {
             std::expected<void, ComponentModificationError> tryAddResult =
-                this->tryAddComponent(e, c);
+                this->tryAddComponent(e, std::forward<C>(c));
 
             if (!tryAddResult.has_value())
             {
@@ -135,9 +136,9 @@ namespace game::ec
                     if (result.has_value())
                     {
                         return this->component_storage[C::Id].lock(
-                            [&](MuckedComponentStorage& componentStorage)
+                            [&](TypeErasedComponentStorage& componentStorage)
                             {
-                                return componentStorage.deleteComponent<C>(
+                                return componentStorage.takeComponent<C>(
                                     result->component_storage_offset);
                             });
                     }
@@ -155,7 +156,25 @@ namespace game::ec
                 });
         }
         template<Component C>
-        C removeComponent(Entity) const;
+        C removeComponent(Entity e) const
+        {
+            std::expected<std::optional<C>, EntityDead> tryRemoveResult =
+                this->tryRemoveComponent<C>(e);
+
+            if (!tryRemoveResult.has_value())
+            {
+                util::panic("tried to remove component from dead entity!");
+            }
+
+            if (!tryRemoveResult->has_value())
+            {
+                util::panic(
+                    "tried to remove component {} which didn't exist",
+                    getComponentName<C::Id>());
+            }
+
+            return std::move(**tryRemoveResult);
+        }
 
         // template<Component... C>
         // [[nodiscard]] bool tryModifyComponent(std::invocable<C...> auto)
@@ -176,7 +195,7 @@ namespace game::ec
         void iterateComponents(std::invocable<Entity, const C&> auto func) const
         {
             this->component_storage[C::Id].lock(
-                [&](MuckedComponentStorage& storage)
+                [&](TypeErasedComponentStorage& storage)
                 {
                     storage.iterateComponents<C>(func);
                 });
@@ -185,7 +204,7 @@ namespace game::ec
     private:
 
         std::array<
-            util::RecursiveMutex<MuckedComponentStorage>,
+            util::RecursiveMutex<TypeErasedComponentStorage>,
             NumberOfGameComponents>
                                             component_storage;
         util::RecursiveMutex<EntityStorage> entity_storage;

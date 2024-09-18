@@ -19,11 +19,11 @@ namespace game::ec
         ~TypeErasedComponentStorage() noexcept = default;
 
         TypeErasedComponentStorage(const TypeErasedComponentStorage&) = delete;
-        TypeErasedComponentStorage(TypeErasedComponentStorage&&)      = delete;
+        TypeErasedComponentStorage(TypeErasedComponentStorage&&)      = default;
         TypeErasedComponentStorage&
         operator= (const TypeErasedComponentStorage&) = delete;
         TypeErasedComponentStorage&
-        operator= (TypeErasedComponentStorage&&) = delete;
+        operator= (TypeErasedComponentStorage&&) = default;
 
         template<Component C>
         [[nodiscard]] U32 addComponent(Entity parent, C&& c)

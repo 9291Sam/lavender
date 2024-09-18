@@ -2,6 +2,7 @@
 #include "game/ec/component_storage.hpp"
 #include "game/ec/entity.hpp"
 #include "game/ec/entity_storage.hpp"
+#include "type_erased_component_storage.hpp"
 #include "util/threads.hpp"
 #include <source_location>
 #include <type_traits>
@@ -10,12 +11,9 @@ namespace game::ec
 {
     EntityComponentManager::EntityComponentManager()
         : component_storage {
-              util::RecursiveMutex {
-                  MuckedComponentStorage(128, getComponentSize<0>())},
-              util::RecursiveMutex {
-                  MuckedComponentStorage(128, getComponentSize<1>())},
-              util::RecursiveMutex {
-                  MuckedComponentStorage(128, getComponentSize<2>())}}
+              util::RecursiveMutex {TypeErasedComponentStorage()},
+              util::RecursiveMutex {TypeErasedComponentStorage()},
+              util::RecursiveMutex {TypeErasedComponentStorage()}}
     {}
 
     Entity EntityComponentManager::createEntity() const
@@ -32,9 +30,6 @@ namespace game::ec
         return this->entity_storage.lock(
             [&](EntityStorage& entityStorage)
             {
-                const std::span<const EntityStorage::EntityComponentStorage>
-                    maybeAllComponents = entityStorage.getAllComponents(e);
-
                 const bool willEntityBeDestroyed = entityStorage.isAlive(e);
 
                 if (willEntityBeDestroyed)
@@ -46,12 +41,12 @@ namespace game::ec
                         this->component_storage[storedComponent
                                                     .component_type_id]
                             .lock(
-                                [&](MuckedComponentStorage& componentStorage)
+                                [&](TypeErasedComponentStorage&
+                                        componentStorage)
                                 {
                                     componentStorage.deleteComponent(
                                         storedComponent
-                                            .component_storage_offset,
-                                        componentStorage.getDestructor());
+                                            .component_storage_offset);
                                 });
                     }
                 }
