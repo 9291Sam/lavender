@@ -119,6 +119,7 @@ namespace game::ec
                             this->owned_storage
                             + this->type_info.size * idxToMoveToNewArray);
                     });
+
                 operator delete (
                     this->owned_storage,
                     std::align_val_t {this->type_info.align});

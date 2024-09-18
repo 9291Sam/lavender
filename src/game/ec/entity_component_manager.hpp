@@ -216,8 +216,35 @@ namespace game::ec
                 });
         }
         template<Component C>
-        void modifyComponent(std::invocable<C> auto) const
-        {}
+        void modifyComponent(
+            Entity                 e,
+            std::invocable<C> auto func,
+            std::source_location   location =
+                std::source_location::current()) const
+        {
+            std::expected<void, ComponentModificationError> modifyError =
+                this->tryModifyComponent<C>(e, func);
+
+            if (!modifyError.has_value())
+            {
+                switch (modifyError.error())
+                {
+                case ComponentModificationError::ComponentConflict:
+                    util::logWarn<>(
+                        "Tried to modify component which doesn't exist",
+                        location);
+                    break;
+                case ComponentModificationError::EntityDead:
+                    util::logWarn<>(
+                        "Tried to modify component on dead entity", location);
+                    break;
+                default:
+                    util::panic(
+                        "Unexpected tryAddResult.error() {}",
+                        util::toUnderlying(modifyError.error()));
+                }
+            }
+        }
 
         template<Component C>
         [[nodiscard]] std::expected<bool, EntityDead>

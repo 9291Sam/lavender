@@ -28,9 +28,9 @@ namespace game
         const ec::Entity entity = this->ec_manager->createEntity();
 
         this->ec_manager->addComponent(entity, render::TriangleComponent {});
-        this->ec_manager->tryAddComponent(entity, render::TriangleComponent {});
+        // this->ec_manager->addComponent(entity, render::TriangleComponent {});
 
-        // this->ec_manager->destroyEntity(entity);
+        this->ec_manager->destroyEntity(entity);
 
         // this->ec_manager->addComponent(
         //     entity,

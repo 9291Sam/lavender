@@ -22,9 +22,9 @@ namespace util
         case LoggingLevel::Debug:
             return "Debug";
         case LoggingLevel::Log:
-            return " Log ";
+            return "Log";
         case LoggingLevel::Warn:
-            return "Warn ";
+            return "Warn";
         case LoggingLevel::Fatal:
             return "Fatal";
         case LoggingLevel::Panic:
