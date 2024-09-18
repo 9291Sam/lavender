@@ -182,19 +182,73 @@ namespace game::ec
             return std::move(**tryRemoveResult);
         }
 
-        // template<Component... C>
-        // [[nodiscard]] bool tryModifyComponent(std::invocable<C...> auto)
-        // const; template<Component... C> void
-        // modifyComponent(std::invocable<C...> auto) const;
+        template<Component C>
+        [[nodiscard]] std::expected<void, ComponentModificationError>
+        tryModifyComponent(Entity e, std::invocable<C&> auto func) const
+        {
+            return this->entity_storage.lock(
+                [&](EntityStorage& entityStorage)
+                    -> std::expected<void, ComponentModificationError>
+                {
+                    std::expected<
+                        EntityStorage::EntityComponentStorage,
+                        ComponentModificationError>
+                        readResult = entityStorage.readComponent(e, C::Id);
+
+                    if (!readResult.has_value())
+                    {
+                        return std::unexpected(readResult.error());
+                    }
+                    else
+                    {
+                        this->component_storage[C::Id].lock(
+                            [&](TypeErasedComponentStorage& componentStorage)
+                            {
+                                C& component =
+                                    componentStorage.modifyComponent<C>(
+                                        readResult->component_storage_offset);
+
+                                func(component);
+                            });
+
+                        return {};
+                    }
+                });
+        }
+        template<Component C>
+        void modifyComponent(std::invocable<C> auto) const
+        {}
 
         template<Component C>
-        [[nodiscard]] bool hasComponent(Entity e) const
+        [[nodiscard]] std::expected<bool, EntityDead>
+        tryHasComponent(Entity e) const
         {
             return this->entity_storage.lock(
                 [&](EntityStorage& storage)
                 {
                     return storage.hasComponent(e, C::Id);
                 });
+        }
+
+        template<Component C>
+        [[nodiscard]] bool hasComponent(
+            Entity               e,
+            std::source_location location =
+                std::source_location::current()) const
+        {
+            std::expected<bool, EntityDead> lookup =
+                this->tryHasComponent<C>(e);
+
+            if (!lookup.has_value())
+            {
+                util::logWarn<>(
+                    "Called hasComponent on a dead entity!", location);
+                return false;
+            }
+            else
+            {
+                return *lookup;
+            }
         }
 
         template<Component C>

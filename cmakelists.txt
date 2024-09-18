@@ -123,6 +123,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         -Wno-braced-scalar-init
         -Wno-unsafe-buffer-usage
         -Wno-gnu-zero-line-directive
+        -Wno-missing-prototypes
     )
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")

@@ -145,6 +145,7 @@ namespace gfx::vulkan
                 const vk::Result presentResult = vk::Result {
                     vk::defaultDispatchLoaderDynamic.vkQueuePresentKHR(
                         queue,
+                        // NOLINTNEXTLINE
                         reinterpret_cast<const VkPresentInfoKHR*>(
                             &presentInfo))};
 

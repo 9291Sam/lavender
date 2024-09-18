@@ -44,6 +44,25 @@ namespace game
         //     entity,
         //     render::TriangleComponent {
         //         .transform.translation {glm::vec3 {1.3, 3.0, 3.0}}});
+
+        std::mt19937_64                 gen {std::random_device {}()};
+        std::normal_distribution<float> dist {64, 3};
+
+        auto get = [&]
+        {
+            return dist(gen);
+        };
+
+        for (int i = 0; i < 1024; ++i)
+        {
+            this->ec_manager->addComponent(
+                this->ec_manager->createEntity(),
+                render::TriangleComponent {.transform {Transform {
+                    .rotation {glm::quat {glm::vec3 {get(), get(), get()}}},
+                    .translation {glm::vec3 {get(), get(), get()}},
+                    .scale {get() * 3, get() * -3, get() * 8},
+                }}});
+        }
     }
 
     Game::~Game() noexcept
@@ -60,9 +79,6 @@ namespace game
         //     workingCamera.getPosition());
 
         // this->ec_manager->addComponent<ec::FooComponent>({}, {});
-
-        std::mt19937_64                 gen {std::random_device {}()};
-        std::normal_distribution<float> dist {64, 3};
 
         while (!this->renderer->shouldWindowClose()
                && this->should_game_keep_ticking.load())
@@ -127,8 +143,8 @@ namespace game
 
             auto getMouseDeltaRadians = [&]
             {
-                // each value from -1.0 -> 1.0 representing how much it moved on
-                // the screen
+                // each value from -1.0 -> 1.0 representing how much it moved
+                // on the screen
                 const auto [nDeltaX, nDeltaY] =
                     this->renderer->getWindow()->getScreenSpaceMouseDelta();
 
@@ -145,19 +161,6 @@ namespace game
 
             workingCamera.addYaw(xDelta * rotateSpeedScale);
             workingCamera.addPitch(yDelta * rotateSpeedScale);
-
-            auto get = [&]
-            {
-                return dist(gen);
-            };
-
-            this->ec_manager->addComponent(
-                this->ec_manager->createEntity(),
-                render::TriangleComponent {.transform {Transform {
-                    .rotation {glm::quat {glm::vec3 {get(), get(), get()}}},
-                    .translation {glm::vec3 {get(), get(), get()}},
-                    .scale {get() * 3, get() * -3, get() * 8},
-                }}});
 
             this->renderable_manager->setCamera(workingCamera);
 
