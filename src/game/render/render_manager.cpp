@@ -95,7 +95,10 @@ namespace game::render
                         .pipeline {this->triangle_pipeline},
                         .descriptors {{nullptr, nullptr, nullptr, nullptr}},
                         .record_func {
-                            [=, this](vk::CommandBuffer commandBuffer)
+                            [this,
+                             transform = c.transform,
+                             lambdaCamera =
+                                 frameCamera](vk::CommandBuffer commandBuffer)
                             {
                                 const auto layout =
                                     this->game->getRenderer()
@@ -104,8 +107,8 @@ namespace game::render
                                             **this->triangle_pipeline);
 
                                 const glm::mat4 mvpMatrix =
-                                    frameCamera.getPerspectiveMatrix(
-                                        *this->game, c.transform);
+                                    lambdaCamera.getPerspectiveMatrix(
+                                        *this->game, transform);
 
                                 commandBuffer.pushConstants(
                                     **layout,

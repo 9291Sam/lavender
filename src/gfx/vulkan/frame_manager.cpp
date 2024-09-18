@@ -28,7 +28,9 @@ namespace gfx::vulkan
         const vk::CommandPoolCreateInfo commandPoolCreateInfo {
             .sType {vk::StructureType::eCommandPoolCreateInfo},
             .pNext {nullptr},
-            .flags {vk::CommandPoolCreateFlagBits::eTransient},
+            .flags {
+                vk::CommandPoolCreateFlagBits::eTransient
+                | vk::CommandPoolCreateFlagBits::eResetCommandBuffer},
             .queueFamilyIndex {
                 device_ // NOLINT
                     .getFamilyOfQueueType(Device::QueueType::Graphics)
@@ -37,19 +39,6 @@ namespace gfx::vulkan
 
         this->command_pool = this->device->getDevice().createCommandPoolUnique(
             commandPoolCreateInfo);
-
-        const vk::CommandBufferAllocateInfo commandBufferAllocateInfo {
-            .sType {vk::StructureType::eCommandBufferAllocateInfo},
-            .pNext {nullptr},
-            .commandPool {*this->command_pool},
-            .level {vk::CommandBufferLevel::ePrimary},
-            .commandBufferCount {1},
-        };
-
-        this->command_buffer = std::move(
-            this->device->getDevice()
-                .allocateCommandBuffersUnique(commandBufferAllocateInfo)
-                .at(0));
 
         this->image_available = this->device->getDevice().createSemaphoreUnique(
             semaphoreCreateInfo);
@@ -95,6 +84,26 @@ namespace gfx::vulkan
                 this->device->getDevice().resetFences(*this->frame_in_flight);
                 this->device->getDevice().resetCommandPool(*this->command_pool);
 
+                // HACK: on nvidia, there's a driver bug where calling
+                // vkResetCommandPool doesn't actually free the resources of its
+                // underlying command buffers, we can skirt around this by
+                // having an explicit call to free and reallocate the command
+                // buffer every frame.
+                this->command_buffer.reset();
+
+                const vk::CommandBufferAllocateInfo commandBufferAllocateInfo {
+                    .sType {vk::StructureType::eCommandBufferAllocateInfo},
+                    .pNext {nullptr},
+                    .commandPool {*this->command_pool},
+                    .level {vk::CommandBufferLevel::ePrimary},
+                    .commandBufferCount {1},
+                };
+
+                this->command_buffer = std::move(
+                    this->device->getDevice()
+                        .allocateCommandBuffersUnique(commandBufferAllocateInfo)
+                        .at(0));
+
                 const vk::CommandBufferBeginInfo commandBufferBeginInfo {
                     .sType {vk::StructureType::eCommandBufferBeginInfo},
                     .pNext {nullptr},
@@ -102,6 +111,7 @@ namespace gfx::vulkan
                     .pInheritanceInfo {nullptr},
                 };
 
+                this->command_buffer->reset();
                 this->command_buffer->begin(commandBufferBeginInfo);
 
                 withCommandBuffer(*this->command_buffer, maybeNextImageIdx);

@@ -33,7 +33,7 @@ namespace game::ec
             U32 generation           : 24;
             U32 component_storage_offset;
 
-            constexpr operator std::string () const
+             operator std::string () const
             {
                 return std::format(
                     "EntityMetadata | {} Components | Generation {} | Offset: "
