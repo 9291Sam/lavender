@@ -68,11 +68,11 @@ namespace gfx::vulkan
         std::optional<vk::Fence>                    previousFrameFence,
         std::function<void(vk::CommandBuffer, U32)> withCommandBuffer)
     {
-        const auto [result, maybeNextImageIdx] =
+        const auto [acquireImageResult, maybeNextImageIdx] =
             this->device->getDevice().acquireNextImageKHR(
                 this->swapchain, TimeoutNs, *this->image_available, nullptr);
 
-        switch (result) // NOLINT
+        switch (acquireImageResult) // NOLINT
         {
         case vk::Result::eSuccess:
             break;
@@ -81,7 +81,9 @@ namespace gfx::vulkan
         case vk::Result::eErrorOutOfDateKHR:
             return std::unexpected(Frame::ResizeNeeded {});
         default:
-            util::panic("acquireNextImage returned {}", vk::to_string(result));
+            util::panic(
+                "acquireNextImage returned {}",
+                vk::to_string(acquireImageResult));
         }
 
         bool shouldResize = false;
@@ -90,10 +92,8 @@ namespace gfx::vulkan
             Device::QueueType::Graphics,
             [&](vk::Queue queue)
             {
-                const vk::Device device = this->device->getDevice();
-
-                device.resetFences(*this->frame_in_flight);
-                device.resetCommandPool(*this->command_pool);
+                this->device->getDevice().resetFences(*this->frame_in_flight);
+                this->device->getDevice().resetCommandPool(*this->command_pool);
 
                 const vk::CommandBufferBeginInfo commandBufferBeginInfo {
                     .sType {vk::StructureType::eCommandBufferBeginInfo},
@@ -127,7 +127,7 @@ namespace gfx::vulkan
 
                 if (previousFrameFence.has_value())
                 {
-                    std::ignore = device.waitForFences(
+                    std::ignore = this->device->getDevice().waitForFences(
                         *previousFrameFence, vk::True, TimeoutNs);
                 }
 
@@ -142,13 +142,13 @@ namespace gfx::vulkan
                     .pResults {nullptr},
                 };
 
-                const vk::Result result = vk::Result {
+                const vk::Result presentResult = vk::Result {
                     vk::defaultDispatchLoaderDynamic.vkQueuePresentKHR(
                         queue,
                         reinterpret_cast<const VkPresentInfoKHR*>(
                             &presentInfo))};
 
-                switch (result) // NOLINT
+                switch (presentResult) // NOLINT
                 {
                 case vk::Result::eSuccess:
                     break;
@@ -159,7 +159,8 @@ namespace gfx::vulkan
                     break;
                 default:
                     util::panic(
-                        "acquireNextImage returned {}", vk::to_string(result));
+                        "acquireNextImage returned {}",
+                        vk::to_string(presentResult));
                 }
             });
 

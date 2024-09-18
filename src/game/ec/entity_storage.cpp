@@ -7,7 +7,7 @@
 #include <optional>
 #include <util/log.hpp>
 
-// NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
+// NOLINTBEGIN (cppcoreguidelines-pro-bounds-constant-array-index)
 
 namespace game::ec
 {
@@ -54,8 +54,8 @@ namespace game::ec
 
         EntityMetadata& entityMetadata = (*this->metadata)[e.id];
 
-        const std::size_t numberOfComponents =
-            entityMetadata.number_of_components;
+        const U8 numberOfComponents =
+            static_cast<U8>(entityMetadata.number_of_components);
 
         switch (getStoragePoolId(numberOfComponents))
         {
@@ -100,7 +100,8 @@ namespace game::ec
                     .storage.data(),
                 numberOfComponents};
         default:
-            util::panic("out of boundsasfd");
+            util::panic(
+                "EntityStorage::getAllComponents storage out of bounds");
         }
 
         return {};
@@ -198,10 +199,10 @@ namespace game::ec
         const U8 newNumberOfComponents =
             static_cast<U8>(currentNumberOfComponents + 1);
 
-        const U8 currentPool = getStoragePoolId(currentNumberOfComponents);
-        const U8 newPool     = getStoragePoolId(newNumberOfComponents);
+        const U8 currentPoolId = getStoragePoolId(currentNumberOfComponents);
+        const U8 newPoolId     = getStoragePoolId(newNumberOfComponents);
 
-        if (currentPool != newPool)
+        if (currentPoolId != newPoolId)
         {
             // we need to realloc and change pools;
             // change component storage offset and then move from pool to pool
@@ -225,7 +226,7 @@ namespace game::ec
                 entityMetadata.component_storage_offset = newOffset;
             };
 
-            switch (currentPool)
+            switch (currentPoolId)
             {
             case 0:
                 moveComponentsToNewPool(this->storage_0, this->storage_1);
@@ -251,7 +252,7 @@ namespace game::ec
             default:
                 util::panic(
                     "EntityStorage::addComponentToEntity new pool {} too high",
-                    currentPool);
+                    currentPoolId);
             }
         }
 
@@ -259,7 +260,7 @@ namespace game::ec
         entityMetadata.number_of_components += 1;
 
         // insert the new component
-        switch (newPool)
+        switch (newPoolId)
         {
         case 0:
             this->storage_0.lookup(entityMetadata.component_storage_offset)
@@ -563,4 +564,4 @@ namespace game::ec
     }
 } // namespace game::ec
 
-// NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)
+// NOLINTEND (cppcoreguidelines-pro-bounds-constant-array-index)

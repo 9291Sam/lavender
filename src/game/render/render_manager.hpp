@@ -7,12 +7,12 @@
 namespace gfx
 {
     class Renderer;
-}
+} // namespace gfx
 
 namespace game::ec
 {
     class EntityComponentManager;
-}
+} // namespace game::ec
 
 namespace game::render
 {

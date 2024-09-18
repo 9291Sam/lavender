@@ -4,7 +4,6 @@
 #include "game/ec/entity_component_manager.hpp"
 #include "game/frame_generator.hpp"
 #include "triangle_component.hpp"
-#include "util/log.hpp"
 #include <game/game.hpp>
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/allocator.hpp>
@@ -62,10 +61,11 @@ namespace game::render
                                 gfx::vulkan::CacheablePipelineLayoutCreateInfo {
                                     .descriptors {},
                                     .push_constants {vk::PushConstantRange {
-                                        .offset {0},
-                                        .size {64},
+
                                         .stageFlags {
-                                            vk::ShaderStageFlagBits::eVertex}}},
+                                            vk::ShaderStageFlagBits::eVertex},
+                                        .offset {0},
+                                        .size {64}}},
                                 })},
                 });
     }
@@ -82,7 +82,7 @@ namespace game::render
     std::vector<FrameGenerator::RecordObject>
     RenderManager::generateFrameObjects()
     {
-        Camera camera = this->camera.copyInner();
+        Camera frameCamera = this->camera.copyInner();
         std::vector<game::FrameGenerator::RecordObject> draws {};
 
         this->game->getEntityComponentManager()
@@ -95,7 +95,7 @@ namespace game::render
                         .pipeline {this->triangle_pipeline},
                         .descriptors {{nullptr, nullptr, nullptr, nullptr}},
                         .record_func {
-                            [=](vk::CommandBuffer commandBuffer)
+                            [=, this](vk::CommandBuffer commandBuffer)
                             {
                                 const auto layout =
                                     this->game->getRenderer()
@@ -104,7 +104,7 @@ namespace game::render
                                             **this->triangle_pipeline);
 
                                 const glm::mat4 mvpMatrix =
-                                    camera.getPerspectiveMatrix(
+                                    frameCamera.getPerspectiveMatrix(
                                         *this->game, c.transform);
 
                                 commandBuffer.pushConstants(

@@ -70,7 +70,7 @@ namespace game
             const float deltaTime =
                 this->renderer->getWindow()->getDeltaTimeSeconds();
 
-            // TODO: moving diaginally is faster
+            // TODO: moving diagonally is faster
             const float moveScale = this->renderer->getWindow()->isActionActive(
                                         gfx::Window::Action::PlayerSprint)
                                       ? 50.0f
@@ -151,13 +151,13 @@ namespace game
                 return dist(gen);
             };
 
-            // this->ec_manager->addComponent(
-            //     this->ec_manager->createEntity(),
-            //     render::TriangleComponent {.transforms {Transform {
-            //         .rotation {glm::quat {glm::vec3 {get(), get(), get()}}},
-            //         .translation {glm::vec3 {get(), get(), get()}},
-            //         .scale {get() * 3, get() * -3, get() * 8},
-            //     }}});
+            this->ec_manager->addComponent(
+                this->ec_manager->createEntity(),
+                render::TriangleComponent {.transform {Transform {
+                    .rotation {glm::quat {glm::vec3 {get(), get(), get()}}},
+                    .translation {glm::vec3 {get(), get(), get()}},
+                    .scale {get() * 3, get() * -3, get() * 8},
+                }}});
 
             this->renderable_manager->setCamera(workingCamera);
 

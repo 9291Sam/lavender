@@ -4,7 +4,8 @@
 #include "type_erased_component_storage.hpp"
 #include "util/threads.hpp"
 #include <source_location>
-#include <type_traits>
+
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-constant-array-index)
 
 namespace game::ec
 {
@@ -52,8 +53,8 @@ namespace game::ec
 
                 util::assertFatal(
                     willEntityBeDestroyed == entityStorage.destroy(e),
-                    "this shouldnt ever ever happen if so the entire component "
-                    "system is GONE");
+                    "this shouldn't ever ever happen if so the entire "
+                    "component system is GONE");
 
                 return willEntityBeDestroyed;
             });
@@ -77,3 +78,5 @@ namespace game::ec
             });
     }
 } // namespace game::ec
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-constant-array-index)

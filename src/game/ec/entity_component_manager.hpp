@@ -9,10 +9,8 @@
 #include <array>
 #include <boost/container/small_vector.hpp>
 #include <boost/unordered/concurrent_flat_set.hpp>
-#include <cstddef>
 #include <expected>
 #include <source_location>
-#include <type_traits>
 #include <util/misc.hpp>
 
 namespace game::ec
@@ -117,6 +115,10 @@ namespace game::ec
                         getComponentName<C::Id>(),
                         location);
                     break;
+                default:
+                    util::panic(
+                        "Unexpected tryAddResult.error() {}",
+                        util::toUnderlying(tryAddResult.error()));
                 }
             }
         }
@@ -151,6 +153,10 @@ namespace game::ec
                                 std::nullopt};
                         case ComponentModificationError::EntityDead:
                             return std::unexpected(EntityDead {});
+                        default:
+                            util::panic(
+                                "Unexpected tryAddResult.error() {}",
+                                util::toUnderlying(result.error()));
                         }
                     }
                 });

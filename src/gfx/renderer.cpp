@@ -1,7 +1,6 @@
 #include "renderer.hpp"
 #include "gfx/vulkan/frame_manager.hpp"
 #include "gfx/vulkan/swapchain.hpp"
-#include "util/log.hpp"
 #include "util/threads.hpp"
 #include "vulkan/allocator.hpp"
 #include "vulkan/device.hpp"
@@ -9,7 +8,6 @@
 #include "vulkan/instance.hpp"
 #include "window.hpp"
 #include <GLFW/glfw3.h>
-#include <glfw/glfw3.h>
 #include <memory>
 #include <vulkan/vulkan_handles.hpp>
 

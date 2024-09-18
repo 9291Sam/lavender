@@ -57,7 +57,7 @@ namespace util
         void
         iterateThroughAllocatedElements(std::invocable<std::size_t> auto func)
         {
-            for (std::size_t i = 0; i < this->next_available_block; ++i)
+            for (U32 i = 0; i < this->next_available_block; ++i)
             {
                 if (!this->free_block_list.contains(i))
                 {

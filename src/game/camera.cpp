@@ -14,9 +14,10 @@ namespace game
         : pitch {0.0f}
         , yaw {0.0f} // clang-format off
         , transform {
-            .translation {position},
             .rotation {1.0f, 0.0f, 0.0f, 0.0f},
-            .scale {1.0f, 1.0f, 1.0f}}
+            .translation {position},
+            .scale {1.0f, 1.0f, 1.0f}
+            }
     // clang-format on
     {}
 

@@ -96,7 +96,7 @@ namespace game::ec
                 else
                 {
                     this->internal_allocator.updateAvailableBlockAmount(
-                        this->storage.size() * 2);
+                        static_cast<U32>(this->storage.size()) * 2);
                     this->storage.resize(this->storage.size() * 2);
 
                     return this->internal_allocator.allocate()

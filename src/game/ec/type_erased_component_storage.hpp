@@ -7,8 +7,10 @@
 #include "util/type_erasure.hpp"
 #include <memory>
 #include <new>
-#include <optional>
 #include <type_traits>
+
+// NOLINTBEGIN(cppcoreguidelines-pro-type-reinterpret-cast)
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-pointer-arithmetic)
 
 namespace game::ec
 {
@@ -68,7 +70,7 @@ namespace game::ec
             static constexpr std::size_t DefaultComponentsAmount = 1024;
 
             template<class T>
-            InitalizedData(util::ZSTTypeWrapper<T> t)
+            explicit InitalizedData(util::ZSTTypeWrapper<T> t)
                 : type_info {t}
                 , allocator {DefaultComponentsAmount}
                 , parent_entities {DefaultComponentsAmount, Entity {}}
@@ -92,9 +94,15 @@ namespace game::ec
                     std::align_val_t {this->type_info.align});
             }
 
+            InitalizedData(const InitalizedData&)             = delete;
+            InitalizedData(InitalizedData&&)                  = delete;
+            InitalizedData& operator= (const InitalizedData&) = delete;
+            InitalizedData& operator= (InitalizedData&&)      = delete;
+
             void realloc(std::size_t newLength)
             {
-                this->allocator.updateAvailableBlockAmount(newLength);
+                this->allocator.updateAvailableBlockAmount(
+                    static_cast<U32>(newLength));
                 this->parent_entities.resize(newLength, Entity {});
 
                 std::byte* newOwnedStorage =
@@ -199,3 +207,6 @@ namespace game::ec
         std::unique_ptr<InitalizedData> initalized_data;
     };
 } // namespace game::ec
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+// NOLINTEND(cppcoreguidelines-pro-type-reinterpret-cast)

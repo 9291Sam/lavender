@@ -14,7 +14,7 @@
 
 namespace game
 {
-    gfx::vulkan::Image2D makeDepthBuffer(
+    static gfx::vulkan::Image2D makeDepthBuffer(
         const gfx::vulkan::Allocator* allocator,
         vk::Device                    device,
         vk::Extent2D                  extent)
