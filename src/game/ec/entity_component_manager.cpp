@@ -11,9 +11,10 @@ namespace game::ec
 {
     EntityComponentManager::EntityComponentManager()
         : component_storage {
-              util::RecursiveMutex {TypeErasedComponentStorage()},
-              util::RecursiveMutex {TypeErasedComponentStorage()},
-              util::RecursiveMutex {TypeErasedComponentStorage()}}
+              util::RecursiveMutex {TypeErasedComponentStorage {}},
+              util::RecursiveMutex {TypeErasedComponentStorage {}},
+              util::RecursiveMutex {TypeErasedComponentStorage {}},
+              util::RecursiveMutex {TypeErasedComponentStorage {}}}
     {}
 
     Entity EntityComponentManager::createEntity() const

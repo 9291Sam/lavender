@@ -1,5 +1,6 @@
 #include "game/game.hpp"
 #include "util/log.hpp"
+#include "verdigris/verdigris.hpp"
 #include <functional>
 #include <game/ec/entity_component_manager.hpp>
 
@@ -10,6 +11,8 @@ int main()
     try
     {
         game::Game game {};
+
+        game.loadGameState<verdigris::Verdigris>();
 
         game.run();
     }
