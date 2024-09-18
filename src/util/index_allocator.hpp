@@ -54,6 +54,18 @@ namespace util
         std::expected<IndexType, OutOfBlocks> allocate();
         void                                  free(IndexType);
 
+        void
+        iterateThroughAllocatedElements(std::invocable<std::size_t> auto func)
+        {
+            for (std::size_t i = 0; i < this->next_available_block; ++i)
+            {
+                if (!this->free_block_list.contains(i))
+                {
+                    func(i);
+                }
+            }
+        }
+
     private:
         boost::container::flat_set<IndexType> free_block_list;
         IndexType                             next_available_block;

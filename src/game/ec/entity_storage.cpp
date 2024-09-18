@@ -2,8 +2,7 @@
 #include "entity.hpp"
 #include "game/ec/components.hpp"
 #include "util/misc.hpp"
-#include <__expected/expected.h>
-#include <__expected/unexpected.h>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <util/log.hpp>
