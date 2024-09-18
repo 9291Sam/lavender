@@ -4,6 +4,7 @@
 #include <boost/container/flat_set.hpp>
 #include <cstddef>
 #include <expected>
+#include <util/log.hpp>
 
 namespace util
 {

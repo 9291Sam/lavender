@@ -101,10 +101,6 @@ namespace game::ec
 
             void realloc(std::size_t newLength)
             {
-                this->allocator.updateAvailableBlockAmount(
-                    static_cast<U32>(newLength));
-                this->parent_entities.resize(newLength, Entity {});
-
                 std::byte* newOwnedStorage =
                     reinterpret_cast<std::byte*>(operator new (
                         this->type_info.size * newLength,
@@ -127,6 +123,10 @@ namespace game::ec
                     this->owned_storage,
                     std::align_val_t {this->type_info.align});
                 this->owned_storage = newOwnedStorage;
+
+                this->allocator.updateAvailableBlockAmount(
+                    static_cast<U32>(newLength));
+                this->parent_entities.resize(newLength, Entity {});
             }
 
             template<Component C>
