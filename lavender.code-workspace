@@ -15,6 +15,7 @@
 			"moodycamel",
 			"NOLINTNEXTLINE",
 			"Sfloat",
+			"unspellable",
 			"Wwindow"
 		]
 	}

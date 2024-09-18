@@ -50,7 +50,8 @@ namespace game::ec
                                 {
                                     componentStorage.deleteComponent(
                                         storedComponent
-                                            .component_storage_offset);
+                                            .component_storage_offset,
+                                        componentStorage.getDestructor());
                                 });
                     }
                 }

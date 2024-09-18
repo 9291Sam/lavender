@@ -2,16 +2,17 @@
 
 #include "util/misc.hpp"
 #include <type_traits>
+
 namespace util
 {
-    struct TypeErasedSpecialMemberFunctions
+    struct TypeErasedData
     {
         template<class T>
             requires std::is_default_constructible_v<T>
                       && std::is_nothrow_destructible_v<T>
                       && std::is_nothrow_move_constructible_v<T>
                       && std::is_copy_constructible_v<T>
-        explicit TypeErasedSpecialMemberFunctions(util::ZSTTypeWrapper<T>)
+        explicit TypeErasedData(util::ZSTTypeWrapper<T>)
             : constructor {[](void* self)
                            {
                                return static_cast<void*>(new (self) T {});
@@ -30,11 +31,16 @@ namespace util
                         return static_cast<void*>(new (to) T {
                             static_cast<T&>(*reinterpret_cast<T*>(from))});
                     }}
+            , size {sizeof(T)}
+            , align {alignof(T)}
         {}
 
         void* (*constructor)(void*);
         void (*destructor)(void*) noexcept;
         void* (*move)(void*, void*) noexcept;
         void* (*copy)(void*, void*);
+        std::size_t size;
+        std::size_t align;
     };
+
 } // namespace util

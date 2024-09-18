@@ -20,6 +20,9 @@ using F64 = double;
 
 namespace util
 {
+    template<class T>
+    using Fn = T;
+
     void debugBreak();
 
     consteval bool isDebugBuild()

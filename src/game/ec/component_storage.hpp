@@ -2,6 +2,7 @@
 
 #include "components.hpp"
 #include "entity.hpp"
+#include "util/type_erasure.hpp"
 #include <util/index_allocator.hpp>
 #include <util/log.hpp>
 #include <util/misc.hpp>
@@ -24,6 +25,12 @@ namespace game::ec
         template<Component C>
         U32 insertComponent(Entity parentEntity, C c)
         {
+            // if (this->component_destructor == nullptr)
+            // {
+            //     this->component_destructor = util::TypeErasedDestructor {
+            //         util::ZSTTypeWrapper<C> {}}.destructor;
+            // }
+
             util::assertFatal(sizeof(C) == this->component_size, "oops");
 
             std::expected<U32, util::IndexAllocator::OutOfBlocks> id =
@@ -49,10 +56,24 @@ namespace game::ec
             return componentId;
         }
 
-        void deleteComponent(U32 index)
+        template<class C>
+        [[nodiscard]] C deleteComponent(U32 index)
         {
             this->parent_entities[index] = Entity {};
             this->allocator.free(index);
+            return std::move(
+                reinterpret_cast<C*>(this->component_storage.data())[index]);
+        }
+
+        void deleteComponent(U32 index, void (*destructor)(void*) noexcept)
+        {
+            this->parent_entities[index] = Entity {};
+            this->allocator.free(index);
+
+#warning wrong
+            // destructor(
+            //     this->component_storage.data()
+            //     + (index * this->component_size));
         }
 
         template<Component C>
@@ -73,6 +94,12 @@ namespace game::ec
             }
         }
 
+        // unspellable type :)
+        auto getDestructor() noexcept
+        {
+            return this->component_destructor;
+        }
+
         MuckedComponentStorage(const MuckedComponentStorage&) = delete;
         MuckedComponentStorage(MuckedComponentStorage&&)      = default;
         MuckedComponentStorage&
@@ -80,6 +107,7 @@ namespace game::ec
         MuckedComponentStorage& operator= (MuckedComponentStorage&&) = default;
 
     private:
+        void (*component_destructor)(void*) noexcept;
         util::IndexAllocator allocator;
         U32                  component_size;
         std::vector<Entity>  parent_entities;

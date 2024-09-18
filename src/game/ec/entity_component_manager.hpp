@@ -6,6 +6,7 @@
 #include "game/ec/entity_storage.hpp"
 #include "util/threads.hpp"
 #include <__expected/expected.h>
+#include <__expected/unexpected.h>
 #include <array>
 #include <boost/container/small_vector.hpp>
 #include <boost/unordered/concurrent_flat_set.hpp>
@@ -83,7 +84,7 @@ namespace game::ec
                     // reason, delete the component from storage
                     if (!wasComponentAddedToEntity.has_value())
                     {
-                        componentStorage.deleteComponent(storedOffset);
+                        componentStorage.deleteComponent<C>(storedOffset);
                     }
 
                     return wasComponentAddedToEntity;
@@ -120,10 +121,42 @@ namespace game::ec
             }
         }
 
-        // template<Component C>
-        // [[nodiscard]] std::optional<C> tryRemoveComponent(Entity) const;
-        // template<Component C>
-        // C removeComponent(Entity) const;
+        template<Component C>
+        [[nodiscard]] std::expected<std::optional<C>, EntityDead>
+        tryRemoveComponent(Entity e) const
+        {
+            return this->entity_storage.lock(
+                [&](EntityStorage& entityStorage)
+                {
+                    std::expected<
+                        EntityStorage::EntityComponentStorage,
+                        ComponentModificationError>
+                        result = entityStorage.removeComponent(e, C::Id);
+
+                    if (result.has_value())
+                    {
+                        return this->component_storage[C::Id].lock(
+                            [&](MuckedComponentStorage& componentStorage)
+                            {
+                                return componentStorage.deleteComponent<C>(
+                                    result->component_storage_offset);
+                            });
+                    }
+                    else
+                    {
+                        switch (result.error())
+                        {
+                        case ComponentModificationError::ComponentConflict:
+                            return std::expected<std::optional<C>, EntityDead> {
+                                std::nullopt};
+                        case ComponentModificationError::EntityDead:
+                            return std::unexpected(EntityDead {});
+                        }
+                    }
+                });
+        }
+        template<Component C>
+        C removeComponent(Entity) const;
 
         // template<Component... C>
         // [[nodiscard]] bool tryModifyComponent(std::invocable<C...> auto)
