@@ -28,9 +28,10 @@ namespace game
         const ec::Entity entity = this->ec_manager->createEntity();
 
         this->ec_manager->addComponent(entity, render::TriangleComponent {});
-        this->ec_manager->tryAddComponent(entity, render::TriangleComponent {});
+        // this->ec_manager->tryAddComponent(entity, render::TriangleComponent
+        // {});
 
-        this->ec_manager->destroyEntity(entity);
+        // this->ec_manager->destroyEntity(entity);
         // this->ec_manager->addComponent(
         //     entity,
         //     render::TriangleComponent {
@@ -150,13 +151,13 @@ namespace game
                 return dist(gen);
             };
 
-            this->ec_manager->addComponent(
-                this->ec_manager->createEntity(),
-                render::TriangleComponent {.transform {Transform {
-                    .rotation {glm::quat {glm::vec3 {get(), get(), get()}}},
-                    .translation {glm::vec3 {get(), get(), get()}},
-                    .scale {get() * 3, get() * -3, get() * 8},
-                }}});
+            // this->ec_manager->addComponent(
+            //     this->ec_manager->createEntity(),
+            //     render::TriangleComponent {.transforms {Transform {
+            //         .rotation {glm::quat {glm::vec3 {get(), get(), get()}}},
+            //         .translation {glm::vec3 {get(), get(), get()}},
+            //         .scale {get() * 3, get() * -3, get() * 8},
+            //     }}});
 
             this->renderable_manager->setCamera(workingCamera);
 

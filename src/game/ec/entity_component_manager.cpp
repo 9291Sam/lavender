@@ -1,5 +1,4 @@
 #include "entity_component_manager.hpp"
-#include "game/ec/component_storage.hpp"
 #include "game/ec/entity.hpp"
 #include "game/ec/entity_storage.hpp"
 #include "type_erased_component_storage.hpp"
