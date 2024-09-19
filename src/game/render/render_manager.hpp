@@ -29,7 +29,9 @@ namespace game::render
         RenderManager& operator= (const RenderManager&) = delete;
         RenderManager& operator= (RenderManager&&)      = delete;
 
-        void setCamera(Camera) const noexcept;
+        void              setCamera(Camera) const noexcept;
+        [[nodiscard]] U32 registerTransformable(const Transform&) const;
+        [[nodiscard]] vk::DescriptorSet getDescriptorSet() const;
 
         std::vector<FrameGenerator::RecordObject> generateFrameObjects();
 
