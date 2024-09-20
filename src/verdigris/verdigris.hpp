@@ -152,6 +152,6 @@ namespace verdigris
             return this->camera;
         }
 
-        virtual void onTick() const override {}
+        void onTick() const override {}
     };
 } // namespace verdigris

@@ -90,35 +90,25 @@ namespace game::render
                 [&](ec::Entity, const TriangleComponent& c)
                 {
                     draws.push_back(game::FrameGenerator::RecordObject {
+                        .transform {c.transform},
                         .render_pass {game::FrameGenerator::
                                           DynamicRenderingPass::SimpleColor},
                         .pipeline {this->triangle_pipeline},
                         .descriptors {{nullptr, nullptr, nullptr, nullptr}},
-                        .record_func {
-                            [this,
-                             transform = c.transform,
-                             lambdaCamera =
-                                 frameCamera](vk::CommandBuffer commandBuffer)
-                            {
-                                const auto layout =
-                                    this->game->getRenderer()
-                                        ->getAllocator()
-                                        ->lookupPipelineLayout(
-                                            **this->triangle_pipeline);
+                        .record_func {[this](
+                                          vk::CommandBuffer  commandBuffer,
+                                          vk::PipelineLayout layout,
+                                          U32                id)
+                                      {
+                                          commandBuffer.pushConstants(
+                                              layout,
+                                              vk::ShaderStageFlagBits::eVertex,
+                                              0,
+                                              sizeof(U32),
+                                              &id);
 
-                                const glm::mat4 mvpMatrix =
-                                    lambdaCamera.getPerspectiveMatrix(
-                                        *this->game, transform);
-
-                                commandBuffer.pushConstants(
-                                    **layout,
-                                    vk::ShaderStageFlagBits::eVertex,
-                                    0,
-                                    sizeof(glm::mat4),
-                                    &mvpMatrix);
-
-                                commandBuffer.draw(3, 1, 0, 0);
-                            }},
+                                          commandBuffer.draw(3, 1, 0, 0);
+                                      }},
                     });
                 });
 

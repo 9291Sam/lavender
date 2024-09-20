@@ -1,12 +1,13 @@
 #version 460
 
-layout(location = 0) out vec4 outColor;
+layout(set = 0, binding = 0) uniform readonly mat4 mvp_matrices[];
 
 layout(push_constant) uniform PushConstants
 {
-    mat4 model_view_proj;
-}
-in_push_constants;
+    u32 matrix_id;
+} in_push_constants;
+
+layout(location = 0) out vec4 outColor;
 
 void main()
 {
@@ -24,5 +25,5 @@ void main()
 
 	outColor = colors[gl_VertexIndex];
     
-	gl_Position = in_push_constants.model_view_proj * positions[gl_VertexIndex];
+	gl_Position = mvp_matricies[in_push_constants.matrix_id] * positions[gl_VertexIndex];
 }

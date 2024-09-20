@@ -1,29 +1,8 @@
-game
-3d camera
 descriptor sets
 
-Entity:
-    addComponent<C>
-    removeComponent<C>
-    get<C>
-    tryGet<C>
-    hasComponent<C>
-    delete<C>
-    getString
 
-Component:
-    static ID: U12
-    static NAME: string
-    static SIZE: USize
-    static ALIGN: USize
 
-    require noexcept moves
-    requires noexcept destruction
 
-    if trivially moveable
-        memcpy
-    else
-        std::uninotalize_move
-
-    deal with virtual / non trivially constructable
-    require moveability
+game
+ - frame generator ([RecordObject] -> commmad buffer)
+ Game state provides a list of RecordObject

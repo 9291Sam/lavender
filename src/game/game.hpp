@@ -1,9 +1,11 @@
 #pragma once
 
+#include "game/camera.hpp"
 #include "game/ec/components.hpp"
 #include "game/ec/entity.hpp"
-#include "game/render/render_manager.hpp"
+#include "game/frame_generator.hpp"
 #include "util/log.hpp"
+#include "util/threads.hpp"
 #include <atomic>
 #include <concepts>
 #include <memory>
@@ -33,10 +35,17 @@ namespace game
     public:
         struct GameState
         {
-            virtual ~GameState() {};
+            virtual ~GameState() = 0;
 
-            [[nodiscard]] virtual Camera onFrame(float) const = 0;
-            virtual void                 onTick() const       = 0;
+            GameState(const GameState&)             = delete;
+            GameState(GameState&&)                  = delete;
+            GameState& operator= (const GameState&) = delete;
+            GameState& operator= (GameState&&)      = delete;
+
+            [[nodiscard]] virtual std::
+                pair<Camera, std::vector<FrameGenerator::RecordObject>>
+                         onFrame(float) const = 0;
+            virtual void onTick() const       = 0;
         };
     public:
         Game();
@@ -47,11 +56,9 @@ namespace game
         Game& operator= (const Game&) = delete;
         Game& operator= (Game&&)      = delete;
 
-        void                run();
-        [[nodiscard]] float getFovXRadians() const noexcept;
-        [[nodiscard]] float getFovYRadians() const noexcept;
-        [[nodiscard]] float getAspectRatio() const noexcept;
-
+        [[nodiscard]] float  getFovXRadians() const noexcept;
+        [[nodiscard]] float  getFovYRadians() const noexcept;
+        [[nodiscard]] float  getAspectRatio() const noexcept;
         const gfx::Renderer* getRenderer() const noexcept;
         const ec::EntityComponentManager*
         getEntityComponentManager() const noexcept;
@@ -61,7 +68,6 @@ namespace game
         {
             this->should_game_keep_ticking.store(false);
 
-            util::logTrace("before loadGameState lock");
             this->active_game_state.lock(
                 [&](std::unique_ptr<GameState>& gameState)
                 {
@@ -72,21 +78,13 @@ namespace game
 
             this->should_game_keep_ticking.store(true);
         }
-
-        void terminateGame()
-        {
-            this->should_game_close = true;
-        }
+        void terminateGame();
+        void run();
 
     private:
         // Rendering abstraction
-        // lowest level - gfx::Renderer constructs the command buffer
-        // middle level - FrameGenerator records the command buffer
-        // highest level - render::RenderManager grabs all things that need
-        // to be drawn before forwarding them to FrameGenerator
-        std::unique_ptr<gfx::Renderer>         renderer;
-        std::unique_ptr<FrameGenerator>        frame_generator;
-        std::unique_ptr<render::RenderManager> renderable_manager;
+        std::unique_ptr<gfx::Renderer>  renderer;
+        std::unique_ptr<FrameGenerator> frame_generator;
 
         std::unique_ptr<ec::EntityComponentManager> ec_manager;
 

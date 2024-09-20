@@ -1,5 +1,7 @@
 #include "frame_generator.hpp"
+#include "game.hpp"
 #include "gfx/vulkan/allocator.hpp"
+#include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/device.hpp"
 #include "gfx/vulkan/image.hpp"
 #include "util/misc.hpp"
@@ -56,13 +58,20 @@ namespace game
         return std::strong_ordering::equal;
     }
 
-    FrameGenerator::FrameGenerator(const gfx::Renderer* renderer_)
-        : renderer {renderer_}
+    FrameGenerator::FrameGenerator(const game::Game* game_)
+        : game {game_}
         , needs_resize_transitions {true}
         , depth_buffer {makeDepthBuffer(
-              this->renderer->getAllocator(),
-              this->renderer->getDevice()->getDevice(),
-              this->renderer->getWindow()->getFramebufferSize())}
+              this->game->getRenderer()->getAllocator(),
+              this->game->getRenderer()->getDevice()->getDevice(),
+              this->game->getRenderer()->getWindow()->getFramebufferSize())}
+        , mvp_matrices {
+              this->game->getRenderer()->getAllocator(),
+              sizeof(glm::mat4) * 1024,
+              vk::BufferUsageFlagBits::eUniformBuffer,
+              vk::MemoryPropertyFlagBits::eDeviceLocal
+                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              "mvpmatriciesbuffer"}
     {}
 
     void FrameGenerator::internalGenerateFrame(
@@ -72,29 +81,55 @@ namespace game
         std::span<const FrameGenerator::RecordObject> recordObjects)
     {
         std::array<
-            std::vector<const FrameGenerator::RecordObject*>,
+            std::vector<std::pair<const FrameGenerator::RecordObject*, U32>>,
             static_cast<std::size_t>(FrameGenerator::DynamicRenderingPass::
                                          DynamicRenderingPassMaxValue)>
             recordablesByPass;
+
+        std::vector<glm::mat4> localMvpMatrices {};
+        std::size_t            nextFreeMvpMatrix = 0;
 
         for (const FrameGenerator::RecordObject& o : recordObjects)
         {
             util::assertFatal(o.pipeline != nullptr, "Nullpipeline");
 
+            U32 thisMatrixId = 0;
+
+            if (o.transform.has_value())
+            {
+                localMvpMatrices.push_back(this->camera.getPerspectiveMatrix(
+                    *this->game, *o.transform));
+
+                thisMatrixId = nextFreeMvpMatrix;
+
+                nextFreeMvpMatrix += 1;
+
+                util::assertFatal(thisMatrixId < 1024, "too many matriices");
+            }
+
             recordablesByPass
                 .at(static_cast<std::size_t>(util::toUnderlying(o.render_pass)))
-                .push_back(&o);
+                .push_back({&o, thisMatrixId});
         }
 
-        for (std::vector<const FrameGenerator::RecordObject*>& recordVec :
-             recordablesByPass)
+        std::memcpy(
+            this->mvp_matrices.getDataNonCoherent().data(),
+            localMvpMatrices.data(),
+
+            nextFreeMvpMatrix * sizeof(glm::mat4));
+        const gfx::vulkan::Buffer::FlushData flushData {
+            .offset {0}, .size {nextFreeMvpMatrix * sizeof(glm::mat4)}};
+        this->mvp_matrices.flush({&flushData, 1});
+
+        for (std::vector<std::pair<const FrameGenerator::RecordObject*, U32>>&
+                 recordVec : recordablesByPass)
         {
             std::sort(
                 recordVec.begin(),
                 recordVec.end(),
-                [](auto* l, auto* r)
+                [](const auto& l, const auto& r)
                 {
-                    return *l < *r;
+                    return *l.first < *r.first;
                 });
         }
 
@@ -112,7 +147,8 @@ namespace game
             .maxDepth {1.0},
         };
 
-        const gfx::vulkan::Device& device = *this->renderer->getDevice();
+        const gfx::vulkan::Device& device =
+            *this->game->getRenderer()->getDevice();
 
         const vk::Image thisSwapchainImage =
             swapchain.getImages()[swapchainImageIdx];
@@ -148,8 +184,9 @@ namespace game
 
                     commandBuffer.bindDescriptorSets(
                         vk::PipelineBindPoint::eGraphics,
-                        **this->renderer->getAllocator()->lookupPipelineLayout(
-                            **o.pipeline),
+                        **this->game->getRenderer()
+                              ->getAllocator()
+                              ->lookupPipelineLayout(**o.pipeline),
                         i,
                         {o.descriptors[i]}, // NOLINT
                         {0});
@@ -326,12 +363,17 @@ namespace game
 
         commandBuffer.beginRendering(simpleColorRenderingInfo);
 
-        for (const RecordObject* o : recordablesByPass.at(
+        for (const auto [o, matrixId] : recordablesByPass.at(
                  static_cast<std::size_t>(DynamicRenderingPass::SimpleColor)))
         {
             updateBindings(*o);
 
-            o->record_func(commandBuffer);
+            o->record_func(
+                commandBuffer,
+                **this->game->getRenderer()
+                      ->getAllocator()
+                      ->lookupPipelineLayout(**o->pipeline),
+                matrixId);
         }
 
         commandBuffer.endRendering();
@@ -387,9 +429,10 @@ namespace game
             }});
     }
 
-    void FrameGenerator::generateFrame(std::span<RecordObject> recordObjects)
+    void FrameGenerator::generateFrame(
+        Camera newCamera, std::span<const RecordObject> recordObjects)
     {
-        const bool resizeOcurred = this->renderer->recordOnThread(
+        const bool resizeOcurred = this->game->getRenderer()->recordOnThread(
             [&](vk::CommandBuffer       commandBuffer,
                 U32                     swapchainImageIdx,
                 gfx::vulkan::Swapchain& swapchain)
@@ -399,13 +442,14 @@ namespace game
             });
 
         this->needs_resize_transitions = resizeOcurred;
+        this->camera                   = newCamera;
 
         if (resizeOcurred)
         {
             this->depth_buffer = makeDepthBuffer(
-                this->renderer->getAllocator(),
-                this->renderer->getDevice()->getDevice(),
-                this->renderer->getWindow()->getFramebufferSize());
+                this->game->getRenderer()->getAllocator(),
+                this->game->getRenderer()->getDevice()->getDevice(),
+                this->game->getRenderer()->getWindow()->getFramebufferSize());
         }
     }
 } // namespace game

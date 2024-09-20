@@ -279,7 +279,7 @@ namespace game::ec
         }
 
         template<Component C>
-        void iterateComponents(std::invocable<Entity, const C&> auto func) const
+        void iterateComponents(std::invocable<Entity, C&> auto func) const
         {
             this->component_storage[C::Id].lock(
                 [&](TypeErasedComponentStorage& storage)
