@@ -60,21 +60,36 @@ namespace game
 
         void generateFrame(Camera, std::span<const RecordObject>);
 
+        // lives as long as the program
+        vk::DescriptorSet getGlobalInfoDescriptorSet() const;
+        std::shared_ptr<vk::UniqueDescriptorSetLayout>
+        getGlobalInfoDescriptorSetLayout() const noexcept;
+
     private:
+
+        struct GlobalInfoDescriptors
+        {
+            gfx::vulkan::Buffer  mvp_matrices;
+            gfx::vulkan::Image2D depth_buffer;
+        };
+
         void internalGenerateFrame(
             vk::CommandBuffer,
             U32 swapchainImageIdx,
             const gfx::vulkan::Swapchain&,
             std::span<const RecordObject>);
 
+        static GlobalInfoDescriptors
+        makeGlobalDescriptors(const gfx::Renderer*, vk::DescriptorSet);
+
         const game::Game* game;
-        bool              needs_resize_transitions;
+        bool              has_resize_ocurred;
 
-        gfx::vulkan::Image2D depth_buffer;
+        std::shared_ptr<vk::UniqueDescriptorSetLayout> set_layout;
+        vk::UniqueDescriptorSet global_info_descriptor_set;
 
-        Camera camera;
-
-        gfx::vulkan::Buffer mvp_matrices;
+        Camera                camera;
+        GlobalInfoDescriptors global_descriptors;
     };
 
 } // namespace game

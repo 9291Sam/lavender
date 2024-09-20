@@ -10,6 +10,7 @@
 #include <concepts>
 #include <memory>
 #include <type_traits>
+#include <vulkan/vulkan_handles.hpp>
 
 namespace gfx
 {
@@ -35,7 +36,8 @@ namespace game
     public:
         struct GameState
         {
-            virtual ~GameState() = 0;
+            GameState() = default;
+            virtual ~GameState() {};
 
             GameState(const GameState&)             = delete;
             GameState(GameState&&)                  = delete;
@@ -56,12 +58,16 @@ namespace game
         Game& operator= (const Game&) = delete;
         Game& operator= (Game&&)      = delete;
 
-        [[nodiscard]] float  getFovXRadians() const noexcept;
-        [[nodiscard]] float  getFovYRadians() const noexcept;
-        [[nodiscard]] float  getAspectRatio() const noexcept;
+        [[nodiscard]] float getFovXRadians() const noexcept;
+        [[nodiscard]] float getFovYRadians() const noexcept;
+        [[nodiscard]] float getAspectRatio() const noexcept;
+
         const gfx::Renderer* getRenderer() const noexcept;
         const ec::EntityComponentManager*
         getEntityComponentManager() const noexcept;
+        std::shared_ptr<vk::UniqueDescriptorSetLayout>
+                          getGlobalInfoDescriptorSetLayout() const noexcept;
+        vk::DescriptorSet getGlobalInfoDescriptorSet() const noexcept;
 
         template<std::derived_from<GameState> T>
         void loadGameState()

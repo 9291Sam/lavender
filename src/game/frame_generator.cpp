@@ -10,21 +10,20 @@
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/swapchain.hpp>
 #include <gfx/window.hpp>
+#include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
 namespace game
 {
-    static gfx::vulkan::Image2D makeDepthBuffer(
-        const gfx::vulkan::Allocator* allocator,
-        vk::Device                    device,
-        vk::Extent2D                  extent)
+    FrameGenerator::GlobalInfoDescriptors FrameGenerator::makeGlobalDescriptors(
+        const gfx::Renderer* renderer, vk::DescriptorSet globalDescriptorSet)
     {
-        return gfx::vulkan::Image2D {
-            allocator,
-            device,
-            extent,
+        gfx::vulkan::Image2D depthBuffer {
+            renderer->getAllocator(),
+            renderer->getDevice()->getDevice(),
+            renderer->getWindow()->getFramebufferSize(),
             vk::Format::eD32Sfloat,
             vk::ImageLayout::eUndefined,
             vk::ImageUsageFlagBits::eDepthStencilAttachment,
@@ -32,6 +31,50 @@ namespace game
             vk::ImageTiling::eOptimal,
             vk::MemoryPropertyFlagBits::eDeviceLocal,
             "Depth buffer"};
+
+        gfx::vulkan::Buffer mvpMatrices {
+            renderer->getAllocator(),
+            sizeof(glm::mat4) * 1024,
+            vk::BufferUsageFlagBits::eUniformBuffer,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+                | vk::MemoryPropertyFlagBits::eHostVisible,
+            "mvpmatriciesbuffer"};
+
+        const vk::DescriptorBufferInfo mvpMatricesBufferInfo {
+            .buffer {*mvpMatrices}, .offset {0}, .range {vk::WholeSize}};
+
+        renderer->getDevice()->getDevice().updateDescriptorSets(
+            {
+                vk::WriteDescriptorSet {
+                    .sType {vk::StructureType::eWriteDescriptorSet},
+                    .pNext {nullptr},
+                    .dstSet {globalDescriptorSet},
+                    .dstBinding {0},
+                    .dstArrayElement {0},
+                    .descriptorCount {1},
+                    .descriptorType {vk::DescriptorType::eUniformBuffer},
+                    .pImageInfo {nullptr},
+                    .pBufferInfo {&mvpMatricesBufferInfo},
+                    .pTexelBufferView {nullptr},
+                },
+                // vk::WriteDescriptorSet {
+                //     .sType {vk::StructureType::eWriteDescriptorSet},
+                //     .pNext {nullptr},
+                //     .dstSet {globalDescriptorSet},
+                //     .dstBinding {1},
+                //     .dstArrayElement {0},
+                //     .descriptorCount {1},
+                //     .descriptorType {},
+                //     .pImageInfo {},
+                //     .pBufferInfo {},
+                //     .pTexelBufferView {},
+                // },
+            },
+            {});
+
+        return GlobalInfoDescriptors {
+            .mvp_matrices {std::move(mvpMatrices)},
+            .depth_buffer {std::move(depthBuffer)}};
     }
 
     std::strong_ordering
@@ -60,18 +103,34 @@ namespace game
 
     FrameGenerator::FrameGenerator(const game::Game* game_)
         : game {game_}
-        , needs_resize_transitions {true}
-        , depth_buffer {makeDepthBuffer(
-              this->game->getRenderer()->getAllocator(),
-              this->game->getRenderer()->getDevice()->getDevice(),
-              this->game->getRenderer()->getWindow()->getFramebufferSize())}
-        , mvp_matrices {
-              this->game->getRenderer()->getAllocator(),
-              sizeof(glm::mat4) * 1024,
-              vk::BufferUsageFlagBits::eUniformBuffer,
-              vk::MemoryPropertyFlagBits::eDeviceLocal
-                  | vk::MemoryPropertyFlagBits::eHostVisible,
-              "mvpmatriciesbuffer"}
+        , has_resize_ocurred {true}
+        , set_layout {this->game->getRenderer()
+                          ->getAllocator()
+                          ->cacheDescriptorSetLayout(
+                              gfx::vulkan::
+                                  CacheableDescriptorSetLayoutCreateInfo {
+                                      .bindings {
+                                          vk::DescriptorSetLayoutBinding {
+                                              .binding {0},
+                                              .descriptorType {
+                                                  vk::DescriptorType::
+                                                      eUniformBuffer},
+                                              .descriptorCount {1},
+                                              .stageFlags {
+                                                  vk::ShaderStageFlagBits::
+                                                      eVertex
+                                                  | vk::ShaderStageFlagBits::
+                                                      eFragment
+                                                  | vk::ShaderStageFlagBits::
+                                                      eCompute},
+                                              .pImmutableSamplers {nullptr},
+                                          }}})}
+        , global_info_descriptor_set {this->game->getRenderer()
+                                          ->getAllocator()
+                                          ->allocateDescriptorSet(
+                                              **this->set_layout)}
+        , global_descriptors {makeGlobalDescriptors(
+              this->game->getRenderer(), *this->global_info_descriptor_set)}
     {}
 
     void FrameGenerator::internalGenerateFrame(
@@ -87,7 +146,7 @@ namespace game
             recordablesByPass;
 
         std::vector<glm::mat4> localMvpMatrices {};
-        std::size_t            nextFreeMvpMatrix = 0;
+        U32                    nextFreeMvpMatrix = 0;
 
         for (const FrameGenerator::RecordObject& o : recordObjects)
         {
@@ -113,13 +172,13 @@ namespace game
         }
 
         std::memcpy(
-            this->mvp_matrices.getDataNonCoherent().data(),
+            this->global_descriptors.mvp_matrices.getDataNonCoherent().data(),
             localMvpMatrices.data(),
 
             nextFreeMvpMatrix * sizeof(glm::mat4));
         const gfx::vulkan::Buffer::FlushData flushData {
             .offset {0}, .size {nextFreeMvpMatrix * sizeof(glm::mat4)}};
-        this->mvp_matrices.flush({&flushData, 1});
+        this->global_descriptors.mvp_matrices.flush({&flushData, 1});
 
         for (std::vector<std::pair<const FrameGenerator::RecordObject*, U32>>&
                  recordVec : recordablesByPass)
@@ -189,7 +248,7 @@ namespace game
                               ->lookupPipelineLayout(**o.pipeline),
                         i,
                         {o.descriptors[i]}, // NOLINT
-                        {0});
+                        {});
                 }
             }
         };
@@ -200,7 +259,7 @@ namespace game
             currentlyBoundDescriptors = {nullptr, nullptr, nullptr, nullptr};
         };
 
-        if (this->needs_resize_transitions)
+        if (this->has_resize_ocurred)
         {
             const std::span<const vk::Image> swapchainImages =
                 swapchain.getImages();
@@ -253,7 +312,7 @@ namespace game
                     .newLayout {vk::ImageLayout::eDepthAttachmentOptimal},
                     .srcQueueFamilyIndex {graphicsQueueIndex},
                     .dstQueueFamilyIndex {graphicsQueueIndex},
-                    .image {*this->depth_buffer},
+                    .image {*this->global_descriptors.depth_buffer},
                     .subresourceRange {vk::ImageSubresourceRange {
                         .aspectMask {vk::ImageAspectFlagBits::eDepth},
                         .baseMipLevel {0},
@@ -304,7 +363,7 @@ namespace game
                 .newLayout {vk::ImageLayout::eDepthAttachmentOptimal},
                 .srcQueueFamilyIndex {graphicsQueueIndex},
                 .dstQueueFamilyIndex {graphicsQueueIndex},
-                .image {*this->depth_buffer},
+                .image {*this->global_descriptors.depth_buffer},
                 .subresourceRange {vk::ImageSubresourceRange {
                     .aspectMask {vk::ImageAspectFlagBits::eDepth},
                     .baseMipLevel {0},
@@ -334,7 +393,7 @@ namespace game
         const vk::RenderingAttachmentInfo depthAttachmentInfo {
             .sType {vk::StructureType::eRenderingAttachmentInfo},
             .pNext {nullptr},
-            .imageView {this->depth_buffer.getView()},
+            .imageView {this->global_descriptors.depth_buffer.getView()},
             .imageLayout {vk::ImageLayout::eDepthAttachmentOptimal},
             .resolveMode {vk::ResolveModeFlagBits::eNone},
             .resolveImageView {nullptr},
@@ -419,7 +478,7 @@ namespace game
                 .newLayout {vk::ImageLayout::eDepthAttachmentOptimal},
                 .srcQueueFamilyIndex {graphicsQueueIndex},
                 .dstQueueFamilyIndex {graphicsQueueIndex},
-                .image {*this->depth_buffer},
+                .image {*this->global_descriptors.depth_buffer},
                 .subresourceRange {vk::ImageSubresourceRange {
                     .aspectMask {vk::ImageAspectFlagBits::eDepth},
                     .baseMipLevel {0},
@@ -441,15 +500,24 @@ namespace game
                     commandBuffer, swapchainImageIdx, swapchain, recordObjects);
             });
 
-        this->needs_resize_transitions = resizeOcurred;
-        this->camera                   = newCamera;
+        this->has_resize_ocurred = resizeOcurred;
+        this->camera             = newCamera;
 
         if (resizeOcurred)
         {
-            this->depth_buffer = makeDepthBuffer(
-                this->game->getRenderer()->getAllocator(),
-                this->game->getRenderer()->getDevice()->getDevice(),
-                this->game->getRenderer()->getWindow()->getFramebufferSize());
+            this->global_descriptors = makeGlobalDescriptors(
+                this->game->getRenderer(), *this->global_info_descriptor_set);
         }
+    }
+
+    vk::DescriptorSet FrameGenerator::getGlobalInfoDescriptorSet() const
+    {
+        return *this->global_info_descriptor_set;
+    }
+
+    std::shared_ptr<vk::UniqueDescriptorSetLayout>
+    FrameGenerator::getGlobalInfoDescriptorSetLayout() const noexcept
+    {
+        return this->set_layout;
     }
 } // namespace game

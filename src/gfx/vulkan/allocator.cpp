@@ -275,7 +275,7 @@ namespace gfx::vulkan
                 else
                 {
                     std::vector<vk::DescriptorSetLayout> denseLayouts {};
-                    denseLayouts.resize(info.descriptors.size());
+                    denseLayouts.reserve(info.descriptors.size());
 
                     for (auto& l : info.descriptors)
                     {

@@ -3,10 +3,13 @@
 #include "game/camera.hpp"
 #include "game/ec/entity_component_manager.hpp"
 #include "game/game.hpp"
-#include "game/render/triangle_component.hpp"
 #include "gfx/renderer.hpp"
+#include "gfx/vulkan/allocator.hpp"
 #include "gfx/window.hpp"
+#include "render/triangle_component.hpp"
+#include "util/log.hpp"
 #include <random>
+#include <shaders/shaders.hpp>
 
 namespace verdigris
 {
@@ -16,6 +19,7 @@ namespace verdigris
         mutable game::Camera                    camera;
         game::Game*                             game;
         const game::ec::EntityComponentManager* ec_manager;
+        std::shared_ptr<vk::UniquePipeline>     triangle_pipeline;
 
         explicit Verdigris(game::Game* game_)
             : game {game_}
@@ -24,12 +28,65 @@ namespace verdigris
             const game::ec::Entity entity =
                 this->game->getEntityComponentManager()->createEntity();
 
+            this->triangle_pipeline =
+                this->game->getRenderer()->getAllocator()->cachePipeline(
+                    gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
+                        .stages {{
+                            gfx::vulkan::
+                                CacheablePipelineShaderStageCreateInfo {
+                                    .stage {vk::ShaderStageFlagBits::eVertex},
+                                    .shader {
+                                        this->game->getRenderer()
+                                            ->getAllocator()
+                                            ->cacheShaderModule(shaders::load(
+                                                "build/src/shaders/"
+                                                "triangle.vert.bin"))},
+                                    .entry_point {"main"},
+                                },
+                            gfx::vulkan::
+                                CacheablePipelineShaderStageCreateInfo {
+                                    .stage {vk::ShaderStageFlagBits::eFragment},
+                                    .shader {
+                                        this->game->getRenderer()
+                                            ->getAllocator()
+                                            ->cacheShaderModule(shaders::load(
+                                                "build/src/shaders/"
+                                                "triangle.frag.bin"))},
+                                    .entry_point {"main"},
+                                },
+                        }},
+                        .vertex_attributes {},
+                        .vertex_bindings {},
+                        .topology {vk::PrimitiveTopology::eTriangleList},
+                        .discard_enable {false},
+                        .polygon_mode {vk::PolygonMode::eFill},
+                        .cull_mode {vk::CullModeFlagBits::eNone},
+                        .front_face {vk::FrontFace::eClockwise},
+                        .depth_test_enable {true},
+                        .depth_write_enable {true},
+                        .depth_compare_op {vk::CompareOp::eLess},
+                        .color_format {gfx::Renderer::ColorFormat.format},
+                        .depth_format {gfx::Renderer::DepthFormat},
+                        .layout {this->game->getRenderer()->getAllocator()->cachePipelineLayout(
+                            gfx::vulkan::CacheablePipelineLayoutCreateInfo {
+                                .descriptors {
+                                    {this->game
+                                         ->getGlobalInfoDescriptorSetLayout()}},
+                                .push_constants {vk::PushConstantRange {
+
+                                    .stageFlags {
+                                        vk::ShaderStageFlagBits::eVertex},
+                                    .offset {0},
+                                    .size {64}}},
+                            })},
+                    });
+
             this->ec_manager->addComponent(
                 entity, game::render::TriangleComponent {});
             // this->ec_manager->addComponent(entity, render::TriangleComponent
             // {});
 
-            this->ec_manager->destroyEntity(entity);
+            // this->ec_manager->destroyEntity(entity);
 
             // this->ec_manager->addComponent(
             //     entity,
@@ -52,7 +109,7 @@ namespace verdigris
                 return dist(gen);
             };
 
-            for (int i = 0; i < 1024; ++i)
+            for (int i = 0; i < 512; ++i)
             {
                 this->ec_manager->addComponent(
                     this->ec_manager->createEntity(),
@@ -68,7 +125,8 @@ namespace verdigris
 
         ~Verdigris() override = default;
 
-        game::Camera onFrame(float deltaTime) const override
+        std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
+        onFrame(float deltaTime) const override
         {
             // TODO: moving diagonally is faster
             const float moveScale =
@@ -149,7 +207,42 @@ namespace verdigris
             this->camera.addYaw(xDelta * rotateSpeedScale);
             this->camera.addPitch(yDelta * rotateSpeedScale);
 
-            return this->camera;
+            std::vector<game::FrameGenerator::RecordObject> draws {};
+
+            this->game->getEntityComponentManager()
+                ->iterateComponents<game::render::TriangleComponent>(
+                    [&](game::ec::Entity,
+                        const game::render::TriangleComponent& c)
+                    {
+                        draws.push_back(game::FrameGenerator::RecordObject {
+                            .transform {c.transform},
+                            .render_pass {
+                                game::FrameGenerator::DynamicRenderingPass::
+                                    SimpleColor},
+                            .pipeline {this->triangle_pipeline},
+                            .descriptors {
+                                {this->game->getGlobalInfoDescriptorSet(),
+                                 nullptr,
+                                 nullptr,
+                                 nullptr}},
+                            .record_func {
+                                [](vk::CommandBuffer  commandBuffer,
+                                   vk::PipelineLayout layout,
+                                   U32                id)
+                                {
+                                    commandBuffer.pushConstants(
+                                        layout,
+                                        vk::ShaderStageFlagBits::eVertex,
+                                        0,
+                                        sizeof(U32),
+                                        &id);
+
+                                    commandBuffer.draw(3, 1, 0, 0);
+                                }},
+                        });
+                    });
+
+            return {this->camera, std::move(draws)};
         }
 
         void onTick() const override {}

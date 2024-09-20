@@ -16,7 +16,7 @@ namespace game
 {
     Game::Game()
         : renderer {std::make_unique<gfx::Renderer>()}
-        , frame_generator {std::make_unique<FrameGenerator>(&*this->renderer)}
+        , frame_generator {std::make_unique<FrameGenerator>(this)}
         , ec_manager {std::make_unique<ec::EntityComponentManager>()}
         , should_game_keep_ticking {true}
         , should_game_close {false}
@@ -83,6 +83,17 @@ namespace game
     Game::getEntityComponentManager() const noexcept
     {
         return this->ec_manager.get();
+    }
+
+    vk::DescriptorSet Game::getGlobalInfoDescriptorSet() const noexcept
+    {
+        return this->frame_generator->getGlobalInfoDescriptorSet();
+    }
+
+    std::shared_ptr<vk::UniqueDescriptorSetLayout>
+    Game::getGlobalInfoDescriptorSetLayout() const noexcept
+    {
+        return this->frame_generator->getGlobalInfoDescriptorSetLayout();
     }
 
     void Game::terminateGame()
