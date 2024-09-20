@@ -29,8 +29,7 @@ namespace game
             vk::ImageUsageFlagBits::eDepthStencilAttachment,
             vk::ImageAspectFlagBits::eDepth,
             vk::ImageTiling::eOptimal,
-            vk::MemoryPropertyFlagBits::eDeviceLocal,
-            "Depth buffer"};
+            vk::MemoryPropertyFlagBits::eDeviceLocal};
 
         gfx::vulkan::Buffer mvpMatrices {
             renderer->getAllocator(),

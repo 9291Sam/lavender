@@ -16,8 +16,7 @@ namespace gfx::vulkan
         vk::ImageUsageFlags     usage,
         vk::ImageAspectFlags    aspect_,
         vk::ImageTiling         tiling,
-        vk::MemoryPropertyFlags memoryPropertyFlags,
-        const std::string&      name)
+        vk::MemoryPropertyFlags memoryPropertyFlags)
         : allocator {**allocator_}
         , extent {extent_}
         , format {format_}

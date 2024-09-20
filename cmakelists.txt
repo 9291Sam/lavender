@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.28)
-project(lavender VERSION 0.0.0.0)
+project(lavender VERSION 0.0.0.1)
 
 include(CMakeRC.cmake)
 include(FetchContent)
@@ -70,7 +70,6 @@ add_executable(lavender
 
     src/game/ec/entity_component_manager.cpp
     src/game/ec/entity_storage.cpp
-
     
     src/game/camera.cpp
     src/game/frame_generator.cpp
@@ -85,14 +84,16 @@ add_executable(lavender
     src/gfx/vulkan/instance.cpp
     src/gfx/vulkan/swapchain.cpp
 
-    src/shaders/shaders.cpp
-
     src/gfx/renderer.cpp
     src/gfx/window.cpp
+
+    src/shaders/shaders.cpp
 
     src/util/index_allocator.cpp
     src/util/log.cpp
     src/util/misc.cpp
+
+    src/verdigris/verdigris.cpp
 )
 
 target_include_directories(lavender PUBLIC src)
@@ -123,6 +124,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         -Wno-unsafe-buffer-usage
         -Wno-gnu-zero-line-directive
         -Wno-missing-prototypes
+        -Wno-switch-enum
     )
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")

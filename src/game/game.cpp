@@ -18,9 +18,9 @@ namespace game
         : renderer {std::make_unique<gfx::Renderer>()}
         , frame_generator {std::make_unique<FrameGenerator>(this)}
         , ec_manager {std::make_unique<ec::EntityComponentManager>()}
+        , active_game_state {util::Mutex<std::unique_ptr<GameState>> {nullptr}}
         , should_game_keep_ticking {true}
         , should_game_close {false}
-        , active_game_state {util::Mutex<std::unique_ptr<GameState>> {nullptr}}
     {}
 
     Game::~Game() noexcept

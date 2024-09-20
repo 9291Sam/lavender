@@ -63,7 +63,7 @@ namespace game
 #line 0
 DECLARE_COMPONENT(game::ec, struct, FooComponent, 1);
 DECLARE_COMPONENT(game::ec, struct, BarComponent, 1);
-DECLARE_COMPONENT(game::render, struct, TriangleComponent, 40);
+DECLARE_COMPONENT(verdigris, struct, TriangleComponent, 40);
 DECLARE_COMPONENT(game, struct, TickComponent, 32);
 static constinit const U32 NumberOfGameComponents = __LINE__;
 // DECLARE_COMPONENT(game, struct, TickComponent);

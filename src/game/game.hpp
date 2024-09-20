@@ -1,16 +1,11 @@
 #pragma once
 
+#include "frame_generator.hpp"
 #include "game/camera.hpp"
-#include "game/ec/components.hpp"
-#include "game/ec/entity.hpp"
-#include "game/frame_generator.hpp"
-#include "util/log.hpp"
-#include "util/threads.hpp"
 #include <atomic>
 #include <concepts>
 #include <memory>
-#include <type_traits>
-#include <vulkan/vulkan_handles.hpp>
+#include <util/threads.hpp>
 
 namespace gfx
 {
@@ -36,8 +31,8 @@ namespace game
     public:
         struct GameState
         {
-            GameState() = default;
-            virtual ~GameState() {};
+            GameState()          = default;
+            virtual ~GameState() = default;
 
             GameState(const GameState&)             = delete;
             GameState(GameState&&)                  = delete;

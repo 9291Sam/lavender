@@ -1,0 +1,230 @@
+
+#include "verdigris.hpp"
+#include "game/ec/entity_component_manager.hpp"
+#include "game/game.hpp"
+#include "gfx/renderer.hpp"
+#include "gfx/vulkan/allocator.hpp"
+#include "gfx/window.hpp"
+#include "shaders/shaders.hpp"
+#include "triangle_component.hpp"
+#include <random>
+
+
+namespace verdigris
+{
+    Verdigris::Verdigris(game::Game* game_)
+        : game {game_}
+        , ec_manager {game_->getEntityComponentManager()}
+    {
+        const game::ec::Entity entity =
+            this->game->getEntityComponentManager()->createEntity();
+
+        this->triangle_pipeline =
+            this->game->getRenderer()->getAllocator()->cachePipeline(
+                gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
+                    .stages {{
+                        gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                            .stage {vk::ShaderStageFlagBits::eVertex},
+                            .shader {this->game->getRenderer()
+                                         ->getAllocator()
+                                         ->cacheShaderModule(shaders::load(
+                                             "build/src/shaders/"
+                                             "triangle.vert.bin"))},
+                            .entry_point {"main"},
+                        },
+                        gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                            .stage {vk::ShaderStageFlagBits::eFragment},
+                            .shader {this->game->getRenderer()
+                                         ->getAllocator()
+                                         ->cacheShaderModule(shaders::load(
+                                             "build/src/shaders/"
+                                             "triangle.frag.bin"))},
+                            .entry_point {"main"},
+                        },
+                    }},
+                    .vertex_attributes {},
+                    .vertex_bindings {},
+                    .topology {vk::PrimitiveTopology::eTriangleList},
+                    .discard_enable {false},
+                    .polygon_mode {vk::PolygonMode::eFill},
+                    .cull_mode {vk::CullModeFlagBits::eNone},
+                    .front_face {vk::FrontFace::eClockwise},
+                    .depth_test_enable {true},
+                    .depth_write_enable {true},
+                    .depth_compare_op {vk::CompareOp::eLess},
+                    .color_format {gfx::Renderer::ColorFormat.format},
+                    .depth_format {gfx::Renderer::DepthFormat},
+                    .layout {
+                        this->game->getRenderer()
+                            ->getAllocator()
+                            ->cachePipelineLayout(
+                                gfx::vulkan::CacheablePipelineLayoutCreateInfo {
+                                    .descriptors {
+                                        {this->game
+                                             ->getGlobalInfoDescriptorSetLayout()}},
+                                    .push_constants {vk::PushConstantRange {
+
+                                        .stageFlags {
+                                            vk::ShaderStageFlagBits::eVertex},
+                                        .offset {0},
+                                        .size {64}}},
+                                })},
+                });
+
+        this->ec_manager->addComponent(entity, TriangleComponent {});
+        // this->ec_manager->addComponent(entity, render::TriangleComponent
+        // {});
+
+        // this->ec_manager->destroyEntity(entity);
+
+        // this->ec_manager->addComponent(
+        //     entity,
+        //     render::TriangleComponent {
+        //         .transform.translation {glm::vec3 {10.8, 3.0, -1.4}}});
+        // this->ec_manager->addComponent(
+        //     entity,
+        //     render::TriangleComponent {
+        //         .transform.translation {glm::vec3 {-1.8, 2.1, -9.3}}});
+        // this->ec_manager->addComponent(
+        //     entity,
+        //     render::TriangleComponent {
+        //         .transform.translation {glm::vec3 {1.3, 3.0, 3.0}}});
+
+        std::mt19937_64                 gen {std::random_device {}()};
+        std::normal_distribution<float> dist {64, 3};
+
+        auto get = [&]
+        {
+            return dist(gen);
+        };
+
+        for (int i = 0; i < 512; ++i)
+        {
+            this->ec_manager->addComponent(
+                this->ec_manager->createEntity(),
+                TriangleComponent {.transform {game::Transform {
+                    .rotation {glm::quat {glm::vec3 {get(), get(), get()}}},
+                    .translation {glm::vec3 {get(), get(), get()}},
+                    .scale {get() * 3, get() * -3, get() * 8},
+                }}});
+        }
+    }
+
+    Verdigris::~Verdigris() = default;
+
+    std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
+    Verdigris::onFrame(float deltaTime) const
+    {
+        // TODO: moving diagonally is faster
+        const float moveScale =
+            this->game->getRenderer()->getWindow()->isActionActive(
+                gfx::Window::Action::PlayerSprint)
+                ? 50.0f
+                : 10.0f;
+        const float rotateSpeedScale = 6.0f;
+
+        if (this->game->getRenderer()->getWindow()->isActionActive(
+                gfx::Window::Action::CloseWindow))
+        {
+            this->game->terminateGame();
+        }
+
+        this->camera.addPosition(
+            this->camera.getForwardVector() * deltaTime * moveScale
+            * (this->game->getRenderer()->getWindow()->isActionActive(
+                   gfx::Window::Action::PlayerMoveForward)
+                   ? 1.0f
+                   : 0.0f));
+
+        this->camera.addPosition(
+            -this->camera.getForwardVector() * deltaTime * moveScale
+            * (this->game->getRenderer()->getWindow()->isActionActive(
+                   gfx::Window::Action::PlayerMoveBackward)
+                   ? 1.0f
+                   : 0.0f));
+
+        this->camera.addPosition(
+            -this->camera.getRightVector() * deltaTime * moveScale
+            * (this->game->getRenderer()->getWindow()->isActionActive(
+                   gfx::Window::Action::PlayerMoveLeft)
+                   ? 1.0f
+                   : 0.0f));
+
+        this->camera.addPosition(
+            this->camera.getRightVector() * deltaTime * moveScale
+            * (this->game->getRenderer()->getWindow()->isActionActive(
+                   gfx::Window::Action::PlayerMoveRight)
+                   ? 1.0f
+                   : 0.0f));
+
+        this->camera.addPosition(
+            game::Transform::UpVector * deltaTime * moveScale
+            * (this->game->getRenderer()->getWindow()->isActionActive(
+                   gfx::Window::Action::PlayerMoveUp)
+                   ? 1.0f
+                   : 0.0f));
+
+        this->camera.addPosition(
+            -game::Transform::UpVector * deltaTime * moveScale
+            * (this->game->getRenderer()->getWindow()->isActionActive(
+                   gfx::Window::Action::PlayerMoveDown)
+                   ? 1.0f
+                   : 0.0f));
+
+        auto getMouseDeltaRadians = [&]
+        {
+            // each value from -1.0 -> 1.0 representing how much it moved
+            // on the screen
+            const auto [nDeltaX, nDeltaY] = this->game->getRenderer()
+                                                ->getWindow()
+                                                ->getScreenSpaceMouseDelta();
+
+            const auto deltaRadiansX =
+                (nDeltaX / 2) * this->game->getFovXRadians();
+            const auto deltaRadiansY =
+                (nDeltaY / 2) * this->game->getFovYRadians();
+
+            return gfx::Window::Delta {.x {deltaRadiansX}, .y {deltaRadiansY}};
+        };
+
+        auto [xDelta, yDelta] = getMouseDeltaRadians();
+
+        this->camera.addYaw(xDelta * rotateSpeedScale);
+        this->camera.addPitch(yDelta * rotateSpeedScale);
+
+        std::vector<game::FrameGenerator::RecordObject> draws {};
+
+        this->game->getEntityComponentManager()
+            ->iterateComponents<TriangleComponent>(
+                [&](game::ec::Entity, const TriangleComponent& c)
+                {
+                    draws.push_back(game::FrameGenerator::RecordObject {
+                        .transform {c.transform},
+                        .render_pass {game::FrameGenerator::
+                                          DynamicRenderingPass::SimpleColor},
+                        .pipeline {this->triangle_pipeline},
+                        .descriptors {
+                            {this->game->getGlobalInfoDescriptorSet(),
+                             nullptr,
+                             nullptr,
+                             nullptr}},
+                        .record_func {[](vk::CommandBuffer  commandBuffer,
+                                         vk::PipelineLayout layout,
+                                         U32                id)
+                                      {
+                                          commandBuffer.pushConstants(
+                                              layout,
+                                              vk::ShaderStageFlagBits::eVertex,
+                                              0,
+                                              sizeof(U32),
+                                              &id);
+
+                                          commandBuffer.draw(3, 1, 0, 0);
+                                      }},
+                    });
+                });
+
+        return {this->camera, std::move(draws)};
+    }
+
+} // namespace verdigris
