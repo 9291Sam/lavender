@@ -130,7 +130,7 @@ namespace game
                                           ->allocateDescriptorSet(
                                               **this->set_layout)}
         , global_descriptors {makeGlobalDescriptors(
-              this->game->getRenderer(), *this->global_info_descriptor_set)}
+              this->game->getRenderer(), this->global_info_descriptor_set)}
     {}
 
     void FrameGenerator::internalGenerateFrame(
@@ -506,13 +506,13 @@ namespace game
         if (resizeOcurred)
         {
             this->global_descriptors = makeGlobalDescriptors(
-                this->game->getRenderer(), *this->global_info_descriptor_set);
+                this->game->getRenderer(), this->global_info_descriptor_set);
         }
     }
 
     vk::DescriptorSet FrameGenerator::getGlobalInfoDescriptorSet() const
     {
-        return *this->global_info_descriptor_set;
+        return this->global_info_descriptor_set;
     }
 
     std::shared_ptr<vk::UniqueDescriptorSetLayout>

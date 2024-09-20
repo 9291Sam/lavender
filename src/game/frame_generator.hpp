@@ -86,7 +86,7 @@ namespace game
         bool              has_resize_ocurred;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> set_layout;
-        vk::UniqueDescriptorSet global_info_descriptor_set;
+        vk::DescriptorSet global_info_descriptor_set;
 
         Camera                camera;
         GlobalInfoDescriptors global_descriptors;
