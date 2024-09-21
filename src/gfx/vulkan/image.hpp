@@ -10,7 +10,6 @@ namespace gfx::vulkan
 {
     class Allocator;
     class Device;
-    class Buffer;
 
     class Image2D
     {

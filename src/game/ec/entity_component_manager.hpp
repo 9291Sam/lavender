@@ -239,9 +239,10 @@ namespace game::ec
                         "Tried to modify component on dead entity", location);
                     break;
                 default:
-                    util::panic(
+                    util::panic<int>(
                         "Unexpected tryAddResult.error() {}",
-                        util::toUnderlying(modifyError.error()));
+                        util::toUnderlying(modifyError.error()),
+                        location);
                 }
             }
         }

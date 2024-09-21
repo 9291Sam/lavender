@@ -31,7 +31,7 @@ namespace game
             vk::ImageTiling::eOptimal,
             vk::MemoryPropertyFlagBits::eDeviceLocal};
 
-        gfx::vulkan::Buffer mvpMatrices {
+        gfx::vulkan::Buffer<glm::mat4> mvpMatrices {
             renderer->getAllocator(),
             sizeof(glm::mat4) * 1024,
             vk::BufferUsageFlagBits::eUniformBuffer,
@@ -175,7 +175,7 @@ namespace game
             localMvpMatrices.data(),
 
             nextFreeMvpMatrix * sizeof(glm::mat4));
-        const gfx::vulkan::Buffer::FlushData flushData {
+        const gfx::vulkan::FlushData flushData {
             .offset {0}, .size {nextFreeMvpMatrix * sizeof(glm::mat4)}};
         this->global_descriptors.mvp_matrices.flush({&flushData, 1});
 

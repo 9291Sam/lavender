@@ -77,7 +77,6 @@ add_executable(lavender
     src/game/transform.cpp
 
     src/gfx/vulkan/allocator.cpp
-    src/gfx/vulkan/buffer.cpp
     src/gfx/vulkan/device.cpp
     src/gfx/vulkan/frame_manager.cpp
     src/gfx/vulkan/image.cpp

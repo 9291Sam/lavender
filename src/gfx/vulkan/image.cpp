@@ -1,6 +1,5 @@
 #include "image.hpp"
 #include "allocator.hpp"
-#include "buffer.hpp"
 #include <util/log.hpp>
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan_handles.hpp>
