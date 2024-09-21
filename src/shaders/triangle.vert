@@ -27,5 +27,5 @@ void main()
 
 	outColor = colors[gl_VertexIndex];
     
-	gl_Position = in_mvp_matrices.matrix[in_push_constants.matrix_id] * positions[gl_VertexIndex];
+	gl_Position = in_mvp_matrices.matrix[in_push_constants.matrix_id] * positions[gl_VertexIndex + gl_DrawID];
 }
