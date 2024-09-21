@@ -2,6 +2,7 @@
 
 #include "game/frame_generator.hpp"
 #include "util/index_allocator.hpp"
+#include "util/range_allocator.hpp"
 #include "voxel/brick/brick_allocator.hpp"
 #include "voxel/data/greedy_voxel_face.hpp"
 #include "voxel/data/material_brick.hpp"
@@ -36,7 +37,7 @@ namespace voxel::chunk
     struct InternalChunkData
     {
         glm::vec4                                           position;
-        std::array<std::optional<util::RangeAllocatiom>, 6> directions_faces;
+        std::array<std::optional<util::RangeAllocation>, 6> directions_faces;
     };
 
     class ChunkManager
@@ -70,6 +71,7 @@ namespace voxel::chunk
         brick::BrickPointerAllocator             brick_allocator;
         gfx::vulkan::Buffer<data::MaterialBrick> material_bricks;
 
+        util::RangeAllocator                       voxel_face_allocator;
         gfx::vulkan::Buffer<data::GreedyVoxelFace> voxel_faces;
     };
 } // namespace voxel::chunk
