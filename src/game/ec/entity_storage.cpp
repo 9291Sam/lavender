@@ -29,9 +29,9 @@ namespace game::ec
 
     Entity EntityStorage::create()
     {
-        const U32 thisEntityId = this->entity_id_allocator.allocate().value();
+        const u32 thisEntityId = this->entity_id_allocator.allocate().value();
 
-        const U32 thisGeneration = (*this->metadata)[thisEntityId].generation;
+        const u32 thisGeneration = (*this->metadata)[thisEntityId].generation;
 
         (*this->metadata)[thisEntityId].number_of_components = 0;
         (*this->metadata)[thisEntityId].component_storage_offset =
@@ -54,8 +54,8 @@ namespace game::ec
 
         EntityMetadata& entityMetadata = (*this->metadata)[e.id];
 
-        const U8 numberOfComponents =
-            static_cast<U8>(entityMetadata.number_of_components);
+        const u8 numberOfComponents =
+            static_cast<u8>(entityMetadata.number_of_components);
 
         switch (getStoragePoolId(numberOfComponents))
         {
@@ -129,8 +129,8 @@ namespace game::ec
             entityMetadata.generation += 1;
         }
 
-        const U8  numberOfComponents = entityMetadata.number_of_components;
-        const U32 storageId          = getStoragePoolId(numberOfComponents);
+        const u8  numberOfComponents = entityMetadata.number_of_components;
+        const u32 storageId          = getStoragePoolId(numberOfComponents);
 
         switch (storageId)
         {
@@ -194,13 +194,13 @@ namespace game::ec
             util::panic("tried to add too many components");
         }
 
-        const U8 currentNumberOfComponents =
-            static_cast<U8>(entityMetadata.number_of_components);
-        const U8 newNumberOfComponents =
-            static_cast<U8>(currentNumberOfComponents + 1);
+        const u8 currentNumberOfComponents =
+            static_cast<u8>(entityMetadata.number_of_components);
+        const u8 newNumberOfComponents =
+            static_cast<u8>(currentNumberOfComponents + 1);
 
-        const U8 currentPoolId = getStoragePoolId(currentNumberOfComponents);
-        const U8 newPoolId     = getStoragePoolId(newNumberOfComponents);
+        const u8 currentPoolId = getStoragePoolId(currentNumberOfComponents);
+        const u8 newPoolId     = getStoragePoolId(newNumberOfComponents);
 
         if (currentPoolId != newPoolId)
         {
@@ -212,7 +212,7 @@ namespace game::ec
                     StoredEntityComponentsList<N>&                 oldPool,
                     StoredEntityComponentsList<((N + 1) * 2) - 1>& newPool)
             {
-                const U32 newOffset = entityMetadata.component_storage_offset =
+                const u32 newOffset = entityMetadata.component_storage_offset =
                     newPool.allocate();
 
                 std::memcpy(
@@ -256,7 +256,7 @@ namespace game::ec
             }
         }
 
-        const U8 idxToAddComponentTo = entityMetadata.number_of_components;
+        const u8 idxToAddComponentTo = entityMetadata.number_of_components;
         entityMetadata.number_of_components += 1;
 
         // insert the new component
@@ -311,7 +311,7 @@ namespace game::ec
             return std::unexpected(ComponentModificationError::EntityDead);
         }
 
-        const std::optional<U8> idx =
+        const std::optional<u8> idx =
             this->getIndexOfComponentUnchecked(e, componentTypeId);
 
         if (idx.has_value())
@@ -321,10 +321,10 @@ namespace game::ec
         }
 
         EntityMetadata& entityMetadata         = (*this->metadata)[e.id];
-        const U8        idxOfComponentToRemove = *idx;
-        const U8 idxOfComponentToMove = entityMetadata.number_of_components - 1;
+        const u8        idxOfComponentToRemove = *idx;
+        const u8 idxOfComponentToMove = entityMetadata.number_of_components - 1;
 
-        const U8 originalPool =
+        const u8 originalPool =
             getStoragePoolId(entityMetadata.number_of_components);
 
         std::optional<EntityStorage::EntityComponentStorage> out;
@@ -375,7 +375,7 @@ namespace game::ec
 
         entityMetadata.number_of_components -= 1;
 
-        const U8 poolAfterRemoval =
+        const u8 poolAfterRemoval =
             getStoragePoolId(entityMetadata.number_of_components);
 
         if (originalPool != poolAfterRemoval)
@@ -385,7 +385,7 @@ namespace game::ec
                     StoredEntityComponentsList<((N + 1) * 2) - 1>& oldPool,
                     StoredEntityComponentsList<N>&                 newPool)
             {
-                const U32 newOffset = entityMetadata.component_storage_offset =
+                const u32 newOffset = entityMetadata.component_storage_offset =
                     newPool.allocate();
 
                 std::memcpy(
@@ -454,14 +454,14 @@ namespace game::ec
             return std::unexpected(ComponentModificationError::EntityDead);
         }
 
-        std::optional<U8> maybeIdxOfComponent =
+        std::optional<u8> maybeIdxOfComponent =
             this->getIndexOfComponentUnchecked(e, componentTypeId);
 
         if (maybeIdxOfComponent.has_value())
         {
             const EntityMetadata& entityMetadata = (*this->metadata)[e.id];
 
-            const U8 pool =
+            const u8 pool =
                 getStoragePoolId(entityMetadata.number_of_components);
 
             switch (pool)
@@ -512,16 +512,16 @@ namespace game::ec
         }
     }
 
-    std::optional<U8>
-    EntityStorage::getIndexOfComponentUnchecked(Entity e, U8 componentTypeId)
+    std::optional<u8>
+    EntityStorage::getIndexOfComponentUnchecked(Entity e, u8 componentTypeId)
     {
         const EntityMetadata& entityMetadata = (*this->metadata)[e.id];
 
-        const U8 pool = getStoragePoolId(entityMetadata.number_of_components);
+        const u8 pool = getStoragePoolId(entityMetadata.number_of_components);
 
         auto doLookup =
             [&]<std::size_t N>(
-                StoredEntityComponentsList<N>& storage) -> std::optional<U8>
+                StoredEntityComponentsList<N>& storage) -> std::optional<u8>
         {
             const std::array<EntityComponentStorage, N>& components =
                 storage.lookup(entityMetadata.component_storage_offset).storage;

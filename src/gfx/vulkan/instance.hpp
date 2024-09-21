@@ -18,12 +18,12 @@ namespace gfx::vulkan
         Instance& operator= (Instance&&)      = delete;
 
         vk::Instance      operator* () const noexcept;
-        [[nodiscard]] U32 getVulkanVersion() const noexcept;
+        [[nodiscard]] u32 getVulkanVersion() const noexcept;
 
     private:
         vk::DynamicLoader                vulkan_loader;
         vk::UniqueInstance               instance;
         vk::UniqueDebugUtilsMessengerEXT debug_messenger;
-        U32                              vulkan_api_version;
+        u32                              vulkan_api_version;
     };
 } // namespace gfx::vulkan

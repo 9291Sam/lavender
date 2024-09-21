@@ -207,7 +207,7 @@ namespace gfx::vulkan
         return *this->instance;
     }
 
-    U32 Instance::getVulkanVersion() const noexcept
+    u32 Instance::getVulkanVersion() const noexcept
     {
         return this->vulkan_api_version;
     }

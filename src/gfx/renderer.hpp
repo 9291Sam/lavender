@@ -39,7 +39,7 @@ namespace gfx
         // Returns true if a resize occurred
         // Command buffer, swapchain idx, swapchain
         bool recordOnThread(
-            std::function<void(vk::CommandBuffer, U32, vulkan::Swapchain&)>)
+            std::function<void(vk::CommandBuffer, u32, vulkan::Swapchain&)>)
             const;
         [[nodiscard]] bool shouldWindowClose() const noexcept;
 

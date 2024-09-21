@@ -14,7 +14,7 @@ namespace util
     {
     public:
 
-        using IndexType = U32;
+        using IndexType = u32;
 
         class OutOfBlocks : public std::bad_alloc
         {
@@ -47,7 +47,7 @@ namespace util
         void updateAvailableBlockAmount(IndexType newAmount);
         // TODO: float getPercentAllocated() const;
         // NOT INCLUSIVE
-        U32  getAllocatedBlocksUpperBound() const
+        u32  getAllocatedBlocksUpperBound() const
         {
             return this->next_available_block;
         }
@@ -58,7 +58,7 @@ namespace util
         void
         iterateThroughAllocatedElements(std::invocable<std::size_t> auto func)
         {
-            for (U32 i = 0; i < this->next_available_block; ++i)
+            for (u32 i = 0; i < this->next_available_block; ++i)
             {
                 if (!this->free_block_list.contains(i))
                 {

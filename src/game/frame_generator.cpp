@@ -134,24 +134,24 @@ namespace game
 
     void FrameGenerator::internalGenerateFrame(
         vk::CommandBuffer                             commandBuffer,
-        U32                                           swapchainImageIdx,
+        u32                                           swapchainImageIdx,
         const gfx::vulkan::Swapchain&                 swapchain,
         std::span<const FrameGenerator::RecordObject> recordObjects)
     {
         std::array<
-            std::vector<std::pair<const FrameGenerator::RecordObject*, U32>>,
+            std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>,
             static_cast<std::size_t>(FrameGenerator::DynamicRenderingPass::
                                          DynamicRenderingPassMaxValue)>
             recordablesByPass;
 
         std::vector<glm::mat4> localMvpMatrices {};
-        U32                    nextFreeMvpMatrix = 0;
+        u32                    nextFreeMvpMatrix = 0;
 
         for (const FrameGenerator::RecordObject& o : recordObjects)
         {
             util::assertFatal(o.pipeline != nullptr, "Nullpipeline");
 
-            U32 thisMatrixId = 0;
+            u32 thisMatrixId = 0;
 
             if (o.transform.has_value())
             {
@@ -179,7 +179,7 @@ namespace game
             .offset {0}, .size {nextFreeMvpMatrix * sizeof(glm::mat4)}};
         this->global_descriptors.mvp_matrices.flush({&flushData, 1});
 
-        for (std::vector<std::pair<const FrameGenerator::RecordObject*, U32>>&
+        for (std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>&
                  recordVec : recordablesByPass)
         {
             std::sort(
@@ -212,7 +212,7 @@ namespace game
             swapchain.getImages()[swapchainImageIdx];
         const vk::ImageView thisSwapchainImageView =
             swapchain.getViews()[swapchainImageIdx];
-        const U32 graphicsQueueIndex =
+        const u32 graphicsQueueIndex =
             device // NOLINT
                 .getFamilyOfQueueType(gfx::vulkan::Device::QueueType::Graphics)
                 .value();
@@ -229,13 +229,13 @@ namespace game
                     vk::PipelineBindPoint::eGraphics, **o.pipeline);
             }
 
-            for (U32 i = 0; i < 4; ++i)
+            for (u32 i = 0; i < 4; ++i)
             {
                 if (currentlyBoundDescriptors[i] != o.descriptors[i]) // NOLINT
                 {
                     currentlyBoundDescriptors[i] = o.descriptors[i]; // NOLINT
 
-                    for (U32 j = i + 1; j < 4; ++j)
+                    for (u32 j = i + 1; j < 4; ++j)
                     {
                         currentlyBoundDescriptors[i] = nullptr; // NOLINT
                     }
@@ -492,7 +492,7 @@ namespace game
     {
         const bool resizeOcurred = this->game->getRenderer()->recordOnThread(
             [&](vk::CommandBuffer       commandBuffer,
-                U32                     swapchainImageIdx,
+                u32                     swapchainImageIdx,
                 gfx::vulkan::Swapchain& swapchain)
             {
                 this->internalGenerateFrame(

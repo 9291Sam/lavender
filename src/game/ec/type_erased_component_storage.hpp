@@ -28,7 +28,7 @@ namespace game::ec
         operator= (TypeErasedComponentStorage&&) = default;
 
         template<Component C>
-        [[nodiscard]] U32 addComponent(Entity parent, C&& c)
+        [[nodiscard]] u32 addComponent(Entity parent, C&& c)
         {
             if (this->initalized_data == nullptr)
             {
@@ -41,12 +41,12 @@ namespace game::ec
         }
 
         template<Component C>
-        [[nodiscard]] C takeComponent(U32 index)
+        [[nodiscard]] C takeComponent(u32 index)
         {
             return this->initalized_data->takeComponent<C>(index);
         }
 
-        void deleteComponent(U32 index)
+        void deleteComponent(u32 index)
         {
             this->initalized_data->deleteComponent(index);
         }
@@ -58,7 +58,7 @@ namespace game::ec
         }
 
         template<Component C>
-        C& modifyComponent(U32 index)
+        C& modifyComponent(u32 index)
         {
             return this->initalized_data->modifyComponent<C>(index);
         }
@@ -126,16 +126,16 @@ namespace game::ec
                 this->owned_storage = newOwnedStorage;
 
                 this->allocator.updateAvailableBlockAmount(
-                    static_cast<U32>(newLength));
+                    static_cast<u32>(newLength));
                 this->parent_entities.resize(newLength, Entity {});
             }
 
             template<Component C>
                 requires std::is_default_constructible_v<C>
                       && std::is_nothrow_move_constructible_v<C>
-            U32 addComponent(Entity parent, C&& c)
+            u32 addComponent(Entity parent, C&& c)
             {
-                std::expected<U32, util::IndexAllocator::OutOfBlocks>
+                std::expected<u32, util::IndexAllocator::OutOfBlocks>
                     allocationResult = this->allocator.allocate();
 
                 if (!allocationResult.has_value())
@@ -145,7 +145,7 @@ namespace game::ec
                     allocationResult = this->allocator.allocate();
                 }
 
-                U32 indexToInsert = *allocationResult;
+                u32 indexToInsert = *allocationResult;
 
                 this->parent_entities[indexToInsert] = parent;
 
@@ -156,14 +156,14 @@ namespace game::ec
             }
 
             template<class C>
-            C& modifyComponent(U32 idx)
+            C& modifyComponent(u32 idx)
             {
                 return *reinterpret_cast<C*>(
                     this->owned_storage + sizeof(C) * idx);
             }
 
             template<class C>
-            C takeComponent(U32 idx)
+            C takeComponent(u32 idx)
             {
                 this->allocator.free(idx);
                 this->parent_entities[idx] = Entity {};
@@ -177,7 +177,7 @@ namespace game::ec
                 return out;
             }
 
-            void deleteComponent(U32 idx)
+            void deleteComponent(u32 idx)
             {
                 this->allocator.free(idx);
                 this->parent_entities[idx] = Entity {};

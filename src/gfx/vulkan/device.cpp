@@ -40,11 +40,11 @@ namespace gfx::vulkan
         const std::vector<vk::QueueFamilyProperties> queueFamilyProperties =
             this->physical_device.getQueueFamilyProperties();
 
-        std::optional<U32> graphicsFamily      = std::nullopt;
-        std::optional<U32> asyncComputeFamily  = std::nullopt;
-        std::optional<U32> asyncTransferFamily = std::nullopt;
+        std::optional<u32> graphicsFamily      = std::nullopt;
+        std::optional<u32> asyncComputeFamily  = std::nullopt;
+        std::optional<u32> asyncTransferFamily = std::nullopt;
 
-        for (U32 i = 0; i < queueFamilyProperties.size(); ++i)
+        for (u32 i = 0; i < queueFamilyProperties.size(); ++i)
         {
             const vk::QueueFlags flags = queueFamilyProperties[i].queueFlags;
 
@@ -99,7 +99,7 @@ namespace gfx::vulkan
         this->queue_family_indexes = std::array {
             graphicsFamily, asyncComputeFamily, asyncTransferFamily};
 
-        auto getStringOfFamily = [](std::optional<U32> f) -> std::string
+        auto getStringOfFamily = [](std::optional<u32> f) -> std::string
         {
             if (f.has_value()) // NOLINT
             {
@@ -123,9 +123,9 @@ namespace gfx::vulkan
         std::vector<F32> queuePriorities {};
         queuePriorities.resize(1024, 1.0);
 
-        U32 numberOfGraphicsQueues      = 0;
-        U32 numberOfAsyncComputeQueues  = 0;
-        U32 numberOfAsyncTransferQueues = 0;
+        u32 numberOfGraphicsQueues      = 0;
+        u32 numberOfAsyncComputeQueues  = 0;
+        u32 numberOfAsyncTransferQueues = 0;
 
         if (graphicsFamily.has_value())
         {
@@ -210,12 +210,12 @@ namespace gfx::vulkan
             .sType {vk::StructureType::eDeviceCreateInfo},
             .pNext {&dynamicRenderingFeatures},
             .flags {},
-            .queueCreateInfoCount {static_cast<U32>(queuesToCreate.size())},
+            .queueCreateInfoCount {static_cast<u32>(queuesToCreate.size())},
             .pQueueCreateInfos {queuesToCreate.data()},
             .enabledLayerCount {0},
             .ppEnabledLayerNames {nullptr},
             .enabledExtensionCount {
-                static_cast<U32>(requiredExtensions.size())},
+                static_cast<u32>(requiredExtensions.size())},
             .ppEnabledExtensionNames {requiredExtensions.data()},
             .pEnabledFeatures {&features},
         };
@@ -228,19 +228,19 @@ namespace gfx::vulkan
         std::vector<util::Mutex<vk::Queue>> asyncComputeQueues {};
         std::vector<util::Mutex<vk::Queue>> asyncTransferQueues {};
 
-        for (U32 idx = 0; idx < numberOfGraphicsQueues; ++idx)
+        for (u32 idx = 0; idx < numberOfGraphicsQueues; ++idx)
         {
             graphicsQueues.push_back( // NOLINTNEXTLINE
                 util::Mutex {this->device->getQueue(*graphicsFamily, idx)});
         }
 
-        for (U32 idx = 0; idx < numberOfAsyncComputeQueues; ++idx)
+        for (u32 idx = 0; idx < numberOfAsyncComputeQueues; ++idx)
         {
             asyncComputeQueues.push_back( // NOLINTNEXTLINE
                 util::Mutex {this->device->getQueue(*asyncComputeFamily, idx)});
         }
 
-        for (U32 idx = 0; idx < numberOfAsyncTransferQueues; ++idx)
+        for (u32 idx = 0; idx < numberOfAsyncTransferQueues; ++idx)
         {
             asyncTransferQueues.push_back(util::Mutex {
                 // NOLINTNEXTLINE
@@ -255,13 +255,13 @@ namespace gfx::vulkan
             std::move(asyncTransferQueues);
     }
 
-    std::optional<U32> Device::getFamilyOfQueueType(QueueType t) const noexcept
+    std::optional<u32> Device::getFamilyOfQueueType(QueueType t) const noexcept
     {
         return this->queue_family_indexes.at(
             static_cast<std::size_t>(util::toUnderlying(t)));
     }
 
-    U32 Device::getNumberOfQueues(QueueType t) const noexcept
+    u32 Device::getNumberOfQueues(QueueType t) const noexcept
     {
         return this->queue_family_numbers.at(
             static_cast<std::size_t>(util::toUnderlying(t)));

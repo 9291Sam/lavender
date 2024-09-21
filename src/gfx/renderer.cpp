@@ -88,7 +88,7 @@ namespace gfx
     }
 
     bool Renderer::recordOnThread(
-        std::function<void(vk::CommandBuffer, U32, vulkan::Swapchain&)>
+        std::function<void(vk::CommandBuffer, u32, vulkan::Swapchain&)>
             recordFunc) const
     {
         bool resizeOcurred = false;
@@ -102,7 +102,7 @@ namespace gfx
                         lockedCriticalSection->frame_manager->recordAndDisplay(
                             [&](std::size_t /*flyingFrameIdx*/,
                                 vk::CommandBuffer commandBuffer,
-                                U32               swapchainImageIdx)
+                                u32               swapchainImageIdx)
                             {
                                 recordFunc(
                                     commandBuffer,

@@ -69,7 +69,7 @@ namespace gfx::vulkan
             .pNext {nullptr},
             .flags {vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet},
             .maxSets {1024},
-            .poolSizeCount {static_cast<U32>(availableDescriptors.size())},
+            .poolSizeCount {static_cast<u32>(availableDescriptors.size())},
             .pPoolSizes {availableDescriptors.data()},
         };
 
@@ -242,7 +242,7 @@ namespace gfx::vulkan
                             .pNext {nullptr},
                             .flags {},
                             .bindingCount {
-                                static_cast<U32>(info.bindings.size())},
+                                static_cast<u32>(info.bindings.size())},
                             .pBindings {info.bindings.data()},
 
                         };
@@ -289,7 +289,7 @@ namespace gfx::vulkan
                             .pNext {nullptr},
                             .flags {},
                             .setLayoutCount {
-                                static_cast<U32>(denseLayouts.size())},
+                                static_cast<u32>(denseLayouts.size())},
                             .pSetLayouts {denseLayouts.data()},
                             .pushConstantRangeCount {
                                 info.push_constants.has_value() ? 1U : 0U},
@@ -358,10 +358,10 @@ namespace gfx::vulkan
                             .pNext {nullptr},
                             .flags {},
                             .vertexBindingDescriptionCount {
-                                static_cast<U32>(info.vertex_bindings.size())},
+                                static_cast<u32>(info.vertex_bindings.size())},
                             .pVertexBindingDescriptions {
                                 info.vertex_bindings.data()},
-                            .vertexAttributeDescriptionCount {static_cast<U32>(
+                            .vertexAttributeDescriptionCount {static_cast<u32>(
                                 info.vertex_attributes.size())},
                             .pVertexAttributeDescriptions {
                                 info.vertex_attributes.data()},
@@ -483,7 +483,7 @@ namespace gfx::vulkan
                             .pNext {nullptr},
                             .flags {},
                             .dynamicStateCount {
-                                static_cast<U32>(pipelineDynamicStates.size())},
+                                static_cast<u32>(pipelineDynamicStates.size())},
                             .pDynamicStates {pipelineDynamicStates.data()},
                         };
 
@@ -502,7 +502,7 @@ namespace gfx::vulkan
                         .sType {vk::StructureType::eGraphicsPipelineCreateInfo},
                         .pNext {&renderingInfo},
                         .flags {},
-                        .stageCount {static_cast<U32>(denseStages.size())},
+                        .stageCount {static_cast<u32>(denseStages.size())},
                         .pStages {denseStages.data()},
                         .pVertexInputState {
                             &pipelineVertexInputStateCreateInfo},
@@ -587,7 +587,7 @@ namespace gfx::vulkan
                         // alignment means that we're fine on x86 and arm which
                         // is all we care about 😍
                         // NOLINTNEXTLINE
-                        .pCode {reinterpret_cast<U32*>(shaderString.data())},
+                        .pCode {reinterpret_cast<u32*>(shaderString.data())},
                     };
 
                     vk::UniqueShaderModule layout =

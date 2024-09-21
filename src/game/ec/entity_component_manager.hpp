@@ -20,7 +20,7 @@ namespace game::ec
 
     struct FooComponent : ComponentBase<FooComponent>
     {
-        U8 a;
+        u8 a;
     };
 
     static_assert(FooComponent::Id == 0);
@@ -63,7 +63,7 @@ namespace game::ec
             return this->component_storage[C::Id].lock(
                 [&](TypeErasedComponentStorage& componentStorage)
                 {
-                    const U32 storedOffset =
+                    const u32 storedOffset =
                         componentStorage.addComponent(e, std::forward<C>(c));
 
                     std::expected<void, ComponentModificationError>

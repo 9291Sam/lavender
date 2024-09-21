@@ -29,11 +29,11 @@ namespace game::ec
     public:
         struct EntityMetadata
         {
-            U32 number_of_components : 8;
-            U32 generation           : 24;
-            U32 component_storage_offset;
+            u32 number_of_components : 8;
+            u32 generation           : 24;
+            u32 component_storage_offset;
 
-             operator std::string () const
+            operator std::string () const
             {
                 return std::format(
                     "EntityMetadata | {} Components | Generation {} | Offset: "
@@ -43,22 +43,22 @@ namespace game::ec
                     this->component_storage_offset);
             }
         };
-        static_assert(sizeof(EntityMetadata) == sizeof(U64));
+        static_assert(sizeof(EntityMetadata) == sizeof(u64));
 
         struct EntityComponentStorage
         {
-            U32 component_type_id        : 8;
-            U32 component_storage_offset : 24;
+            u32 component_type_id        : 8;
+            u32 component_storage_offset : 24;
 
             constexpr bool
             operator== (const EntityComponentStorage&) const noexcept = default;
         };
         static_assert(
             std::has_unique_object_representations_v<EntityComponentStorage>);
-        static constexpr U8 MaxComponentsPerEntity = 255;
-        static constexpr U8 getStoragePoolId(U8 numberOfComponents)
+        static constexpr u8 MaxComponentsPerEntity = 255;
+        static constexpr u8 getStoragePoolId(u8 numberOfComponents)
         {
-            return static_cast<U8>(
+            return static_cast<u8>(
                 std::max({1, std::bit_width(numberOfComponents)}) - 1);
         }
 
@@ -73,21 +73,21 @@ namespace game::ec
         {
         public:
 
-            explicit StoredEntityComponentsList(U32 numberOfEntitiesToStore)
+            explicit StoredEntityComponentsList(u32 numberOfEntitiesToStore)
                 : internal_allocator {numberOfEntitiesToStore}
                 , storage {}
             {
                 this->storage.resize(numberOfEntitiesToStore);
             }
 
-            StoredEntityComponents<N>& lookup(U32 id)
+            StoredEntityComponents<N>& lookup(u32 id)
             {
                 return this->storage[id];
             }
 
-            U32 allocate()
+            u32 allocate()
             {
-                if (std::expected<U32, util::IndexAllocator::OutOfBlocks> id =
+                if (std::expected<u32, util::IndexAllocator::OutOfBlocks> id =
                         this->internal_allocator.allocate();
                     id.has_value())
                 {
@@ -96,14 +96,14 @@ namespace game::ec
                 else
                 {
                     this->internal_allocator.updateAvailableBlockAmount(
-                        static_cast<U32>(this->storage.size()) * 2);
+                        static_cast<u32>(this->storage.size()) * 2);
                     this->storage.resize(this->storage.size() * 2);
 
                     return this->internal_allocator.allocate()
                         .value(); // NOLINT
                 }
             }
-            void free(U32 id)
+            void free(u32 id)
             {
                 this->internal_allocator.free(id);
             }
@@ -149,7 +149,7 @@ namespace game::ec
 
     private:
 
-        std::optional<U8> getIndexOfComponentUnchecked(Entity, ComponentTypeId);
+        std::optional<u8> getIndexOfComponentUnchecked(Entity, ComponentTypeId);
 
         static constexpr std::size_t MaxEntities = 1048576;
 

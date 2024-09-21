@@ -55,7 +55,7 @@ namespace gfx::vulkan
 
     std::expected<void, Frame::ResizeNeeded> Frame::recordAndDisplay(
         std::optional<vk::Fence>                    previousFrameFence,
-        std::function<void(vk::CommandBuffer, U32)> withCommandBuffer)
+        std::function<void(vk::CommandBuffer, u32)> withCommandBuffer)
     {
         const auto [acquireImageResult, maybeNextImageIdx] =
             this->device->getDevice().acquireNextImageKHR(
@@ -201,7 +201,7 @@ namespace gfx::vulkan
     FrameManager::~FrameManager() noexcept = default;
 
     std::expected<void, Frame::ResizeNeeded> FrameManager::recordAndDisplay(
-        std::function<void(std::size_t, vk::CommandBuffer, U32)> recordFunc)
+        std::function<void(std::size_t, vk::CommandBuffer, u32)> recordFunc)
     {
         this->flying_frame_index += 1;
         this->flying_frame_index %= FramesInFlight;
@@ -210,7 +210,7 @@ namespace gfx::vulkan
             this->flying_frames.at(this->flying_frame_index)
                 .recordAndDisplay(
                     this->previous_frame_finished_fence,
-                    [&](vk::CommandBuffer commandBuffer, U32 swapchainIndex)
+                    [&](vk::CommandBuffer commandBuffer, u32 swapchainIndex)
                     {
                         recordFunc(
                             this->flying_frame_index,

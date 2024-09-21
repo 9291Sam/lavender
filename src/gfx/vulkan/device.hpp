@@ -13,7 +13,7 @@ namespace gfx::vulkan
     class Device
     {
     public:
-        enum class QueueType : U8
+        enum class QueueType : u8
         {
             Graphics           = 0,
             AsyncCompute       = 1,
@@ -46,9 +46,9 @@ namespace gfx::vulkan
         Device& operator= (const Device&) = delete;
         Device& operator= (Device&&)      = delete;
 
-        [[nodiscard]] std::optional<U32>
+        [[nodiscard]] std::optional<u32>
                           getFamilyOfQueueType(QueueType) const noexcept;
-        [[nodiscard]] U32 getNumberOfQueues(QueueType) const noexcept;
+        [[nodiscard]] u32 getNumberOfQueues(QueueType) const noexcept;
         [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const noexcept;
         [[nodiscard]] vk::Device         getDevice() const noexcept;
         [[nodiscard]] const vk::Device*  operator->() const noexcept
@@ -102,11 +102,11 @@ namespace gfx::vulkan
             queues;
 
         std::array<
-            std::optional<U32>,
+            std::optional<u32>,
             static_cast<std::size_t>(QueueType::NumberOfQueueTypes)>
             queue_family_indexes;
 
-        std::array<U32, static_cast<std::size_t>(QueueType::NumberOfQueueTypes)>
+        std::array<u32, static_cast<std::size_t>(QueueType::NumberOfQueueTypes)>
             queue_family_numbers;
 
         vk::PhysicalDevice physical_device;

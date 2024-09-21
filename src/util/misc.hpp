@@ -3,16 +3,16 @@
 #include <cstdint>
 #include <type_traits>
 
-using U8  = unsigned char; // for aliasing rules
-using U16 = std::uint16_t;
-using U32 = std::uint32_t;
-using U64 = std::uint64_t;
+using u8  = unsigned char; // for aliasing rules
+using u16 = std::uint16_t;
+using u32 = std::uint32_t;
+using u64 = std::uint64_t;
 // using U128 = __uint128_t;
 
-using I8  = signed char;
-using I16 = std::int16_t;
-using I32 = std::int32_t;
-using I64 = std::int64_t;
+using i8  = signed char;
+using i16 = std::int16_t;
+using i32 = std::int32_t;
+using i64 = std::int64_t;
 // using I128 = __int128_t;
 
 using F32 = float;

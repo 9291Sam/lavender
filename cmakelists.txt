@@ -24,7 +24,6 @@ FetchContent_Declare(concurrentqueue
 )
 FetchContent_MakeAvailable(concurrentqueue)
 
-
 FetchContent_Declare(vma
     GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
     GIT_TAG master
@@ -32,6 +31,14 @@ FetchContent_Declare(vma
     SYSTEM
 )
 FetchContent_MakeAvailable(vma)
+
+FetchContent_Declare(offsetAllocator
+    GIT_REPOSITORY https://github.com/sebbbi/offsetAllocator/
+    GIT_TAG main
+    GIT_SHALLOW TRUE
+    SYSTEM
+)
+# FetchContent_MakeAvailable(offsetAllocator)
 
 FetchContent_Declare(glm
     GIT_REPOSITORY https://github.com/g-truc/glm
@@ -98,6 +105,7 @@ add_executable(lavender
 target_include_directories(lavender PUBLIC src)
 target_include_directories(lavender SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_include_directories(lavender SYSTEM PUBLIC ${vma_SOURCE_DIR}/include)
+target_include_directories(lavender SYSTEM PUBLIC ${offsetAllocator_SOURCE_DIR})
 
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MINOR=${PROJECT_VERSION_MINOR})
@@ -107,7 +115,14 @@ target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_TWEAK=${PROJECT_VERS
 target_compile_definitions(lavender PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 target_compile_definitions(lavender PUBLIC VULKAN_HPP_NO_CONSTRUCTORS=1)
 
-target_link_libraries(lavender glfw concurrentqueue glm Boost::container Boost::unordered)
+target_link_libraries(
+    lavender
+    glfw
+    concurrentqueue
+    glm
+    Boost::container
+    Boost::unordered
+)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     target_compile_options(lavender PUBLIC

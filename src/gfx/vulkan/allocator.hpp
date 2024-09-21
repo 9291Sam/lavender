@@ -96,7 +96,7 @@ struct std::hash<gfx::vulkan::CacheablePipelineLayoutCreateInfo>
              i.descriptors)
         {
             util::hashCombine(
-                result, static_cast<std::size_t>(std::bit_cast<U64>(**d)));
+                result, static_cast<std::size_t>(std::bit_cast<u64>(**d)));
         }
 
         util::hashCombine(
@@ -120,7 +120,7 @@ struct std::hash<gfx::vulkan::CacheablePipelineShaderStageCreateInfo>
         util::hashCombine(result, std::hash<std::string> {}(i.entry_point));
 
         util::hashCombine(
-            result, static_cast<std::size_t>(std::bit_cast<U64>(**i.shader)));
+            result, static_cast<std::size_t>(std::bit_cast<u64>(**i.shader)));
 
         util::hashCombine(
             result, std::hash<vk::ShaderStageFlagBits> {}(i.stage));
@@ -173,7 +173,7 @@ struct std::hash<gfx::vulkan::CacheableGraphicsPipelineCreateInfo>
         util::hashCombine(result, std::hash<vk::Format> {}(i.color_format));
         util::hashCombine(result, std::hash<vk::Format> {}(i.depth_format));
         util::hashCombine(
-            result, static_cast<std::size_t>(std::bit_cast<U64>(**i.layout)));
+            result, static_cast<std::size_t>(std::bit_cast<u64>(**i.layout)));
 
         return result;
     }

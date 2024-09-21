@@ -42,7 +42,7 @@ namespace game
             DynamicRenderingPass                render_pass;
             std::shared_ptr<vk::UniquePipeline> pipeline;
             std::array<vk::DescriptorSet, 4>    descriptors;
-            std::function<void(vk::CommandBuffer, vk::PipelineLayout, U32)>
+            std::function<void(vk::CommandBuffer, vk::PipelineLayout, u32)>
                 record_func;
 
             std::strong_ordering
@@ -75,7 +75,7 @@ namespace game
 
         void internalGenerateFrame(
             vk::CommandBuffer,
-            U32 swapchainImageIdx,
+            u32 swapchainImageIdx,
             const gfx::vulkan::Swapchain&,
             std::span<const RecordObject>);
 

@@ -34,8 +34,8 @@ namespace gfx::vulkan
 
         [[nodiscard]] std::expected<void, Frame::ResizeNeeded> recordAndDisplay(
             std::optional<vk::Fence> previousFrameFence,
-            // U32 is the swapchain image's index
-            std::function<void(vk::CommandBuffer, U32)>);
+            // u32 is the swapchain image's index
+            std::function<void(vk::CommandBuffer, u32)>);
 
         [[nodiscard]] vk::Fence getFrameInFlightFence() const noexcept;
 
@@ -64,9 +64,9 @@ namespace gfx::vulkan
         FrameManager& operator= (FrameManager&&)      = delete;
 
         // std::size_t is the flying frame index
-        // U32 is the swapchain image's index
+        // u32 is the swapchain image's index
         [[nodiscard]] std::expected<void, Frame::ResizeNeeded> recordAndDisplay(
-            std::function<void(std::size_t, vk::CommandBuffer, U32)>);
+            std::function<void(std::size_t, vk::CommandBuffer, u32)>);
     private:
         vk::Device                        device;
         std::optional<vk::Fence>          previous_frame_finished_fence;

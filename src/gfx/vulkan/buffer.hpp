@@ -171,7 +171,7 @@ namespace gfx::vulkan
 
                 result = vmaFlushAllocations(
                     **this->allocator,
-                    static_cast<U32>(numberOfFlushes),
+                    static_cast<u32>(numberOfFlushes),
                     allocations.data(),
                     offsets.data(),
                     sizes.data());

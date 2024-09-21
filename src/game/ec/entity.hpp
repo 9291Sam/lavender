@@ -10,8 +10,8 @@ namespace game::ec
     struct Entity
     {
         Entity()
-            : id {static_cast<U32>(-1)}
-            , generation {static_cast<U32>(-1)}
+            : id {static_cast<u32>(-1)}
+            , generation {static_cast<u32>(-1)}
         {}
 
         [[nodiscard]] bool isNull() const
@@ -26,8 +26,8 @@ namespace game::ec
         friend class EntityStorage;
         friend class EntityComponentManager;
 
-        U32 id;
-        U32 generation;
+        u32 id;
+        u32 generation;
     };
 
     // NOLINTNEXTLINE
@@ -35,7 +35,7 @@ namespace game::ec
     {
         std::size_t seed = 823489723458432;
 
-        util::hashCombine(seed, std::bit_cast<U64>(e));
+        util::hashCombine(seed, std::bit_cast<u64>(e));
 
         return seed;
     }

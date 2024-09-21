@@ -4,7 +4,7 @@
 
 namespace voxel
 {
-    enum class Voxel : U16
+    enum class Voxel : u16
     {
         NullAirEmpty,
         Stone0,

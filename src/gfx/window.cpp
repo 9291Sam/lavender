@@ -265,7 +265,7 @@ namespace gfx
 
     std::span<const char*> Window::getRequiredExtensions()
     {
-        U32 numberOfExtensions = 0;
+        u32 numberOfExtensions = 0;
 
         const char** extensions =
             glfwGetRequiredInstanceExtensions(&numberOfExtensions);

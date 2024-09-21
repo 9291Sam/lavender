@@ -55,7 +55,7 @@ namespace gfx::vulkan
 
         const vk::SurfaceCapabilitiesKHR surfaceCapabilities =
             device.getPhysicalDevice().getSurfaceCapabilitiesKHR(surface);
-        const U32 numberOfSwapchainImages = std::min(
+        const u32 numberOfSwapchainImages = std::min(
             {std::max({4U, surfaceCapabilities.minImageCount}),
              surfaceCapabilities.maxImageCount});
 

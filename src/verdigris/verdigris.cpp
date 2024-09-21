@@ -9,7 +9,6 @@
 #include "triangle_component.hpp"
 #include <random>
 
-
 namespace verdigris
 {
     Verdigris::Verdigris(game::Game* game_)
@@ -210,13 +209,13 @@ namespace verdigris
                              nullptr}},
                         .record_func {[](vk::CommandBuffer  commandBuffer,
                                          vk::PipelineLayout layout,
-                                         U32                id)
+                                         u32                id)
                                       {
                                           commandBuffer.pushConstants(
                                               layout,
                                               vk::ShaderStageFlagBits::eVertex,
                                               0,
-                                              sizeof(U32),
+                                              sizeof(u32),
                                               &id);
 
                                           commandBuffer.draw(3, 1, 0, 0);
