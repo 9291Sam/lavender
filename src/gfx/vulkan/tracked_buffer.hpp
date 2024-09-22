@@ -24,6 +24,11 @@ namespace gfx::vulkan
         TrackedBuffer& operator= (const TrackedBuffer&)     = delete;
         TrackedBuffer& operator= (TrackedBuffer&&) noexcept = default;
 
+        vk::Buffer operator* () const
+        {
+            return *this->gpu_buffer;
+        }
+
         std::span<const T> read(std::size_t offset, std::size_t size)
         {
             return {

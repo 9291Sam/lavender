@@ -12,6 +12,7 @@
 #include "voxel/data/greedy_voxel_face.hpp"
 #include "voxel/data/material_brick.hpp"
 #include "voxel/voxel.hpp"
+#include <vulkan/vulkan_handles.hpp>
 
 namespace voxel::chunk
 {
@@ -64,5 +65,10 @@ namespace voxel::chunk
 
         util::RangeAllocator                       voxel_face_allocator;
         gfx::vulkan::Buffer<data::GreedyVoxelFace> voxel_faces;
+
+        std::shared_ptr<vk::UniqueDescriptorSetLayout> descriptor_set_layout;
+        std::shared_ptr<vk::UniquePipeline>            chunk_renderer_pipeline;
+
+        vk::DescriptorSet descriptor_set;
     };
 } // namespace voxel::chunk

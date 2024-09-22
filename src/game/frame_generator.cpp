@@ -175,7 +175,7 @@ namespace game
 
             nextFreeMvpMatrix * sizeof(glm::mat4));
         const gfx::vulkan::FlushData flushData {
-            .offset {0}, .size {nextFreeMvpMatrix * sizeof(glm::mat4)}};
+            .offset_elements {0}, .size_elements {nextFreeMvpMatrix}};
         this->global_descriptors.mvp_matrices.flush({&flushData, 1});
 
         for (std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>&
