@@ -2,6 +2,8 @@
 
 #include "chunk_manager.hpp"
 #include "chunk.hpp"
+#include "game/frame_generator.hpp"
+#include "game/transform.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer.hpp"
@@ -11,6 +13,7 @@
 #include "voxel/brick/brick_map.hpp"
 #include "voxel/brick/brick_pointer.hpp"
 #include "voxel/brick/brick_pointer_allocator.hpp"
+#include "voxel/constants.hpp"
 #include <cstddef>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
@@ -164,6 +167,34 @@ namespace voxel::chunk
 
     ChunkManager::~ChunkManager() = default;
 
+    game::FrameGenerator::RecordObject ChunkManager::makeRecordObject()
+    {
+        std::vector<vk::DrawIndirectCommand> indirectCommands {};
+
+        return game::FrameGenerator::RecordObject {
+            .transform {game::Transform {}},
+            .render_pass {
+                game::FrameGenerator::DynamicRenderingPass::SimpleColor},
+            .pipeline {this->chunk_renderer_pipeline},
+            .descriptors {{this->descriptor_set, nullptr, nullptr, nullptr}},
+            .record_func {[this, ic = std::move(indirectCommands)](
+                              vk::CommandBuffer  commandBuffer,
+                              vk::PipelineLayout layout,
+                              u32                id)
+                          {
+                              commandBuffer.bindVertexBuffers(
+                                  0, ); // TODO: vertex bindings
+                              commandBuffer.pushConstants(
+                                  layout,
+                                  vk::ShaderStageFlagBits::eVertex,
+                                  0,
+                                  sizeof(u32),
+                                  &id);
+
+                              commandBuffer.drawIndirect()
+                          }}};
+    }
+
     Chunk ChunkManager::allocateChunk(glm::vec3 position)
     {
         const std::expected<u32, util::IndexAllocator::OutOfBlocks>
@@ -227,7 +258,27 @@ namespace voxel::chunk
     {
         this->chunk_data[c.id].needs_remesh = true;
 
-        util::panic("todo!");
+        const auto [bC, bP] = splitChunkLocalPosition(p);
+
+        brick::MaybeBrickPointer maybeBrickPointer =
+            this->brick_maps.read(c.id, 1)[0].data[bC.x][bC.y][bC.z];
+
+        if (maybeBrickPointer.isNull())
+        {
+            const brick::BrickPointer newBrickPointer =
+                this->brick_allocator.allocate();
+
+            maybeBrickPointer = newBrickPointer;
+
+            this->material_bricks.modify(maybeBrickPointer.pointer)
+                .fill(Voxel::NullAirEmpty);
+
+            this->brick_maps.modify(c.id).data[bC.x][bC.y][bC.z] =
+                maybeBrickPointer;
+        }
+
+        this->material_bricks.modify(maybeBrickPointer.pointer)
+            .data[bP.x][bP.y][bP.z] = v;
     }
 
 } // namespace voxel::chunk

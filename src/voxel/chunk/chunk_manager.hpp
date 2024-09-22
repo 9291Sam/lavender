@@ -16,8 +16,6 @@
 
 namespace voxel::chunk
 {
-    struct ChunkLocalPosition : glm::u8vec3
-    {};
 
     struct InternalChunkData
     {
