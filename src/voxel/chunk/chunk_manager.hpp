@@ -4,6 +4,7 @@
 #include "game/frame_generator.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/buffer.hpp"
+#include "gfx/vulkan/tracked_buffer.hpp"
 #include "util/index_allocator.hpp"
 #include "util/range_allocator.hpp"
 #include "voxel/brick/brick_map.hpp"
@@ -38,7 +39,7 @@ namespace voxel::chunk
         [[nodiscard]] game::FrameGenerator::RecordObject makeRecordObject();
 
         Chunk allocateChunk(glm::vec3 position);
-        void  deallocateChunk(Chunk&); // TODO: this feels shit
+        void  deallocateChunk(Chunk&&);
 
         void writeVoxelToChunk(Chunk, ChunkLocalPosition, Voxel);
 
@@ -47,9 +48,9 @@ namespace voxel::chunk
 
         const gfx::Renderer* renderer;
 
-        util::IndexAllocator                 chunk_id_allocator;
-        std::vector<InternalChunkData>       chunk_data;
-        gfx::vulkan::Buffer<brick::BrickMap> brick_maps;
+        util::IndexAllocator                        chunk_id_allocator;
+        std::vector<InternalChunkData>              chunk_data;
+        gfx::vulkan::TrackedBuffer<brick::BrickMap> brick_maps;
 
         struct ChunkDrawIndirectInstancePayload
         {
@@ -58,8 +59,8 @@ namespace voxel::chunk
         };
         gfx::vulkan::Buffer<ChunkDrawIndirectInstancePayload> indirect_payload;
 
-        brick::BrickPointerAllocator             brick_allocator;
-        gfx::vulkan::Buffer<data::MaterialBrick> material_bricks;
+        brick::BrickPointerAllocator                    brick_allocator;
+        gfx::vulkan::TrackedBuffer<data::MaterialBrick> material_bricks;
 
         util::RangeAllocator                       voxel_face_allocator;
         gfx::vulkan::Buffer<data::GreedyVoxelFace> voxel_faces;

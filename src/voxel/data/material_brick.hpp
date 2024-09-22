@@ -1,6 +1,5 @@
 #pragma once
 
-#include "voxel/constants.hpp"
 #include "voxel/voxel.hpp"
 #include <array>
 

@@ -13,8 +13,8 @@ namespace gfx::vulkan
 
     struct FlushData
     {
-        vk::DeviceSize offset;
-        vk::DeviceSize size;
+        vk::DeviceSize offset_elements;
+        vk::DeviceSize size_elements;
     };
 
     static inline std::atomic<std::size_t> bufferBytesAllocated; // NOLINT
@@ -149,8 +149,8 @@ namespace gfx::vulkan
                 result = vmaFlushAllocation(
                     **this->allocator,
                     this->allocation,
-                    flushes[0].offset,
-                    flushes[0].size);
+                    flushes[0].offset_elements * sizeof(T),
+                    flushes[0].size_elements * sizeof(T));
             }
             else
             {
@@ -167,8 +167,8 @@ namespace gfx::vulkan
 
                 for (const FlushData& f : flushes)
                 {
-                    offsets.push_back(f.offset);
-                    sizes.push_back(f.size);
+                    offsets.push_back(f.offset_elements * sizeof(T));
+                    sizes.push_back(f.size_elements * sizeof(T));
                 }
 
                 result = vmaFlushAllocations(
