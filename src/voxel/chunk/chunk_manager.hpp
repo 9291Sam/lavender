@@ -1,9 +1,13 @@
 #pragma once
 
+#include "chunk.hpp"
 #include "game/frame_generator.hpp"
+#include "gfx/renderer.hpp"
+#include "gfx/vulkan/buffer.hpp"
 #include "util/index_allocator.hpp"
 #include "util/range_allocator.hpp"
-#include "voxel/brick/brick_allocator.hpp"
+#include "voxel/brick/brick_map.hpp"
+#include "voxel/brick/brick_pointer_allocator.hpp"
 #include "voxel/data/greedy_voxel_face.hpp"
 #include "voxel/data/material_brick.hpp"
 #include "voxel/voxel.hpp"
@@ -13,37 +17,17 @@ namespace voxel::chunk
     struct ChunkLocalPosition : glm::u8vec3
     {};
 
-    class Chunk
-    {
-    public:
-        static constexpr u32 NullChunk = static_cast<u32>(-1);
-    public:
-        Chunk();
-        ~Chunk();
-
-        Chunk(const Chunk&)             = delete;
-        Chunk(Chunk&&)                  = default;
-        Chunk& operator= (const Chunk&) = delete;
-        Chunk& operator= (Chunk&&)      = default;
-
-
-    private:
-        explicit Chunk(u32);
-        friend class ChunkManager;
-
-        u32 id;
-    };
-
     struct InternalChunkData
     {
         glm::vec4                                           position;
-        std::array<std::optional<util::RangeAllocation>, 6> directions_faces;
+        std::optional<std::array<util::RangeAllocation, 6>> face_data;
+        bool                                                needs_remesh;
     };
 
     class ChunkManager
     {
     public:
-        ChunkManager();
+        explicit ChunkManager(const gfx::Renderer*);
         ~ChunkManager();
 
         ChunkManager(const ChunkManager&)             = delete;
@@ -59,14 +43,20 @@ namespace voxel::chunk
         void writeVoxelToChunk(Chunk, ChunkLocalPosition, Voxel);
 
     private:
-        util::IndexAllocator chunk_id_allocator;
+        std::array<util::RangeAllocation, 6> remeshChunk(u32 chunkId);
 
-        struct ChunkDrawIndirectPayload
+        const gfx::Renderer* renderer;
+
+        util::IndexAllocator                 chunk_id_allocator;
+        std::vector<InternalChunkData>       chunk_data;
+        gfx::vulkan::Buffer<brick::BrickMap> brick_maps;
+
+        struct ChunkDrawIndirectInstancePayload
         {
             glm::vec4 position;
             u32       normal;
         };
-        gfx::vulkan::Buffer<ChunkDrawIndirectPayload> indirect_payload;
+        gfx::vulkan::Buffer<ChunkDrawIndirectInstancePayload> indirect_payload;
 
         brick::BrickPointerAllocator             brick_allocator;
         gfx::vulkan::Buffer<data::MaterialBrick> material_bricks;

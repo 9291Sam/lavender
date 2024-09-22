@@ -26,11 +26,14 @@ namespace util
     public:
         class OutOfBlocks : public std::bad_alloc
         {
-            [[nodiscard]] const char* what() const noexcept override;
+            [[nodiscard]] const char* what() const noexcept override
+            {
+                return "RangeAllocator::OutOfBlocks";
+            }
         };
     public:
         RangeAllocator(u32 size, u32 maxAllocations);
-        ~RangeAllocator() = default;
+        ~RangeAllocator();
 
         RangeAllocator(const RangeAllocator&)                 = delete;
         RangeAllocator(RangeAllocator&&) noexcept             = default;
@@ -40,6 +43,8 @@ namespace util
         [[nodiscard]] RangeAllocation allocate(u32 size);
         [[nodiscard]] std::expected<RangeAllocation, OutOfBlocks>
         tryAllocate(u32 size);
+
+        [[nodiscard]] u32 getSizeOfAllocation(RangeAllocation) const;
 
         void free(RangeAllocation);
 

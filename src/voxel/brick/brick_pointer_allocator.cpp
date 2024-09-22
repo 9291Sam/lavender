@@ -1,4 +1,4 @@
-#include "brick_allocator.hpp"
+#include "brick_pointer_allocator.hpp"
 #include "util/index_allocator.hpp"
 #include "voxel/brick/brick_pointer.hpp"
 #include <utility>
@@ -8,6 +8,8 @@ namespace voxel::brick
     BrickPointerAllocator::BrickPointerAllocator(u32 maxBricks)
         : allocator {maxBricks}
     {}
+
+    BrickPointerAllocator::~BrickPointerAllocator() = default;
 
     BrickPointer BrickPointerAllocator::allocate()
     {

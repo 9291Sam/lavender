@@ -14,6 +14,7 @@
 			"glfw",
 			"moodycamel",
 			"NOLINTNEXTLINE",
+			"remesh",
 			"Sfloat",
 			"unspellable",
 			"Wwindow"

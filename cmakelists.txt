@@ -38,7 +38,7 @@ FetchContent_Declare(offsetAllocator
     GIT_SHALLOW TRUE
     SYSTEM
 )
-# FetchContent_MakeAvailable(offsetAllocator)
+FetchContent_Populate(offsetAllocator)
 
 FetchContent_Declare(glm
     GIT_REPOSITORY https://github.com/g-truc/glm
@@ -101,6 +101,10 @@ add_executable(lavender
     src/util/range_allocator.cpp
 
     src/verdigris/verdigris.cpp
+    
+    src/voxel/brick/brick_pointer_allocator.cpp
+
+    src/voxel/chunk/chunk_manager.cpp
 )
 
 target_include_directories(lavender PUBLIC src)

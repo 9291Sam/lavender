@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gfx/vulkan/allocator.hpp"
 #include "util/log.hpp"
 #include <type_traits>
 #include <vk_mem_alloc.h>
@@ -16,6 +17,8 @@ namespace gfx::vulkan
         vk::DeviceSize size;
     };
 
+    static inline std::atomic<std::size_t> bufferBytesAllocated; // NOLINT
+
     template<class T>
         requires std::is_trivially_copyable_v<T>
     class Buffer
@@ -26,21 +29,18 @@ namespace gfx::vulkan
             : allocator {nullptr}
             , buffer {nullptr}
             , allocation {nullptr}
-            , size_bytes {~std::size_t {0}}
-            , name {"EMPTY GFX::BUFFER"}
+            , elements {0}
             , mapped_memory {nullptr}
         {}
         Buffer(
             const Allocator*        allocator_,
-            std::size_t             sizeBytes,
             vk::BufferUsageFlags    usage,
             vk::MemoryPropertyFlags memoryPropertyFlags,
-            std::string             name_)
+            std::size_t             elements_)
             : allocator {allocator_}
             , buffer {nullptr}
             , allocation {nullptr}
-            , size_bytes {sizeBytes}
-            , name {std::move(name_)}
+            , elements {elements_}
             , mapped_memory {nullptr}
         {
             util::assertFatal(
@@ -52,7 +52,7 @@ namespace gfx::vulkan
                 .sType {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO},
                 .pNext {nullptr},
                 .flags {},
-                .size {this->size_bytes},
+                .size {this->elements * sizeof(T)},
                 .usage {static_cast<VkBufferUsageFlags>(usage)},
                 .sharingMode {VK_SHARING_MODE_EXCLUSIVE},
                 .queueFamilyIndexCount {0},
@@ -85,9 +85,11 @@ namespace gfx::vulkan
                 result == vk::Result::eSuccess,
                 "Failed to allocate buffer {} | Size: {}",
                 vk::to_string(vk::Result {result}),
-                this->size_bytes);
+                this->elements * sizeof(T));
 
             this->buffer = outputBuffer;
+
+            bufferBytesAllocated += (this->elements * sizeof(T));
         }
         ~Buffer()
         {
@@ -113,14 +115,14 @@ namespace gfx::vulkan
             : allocator {other.allocator}
             , buffer {other.buffer}
             , allocation {other.allocation}
-            , size_bytes {other.size_bytes}
+            , elements {other.elements}
             , mapped_memory {other.mapped_memory.exchange(
                   nullptr, std::memory_order_seq_cst)}
         {
             other.allocator  = nullptr;
             other.buffer     = nullptr;
             other.allocation = nullptr;
-            other.size_bytes = 0;
+            other.elements   = 0;
         }
 
         vk::Buffer operator* () const
@@ -130,12 +132,12 @@ namespace gfx::vulkan
 
         std::span<const T> getDataNonCoherent() const
         {
-            return {this->getMappedData(), this->size_bytes};
+            return {this->getMappedData(), this->elements};
         }
 
         std::span<T> getDataNonCoherent()
         {
-            return {this->getMappedData(), this->size_bytes};
+            return {this->getMappedData(), this->elements};
         }
 
         void flush(std::span<const FlushData> flushes)
@@ -203,6 +205,8 @@ namespace gfx::vulkan
 
             ::vmaDestroyBuffer(
                 **this->allocator, this->buffer, this->allocation);
+
+            bufferBytesAllocated -= (this->elements * sizeof(T));
         }
 
         T* getMappedData() const
@@ -239,8 +243,7 @@ namespace gfx::vulkan
         vk::Buffer    buffer;
         VmaAllocation allocation;
 
-        std::size_t             size_bytes;
-        std::string             name;
+        std::size_t             elements;
         mutable std::atomic<T*> mapped_memory;
     };
 } // namespace gfx::vulkan

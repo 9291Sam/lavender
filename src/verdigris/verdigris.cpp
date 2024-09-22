@@ -7,6 +7,7 @@
 #include "gfx/window.hpp"
 #include "shaders/shaders.hpp"
 #include "triangle_component.hpp"
+#include "voxel/chunk/chunk_manager.hpp"
 #include <random>
 
 namespace verdigris
@@ -14,6 +15,7 @@ namespace verdigris
     Verdigris::Verdigris(game::Game* game_)
         : game {game_}
         , ec_manager {game_->getEntityComponentManager()}
+        , chunk_manager(this->game->getRenderer())
     {
         const game::ec::Entity entity =
             this->game->getEntityComponentManager()->createEntity();

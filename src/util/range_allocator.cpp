@@ -12,6 +12,8 @@ namespace util
               size, maxAllocations)}
     {}
 
+    RangeAllocator::~RangeAllocator() = default;
+
     RangeAllocation RangeAllocator::allocate(u32 size)
     {
         std::expected<RangeAllocation, OutOfBlocks> result =
@@ -41,6 +43,14 @@ namespace util
                 .offset {workingAllocation.offset},
                 .metadata {workingAllocation.metadata}};
         }
+    }
+
+    [[nodiscard]] u32
+    RangeAllocator::getSizeOfAllocation(RangeAllocation allocation) const
+    {
+        return this->internal_allocator->allocationSize(
+            OffsetAllocator::Allocation {
+                .offset {allocation.offset}, .metadata {allocation.metadata}});
     }
 
     void RangeAllocator::free(RangeAllocation allocation)

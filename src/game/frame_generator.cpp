@@ -33,11 +33,10 @@ namespace game
 
         gfx::vulkan::Buffer<glm::mat4> mvpMatrices {
             renderer->getAllocator(),
-            sizeof(glm::mat4) * 1024,
             vk::BufferUsageFlagBits::eUniformBuffer,
             vk::MemoryPropertyFlagBits::eDeviceLocal
                 | vk::MemoryPropertyFlagBits::eHostVisible,
-            "mvpmatriciesbuffer"};
+            1024};
 
         const vk::DescriptorBufferInfo mvpMatricesBufferInfo {
             .buffer {*mvpMatrices}, .offset {0}, .range {vk::WholeSize}};
