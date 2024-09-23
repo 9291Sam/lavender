@@ -15,7 +15,7 @@ namespace verdigris
     Verdigris::Verdigris(game::Game* game_)
         : game {game_}
         , ec_manager {game_->getEntityComponentManager()}
-        , chunk_manager(this->game->getRenderer())
+        , chunk_manager(this->game)
     {
         const game::ec::Entity entity =
             this->game->getEntityComponentManager()->createEntity();

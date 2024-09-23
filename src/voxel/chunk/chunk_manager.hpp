@@ -28,7 +28,7 @@ namespace voxel::chunk
     class ChunkManager
     {
     public:
-        explicit ChunkManager(const gfx::Renderer*);
+        explicit ChunkManager(const game::Game*);
         ~ChunkManager();
 
         ChunkManager(const ChunkManager&)             = delete;
@@ -56,6 +56,7 @@ namespace voxel::chunk
         {
             glm::vec4 position;
             u32       normal;
+            u32       chunk_id;
         };
         gfx::vulkan::Buffer<ChunkDrawIndirectInstancePayload> indirect_payload;
         gfx::vulkan::Buffer<vk::DrawIndirectCommand>          indirect_commands;
@@ -69,6 +70,7 @@ namespace voxel::chunk
         std::shared_ptr<vk::UniqueDescriptorSetLayout> descriptor_set_layout;
         std::shared_ptr<vk::UniquePipeline>            chunk_renderer_pipeline;
 
-        vk::DescriptorSet descriptor_set;
+        vk::DescriptorSet chunk_descriptor_set;
+        vk::DescriptorSet global_descriptor_set;
     };
 } // namespace voxel::chunk

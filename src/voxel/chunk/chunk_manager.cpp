@@ -3,6 +3,7 @@
 #include "chunk_manager.hpp"
 #include "chunk.hpp"
 #include "game/frame_generator.hpp"
+#include "game/game.hpp"
 #include "game/transform.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
@@ -27,8 +28,8 @@ namespace voxel::chunk
 {
     static constexpr u32 MaxChunks = 4096;
 
-    ChunkManager::ChunkManager(const gfx::Renderer* renderer_)
-        : renderer {renderer_}
+    ChunkManager::ChunkManager(const game::Game* game)
+        : renderer {game->getRenderer()}
         , chunk_id_allocator {MaxChunks}
         , chunk_data {MaxChunks, InternalChunkData {}}
         , brick_maps(
@@ -86,7 +87,7 @@ namespace voxel::chunk
                        .pImmutableSamplers {nullptr},
                    },
                    vk::DescriptorSetLayoutBinding {
-                       .binding {1},
+                       .binding {2},
                        .descriptorType {vk::DescriptorType::eStorageBuffer},
                        .descriptorCount {1},
                        .stageFlags {vk::ShaderStageFlagBits::eVertex},
@@ -116,11 +117,17 @@ namespace voxel::chunk
                           .offset {offsetof(
                               ChunkDrawIndirectInstancePayload, position)}},
                       vk::VertexInputAttributeDescription {
-                          .location {0},
+                          .location {1},
                           .binding {0},
                           .format {vk::Format::eR32Uint},
                           .offset {offsetof(
                               ChunkDrawIndirectInstancePayload, normal)}},
+                      vk::VertexInputAttributeDescription {
+                          .location {2},
+                          .binding {0},
+                          .format {vk::Format::eR32Uint},
+                          .offset {offsetof(
+                              ChunkDrawIndirectInstancePayload, chunk_id)}},
                   }},
                   .vertex_bindings {{vk::VertexInputBindingDescription {
                       .binding {0},
@@ -138,15 +145,19 @@ namespace voxel::chunk
                   .depth_format {gfx::Renderer::DepthFormat},
                   .layout {this->renderer->getAllocator()->cachePipelineLayout(
                       gfx::vulkan::CacheablePipelineLayoutCreateInfo {
-                          .descriptors {{this->descriptor_set_layout}},
+                          .descriptors {
+                              {game->getGlobalInfoDescriptorSetLayout(),
+                               this->descriptor_set_layout}},
                           .push_constants {vk::PushConstantRange {
                               .stageFlags {vk::ShaderStageFlagBits::eVertex},
                               .offset {0},
                               .size {sizeof(u32)},
                           }}})},
               })}
-        , descriptor_set {this->renderer->getAllocator()->allocateDescriptorSet(
-              **this->descriptor_set_layout)}
+        , chunk_descriptor_set {this->renderer->getAllocator()
+                                    ->allocateDescriptorSet(
+                                        **this->descriptor_set_layout)}
+        , global_descriptor_set {game->getGlobalInfoDescriptorSet()}
     {
         const vk::DescriptorBufferInfo brickMapBufferInfo {
             .buffer {*this->brick_maps}, .offset {0}, .range {vk::WholeSize}};
@@ -164,7 +175,7 @@ namespace voxel::chunk
                 vk::WriteDescriptorSet {
                     .sType {vk::StructureType::eWriteDescriptorSet},
                     .pNext {nullptr},
-                    .dstSet {this->descriptor_set},
+                    .dstSet {this->chunk_descriptor_set},
                     .dstBinding {0},
                     .dstArrayElement {0},
                     .descriptorCount {1},
@@ -176,7 +187,7 @@ namespace voxel::chunk
                 vk::WriteDescriptorSet {
                     .sType {vk::StructureType::eWriteDescriptorSet},
                     .pNext {nullptr},
-                    .dstSet {this->descriptor_set},
+                    .dstSet {this->chunk_descriptor_set},
                     .dstBinding {1},
                     .dstArrayElement {0},
                     .descriptorCount {1},
@@ -188,7 +199,7 @@ namespace voxel::chunk
                 vk::WriteDescriptorSet {
                     .sType {vk::StructureType::eWriteDescriptorSet},
                     .pNext {nullptr},
-                    .dstSet {this->descriptor_set},
+                    .dstSet {this->chunk_descriptor_set},
                     .dstBinding {2},
                     .dstArrayElement {0},
                     .descriptorCount {1},
@@ -244,14 +255,15 @@ namespace voxel::chunk
                                     a)
                                 * 6},
                             .instanceCount {1},
-                            .firstVertex {a.offset},
+                            .firstVertex {a.offset * 6},
                             .firstInstance {callNumber},
                         });
 
                         indirectPayload.push_back(
                             ChunkDrawIndirectInstancePayload {
                                 .position {thisChunkData.position},
-                                .normal {normal}});
+                                .normal {normal},
+                                .chunk_id {chunkId}});
 
                         callNumber += 1;
                         normal += 1;
@@ -285,7 +297,11 @@ namespace voxel::chunk
             .render_pass {
                 game::FrameGenerator::DynamicRenderingPass::SimpleColor},
             .pipeline {this->chunk_renderer_pipeline},
-            .descriptors {{this->descriptor_set, nullptr, nullptr, nullptr}},
+            .descriptors {
+                {this->global_descriptor_set,
+                 this->chunk_descriptor_set,
+                 nullptr,
+                 nullptr}},
             .record_func {
                 [this, numberOfIndirectCommands = indirectCommands.size()](
                     vk::CommandBuffer  commandBuffer,
