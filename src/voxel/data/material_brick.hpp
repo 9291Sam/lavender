@@ -1,5 +1,6 @@
 #pragma once
 
+#include "voxel/constants.hpp"
 #include "voxel/voxel.hpp"
 #include <array>
 
@@ -19,6 +20,28 @@ namespace voxel::data
                     }
                 }
             }
+        }
+
+        void iterateOverVoxels(
+            std::invocable<BrickLocalPosition, Voxel> auto func) const
+        {
+            for (int x = 0; x < 8; ++x)
+            {
+                for (int y = 0; y < 8; ++y)
+                {
+                    for (int z = 0; z < 8; ++z)
+                    {
+                        func(
+                            BrickLocalPosition {glm::u8vec3 {x, y, z}},
+                            this->data[x][y][z]);
+                    }
+                }
+            }
+        }
+
+        [[nodiscard]] Voxel read(ChunkLocalPosition p) const
+        {
+            return this->data[p.x][p.y][p.z];
         }
 
         std::array<std::array<std::array<Voxel, 8>, 8>, 8> data;

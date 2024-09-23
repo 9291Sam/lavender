@@ -41,7 +41,7 @@ namespace voxel::chunk
         Chunk allocateChunk(glm::vec3 position);
         void  deallocateChunk(Chunk&&);
 
-        void writeVoxelToChunk(Chunk, ChunkLocalPosition, Voxel);
+        void writeVoxelToChunk(const Chunk&, ChunkLocalPosition, Voxel);
 
     private:
         std::array<util::RangeAllocation, 6> meshChunk(u32 chunkId);

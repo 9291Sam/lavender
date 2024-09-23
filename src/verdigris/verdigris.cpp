@@ -8,6 +8,9 @@
 #include "shaders/shaders.hpp"
 #include "triangle_component.hpp"
 #include "voxel/chunk/chunk_manager.hpp"
+#include "voxel/constants.hpp"
+#include "voxel/voxel.hpp"
+#include <glm/fwd.hpp>
 #include <random>
 
 namespace verdigris
@@ -89,12 +92,13 @@ namespace verdigris
         //     render::TriangleComponent {
         //         .transform.translation {glm::vec3 {1.3, 3.0, 3.0}}});
 
-        std::mt19937_64                 gen {std::random_device {}()};
-        std::normal_distribution<float> dist {64, 3};
+        std::mt19937_64                    gen {std::random_device {}()};
+        std::normal_distribution<float>    realDist {64, 3};
+        std::uniform_int_distribution<u16> intDist {0, 63};
 
         auto get = [&]
         {
-            return dist(gen);
+            return realDist(gen);
         };
 
         for (int i = 0; i < 512; ++i)
@@ -106,6 +110,21 @@ namespace verdigris
                     .translation {glm::vec3 {get(), get(), get()}},
                     .scale {get() * 3, get() * -3, get() * 8},
                 }}});
+        }
+
+        voxel::chunk::Chunk c =
+            this->chunk_manager.allocateChunk(glm::vec3 {0.0, 128.0, 0.0});
+
+        for (int i = 0; i < 37748; ++i)
+        {
+            this->chunk_manager.writeVoxelToChunk(
+                c,
+                voxel::ChunkLocalPosition {glm::u8vec3 {
+                    static_cast<u8>(intDist(gen)),
+                    static_cast<u8>(intDist(gen)),
+                    static_cast<u8>(intDist(gen)),
+                }},
+                voxel::Voxel::Dirt0);
         }
     }
 
@@ -222,6 +241,8 @@ namespace verdigris
                                       }},
                     });
                 });
+
+        draws.push_back(this->chunk_manager.makeRecordObject());
 
         return {this->camera, std::move(draws)};
     }

@@ -322,7 +322,7 @@ namespace voxel::chunk
                         *this->indirect_commands,
                         0,
                         static_cast<u32>(numberOfIndirectCommands),
-                        0);
+                        16);
                 }}};
     }
 
@@ -385,7 +385,8 @@ namespace voxel::chunk
         }
     }
 
-    void ChunkManager::writeVoxelToChunk(Chunk c, ChunkLocalPosition p, Voxel v)
+    void ChunkManager::writeVoxelToChunk(
+        const Chunk& c, ChunkLocalPosition p, Voxel v)
     {
         this->chunk_data[c.id].needs_remesh = true;
 
@@ -416,16 +417,46 @@ namespace voxel::chunk
     {
         util::logTrace("starting mesh of chunk {}", chunkId);
 
-        std::array<util::RangeAllocation, 6> outAllocations;
+        std::array<util::RangeAllocation, 6> outAllocations {};
 
         u32 normal_direction = 0;
         for (util::RangeAllocation& a : outAllocations)
         {
             std::vector<data::GreedyVoxelFace> faces {};
 
-            // for xyz
-            // if this is visible && other is in bound && isn't visible
-            util::panic("todo");
+            this->brick_maps.read(chunkId, 1)[0].iterateOverPointers(
+                [&](BrickCoordinate bC, brick::MaybeBrickPointer ptr)
+                {
+                    if (!ptr.isNull())
+                    {
+                        this->material_bricks.read(ptr.pointer, 1)[0]
+                            .iterateOverVoxels(
+                                [&](BrickLocalPosition bP, Voxel v)
+                                {
+                                    if (v != Voxel::NullAirEmpty)
+                                    {
+                                        ChunkLocalPosition pos =
+                                            assembleChunkLocalPosition(bC, bP);
+
+                                        faces.push_back(data::GreedyVoxelFace {
+                                            .x {pos.x},
+                                            .y {pos.y},
+                                            .z {pos.z},
+                                            .width {1},
+                                            .height {1},
+                                            .pad {0}});
+                                    }
+                                });
+                    }
+                });
+
+            a = this->voxel_face_allocator.allocate(
+                static_cast<u32>(faces.size()));
+
+            std::copy(
+                faces.cbegin(),
+                faces.cend(),
+                this->voxel_faces.getDataNonCoherent().data());
 
             normal_direction += 1;
         }

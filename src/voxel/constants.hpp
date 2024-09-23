@@ -3,6 +3,8 @@
 #include "util/misc.hpp"
 #include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
+#include <glm/vector_relational.hpp>
+#include <optional>
 
 namespace voxel
 {
@@ -25,5 +27,25 @@ namespace voxel
         return {
             BrickCoordinate {p / ChunkEdgeLengthBricks},
             BrickLocalPosition {p % ChunkEdgeLengthBricks}};
+    }
+
+    inline ChunkLocalPosition
+    assembleChunkLocalPosition(BrickCoordinate c, BrickLocalPosition p)
+    {
+        return ChunkLocalPosition {glm::u8vec3 {c.x * 8, c.y * 8, c.z * 8} + p};
+    }
+
+    inline std::optional<ChunkLocalPosition>
+    tryMakeChunkLocalPosition(glm::i8vec3 p)
+    {
+        if (p.x < 0 || p.y < 0 || p.z < 0 || p.x >= ChunkEdgeLengthVoxels
+            || p.y >= ChunkEdgeLengthVoxels || p.z >= ChunkEdgeLengthVoxels)
+        {
+            return std::nullopt;
+        }
+        else
+        {
+            return ChunkLocalPosition {p};
+        }
     }
 } // namespace voxel
