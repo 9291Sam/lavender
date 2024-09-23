@@ -54,21 +54,30 @@ u32 GreedyVoxelFace_z(GreedyVoxelFace self) { return bitfieldExtract(self.data, 
 u32 GreedyVoxelFace_width(GreedyVoxelFace self) { return bitfieldExtract(self.data, 18, 6); }
 u32 GreedyVoxelFace_height(GreedyVoxelFace self) { return bitfieldExtract(self.data, 24, 6); }
 
-
-layout(set = 1, binding = 0) readonly buffer BrickMap
+struct BrickMap
 {
     MaybeBrickPointer data[8][8][8];
-} in_brick_maps[];
+};
 
-layout(set = 1, binding = 0) readonly buffer MaterialBrick
+struct MaterialBrick
 {
     Voxel data[8][8][8];
-} in_material_bricks[];
+};
 
-layout(set = 1, binding = 0) readonly buffer GreedyVoxelFaces
+layout(set = 1, binding = 0) readonly buffer BrickMapBuffer
 {
-    GreedyVoxelFace face;
-} in_greedy_voxel_faces[];
+   BrickMap map[];
+} in_brick_maps;
+
+layout(set = 1, binding = 1) readonly buffer MaterialBrickBuffer
+{
+    MaterialBrick brick[];
+} in_material_bricks;
+
+layout(set = 1, binding = 2) readonly buffer GreedyVoxelFaces
+{
+    GreedyVoxelFace face[];
+} in_greedy_voxel_faces;
 
 
 layout(push_constant) uniform PushConstants
@@ -87,7 +96,7 @@ void main()
     const u32 face_number = gl_VertexIndex / 6;
     const u32 point_within_face = gl_VertexIndex % 6;
 
-    const GreedyVoxelFace greedy_face = in_greedy_voxel_faces[face_number].face;
+    const GreedyVoxelFace greedy_face = in_greedy_voxel_faces.face[face_number];
 
     const u32 x_pos =  GreedyVoxelFace_x(greedy_face);
     const u32 y_pos =  GreedyVoxelFace_y(greedy_face);
