@@ -15,7 +15,10 @@ namespace gfx::vulkan
             const Allocator*        allocator,
             vk::BufferUsageFlags    usage,
             vk::MemoryPropertyFlags memoryPropertyFlags,
-            std::size_t             elements);
+            std::size_t             elements)
+            : cpu_buffer {elements, T {}}
+            , gpu_buffer {allocator, usage, memoryPropertyFlags, elements}
+        {}
 
         ~TrackedBuffer() = default;
 
@@ -37,7 +40,7 @@ namespace gfx::vulkan
 
         T& modify(std::size_t offset)
         {
-            this->flushes.insert(
+            this->flushes.push_back(
                 FlushData {.offset_elements {offset}, .size_elements {1}});
 
             return this->gpu_buffer.getDataNonCoherent()[offset];
@@ -45,7 +48,7 @@ namespace gfx::vulkan
 
         void write(std::size_t offset_, std::span<const T> data)
         {
-            this->flushes.insert(FlushData {
+            this->flushes.push_back(FlushData {
                 .offset_elements {offset_}, .size_elements {data.size()}});
 
             std::span<T> bufferData = this->gpu_buffer.getDataNonCoherent();

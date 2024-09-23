@@ -211,6 +211,8 @@ compile_shader(lavender
     SOURCES
     src/shaders/triangle.vert
     src/shaders/triangle.frag
+    src/shaders/voxel_chunk.vert
+    src/shaders/voxel_chunk.frag
 )
 
 cmrc_add_resource_library(
@@ -219,6 +221,8 @@ cmrc_add_resource_library(
     NAMESPACE lav
     build/src/shaders/triangle.frag.bin
     build/src/shaders/triangle.vert.bin
+    build/src/shaders/voxel_chunk.frag.bin
+    build/src/shaders/voxel_chunk.vert.bin
 )
 
 target_link_libraries(lavender lav2)

@@ -28,18 +28,16 @@ namespace verdigris
                             .stage {vk::ShaderStageFlagBits::eVertex},
                             .shader {this->game->getRenderer()
                                          ->getAllocator()
-                                         ->cacheShaderModule(shaders::load(
-                                             "build/src/shaders/"
-                                             "triangle.vert.bin"))},
+                                         ->cacheShaderModule(
+                                             shaders::load("triangle.vert"))},
                             .entry_point {"main"},
                         },
                         gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                             .stage {vk::ShaderStageFlagBits::eFragment},
                             .shader {this->game->getRenderer()
                                          ->getAllocator()
-                                         ->cacheShaderModule(shaders::load(
-                                             "build/src/shaders/"
-                                             "triangle.frag.bin"))},
+                                         ->cacheShaderModule(
+                                             shaders::load("triangle.frag"))},
                             .entry_point {"main"},
                         },
                     }},

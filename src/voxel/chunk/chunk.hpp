@@ -47,7 +47,9 @@ namespace voxel::chunk
 
 
     private:
-        explicit Chunk(u32);
+        explicit Chunk(u32 id_)
+            : id {id_}
+        {}
         friend class ChunkManager;
 
         u32 id;

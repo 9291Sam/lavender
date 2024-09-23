@@ -8,13 +8,16 @@
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/device.hpp"
+#include "shaders/shaders.hpp"
 #include "util/index_allocator.hpp"
 #include "util/range_allocator.hpp"
 #include "voxel/brick/brick_map.hpp"
 #include "voxel/brick/brick_pointer.hpp"
 #include "voxel/brick/brick_pointer_allocator.hpp"
 #include "voxel/constants.hpp"
+#include "voxel/data/greedy_voxel_face.hpp"
 #include <cstddef>
+#include <optional>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
@@ -36,7 +39,13 @@ namespace voxel::chunk
               MaxChunks)
         , indirect_payload(
               this->renderer->getAllocator(),
-              vk::BufferUsageFlagBits::eStorageBuffer,
+              vk::BufferUsageFlagBits::eVertexBuffer,
+              vk::MemoryPropertyFlagBits::eDeviceLocal
+                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              static_cast<std::size_t>(MaxChunks * 6))
+        , indirect_commands(
+              this->renderer->getAllocator(),
+              vk::BufferUsageFlagBits::eIndirectBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxChunks * 6))
@@ -85,9 +94,38 @@ namespace voxel::chunk
                    }}}})}
         , chunk_renderer_pipeline {this->renderer->getAllocator()->cachePipeline(
               gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
-                  .stages {},
-                  .vertex_attributes {},
-                  .vertex_bindings {},
+                  .stages {{
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eVertex},
+                          .shader {
+                              this->renderer->getAllocator()->cacheShaderModule(
+                                  shaders::load("voxel_chunk.vert"))},
+                          .entry_point {"main"}},
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eFragment},
+                          .shader {
+                              this->renderer->getAllocator()->cacheShaderModule(
+                                  shaders::load("voxel_chunk.frag"))},
+                          .entry_point {"main"}},
+                  }},
+                  .vertex_attributes {{
+                      vk::VertexInputAttributeDescription {
+                          .location {0},
+                          .binding {0},
+                          .format {vk::Format::eR32G32B32A32Sfloat},
+                          .offset {offsetof(
+                              ChunkDrawIndirectInstancePayload, position)}},
+                      vk::VertexInputAttributeDescription {
+                          .location {0},
+                          .binding {0},
+                          .format {vk::Format::eR32Uint},
+                          .offset {offsetof(
+                              ChunkDrawIndirectInstancePayload, normal)}},
+                  }},
+                  .vertex_bindings {{vk::VertexInputBindingDescription {
+                      .binding {0},
+                      .stride {sizeof(ChunkDrawIndirectInstancePayload)},
+                      .inputRate {vk::VertexInputRate::eInstance}}}},
                   .topology {vk::PrimitiveTopology::eTriangleList},
                   .discard_enable {false},
                   .polygon_mode {vk::PolygonMode::eFill},
@@ -102,10 +140,10 @@ namespace voxel::chunk
                       gfx::vulkan::CacheablePipelineLayoutCreateInfo {
                           .descriptors {{this->descriptor_set_layout}},
                           .push_constants {vk::PushConstantRange {
+                              .stageFlags {vk::ShaderStageFlagBits::eVertex},
                               .offset {0},
                               .size {sizeof(u32)},
-                              .stageFlags {
-                                  vk::ShaderStageFlagBits::eVertex}}}})},
+                          }}})},
               })}
         , descriptor_set {this->renderer->getAllocator()->allocateDescriptorSet(
               **this->descriptor_set_layout)}
@@ -169,7 +207,78 @@ namespace voxel::chunk
 
     game::FrameGenerator::RecordObject ChunkManager::makeRecordObject()
     {
-        std::vector<vk::DrawIndirectCommand> indirectCommands {};
+        std::vector<vk::DrawIndirectCommand>          indirectCommands {};
+        std::vector<ChunkDrawIndirectInstancePayload> indirectPayload {};
+
+        u32 callNumber = 0;
+
+        this->chunk_id_allocator.iterateThroughAllocatedElements(
+            [&, this](u32 chunkId)
+            {
+                InternalChunkData& thisChunkData = this->chunk_data[chunkId];
+
+                if (thisChunkData.needs_remesh)
+                {
+                    if (thisChunkData.face_data.has_value())
+                    {
+                        for (util::RangeAllocation a : *thisChunkData.face_data)
+                        {
+                            this->voxel_face_allocator.free(a);
+                        }
+                    }
+                    thisChunkData.face_data    = this->meshChunk(chunkId);
+                    thisChunkData.needs_remesh = false;
+                }
+
+                // TODO: visibility tests cpu-side culling
+
+                if (thisChunkData.face_data.has_value())
+                {
+                    u32 normal = 0;
+
+                    for (util::RangeAllocation a : *thisChunkData.face_data)
+                    {
+                        indirectCommands.push_back(vk::DrawIndirectCommand {
+                            .vertexCount {
+                                this->voxel_face_allocator.getSizeOfAllocation(
+                                    a)
+                                * 6},
+                            .instanceCount {1},
+                            .firstVertex {a.offset},
+                            .firstInstance {callNumber},
+                        });
+
+                        indirectPayload.push_back(
+                            ChunkDrawIndirectInstancePayload {
+                                .position {thisChunkData.position},
+                                .normal {normal}});
+
+                        callNumber += 1;
+                        normal += 1;
+                    }
+                }
+            });
+
+        std::span<vk::DrawIndirectCommand> gpuIndirectCommands =
+            this->indirect_commands.getDataNonCoherent();
+        std::span<ChunkDrawIndirectInstancePayload> gpuIndirectPayload =
+            this->indirect_payload.getDataNonCoherent();
+
+        std::copy(
+            indirectCommands.cbegin(),
+            indirectCommands.cend(),
+            gpuIndirectCommands.begin());
+
+        std::copy(
+            indirectPayload.cbegin(),
+            indirectPayload.cend(),
+            gpuIndirectPayload.begin());
+
+        const gfx::vulkan::FlushData wholeFlush {
+            .offset_elements {0}, .size_elements {indirectCommands.size()}};
+
+        this->indirect_commands.flush({&wholeFlush, 1});
+        this->indirect_payload.flush({&wholeFlush, 1});
 
         return game::FrameGenerator::RecordObject {
             .transform {game::Transform {}},
@@ -177,22 +286,28 @@ namespace voxel::chunk
                 game::FrameGenerator::DynamicRenderingPass::SimpleColor},
             .pipeline {this->chunk_renderer_pipeline},
             .descriptors {{this->descriptor_set, nullptr, nullptr, nullptr}},
-            .record_func {[this, ic = std::move(indirectCommands)](
-                              vk::CommandBuffer  commandBuffer,
-                              vk::PipelineLayout layout,
-                              u32                id)
-                          {
-                              commandBuffer.bindVertexBuffers(
-                                  0, ); // TODO: vertex bindings
-                              commandBuffer.pushConstants(
-                                  layout,
-                                  vk::ShaderStageFlagBits::eVertex,
-                                  0,
-                                  sizeof(u32),
-                                  &id);
+            .record_func {
+                [this, numberOfIndirectCommands = indirectCommands.size()](
+                    vk::CommandBuffer  commandBuffer,
+                    vk::PipelineLayout layout,
+                    u32                id)
+                {
+                    commandBuffer.bindVertexBuffers(
+                        0, {*this->indirect_payload}, {0});
 
-                              commandBuffer.drawIndirect()
-                          }}};
+                    commandBuffer.pushConstants(
+                        layout,
+                        vk::ShaderStageFlagBits::eVertex,
+                        0,
+                        sizeof(u32),
+                        &id);
+
+                    commandBuffer.drawIndirect(
+                        *this->indirect_commands,
+                        0,
+                        static_cast<u32>(numberOfIndirectCommands),
+                        0);
+                }}};
     }
 
     Chunk ChunkManager::allocateChunk(glm::vec3 position)
@@ -279,6 +394,29 @@ namespace voxel::chunk
 
         this->material_bricks.modify(maybeBrickPointer.pointer)
             .data[bP.x][bP.y][bP.z] = v;
+    }
+
+    std::array<util::RangeAllocation, 6> ChunkManager::meshChunk(u32 chunkId)
+    {
+        util::logTrace("starting mesh of chunk {}", chunkId);
+
+        std::array<util::RangeAllocation, 6> outAllocations;
+
+        u32 normal_direction = 0;
+        for (util::RangeAllocation& a : outAllocations)
+        {
+            std::vector<data::GreedyVoxelFace> faces {};
+
+            // for xyz
+            // if this is visible && other is in bound && isn't visible
+            util::panic("todo");
+
+            normal_direction += 1;
+        }
+
+        util::logTrace("ending mesh of chunk {}", chunkId);
+
+        return outAllocations;
     }
 
 } // namespace voxel::chunk

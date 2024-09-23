@@ -56,7 +56,7 @@ namespace util
         void                                  free(IndexType);
 
         void
-        iterateThroughAllocatedElements(std::invocable<std::size_t> auto func)
+        iterateThroughAllocatedElements(std::invocable<IndexType> auto func)
         {
             for (u32 i = 0; i < this->next_available_block; ++i)
             {

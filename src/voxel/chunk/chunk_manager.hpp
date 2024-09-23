@@ -13,6 +13,7 @@
 #include "voxel/data/material_brick.hpp"
 #include "voxel/voxel.hpp"
 #include <vulkan/vulkan_handles.hpp>
+#include <vulkan/vulkan_structs.hpp>
 
 namespace voxel::chunk
 {
@@ -43,7 +44,7 @@ namespace voxel::chunk
         void writeVoxelToChunk(Chunk, ChunkLocalPosition, Voxel);
 
     private:
-        std::array<util::RangeAllocation, 6> remeshChunk(u32 chunkId);
+        std::array<util::RangeAllocation, 6> meshChunk(u32 chunkId);
 
         const gfx::Renderer* renderer;
 
@@ -57,6 +58,7 @@ namespace voxel::chunk
             u32       normal;
         };
         gfx::vulkan::Buffer<ChunkDrawIndirectInstancePayload> indirect_payload;
+        gfx::vulkan::Buffer<vk::DrawIndirectCommand>          indirect_commands;
 
         brick::BrickPointerAllocator                    brick_allocator;
         gfx::vulkan::TrackedBuffer<data::MaterialBrick> material_bricks;
