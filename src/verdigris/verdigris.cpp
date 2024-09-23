@@ -101,21 +101,22 @@ namespace verdigris
             return realDist(gen);
         };
 
-        for (int i = 0; i < 512; ++i)
-        {
-            this->ec_manager->addComponent(
-                this->ec_manager->createEntity(),
-                TriangleComponent {.transform {game::Transform {
-                    .rotation {glm::quat {glm::vec3 {get(), get(), get()}}},
-                    .translation {glm::vec3 {get(), get(), get()}},
-                    .scale {get() * 3, get() * -3, get() * 8},
-                }}});
-        }
+        // for (int i = 0; i < 512; ++i)
+        // {
+        //     this->ec_manager->addComponent(
+        //         this->ec_manager->createEntity(),
+        //         TriangleComponent {.transform {game::Transform {
+        //             .rotation {glm::quat {glm::vec3 {get(), get(), get()}}},
+        //             .translation {glm::vec3 {get(), get(), get()}},
+        //             .scale {get() * 3, get() * -3, get() * 8},
+        //         }}});
+        // }
 
         voxel::chunk::Chunk c =
             this->chunk_manager.allocateChunk(glm::vec3 {0.0, 128.0, 0.0});
 
-        for (int i = 0; i < 37748; ++i)
+        // TODO: flushing slow as BALLS
+        for (int i = 0; i < 8493; ++i)
         {
             this->chunk_manager.writeVoxelToChunk(
                 c,

@@ -392,6 +392,8 @@ namespace voxel::chunk
 
         const auto [bC, bP] = splitChunkLocalPosition(p);
 
+        util::logTrace("inserting at [{}, {}, {}]", p.x, p.y, p.z);
+
         brick::MaybeBrickPointer maybeBrickPointer =
             this->brick_maps.read(c.id, 1)[0].data[bC.x][bC.y][bC.z];
 
@@ -438,6 +440,12 @@ namespace voxel::chunk
                                         ChunkLocalPosition pos =
                                             assembleChunkLocalPosition(bC, bP);
 
+                                        util::logTrace(
+                                            "meshing at [{}, {}, {}]",
+                                            pos.x,
+                                            pos.y,
+                                            pos.z);
+
                                         faces.push_back(data::GreedyVoxelFace {
                                             .x {pos.x},
                                             .y {pos.y},
@@ -457,6 +465,11 @@ namespace voxel::chunk
                 faces.cbegin(),
                 faces.cend(),
                 this->voxel_faces.getDataNonCoherent().data());
+            const gfx::vulkan::FlushData flush {
+                .offset_elements {a.offset},
+                .size_elements {faces.size()},
+            };
+            this->voxel_faces.flush({&flush, 1});
 
             normal_direction += 1;
         }

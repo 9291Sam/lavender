@@ -1,6 +1,7 @@
 #include "shaders.hpp"
 #include "cmrc/cmrc.hpp"
 #include "util/log.hpp"
+#include "util/misc.hpp"
 #include <span>
 
 namespace shaders
@@ -24,5 +25,7 @@ namespace shaders
         {
             util::panic("failed to open resource {}", realResource);
         }
+
+        util::debugBreak();
     }
 } // namespace shaders

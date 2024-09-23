@@ -87,7 +87,9 @@ namespace gfx::vulkan
 
         std::vector<const char*> extensions {};
 
+#ifdef __APPLE__
         extensions.push_back(vk::KHRPortabilityEnumerationExtensionName);
+#endif // __APPLE__
         extensions.append_range(Window::getRequiredExtensions());
 
         if constexpr (util::isDebugBuild())

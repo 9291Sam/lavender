@@ -194,7 +194,8 @@ function(compile_shader target)
                 $<$<BOOL:${arg_SPV}>:--target-spv=${arg_SPV}>
                 $<$<BOOL:${arg_FORMAT}>:-mfmt=${arg_FORMAT}>
                 $<$<BOOL:${arg_INCLUDE_DIRS}>:-I${CMAKE_SOURCE_DIR}/src/shaders/include>
-                -O -g # enable opts & debug symbols
+                # -O
+                -g # enable opts & debug symbols
                 -MD -MF ${source}.d
                 -o ${source}.${arg_FORMAT}
                 ${CMAKE_CURRENT_SOURCE_DIR}/${source}
