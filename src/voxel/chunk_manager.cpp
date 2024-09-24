@@ -18,6 +18,7 @@
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
 #include "util/range_allocator.hpp"
+#include "util/timer.hpp"
 #include "voxel/visibility_brick.hpp"
 #include "voxel_face_direction.hpp"
 #include <cstddef>
@@ -476,18 +477,14 @@ namespace voxel
 
     std::array<util::RangeAllocation, 6> ChunkManager::meshChunk(u32 chunkId)
     {
-        util::logTrace("starting mesh of chunk {}", chunkId);
+        util::Timer timer {"mesh chunk"};
 
         std::array<util::RangeAllocation, 6> outAllocations {};
 
-        std::size_t number = 0;
-
-        u32 normal_direction = 0;
+        u32 normalDirection = 0;
         for (util::RangeAllocation& a : outAllocations)
         {
             std::vector<GreedyVoxelFace> faces {};
-
-            util::logTrace("before iter");
 
             const BrickMap& thisBrickMap = this->brick_maps.read(chunkId, 1)[0];
 
@@ -504,7 +501,7 @@ namespace voxel
                             {
                                 VoxelFaceDirection dir =
                                     static_cast<VoxelFaceDirection>(
-                                        normal_direction);
+                                        normalDirection);
 
                                 ChunkLocalPosition pos =
                                     assembleChunkLocalPosition(bC, bP);
@@ -524,8 +521,6 @@ namespace voxel
                                         .height {1},
                                         .pad {0}});
                                 };
-
-                                number++;
 
                                 if (isFilled)
                                 {
@@ -575,8 +570,6 @@ namespace voxel
                     }
                 });
 
-            util::logTrace("after iter");
-
             a = this->voxel_face_allocator.allocate(
                 static_cast<u32>(faces.size()));
 
@@ -590,12 +583,8 @@ namespace voxel
             };
             this->voxel_faces.flush({&flush, 1});
 
-            util::logTrace("after flush");
-
-            normal_direction += 1;
+            normalDirection += 1;
         }
-
-        util::logTrace("ending mesh of chunk {} {}", chunkId, number);
 
         return outAllocations;
     }

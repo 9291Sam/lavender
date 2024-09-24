@@ -27,5 +27,6 @@ namespace shaders
         }
 
         util::debugBreak();
+        return {};
     }
 } // namespace shaders

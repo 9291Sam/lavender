@@ -161,9 +161,21 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(lavender PUBLIC
         -Wno-braced-scalar-init
-        -fsanitize=address
     )
-    target_link_options(lavender PUBLIC -fsanitize=address)
+
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+        # Add debug symbols that lldb can actually read
+        target_compile_options(lavender PUBLIC -glldb)
+        target_compile_options(lavender PUBLIC -gdwarf-4)
+        target_compile_options(lavender PUBLIC -g3)
+
+        # target_compile_options(lavender PUBLIC -fsanitize=thread)
+        # target_link_options(lavender PUBLIC -fsanitize=thread)
+
+        target_compile_options(lavender PUBLIC -fsanitize=address)
+        target_link_options(lavender PUBLIC -fsanitize=address)
+    endif ()
+
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
   # using Intel C++
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
