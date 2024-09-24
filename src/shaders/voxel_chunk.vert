@@ -137,5 +137,5 @@ void main()
 
     // const VoxelMaterial this_material = (in_push_constants.ptr_materials + uint(this_voxel.voxel)).material;
 
-    out_color = vec4(1.0);   
+    out_color = vec4(pos_in_chunk / 64.0, 1.0);   
 }
