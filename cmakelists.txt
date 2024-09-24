@@ -102,9 +102,8 @@ add_executable(lavender
 
     src/verdigris/verdigris.cpp
     
-    src/voxel/brick/brick_pointer_allocator.cpp
-
-    src/voxel/chunk/chunk_manager.cpp
+    src/voxel/brick_pointer_allocator.cpp
+    src/voxel/chunk_manager.cpp
 )
 
 target_include_directories(lavender PUBLIC src)

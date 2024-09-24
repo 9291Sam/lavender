@@ -1,7 +1,11 @@
 
 
 #include "chunk_manager.hpp"
+#include "brick_map.hpp"
+#include "brick_pointer.hpp"
+#include "brick_pointer_allocator.hpp"
 #include "chunk.hpp"
+#include "constants.hpp"
 #include "game/frame_generator.hpp"
 #include "game/game.hpp"
 #include "game/transform.hpp"
@@ -9,23 +13,21 @@
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/device.hpp"
+#include "greedy_voxel_face.hpp"
 #include "shaders/shaders.hpp"
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
 #include "util/range_allocator.hpp"
-#include "voxel/brick/brick_map.hpp"
-#include "voxel/brick/brick_pointer.hpp"
-#include "voxel/brick/brick_pointer_allocator.hpp"
-#include "voxel/constants.hpp"
-#include "voxel/data/greedy_voxel_face.hpp"
+#include "voxel_face_direction.hpp"
 #include <cstddef>
 #include <optional>
+#include <source_location>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
-namespace voxel::chunk
+namespace voxel
 {
     static constexpr u32 MaxChunks = 4096;
 
@@ -344,7 +346,7 @@ namespace voxel::chunk
             .face_data {std::nullopt},
             .needs_remesh {true}};
 
-        const brick::BrickMap emptyBrickMap {};
+        const BrickMap emptyBrickMap {};
         this->brick_maps.write(thisChunkId, {&emptyBrickMap, 1});
 
         return Chunk {thisChunkId};
@@ -357,18 +359,17 @@ namespace voxel::chunk
         this->chunk_id_allocator.free(toFree.id);
 
         // TODO: iterate over brick maps and free bricks
-        brick::BrickMap& thisChunkBrickMap = this->brick_maps.modify(toFree.id);
+        BrickMap& thisChunkBrickMap = this->brick_maps.modify(toFree.id);
 
         for (auto& yz : thisChunkBrickMap.data)
         {
             for (auto& z : yz)
             {
-                for (brick::MaybeBrickPointer& ptr : z)
+                for (MaybeBrickPointer& ptr : z)
                 {
                     if (!ptr.isNull())
                     {
-                        this->brick_allocator.free(
-                            brick::BrickPointer {ptr.pointer});
+                        this->brick_allocator.free(BrickPointer {ptr.pointer});
                     }
                 }
             }
@@ -387,18 +388,28 @@ namespace voxel::chunk
     }
 
     void ChunkManager::writeVoxelToChunk(
-        const Chunk& c, ChunkLocalPosition p, Voxel v)
+        const Chunk& c, ChunkLocalPosition p, Voxel v, std::source_location loc)
     {
         this->chunk_data[c.id].needs_remesh = true;
 
+        util::assertFatal<u8, u8, u8>(
+            p.x < ChunkEdgeLengthVoxels && p.y < ChunkEdgeLengthVoxels
+                && p.z < ChunkEdgeLengthVoxels,
+            "ChunkManager::writeVoxelToChunk position [{}, {}, {}] out of "
+            "bounds",
+            static_cast<u8>(p.x),
+            static_cast<u8>(p.y),
+            static_cast<u8>(p.z),
+            loc);
+
         const auto [bC, bP] = splitChunkLocalPosition(p);
 
-        brick::MaybeBrickPointer maybeBrickPointer =
-            this->brick_maps.read(c.id, 1)[0].data[bC.x][bC.y][bC.z];
+        MaybeBrickPointer maybeBrickPointer =
+            this->brick_maps.read(c.id, 1)[0].data[bC.x][bC.y][bC.z]; // NOLINT
 
         if (maybeBrickPointer.isNull())
         {
-            const brick::BrickPointer newBrickPointer =
+            const BrickPointer newBrickPointer =
                 this->brick_allocator.allocate();
 
             maybeBrickPointer = newBrickPointer;
@@ -406,10 +417,12 @@ namespace voxel::chunk
             this->material_bricks.modify(maybeBrickPointer.pointer)
                 .fill(Voxel::NullAirEmpty);
 
+            // NOLINTNEXTLINE
             this->brick_maps.modify(c.id).data[bC.x][bC.y][bC.z] =
                 maybeBrickPointer;
         }
 
+        // NOLINTNEXTLINE
         this->material_bricks.modify(maybeBrickPointer.pointer)
             .data[bP.x][bP.y][bP.z] = v;
     }
@@ -423,23 +436,39 @@ namespace voxel::chunk
         u32 normal_direction = 0;
         for (util::RangeAllocation& a : outAllocations)
         {
-            std::vector<data::GreedyVoxelFace> faces {};
+            std::vector<GreedyVoxelFace> faces {};
 
             this->brick_maps.read(chunkId, 1)[0].iterateOverPointers(
-                [&](BrickCoordinate bC, brick::MaybeBrickPointer ptr)
+                [&](BrickCoordinate bC, MaybeBrickPointer ptr)
                 {
                     if (!ptr.isNull())
                     {
-                        this->material_bricks.read(ptr.pointer, 1)[0]
-                            .iterateOverVoxels(
-                                [&](BrickLocalPosition bP, Voxel v)
-                                {
-                                    if (v != Voxel::NullAirEmpty)
-                                    {
-                                        ChunkLocalPosition pos =
-                                            assembleChunkLocalPosition(bC, bP);
+                        const MaterialBrick& thisBrick =
+                            this->material_bricks.read(ptr.pointer, 1)[0];
 
-                                        faces.push_back(data::GreedyVoxelFace {
+                        thisBrick.iterateOverVoxels(
+                            [&](BrickLocalPosition bP, Voxel v)
+                            {
+                                VoxelFaceDirection dir =
+                                    static_cast<VoxelFaceDirection>(
+                                        normal_direction);
+
+                                ChunkLocalPosition pos =
+                                    assembleChunkLocalPosition(bC, bP);
+
+                                std::optional<ChunkLocalPosition> adjPos =
+                                    tryMakeChunkLocalPosition(
+                                        getDirFromDirection(dir)
+                                        + static_cast<glm::i8vec3>(pos));
+
+                                if (v != Voxel::NullAirEmpty)
+                                {
+                                    if (!adjPos.has_value()
+                                        || (adjPos.has_value()
+                                            && thisBrick.read(*adjPos)
+                                                   == Voxel::NullAirEmpty))
+                                    {
+                                        faces.push_back(GreedyVoxelFace {
                                             .x {pos.x},
                                             .y {pos.y},
                                             .z {pos.z},
@@ -447,7 +476,8 @@ namespace voxel::chunk
                                             .height {1},
                                             .pad {0}});
                                     }
-                                });
+                                }
+                            });
                     }
                 });
 
@@ -472,4 +502,4 @@ namespace voxel::chunk
         return outAllocations;
     }
 
-} // namespace voxel::chunk
+} // namespace voxel

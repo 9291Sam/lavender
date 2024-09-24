@@ -3,7 +3,7 @@
 #include "brick_pointer.hpp"
 #include "util/index_allocator.hpp"
 
-namespace voxel::brick
+namespace voxel
 {
 
     class BrickPointerAllocator
@@ -23,4 +23,4 @@ namespace voxel::brick
     private:
         util::IndexAllocator allocator;
     };
-} // namespace voxel::brick
+} // namespace voxel

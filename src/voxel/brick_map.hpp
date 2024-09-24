@@ -4,7 +4,7 @@
 #include "voxel/constants.hpp"
 #include <array>
 
-namespace voxel::brick
+namespace voxel
 {
     struct BrickMap
     {
@@ -21,10 +21,10 @@ namespace voxel::brick
                     {
                         func(
                             BrickCoordinate {glm::u8vec3 {x, y, z}},
-                            this->data[x][y][z]);
+                            this->data[x][y][z]); // NOLINT
                     }
                 }
             }
         }
     };
-} // namespace voxel::brick
+} // namespace voxel

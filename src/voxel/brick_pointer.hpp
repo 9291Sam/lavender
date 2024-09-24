@@ -2,7 +2,7 @@
 
 #include "util/misc.hpp"
 
-namespace voxel::brick
+namespace voxel
 {
     struct MaybeBrickPointer
     {
@@ -18,4 +18,4 @@ namespace voxel::brick
 
     struct BrickPointer : MaybeBrickPointer
     {};
-} // namespace voxel::brick
+} // namespace voxel
