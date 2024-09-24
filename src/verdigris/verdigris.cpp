@@ -115,17 +115,21 @@ namespace verdigris
         voxel::Chunk c =
             this->chunk_manager.allocateChunk(glm::vec3 {0.0, 0.0, -64.0});
 
-        // TODO: flushing slow as BALLS
-        for (int i = 0; i < 8493; ++i)
+        for (int i = 0; i < 64; ++i)
         {
-            this->chunk_manager.writeVoxelToChunk(
-                c,
-                voxel::ChunkLocalPosition {glm::u8vec3 {
-                    static_cast<u8>(intDist(gen)),
-                    static_cast<u8>(intDist(gen)),
-                    static_cast<u8>(intDist(gen)),
-                }},
-                voxel::Voxel::Dirt0);
+            for (int j = 0; j < 64; ++j)
+            {
+                this->chunk_manager.writeVoxelToChunk(
+                    c,
+                    voxel::ChunkLocalPosition {glm::u8vec3 {
+                        static_cast<u8>(i),
+                        static_cast<u8>(
+                            8 * std::sin(i / 24.0) + 8 * std::cos(j / 24.0)
+                            + 1.0),
+                        static_cast<u8>(j),
+                    }},
+                    voxel::Voxel::Dirt0);
+            }
         }
     }
 
