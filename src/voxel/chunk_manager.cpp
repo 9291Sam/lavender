@@ -480,6 +480,8 @@ namespace voxel
 
         std::array<util::RangeAllocation, 6> outAllocations {};
 
+        std::size_t number = 0;
+
         u32 normal_direction = 0;
         for (util::RangeAllocation& a : outAllocations)
         {
@@ -523,6 +525,8 @@ namespace voxel
                                         .pad {0}});
                                 };
 
+                                number++;
+
                                 if (isFilled)
                                 {
                                     if (!adjPos.has_value())
@@ -560,6 +564,10 @@ namespace voxel
                                                     emit();
                                                 }
                                             }
+                                            else
+                                            {
+                                                emit();
+                                            }
                                         }
                                     }
                                 }
@@ -587,7 +595,7 @@ namespace voxel
             normal_direction += 1;
         }
 
-        util::logTrace("ending mesh of chunk {}", chunkId);
+        util::logTrace("ending mesh of chunk {} {}", chunkId, number);
 
         return outAllocations;
     }
