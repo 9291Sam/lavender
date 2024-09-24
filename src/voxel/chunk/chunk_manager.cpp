@@ -11,6 +11,7 @@
 #include "gfx/vulkan/device.hpp"
 #include "shaders/shaders.hpp"
 #include "util/index_allocator.hpp"
+#include "util/log.hpp"
 #include "util/range_allocator.hpp"
 #include "voxel/brick/brick_map.hpp"
 #include "voxel/brick/brick_pointer.hpp"
@@ -440,11 +441,11 @@ namespace voxel::chunk
                                         ChunkLocalPosition pos =
                                             assembleChunkLocalPosition(bC, bP);
 
-                                        util::logTrace(
-                                            "meshing at [{}, {}, {}]",
-                                            pos.x,
-                                            pos.y,
-                                            pos.z);
+                                        // util::logTrace(
+                                        //     "meshing at [{}, {}, {}]",
+                                        //     pos.x,
+                                        //     pos.y,
+                                        //     pos.z);
 
                                         faces.push_back(data::GreedyVoxelFace {
                                             .x {pos.x},
@@ -461,10 +462,12 @@ namespace voxel::chunk
             a = this->voxel_face_allocator.allocate(
                 static_cast<u32>(faces.size()));
 
+            util::logTrace("{}", a.offset);
+
             std::copy(
                 faces.cbegin(),
                 faces.cend(),
-                this->voxel_faces.getDataNonCoherent().data());
+                this->voxel_faces.getDataNonCoherent().data() + a.offset);
             const gfx::vulkan::FlushData flush {
                 .offset_elements {a.offset},
                 .size_elements {faces.size()},
