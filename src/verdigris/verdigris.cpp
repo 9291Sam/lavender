@@ -113,7 +113,7 @@ namespace verdigris
         // }
 
         voxel::chunk::Chunk c =
-            this->chunk_manager.allocateChunk(glm::vec3 {0.0, 128.0, 0.0});
+            this->chunk_manager.allocateChunk(glm::vec3 {0.0, 0.0, -64.0});
 
         // TODO: flushing slow as BALLS
         for (int i = 0; i < 8493; ++i)
