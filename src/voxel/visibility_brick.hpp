@@ -3,7 +3,6 @@
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "voxel/constants.hpp"
-#include "voxel/voxel.hpp"
 #include <array>
 #include <limits>
 
@@ -17,7 +16,7 @@ namespace voxel
         }
 
         void iterateOverVoxels(
-            std::invocable<BrickLocalPosition, Voxel> auto func) const
+            std::invocable<BrickLocalPosition, bool> auto func) const
         {
             for (int x = 0; x < 8; ++x)
             {

@@ -18,6 +18,7 @@
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
 #include "util/range_allocator.hpp"
+#include "voxel/visibility_brick.hpp"
 #include "voxel_face_direction.hpp"
 #include <cstddef>
 #include <optional>
@@ -99,6 +100,16 @@ namespace voxel
                        .binding {2},
                        .descriptorType {vk::DescriptorType::eStorageBuffer},
                        .descriptorCount {1},
+                       .stageFlags {
+                           vk::ShaderStageFlagBits::eVertex
+                           | vk::ShaderStageFlagBits::eFragment
+                           | vk::ShaderStageFlagBits::eCompute},
+                       .pImmutableSamplers {nullptr},
+                   },
+                   vk::DescriptorSetLayoutBinding {
+                       .binding {3},
+                       .descriptorType {vk::DescriptorType::eStorageBuffer},
+                       .descriptorCount {1},
                        .stageFlags {vk::ShaderStageFlagBits::eVertex},
                        .pImmutableSamplers {nullptr},
                    }}}})}
@@ -176,6 +187,11 @@ namespace voxel
             .offset {0},
             .range {vk::WholeSize}};
 
+        const vk::DescriptorBufferInfo visibilityBrickInfo {
+            .buffer {*this->visibility_bricks},
+            .offset {0},
+            .range {vk::WholeSize}};
+
         const vk::DescriptorBufferInfo voxelFacesBufferInfo {
             .buffer {*this->voxel_faces}, .offset {0}, .range {vk::WholeSize}};
 
@@ -210,6 +226,18 @@ namespace voxel
                     .pNext {nullptr},
                     .dstSet {this->chunk_descriptor_set},
                     .dstBinding {2},
+                    .dstArrayElement {0},
+                    .descriptorCount {1},
+                    .descriptorType {vk::DescriptorType::eStorageBuffer},
+                    .pImageInfo {nullptr},
+                    .pBufferInfo {&visibilityBrickInfo},
+                    .pTexelBufferView {nullptr},
+                },
+                vk::WriteDescriptorSet {
+                    .sType {vk::StructureType::eWriteDescriptorSet},
+                    .pNext {nullptr},
+                    .dstSet {this->chunk_descriptor_set},
+                    .dstBinding {3},
                     .dstArrayElement {0},
                     .descriptorCount {1},
                     .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -422,6 +450,8 @@ namespace voxel
 
             this->material_bricks.modify(maybeBrickPointer.pointer)
                 .fill(Voxel::NullAirEmpty);
+            this->visibility_bricks.modify(maybeBrickPointer.pointer)
+                .fill(false);
 
             // NOLINTNEXTLINE
             this->brick_maps.modify(c.id).data[bC.x][bC.y][bC.z] =
@@ -431,6 +461,17 @@ namespace voxel
         // NOLINTNEXTLINE
         this->material_bricks.modify(maybeBrickPointer.pointer)
             .data[bP.x][bP.y][bP.z] = v;
+
+        if (v == Voxel::NullAirEmpty)
+        {
+            this->visibility_bricks.modify(maybeBrickPointer.pointer)
+                .write(bP, false);
+        }
+        else
+        {
+            this->visibility_bricks.modify(maybeBrickPointer.pointer)
+                .write(bP, true);
+        }
     }
 
     std::array<util::RangeAllocation, 6> ChunkManager::meshChunk(u32 chunkId)
@@ -446,16 +487,18 @@ namespace voxel
 
             util::logTrace("before iter");
 
-            this->brick_maps.read(chunkId, 1)[0].iterateOverPointers(
+            const BrickMap& thisBrickMap = this->brick_maps.read(chunkId, 1)[0];
+
+            thisBrickMap.iterateOverPointers(
                 [&](BrickCoordinate bC, MaybeBrickPointer ptr)
                 {
                     if (!ptr.isNull())
                     {
-                        const MaterialBrick& thisBrick =
-                            this->material_bricks.read(ptr.pointer, 1)[0];
+                        const VisibilityBrick& thisBrick =
+                            this->visibility_bricks.read(ptr.pointer, 1)[0];
 
                         thisBrick.iterateOverVoxels(
-                            [&](BrickLocalPosition bP, Voxel v)
+                            [&](BrickLocalPosition bP, bool isFilled)
                             {
                                 VoxelFaceDirection dir =
                                     static_cast<VoxelFaceDirection>(
@@ -469,20 +512,55 @@ namespace voxel
                                         getDirFromDirection(dir)
                                         + static_cast<glm::i8vec3>(pos));
 
-                                if (v != Voxel::NullAirEmpty)
+                                auto emit = [&]
                                 {
-                                    if (!adjPos.has_value()
-                                        || (adjPos.has_value()
-                                            && thisBrick.read(*adjPos)
-                                                   == Voxel::NullAirEmpty))
+                                    faces.push_back(GreedyVoxelFace {
+                                        .x {pos.x},
+                                        .y {pos.y},
+                                        .z {pos.z},
+                                        .width {1},
+                                        .height {1},
+                                        .pad {0}});
+                                };
+
+                                if (isFilled)
+                                {
+                                    if (!adjPos.has_value())
                                     {
-                                        faces.push_back(GreedyVoxelFace {
-                                            .x {pos.x},
-                                            .y {pos.y},
-                                            .z {pos.z},
-                                            .width {1},
-                                            .height {1},
-                                            .pad {0}});
+                                        emit();
+                                    }
+                                    else
+                                    {
+                                        const auto [adjBC, adjBP] =
+                                            splitChunkLocalPosition(*adjPos);
+
+                                        if (adjBC == bC)
+                                        {
+                                            if (!thisBrick.read(adjBP))
+                                            {
+                                                emit();
+                                            }
+                                        }
+                                        else
+                                        {
+                                            MaybeBrickPointer adjBrickPointer =
+                                                thisBrickMap
+                                                    .data[adjBC.x][adjBC.y]
+                                                         [adjBC.z];
+
+                                            if (!adjBrickPointer.isNull())
+                                            {
+                                                if (!this->visibility_bricks
+                                                         .read(
+                                                             adjBrickPointer
+                                                                 .pointer,
+                                                             1)[0]
+                                                         .read(adjBP))
+                                                {
+                                                    emit();
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             });

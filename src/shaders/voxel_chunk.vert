@@ -64,6 +64,11 @@ struct MaterialBrick
     Voxel data[8][8][8];
 };
 
+struct VisibiltyBrick
+{
+    u32 data[16];
+};
+
 layout(set = 1, binding = 0) readonly buffer BrickMapBuffer
 {
    BrickMap map[];
@@ -74,7 +79,12 @@ layout(set = 1, binding = 1) readonly buffer MaterialBrickBuffer
     MaterialBrick brick[];
 } in_material_bricks;
 
-layout(set = 1, binding = 2) readonly buffer GreedyVoxelFaces
+layout(set = 1, binding = 2) readonly buffer VisilityBrickBuffer
+{
+    VisibiltyBrick brick[];
+} in_visibility_bricks;
+
+layout(set = 1, binding = 3) readonly buffer GreedyVoxelFaces
 {
     GreedyVoxelFace face[];
 } in_greedy_voxel_faces;
