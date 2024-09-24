@@ -3,7 +3,7 @@
 #include "util/log.hpp"
 #include <util/misc.hpp>
 
-namespace voxel::chunk
+namespace voxel
 {
 
     class Chunk
@@ -54,4 +54,4 @@ namespace voxel::chunk
 
         u32 id;
     };
-} // namespace voxel::chunk
+} // namespace voxel

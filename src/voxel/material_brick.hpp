@@ -4,7 +4,7 @@
 #include "voxel/voxel.hpp"
 #include <array>
 
-namespace voxel::data
+namespace voxel
 {
     struct MaterialBrick
     {
@@ -33,7 +33,7 @@ namespace voxel::data
                     {
                         func(
                             BrickLocalPosition {glm::u8vec3 {x, y, z}},
-                            this->data[x][y][z]);
+                            this->data[x][y][z]); // NOLINT
                     }
                 }
             }
@@ -46,4 +46,4 @@ namespace voxel::data
 
         std::array<std::array<std::array<Voxel, 8>, 8>, 8> data;
     };
-} // namespace voxel::data
+} // namespace voxel

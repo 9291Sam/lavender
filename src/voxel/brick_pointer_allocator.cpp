@@ -1,9 +1,9 @@
 #include "brick_pointer_allocator.hpp"
+#include "brick_pointer.hpp"
 #include "util/index_allocator.hpp"
-#include "voxel/brick/brick_pointer.hpp"
 #include <utility>
 
-namespace voxel::brick
+namespace voxel
 {
     BrickPointerAllocator::BrickPointerAllocator(u32 maxBricks)
         : allocator {maxBricks}
@@ -31,4 +31,4 @@ namespace voxel::brick
     {
         this->allocator.free(pointer.pointer);
     }
-} // namespace voxel::brick
+} // namespace voxel

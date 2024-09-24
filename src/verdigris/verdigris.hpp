@@ -1,7 +1,7 @@
 #pragma once
 
 #include "game/game.hpp"
-#include "voxel/chunk/chunk_manager.hpp"
+#include "voxel/chunk_manager.hpp"
 
 namespace verdigris
 {
@@ -11,7 +11,7 @@ namespace verdigris
         game::Game*                             game;
         const game::ec::EntityComponentManager* ec_manager;
         std::shared_ptr<vk::UniquePipeline>     triangle_pipeline;
-        mutable voxel::chunk::ChunkManager      chunk_manager;
+        mutable voxel::ChunkManager             chunk_manager;
 
         explicit Verdigris(game::Game* game_);
 

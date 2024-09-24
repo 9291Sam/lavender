@@ -19,7 +19,16 @@ namespace voxel
     {};
 
     struct ChunkLocalPosition : public glm::u8vec3
-    {};
+    {
+        explicit operator glm::i8vec3 () const
+        {
+            return glm::i8vec3 {
+                static_cast<i8>(this->x),
+                static_cast<i8>(this->y),
+                static_cast<i8>(this->z),
+            };
+        }
+    };
 
     inline std::pair<BrickCoordinate, BrickLocalPosition>
     splitChunkLocalPosition(ChunkLocalPosition p)
