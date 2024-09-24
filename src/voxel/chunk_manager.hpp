@@ -12,6 +12,7 @@
 #include "util/index_allocator.hpp"
 #include "util/range_allocator.hpp"
 #include "voxel.hpp"
+#include "voxel/visibility_brick.hpp"
 #include <source_location>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
@@ -66,8 +67,9 @@ namespace voxel
         gfx::vulkan::Buffer<ChunkDrawIndirectInstancePayload> indirect_payload;
         gfx::vulkan::Buffer<vk::DrawIndirectCommand>          indirect_commands;
 
-        BrickPointerAllocator                     brick_allocator;
-        gfx::vulkan::TrackedBuffer<MaterialBrick> material_bricks;
+        BrickPointerAllocator                       brick_allocator;
+        gfx::vulkan::TrackedBuffer<MaterialBrick>   material_bricks;
+        gfx::vulkan::TrackedBuffer<VisibilityBrick> visibility_bricks;
 
         util::RangeAllocator                 voxel_face_allocator;
         gfx::vulkan::Buffer<GreedyVoxelFace> voxel_faces;

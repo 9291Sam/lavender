@@ -60,6 +60,12 @@ namespace voxel
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxChunks * 8 * 8 * 4))
+        , visibility_bricks(
+              this->renderer->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer,
+              vk::MemoryPropertyFlagBits::eDeviceLocal
+                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              static_cast<std::size_t>(MaxChunks * 8 * 8 * 4))
         , voxel_face_allocator {16 * 1024 * 1024, MaxChunks * 6}
         , voxel_faces(
               this->renderer->getAllocator(),
@@ -438,6 +444,8 @@ namespace voxel
         {
             std::vector<GreedyVoxelFace> faces {};
 
+            util::logTrace("before iter");
+
             this->brick_maps.read(chunkId, 1)[0].iterateOverPointers(
                 [&](BrickCoordinate bC, MaybeBrickPointer ptr)
                 {
@@ -481,6 +489,8 @@ namespace voxel
                     }
                 });
 
+            util::logTrace("after iter");
+
             a = this->voxel_face_allocator.allocate(
                 static_cast<u32>(faces.size()));
 
@@ -493,6 +503,8 @@ namespace voxel
                 .size_elements {faces.size()},
             };
             this->voxel_faces.flush({&flush, 1});
+
+            util::logTrace("after flush");
 
             normal_direction += 1;
         }
