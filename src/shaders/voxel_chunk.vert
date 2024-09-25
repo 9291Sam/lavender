@@ -69,6 +69,19 @@ struct VisibiltyBrick
     u32 data[16];
 };
 
+struct VoxelMaterial
+{
+    vec4  diffuse_color;
+    vec4  subsurface_color;
+    vec4  specular_color;
+    float diffuse_subsurface_weight;
+    float specular;
+    float roughness;
+    float metallic;
+    vec4  emissive_color_power;
+    vec4  coat_color_power;
+};
+
 layout(set = 1, binding = 0) readonly buffer BrickMapBuffer
 {
    BrickMap map[];
@@ -88,6 +101,11 @@ layout(set = 1, binding = 3) readonly buffer GreedyVoxelFaces
 {
     GreedyVoxelFace face[];
 } in_greedy_voxel_faces;
+
+layout(set = 1, binding = 4) readonly buffer VoxelMaterialBuffer
+{
+    VoxelMaterial material[];
+} in_voxel_materials;
 
 
 layout(push_constant) uniform PushConstants
@@ -135,17 +153,17 @@ void main()
 
     gl_Position = in_mvp_matrices.matrix[in_push_constants.matrix_id] * vec4(face_point_world, 1.0);
 
-    // const uvec3 chunk_local_position = uvec3(x_pos, y_pos, z_pos);
-    // const uvec3 brick_coordinate = chunk_local_position / 8;
-    // const uvec3 brick_local_position = chunk_local_position % 8;
+    const uvec3 chunk_local_position = uvec3(x_pos, y_pos, z_pos);
+    const uvec3 brick_coordinate = chunk_local_position / 8;
+    const uvec3 brick_local_position = chunk_local_position % 8;
 
-    // const BrickPointer this_brick_pointer = (in_push_constants.ptr_brick_map_buffer + in_chunk_id).brick_map
-    //         .data[brick_coordinate.x][brick_coordinate.y][brick_coordinate.z];
+    const MaybeBrickPointer this_brick_pointer = in_brick_maps.map[in_chunk_id]
+        .data[brick_coordinate.x][brick_coordinate.y][brick_coordinate.z];
 
-    // const Voxel this_voxel = (in_push_constants.ptr_material_bricks + this_brick_pointer.ptr).material_brick
-    //         .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
+    const Voxel this_voxel = in_material_bricks.brick[this_brick_pointer.pointer]
+        .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
 
-    // const VoxelMaterial this_material = (in_push_constants.ptr_materials + uint(this_voxel.voxel)).material;
+    const vec4 this_material = in_voxel_materials.material[this_voxel.data].diffuse_color;
 
-    out_color = vec4(pos_in_chunk / 64.0, 1.0);   
+    out_color = vec4(this_material.xyz, 1.0);   
 }

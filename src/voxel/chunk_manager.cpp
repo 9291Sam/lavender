@@ -19,6 +19,7 @@
 #include "util/log.hpp"
 #include "util/range_allocator.hpp"
 #include "util/timer.hpp"
+#include "voxel/material_manager.hpp"
 #include "voxel/visibility_brick.hpp"
 #include "voxel_face_direction.hpp"
 #include <cstddef>
@@ -68,6 +69,7 @@ namespace voxel
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxChunks * 8 * 8 * 4))
+        , material_buffer {voxel::generateVoxelMaterialBuffer(this->renderer)}
         , voxel_face_allocator {16 * 1024 * 1024, MaxChunks * 6}
         , voxel_faces(
               this->renderer->getAllocator(),
@@ -76,58 +78,69 @@ namespace voxel
                   | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(16 * 1024 * 1024))
         , descriptor_set_layout {this->renderer->getAllocator()->cacheDescriptorSetLayout(
-              gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo {.bindings {
-                  {vk::DescriptorSetLayoutBinding {
-                       .binding {0},
-                       .descriptorType {vk::DescriptorType::eStorageBuffer},
-                       .descriptorCount {1},
-                       .stageFlags {
-                           vk::ShaderStageFlagBits::eVertex
-                           | vk::ShaderStageFlagBits::eFragment
-                           | vk::ShaderStageFlagBits::eCompute},
-                       .pImmutableSamplers {nullptr},
-                   },
-                   vk::DescriptorSetLayoutBinding {
-                       .binding {1},
-                       .descriptorType {vk::DescriptorType::eStorageBuffer},
-                       .descriptorCount {1},
-                       .stageFlags {
-                           vk::ShaderStageFlagBits::eVertex
-                           | vk::ShaderStageFlagBits::eFragment
-                           | vk::ShaderStageFlagBits::eCompute},
-                       .pImmutableSamplers {nullptr},
-                   },
-                   vk::DescriptorSetLayoutBinding {
-                       .binding {2},
-                       .descriptorType {vk::DescriptorType::eStorageBuffer},
-                       .descriptorCount {1},
-                       .stageFlags {
-                           vk::ShaderStageFlagBits::eVertex
-                           | vk::ShaderStageFlagBits::eFragment
-                           | vk::ShaderStageFlagBits::eCompute},
-                       .pImmutableSamplers {nullptr},
-                   },
-                   vk::DescriptorSetLayoutBinding {
-                       .binding {3},
-                       .descriptorType {vk::DescriptorType::eStorageBuffer},
-                       .descriptorCount {1},
-                       .stageFlags {vk::ShaderStageFlagBits::eVertex},
-                       .pImmutableSamplers {nullptr},
-                   }}}})}
+              gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo {.bindings {{
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {0},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {1},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {2},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {3},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {vk::ShaderStageFlagBits::eVertex},
+                      .pImmutableSamplers {nullptr},
+                  },
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {4},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+              }}})}
         , chunk_renderer_pipeline {this->renderer->getAllocator()->cachePipeline(
               gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
                   .stages {{
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eVertex},
-                          .shader {
-                              this->renderer->getAllocator()->cacheShaderModule(
-                                  shaders::load("voxel_chunk.vert"))},
+                          .shader {this->renderer->getAllocator()
+                                       ->cacheShaderModule(shaders::load(
+                                           "voxel_chunk.vert"))},
                           .entry_point {"main"}},
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eFragment},
-                          .shader {
-                              this->renderer->getAllocator()->cacheShaderModule(
-                                  shaders::load("voxel_chunk.frag"))},
+                          .shader {this->renderer->getAllocator()
+                                       ->cacheShaderModule(shaders::load(
+                                           "voxel_chunk.frag"))},
                           .entry_point {"main"}},
                   }},
                   .vertex_attributes {{
@@ -196,6 +209,11 @@ namespace voxel
         const vk::DescriptorBufferInfo voxelFacesBufferInfo {
             .buffer {*this->voxel_faces}, .offset {0}, .range {vk::WholeSize}};
 
+        const vk::DescriptorBufferInfo materialBufferInfo {
+            .buffer {*this->material_buffer},
+            .offset {0},
+            .range {vk::WholeSize}};
+
         this->renderer->getDevice()->getDevice().updateDescriptorSets(
             {
                 vk::WriteDescriptorSet {
@@ -244,6 +262,18 @@ namespace voxel
                     .descriptorType {vk::DescriptorType::eStorageBuffer},
                     .pImageInfo {nullptr},
                     .pBufferInfo {&voxelFacesBufferInfo},
+                    .pTexelBufferView {nullptr},
+                },
+                vk::WriteDescriptorSet {
+                    .sType {vk::StructureType::eWriteDescriptorSet},
+                    .pNext {nullptr},
+                    .dstSet {this->chunk_descriptor_set},
+                    .dstBinding {4},
+                    .dstArrayElement {0},
+                    .descriptorCount {1},
+                    .descriptorType {vk::DescriptorType::eStorageBuffer},
+                    .pImageInfo {nullptr},
+                    .pBufferInfo {&materialBufferInfo},
                     .pTexelBufferView {nullptr},
                 },
             },

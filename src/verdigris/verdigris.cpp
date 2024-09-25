@@ -94,23 +94,7 @@ namespace verdigris
 
         std::mt19937_64                    gen {std::random_device {}()};
         std::normal_distribution<float>    realDist {64, 3};
-        std::uniform_int_distribution<u16> intDist {0, 63};
-
-        auto get = [&]
-        {
-            return realDist(gen);
-        };
-
-        // for (int i = 0; i < 512; ++i)
-        // {
-        //     this->ec_manager->addComponent(
-        //         this->ec_manager->createEntity(),
-        //         TriangleComponent {.transform {game::Transform {
-        //             .rotation {glm::quat {glm::vec3 {get(), get(), get()}}},
-        //             .translation {glm::vec3 {get(), get(), get()}},
-        //             .scale {get() * 3, get() * -3, get() * 8},
-        //         }}});
-        // }
+        std::uniform_int_distribution<u16> pDist {0, 15};
 
         voxel::Chunk c =
             this->chunk_manager.allocateChunk(glm::vec3 {0.0, 0.0, -64.0});
@@ -130,7 +114,7 @@ namespace verdigris
                                  + 1.0)}),
                         static_cast<u8>(j),
                     }},
-                    voxel::Voxel::Dirt0);
+                    static_cast<voxel::Voxel>(pDist(gen)));
             }
         }
     }
