@@ -96,25 +96,37 @@ namespace verdigris
         std::normal_distribution<float>    realDist {64, 3};
         std::uniform_int_distribution<u16> pDist {0, 15};
 
-        voxel::Chunk c =
-            this->chunk_manager.allocateChunk(glm::vec3 {0.0, 0.0, -64.0});
-
-        for (int i = 0; i < 64; ++i)
+        auto genFunc = [](int x, int z) -> u8
         {
-            for (int j = 0; j < 64; ++j)
+            return static_cast<u8>(
+                       8 * std::sin(x / 24.0) + 8 * std::cos(z / 24.0) + 32.0)
+                 % 64;
+        };
+
+        for (int cx = 0; cx < 32; ++cx)
+        {
+            for (int cz = 0; cz < 32; ++cz)
             {
-                this->chunk_manager.writeVoxelToChunk(
-                    c,
-                    voxel::ChunkLocalPosition {glm::u8vec3 {
-                        static_cast<u8>(i),
-                        std::min(
-                            {u8 {63},
-                             static_cast<u8>(
-                                 8 * std::sin(i / 24.0) + 8 * std::cos(j / 24.0)
-                                 + 1.0)}),
-                        static_cast<u8>(j),
-                    }},
-                    static_cast<voxel::Voxel>(pDist(gen)));
+                voxel::Chunk c = this->chunk_manager.allocateChunk(glm::vec3 {
+                    cx * 64.0 - 1024.0,
+                    0.0,
+                    cz * 64.0 - 1024.0,
+                });
+
+                for (int i = 0; i < 64; ++i)
+                {
+                    for (int j = 0; j < 64; ++j)
+                    {
+                        this->chunk_manager.writeVoxelToChunk(
+                            c,
+                            voxel::ChunkLocalPosition {glm::u8vec3 {
+                                static_cast<u8>(i),
+                                genFunc(i + cx * 64, j + cz * 64),
+                                static_cast<u8>(j),
+                            }},
+                            static_cast<voxel::Voxel>(pDist(gen)));
+                    }
+                }
             }
         }
     }

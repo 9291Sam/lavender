@@ -505,10 +505,9 @@ namespace voxel
         }
     }
 
+    // NOLINTNEXTLINE
     std::array<util::RangeAllocation, 6> ChunkManager::meshChunk(u32 chunkId)
     {
-        util::Timer timer {"mesh chunk"};
-
         std::array<util::RangeAllocation, 6> outAllocations {};
 
         u32 normalDirection = 0;
@@ -519,6 +518,7 @@ namespace voxel
             const BrickMap& thisBrickMap = this->brick_maps.read(chunkId, 1)[0];
 
             thisBrickMap.iterateOverPointers(
+                // NOLINTNEXTLINE
                 [&](BrickCoordinate bC, MaybeBrickPointer ptr)
                 {
                     if (!ptr.isNull())
