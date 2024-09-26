@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util/log.hpp"
+#include <compare>
 #include <util/misc.hpp>
 
 namespace voxel
@@ -44,6 +45,8 @@ namespace voxel
         {
             return this->id == NullChunk;
         }
+
+        std::strong_ordering operator<=> (const Chunk&) const = default;
 
 
     private:

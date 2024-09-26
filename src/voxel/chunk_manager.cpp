@@ -18,7 +18,6 @@
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
 #include "util/range_allocator.hpp"
-#include "util/timer.hpp"
 #include "voxel/material_manager.hpp"
 #include "voxel/visibility_brick.hpp"
 #include "voxel_face_direction.hpp"

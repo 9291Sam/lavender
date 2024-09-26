@@ -7,6 +7,7 @@
 #include "gfx/window.hpp"
 #include "shaders/shaders.hpp"
 #include "triangle_component.hpp"
+#include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
 #include "voxel/constants.hpp"
 #include "voxel/voxel.hpp"
@@ -94,7 +95,7 @@ namespace verdigris
 
         std::mt19937_64                    gen {std::random_device {}()};
         std::normal_distribution<float>    realDist {64, 3};
-        std::uniform_int_distribution<u16> pDist {0, 15};
+        std::uniform_int_distribution<u16> pDist {1, 15};
 
         auto genFunc = [](int x, int z) -> u8
         {
@@ -103,14 +104,14 @@ namespace verdigris
                  % 64;
         };
 
-        for (int cx = 0; cx < 32; ++cx)
+        for (int cx = 0; cx < 16; ++cx)
         {
-            for (int cz = 0; cz < 32; ++cz)
+            for (int cz = 0; cz < 16; ++cz)
             {
                 voxel::Chunk c = this->chunk_manager.allocateChunk(glm::vec3 {
-                    cx * 64.0 - 1024.0,
+                    cx * 64.0 - 512.0,
                     0.0,
-                    cz * 64.0 - 1024.0,
+                    cz * 64.0 - 512.0,
                 });
 
                 for (int i = 0; i < 64; ++i)
@@ -127,11 +128,20 @@ namespace verdigris
                             static_cast<voxel::Voxel>(pDist(gen)));
                     }
                 }
+
+                this->chunks.insert(std::move(c));
             }
         }
     }
 
-    Verdigris::~Verdigris() = default;
+    Verdigris::~Verdigris()
+    {
+        while (!this->chunks.empty())
+        {
+            auto it = this->chunks.begin();
+            this->chunks.extract(it);
+        }
+    }
 
     std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
     Verdigris::onFrame(float deltaTime) const
