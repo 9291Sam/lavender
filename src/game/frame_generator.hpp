@@ -2,6 +2,7 @@
 
 #include "game/camera.hpp"
 #include "gfx/vulkan/buffer.hpp"
+#include "gfx/vulkan/frame_manager.hpp"
 #include "gfx/vulkan/swapchain.hpp"
 #include "transform.hpp"
 #include <compare>
@@ -69,14 +70,18 @@ namespace game
 
         struct GlobalInfoDescriptors
         {
-            gfx::vulkan::Buffer<glm::mat4> mvp_matrices;
-            gfx::vulkan::Image2D           depth_buffer;
+            std::array<
+                gfx::vulkan::Buffer<glm::mat4>,
+                gfx::vulkan::FramesInFlight>
+                                 mvp_matrices;
+            gfx::vulkan::Image2D depth_buffer;
         };
 
         void internalGenerateFrame(
             vk::CommandBuffer,
             u32 swapchainImageIdx,
             const gfx::vulkan::Swapchain&,
+            std::size_t flyingFrameIdx,
             std::span<const RecordObject>);
 
         static GlobalInfoDescriptors

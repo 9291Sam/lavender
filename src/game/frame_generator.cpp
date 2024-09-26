@@ -31,44 +31,18 @@ namespace game
             vk::ImageTiling::eOptimal,
             vk::MemoryPropertyFlagBits::eDeviceLocal};
 
-        gfx::vulkan::Buffer<glm::mat4> mvpMatrices {
-            renderer->getAllocator(),
-            vk::BufferUsageFlagBits::eUniformBuffer,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-                | vk::MemoryPropertyFlagBits::eHostVisible,
-            1024};
+        std::array<gfx::vulkan::Buffer<glm::mat4>, gfx::vulkan::FramesInFlight>
+            mvpMatrices {};
 
-        const vk::DescriptorBufferInfo mvpMatricesBufferInfo {
-            .buffer {*mvpMatrices}, .offset {0}, .range {vk::WholeSize}};
-
-        renderer->getDevice()->getDevice().updateDescriptorSets(
-            {
-                vk::WriteDescriptorSet {
-                    .sType {vk::StructureType::eWriteDescriptorSet},
-                    .pNext {nullptr},
-                    .dstSet {globalDescriptorSet},
-                    .dstBinding {0},
-                    .dstArrayElement {0},
-                    .descriptorCount {1},
-                    .descriptorType {vk::DescriptorType::eUniformBuffer},
-                    .pImageInfo {nullptr},
-                    .pBufferInfo {&mvpMatricesBufferInfo},
-                    .pTexelBufferView {nullptr},
-                },
-                // vk::WriteDescriptorSet {
-                //     .sType {vk::StructureType::eWriteDescriptorSet},
-                //     .pNext {nullptr},
-                //     .dstSet {globalDescriptorSet},
-                //     .dstBinding {1},
-                //     .dstArrayElement {0},
-                //     .descriptorCount {1},
-                //     .descriptorType {},
-                //     .pImageInfo {},
-                //     .pBufferInfo {},
-                //     .pTexelBufferView {},
-                // },
-            },
-            {});
+        for (auto& m : mvpMatrices)
+        {
+            m = gfx::vulkan::Buffer<glm::mat4> {
+                renderer->getAllocator(),
+                vk::BufferUsageFlagBits::eUniformBuffer,
+                vk::MemoryPropertyFlagBits::eDeviceLocal
+                    | vk::MemoryPropertyFlagBits::eHostVisible,
+                1024};
+        }
 
         return GlobalInfoDescriptors {
             .mvp_matrices {std::move(mvpMatrices)},
@@ -135,6 +109,7 @@ namespace game
         vk::CommandBuffer                             commandBuffer,
         u32                                           swapchainImageIdx,
         const gfx::vulkan::Swapchain&                 swapchain,
+        std::size_t                                   flyingFrameIdx,
         std::span<const FrameGenerator::RecordObject> recordObjects)
     {
         std::array<
@@ -143,8 +118,10 @@ namespace game
                                          DynamicRenderingPassMaxValue)>
             recordablesByPass;
 
-        std::vector<glm::mat4> localMvpMatrices {};
-        u32                    nextFreeMvpMatrix = 0;
+        std::vector<glm::mat4>          localMvpMatrices {};
+        u32                             nextFreeMvpMatrix = 0;
+        gfx::vulkan::Buffer<glm::mat4>& thisFrameMvpMatrixBuffer =
+            this->global_descriptors.mvp_matrices[flyingFrameIdx];
 
         for (const FrameGenerator::RecordObject& o : recordObjects)
         {
@@ -170,13 +147,50 @@ namespace game
         }
 
         std::memcpy(
-            this->global_descriptors.mvp_matrices.getDataNonCoherent().data(),
+            thisFrameMvpMatrixBuffer.getDataNonCoherent().data(),
             localMvpMatrices.data(),
 
             nextFreeMvpMatrix * sizeof(glm::mat4));
         const gfx::vulkan::FlushData flushData {
             .offset_elements {0}, .size_elements {nextFreeMvpMatrix}};
-        this->global_descriptors.mvp_matrices.flush({&flushData, 1});
+        thisFrameMvpMatrixBuffer.flush({&flushData, 1});
+
+        const vk::DescriptorBufferInfo mvpMatricesBufferInfo {
+            .buffer {*thisFrameMvpMatrixBuffer},
+            .offset {0},
+            .range {vk::WholeSize}};
+
+        this->game->getRenderer()
+            ->getDevice()
+            ->getDevice()
+            .updateDescriptorSets(
+                {
+                    vk::WriteDescriptorSet {
+                        .sType {vk::StructureType::eWriteDescriptorSet},
+                        .pNext {nullptr},
+                        .dstSet {this->global_info_descriptor_set},
+                        .dstBinding {0},
+                        .dstArrayElement {0},
+                        .descriptorCount {1},
+                        .descriptorType {vk::DescriptorType::eUniformBuffer},
+                        .pImageInfo {nullptr},
+                        .pBufferInfo {&mvpMatricesBufferInfo},
+                        .pTexelBufferView {nullptr},
+                    },
+                    // vk::WriteDescriptorSet {
+                    //     .sType {vk::StructureType::eWriteDescriptorSet},
+                    //     .pNext {nullptr},
+                    //     .dstSet {globalDescriptorSet},
+                    //     .dstBinding {1},
+                    //     .dstArrayElement {0},
+                    //     .descriptorCount {1},
+                    //     .descriptorType {},
+                    //     .pImageInfo {},
+                    //     .pBufferInfo {},
+                    //     .pTexelBufferView {},
+                    // },
+                },
+                {});
 
         for (std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>&
                  recordVec : recordablesByPass)
@@ -492,10 +506,15 @@ namespace game
         const bool resizeOcurred = this->game->getRenderer()->recordOnThread(
             [&](vk::CommandBuffer       commandBuffer,
                 u32                     swapchainImageIdx,
-                gfx::vulkan::Swapchain& swapchain)
+                gfx::vulkan::Swapchain& swapchain,
+                std::size_t             flyingFrameIdx)
             {
                 this->internalGenerateFrame(
-                    commandBuffer, swapchainImageIdx, swapchain, recordObjects);
+                    commandBuffer,
+                    swapchainImageIdx,
+                    swapchain,
+                    flyingFrameIdx,
+                    recordObjects);
             });
 
         this->has_resize_ocurred = resizeOcurred;

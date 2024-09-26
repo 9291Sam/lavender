@@ -37,9 +37,10 @@ namespace gfx
         Renderer& operator= (Renderer&&)      = delete;
 
         // Returns true if a resize occurred
-        // Command buffer, swapchain idx, swapchain
+        // Command buffer, swapchain idx, swapchain, frame idx
         bool recordOnThread(
-            std::function<void(vk::CommandBuffer, u32, vulkan::Swapchain&)>)
+            std::function<
+                void(vk::CommandBuffer, u32, vulkan::Swapchain&, std::size_t)>)
             const;
         [[nodiscard]] bool shouldWindowClose() const noexcept;
 
