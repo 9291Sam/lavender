@@ -13,11 +13,11 @@ namespace voxel
         void iterateOverPointers(
             std::invocable<BrickCoordinate, MaybeBrickPointer> auto func) const
         {
-            for (int x = 0; x < 8; ++x)
+            for (std::size_t x = 0; x < 8; ++x)
             {
-                for (int y = 0; y < 8; ++y)
+                for (std::size_t y = 0; y < 8; ++y)
                 {
-                    for (int z = 0; z < 8; ++z)
+                    for (std::size_t z = 0; z < 8; ++z)
                     {
                         func(
                             BrickCoordinate {glm::u8vec3 {x, y, z}},

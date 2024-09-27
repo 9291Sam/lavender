@@ -278,8 +278,8 @@ namespace voxel
                 },
             },
             {});
-        util::logTrace(
-            "allocated {} bytes", gfx::vulkan::bufferBytesAllocated.load());
+        // util::logTrace(
+        //     "allocated {} bytes", gfx::vulkan::bufferBytesAllocated.load());
     }
 
     ChunkManager::~ChunkManager() = default;
@@ -421,10 +421,8 @@ namespace voxel
         return Chunk {thisChunkId};
     }
 
-    void ChunkManager::deallocateChunk(Chunk&& chunkToMoveFrom)
+    void ChunkManager::deallocateChunk(Chunk toFree)
     {
-        Chunk toFree {std::move(chunkToMoveFrom)};
-
         this->chunk_id_allocator.free(toFree.id);
 
         // TODO: iterate over brick maps and free bricks
@@ -454,6 +452,8 @@ namespace voxel
                 this->voxel_face_allocator.free(allocation);
             }
         }
+
+        toFree.id = Chunk::NullChunk;
     }
 
     void ChunkManager::writeVoxelToChunk(
@@ -512,8 +512,6 @@ namespace voxel
     // NOLINTNEXTLINE
     std::array<util::RangeAllocation, 6> ChunkManager::meshChunk(u32 chunkId)
     {
-        util::Timer t {"mesh"};
-
         std::array<util::RangeAllocation, 6> outAllocations {};
 
         u32 normalDirection = 0;
@@ -553,7 +551,7 @@ namespace voxel
                                         .x {pos.x},
                                         .y {pos.y},
                                         .z {pos.z},
-                                        .width {1},
+                                        .width {8},
                                         .height {1},
                                         .pad {0}});
                                 };

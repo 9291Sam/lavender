@@ -136,10 +136,11 @@ namespace verdigris
 
     Verdigris::~Verdigris()
     {
-        while (!this->chunks.empty())
+        for (auto it = this->chunks.begin(); it != this->chunks.end(); ++it)
         {
-            auto it = this->chunks.begin();
-            this->chunks.extract(it);
+            std::set<voxel::Chunk>::node_type node = this->chunks.extract(it);
+
+            this->chunk_manager.deallocateChunk(std::move(node.value()));
         }
     }
 
@@ -163,7 +164,7 @@ namespace verdigris
         if (this->game->getRenderer()->getWindow()->isActionActive(
                 gfx::Window::Action::ToggleConsole))
         {
-            util::logTrace("Frame: {} | {}", deltaTime, 1.0 / deltaTime);
+            util::logTrace("Frame: {} | {}", deltaTime, 1.0f / deltaTime);
         }
 
         this->camera.addPosition(

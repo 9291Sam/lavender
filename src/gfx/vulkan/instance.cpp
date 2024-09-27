@@ -185,7 +185,11 @@ namespace gfx::vulkan
         const vk::InstanceCreateInfo instanceCreateInfo {
             .sType {vk::StructureType::eInstanceCreateInfo},
             .pNext {util::isDebugBuild() ? &debugMessengerCreateInfo : nullptr},
-            .flags {vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR},
+            .flags {
+#ifdef __APPLE__
+                vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR
+#endif // __APPLE__
+            },
             .pApplicationInfo {&applicationInfo},
             .enabledLayerCount {layers.size()},
             .ppEnabledLayerNames {layers.data()},

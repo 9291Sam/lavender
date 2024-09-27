@@ -58,6 +58,16 @@ namespace gfx::vulkan
 
         void flush()
         {
+            T* gpuData = this->gpu_buffer.getDataNonCoherent().data();
+
+            for (const FlushData& f : this->flushes)
+            {
+                std::memcpy(
+                    gpuData + f.offset_elements,
+                    this->cpu_buffer.data() + f.offset_elements,
+                    f.size_elements * sizeof(T));
+            }
+
             this->gpu_buffer.flush(this->flushes);
             this->flushes.clear();
         }

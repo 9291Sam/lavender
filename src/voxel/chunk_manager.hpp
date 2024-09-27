@@ -42,7 +42,7 @@ namespace voxel
         [[nodiscard]] game::FrameGenerator::RecordObject makeRecordObject();
 
         Chunk allocateChunk(glm::vec3 position);
-        void  deallocateChunk(Chunk&&);
+        void  deallocateChunk(Chunk);
 
         void writeVoxelToChunk(
             const Chunk&,

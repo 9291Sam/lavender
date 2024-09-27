@@ -33,8 +33,8 @@ namespace util
         Timer& operator= (Timer&&)      = delete;
 
     private:
-        std::chrono::time_point<std::chrono::steady_clock> start;
         std::string                                        name;
+        std::chrono::time_point<std::chrono::steady_clock> start;
         std::source_location                               location;
     };
 } // namespace util
