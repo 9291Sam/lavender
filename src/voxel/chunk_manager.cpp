@@ -551,7 +551,7 @@ namespace voxel
                                         .x {pos.x},
                                         .y {pos.y},
                                         .z {pos.z},
-                                        .width {8},
+                                        .width {1},
                                         .height {1},
                                         .pad {0}});
                                 };

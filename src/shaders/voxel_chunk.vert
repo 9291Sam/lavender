@@ -132,10 +132,31 @@ void main()
     const u32 width =  GreedyVoxelFace_width(greedy_face);
     const u32 height = GreedyVoxelFace_height(greedy_face);
 
-    const vec3 pos_in_chunk = vec3(float(x_pos), float(y_pos), float(z_pos));
+    const uvec3 pos_in_chunk = uvec3(x_pos, y_pos, z_pos);
 
-    const vec3 face_point_local = vec3(
+    const uvec3 face_point_local = uvec3(
         FACE_LOOKUP_TABLE[in_normal][IDX_TO_VTX_TABLE[point_within_face]]);
+
+    vec3 scaled_face_point_local = vec3(0.0);
+    if (in_normal == 0 || in_normal == 1) {
+        // TOP or BOTTOM face: scale X and Z
+        scaled_face_point_local = vec3(face_point_local.x * float(width),
+                                       face_point_local.y,
+                                       face_point_local.z * float(height));
+    }
+    else if (in_normal == 2 || in_normal == 3) {
+        // LEFT or RIGHT face: scale Y and Z
+        scaled_face_point_local = vec3(face_point_local.x,
+                                       face_point_local.y * float(width),
+                                       face_point_local.z * float(height));
+    }
+    else {
+        // FRONT or BACK face: scale X and Y
+        scaled_face_point_local = vec3(face_point_local.x * float(width),
+                                       face_point_local.y * float(height),
+                                       face_point_local.z);
+    }
+
     
     const vec3 available_normals[6] = {
         vec3(0.0, 1.0, 0.0),
@@ -149,7 +170,7 @@ void main()
     vec3 normal = available_normals[in_normal];
 
     const vec3 face_point_world =
-        in_chunk_position.xyz + pos_in_chunk + face_point_local;
+        in_chunk_position.xyz + pos_in_chunk + scaled_face_point_local;
 
     gl_Position = in_mvp_matrices.matrix[in_push_constants.matrix_id] * vec4(face_point_world, 1.0);
 
