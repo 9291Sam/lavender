@@ -31,18 +31,46 @@ namespace game
             vk::ImageTiling::eOptimal,
             vk::MemoryPropertyFlagBits::eDeviceLocal};
 
-        std::array<gfx::vulkan::Buffer<glm::mat4>, gfx::vulkan::FramesInFlight>
-            mvpMatrices {};
-
-        for (auto& m : mvpMatrices)
-        {
-            m = gfx::vulkan::Buffer<glm::mat4> {
+        gfx::vulkan::Buffer<glm::mat4> mvpMatrices =
+            gfx::vulkan::Buffer<glm::mat4> {
                 renderer->getAllocator(),
-                vk::BufferUsageFlagBits::eUniformBuffer,
+                vk::BufferUsageFlagBits::eUniformBuffer
+                    | vk::BufferUsageFlagBits::eTransferDst,
                 vk::MemoryPropertyFlagBits::eDeviceLocal
                     | vk::MemoryPropertyFlagBits::eHostVisible,
                 1024};
-        }
+
+        const vk::DescriptorBufferInfo mvpMatricesBufferInfo {
+            .buffer {*mvpMatrices}, .offset {0}, .range {vk::WholeSize}};
+
+        renderer->getDevice()->getDevice().updateDescriptorSets(
+            {
+                vk::WriteDescriptorSet {
+                    .sType {vk::StructureType::eWriteDescriptorSet},
+                    .pNext {nullptr},
+                    .dstSet {globalDescriptorSet},
+                    .dstBinding {0},
+                    .dstArrayElement {0},
+                    .descriptorCount {1},
+                    .descriptorType {vk::DescriptorType::eUniformBuffer},
+                    .pImageInfo {nullptr},
+                    .pBufferInfo {&mvpMatricesBufferInfo},
+                    .pTexelBufferView {nullptr},
+                },
+                // vk::WriteDescriptorSet {
+                //     .sType {vk::StructureType::eWriteDescriptorSet},
+                //     .pNext {nullptr},
+                //     .dstSet {globalDescriptorSet},
+                //     .dstBinding {1},
+                //     .dstArrayElement {0},
+                //     .descriptorCount {1},
+                //     .descriptorType {},
+                //     .pImageInfo {},
+                //     .pBufferInfo {},
+                //     .pTexelBufferView {},
+                // },
+            },
+            {});
 
         return GlobalInfoDescriptors {
             .mvp_matrices {std::move(mvpMatrices)},
@@ -118,10 +146,8 @@ namespace game
                                          DynamicRenderingPassMaxValue)>
             recordablesByPass;
 
-        std::vector<glm::mat4>          localMvpMatrices {};
-        u32                             nextFreeMvpMatrix = 0;
-        gfx::vulkan::Buffer<glm::mat4>& thisFrameMvpMatrixBuffer =
-            this->global_descriptors.mvp_matrices[flyingFrameIdx];
+        std::vector<glm::mat4> localMvpMatrices {};
+        u32                    nextFreeMvpMatrix = 0;
 
         for (const FrameGenerator::RecordObject& o : recordObjects)
         {
@@ -146,51 +172,20 @@ namespace game
                 .push_back({&o, thisMatrixId});
         }
 
-        std::memcpy(
-            thisFrameMvpMatrixBuffer.getDataNonCoherent().data(),
-            localMvpMatrices.data(),
+        commandBuffer.updateBuffer(
+            *this->global_descriptors.mvp_matrices,
+            0,
+            localMvpMatrices.size() * sizeof(glm::mat4),
+            localMvpMatrices.data());
 
-            nextFreeMvpMatrix * sizeof(glm::mat4));
-        const gfx::vulkan::FlushData flushData {
-            .offset_elements {0}, .size_elements {nextFreeMvpMatrix}};
-        thisFrameMvpMatrixBuffer.flush({&flushData, 1});
+        // std::memcpy(
+        //     thisFrameMvpMatrixBuffer.getDataNonCoherent().data(),
+        //     localMvpMatrices.data(),
 
-        const vk::DescriptorBufferInfo mvpMatricesBufferInfo {
-            .buffer {*thisFrameMvpMatrixBuffer},
-            .offset {0},
-            .range {vk::WholeSize}};
-
-        this->game->getRenderer()
-            ->getDevice()
-            ->getDevice()
-            .updateDescriptorSets(
-                {
-                    vk::WriteDescriptorSet {
-                        .sType {vk::StructureType::eWriteDescriptorSet},
-                        .pNext {nullptr},
-                        .dstSet {this->global_info_descriptor_set},
-                        .dstBinding {0},
-                        .dstArrayElement {0},
-                        .descriptorCount {1},
-                        .descriptorType {vk::DescriptorType::eUniformBuffer},
-                        .pImageInfo {nullptr},
-                        .pBufferInfo {&mvpMatricesBufferInfo},
-                        .pTexelBufferView {nullptr},
-                    },
-                    // vk::WriteDescriptorSet {
-                    //     .sType {vk::StructureType::eWriteDescriptorSet},
-                    //     .pNext {nullptr},
-                    //     .dstSet {globalDescriptorSet},
-                    //     .dstBinding {1},
-                    //     .dstArrayElement {0},
-                    //     .descriptorCount {1},
-                    //     .descriptorType {},
-                    //     .pImageInfo {},
-                    //     .pBufferInfo {},
-                    //     .pTexelBufferView {},
-                    // },
-                },
-                {});
+        //     nextFreeMvpMatrix * sizeof(glm::mat4));
+        // const gfx::vulkan::FlushData flushData {
+        //     .offset_elements {0}, .size_elements {nextFreeMvpMatrix}};
+        // thisFrameMvpMatrixBuffer.flush({&flushData, 1});
 
         for (std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>&
                  recordVec : recordablesByPass)
