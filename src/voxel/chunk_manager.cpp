@@ -23,6 +23,7 @@
 #include "voxel/visibility_brick.hpp"
 #include "voxel_face_direction.hpp"
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <source_location>
 #include <vulkan/vulkan.hpp>
@@ -509,8 +510,8 @@ namespace voxel
         }
     }
 
-    // NOLINTNEXTLINE
-    std::array<util::RangeAllocation, 6> ChunkManager::meshChunk(u32 chunkId)
+    std::array<util::RangeAllocation, 6>
+    ChunkManager::meshChunkNormal(u32 chunkId) // NOLINT
     {
         std::array<util::RangeAllocation, 6> outAllocations {};
 
@@ -621,6 +622,83 @@ namespace voxel
         }
 
         return outAllocations;
+    }
+
+    std::unique_ptr<ChunkManager::DenseBitChunk>
+    ChunkManager::makeDenseBitChunk(u32 chunkId)
+    {
+        std::unique_ptr<ChunkManager::DenseBitChunk> out =
+            std::make_unique<DenseBitChunk>();
+
+        const BrickMap& thisBrickMap = this->brick_maps.read(chunkId, 1)[0];
+
+        thisBrickMap.iterateOverPointers(
+            // NOLINTNEXTLINE
+            [&](BrickCoordinate bC, MaybeBrickPointer ptr)
+            {
+                if (!ptr.isNull())
+                {
+                    const VisibilityBrick& thisBrick =
+                        this->visibility_bricks.read(ptr.pointer, 1)[0];
+
+                    thisBrick.iterateOverVoxels(
+                        [&](BrickLocalPosition bP, bool isFilled)
+                        {
+                            ChunkLocalPosition pos =
+                                assembleChunkLocalPosition(bC, bP);
+
+                            if (isFilled)
+                            {
+                                out->data[pos.x][pos.y] |= (1ULL << pos.z);
+                            }
+                        });
+                }
+            });
+
+        return out;
+    }
+
+    std::array<util::RangeAllocation, 6>
+    ChunkManager::meshChunkGreedy(u32 chunkId)
+    {
+        std::unique_ptr<DenseBitChunk> trueDenseChunk =
+            this->makeDenseBitChunk(chunkId);
+
+        std::array<util::RangeAllocation, 6> outAllocations {};
+
+        u32 normalId = 0;
+        for (util::RangeAllocation& a : outAllocations)
+        {
+            std::unique_ptr<DenseBitChunk> workingChunk =
+                std::make_unique<DenseBitChunk>(*trueDenseChunk);
+
+            VoxelFaceDirection dir = static_cast<VoxelFaceDirection>(normalId);
+            const auto [driving1Axis, driving2Axis] = getDrivingAxes(dir);
+            // const
+
+            std::vector<GreedyVoxelFace> faces {};
+
+            for (i8 nonDriving = 0; nonDriving < 64; ++nonDriving)
+            {
+                for (i8 driving1 = 0; driving1 < 64; ++driving1)
+                {
+                    for (i8 driving2 = 0; driving2 < 64; ++driving2)
+                    {
+                        i8 faceHeight = 0;
+                        while (workingChunk->isOccupied(glm::i8vec3 {x, h, z})
+                               && !workingChunk->isOccupied(
+                                   glm::i8vec3 {x, h + 1, z}))
+                        {
+                            faceHeight += 1;
+                        }
+
+                        while
+                    }
+                }
+            }
+
+            normalId += 1;
+        }
     }
 
 } // namespace voxel

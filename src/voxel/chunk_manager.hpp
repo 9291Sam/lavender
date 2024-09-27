@@ -51,7 +51,31 @@ namespace voxel
             std::source_location = std::source_location::current());
 
     private:
-        std::array<util::RangeAllocation, 6> meshChunk(u32 chunkId);
+        std::array<util::RangeAllocation, 6> meshChunkNormal(u32 chunkId);
+        std::array<util::RangeAllocation, 6> meshChunkGreedy(u32 chunkId);
+
+        struct DenseBitChunk
+        {
+            std::array<std::array<u64, 64>, 64> data;
+
+            // returns false on out of bounds access
+            [[nodiscard]] bool isOccupied(glm::i8vec3 p) const
+            {
+                if (p.x < 0 || p.x >= 64 || p.y < 0 || p.y >= 64 || p.z < 0
+                    || p.z >= 64)
+                {
+                    return false;
+                }
+                else
+                {
+                    return static_cast<bool>(
+                        this->data[p.x][p.y] & (1ULL << static_cast<u64>(p.z)));
+                }
+            }
+            void write(glm::i8vec3, bool);
+        };
+
+        std::unique_ptr<DenseBitChunk> makeDenseBitChunk(u32 chunkId);
 
         const gfx::Renderer* renderer;
 

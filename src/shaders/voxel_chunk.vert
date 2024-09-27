@@ -156,7 +156,6 @@ void main()
                                        face_point_local.y * float(height),
                                        face_point_local.z);
     }
-
     
     const vec3 available_normals[6] = {
         vec3(0.0, 1.0, 0.0),

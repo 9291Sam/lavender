@@ -2,6 +2,7 @@
 
 #include "util/log.hpp"
 #include "util/misc.hpp"
+#include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
 
 namespace voxel
@@ -35,6 +36,41 @@ namespace voxel
         default:
             util::panic(
                 "voxel::getDirFromDirection(VoxelFaceDirection) passed invalid "
+                "direction | Value: {}",
+                util::toUnderlying(dir));
+        }
+    }
+
+    // Width and height axes
+    inline std::pair<glm::i8vec3, glm::i8vec3>
+    getDrivingAxes(VoxelFaceDirection dir)
+    {
+        switch (dir)
+        {
+        case VoxelFaceDirection::Top:
+            [[fallthrough]];
+        case VoxelFaceDirection::Bottom:
+            return {
+                glm::i8vec3 {1, 0, 0},
+                glm::i8vec3 {0, 0, 1},
+            };
+        case VoxelFaceDirection::Left:
+            [[fallthrough]];
+        case VoxelFaceDirection::Right:
+            return {
+                glm::i8vec3 {0, 1, 0},
+                glm::i8vec3 {0, 0, 1},
+            };
+        case VoxelFaceDirection::Front:
+            [[fallthrough]];
+        case VoxelFaceDirection::Back:
+            return {
+                glm::i8vec3 {1, 0, 0},
+                glm::i8vec3 {0, 1, 0},
+            };
+        default:
+            util::panic(
+                "voxel::getDrivingAxes(VoxelFaceDirection) passed invalid "
                 "direction | Value: {}",
                 util::toUnderlying(dir));
         }
