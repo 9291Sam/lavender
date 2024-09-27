@@ -34,8 +34,7 @@ namespace gfx::vulkan
 
         std::span<const T> read(std::size_t offset, std::size_t size)
         {
-            return {
-                this->gpu_buffer.getDataNonCoherent().data() + offset, size};
+            return {this->cpu_buffer.data() + offset, size};
         }
 
         T& modify(std::size_t offset)
@@ -43,7 +42,7 @@ namespace gfx::vulkan
             this->flushes.push_back(
                 FlushData {.offset_elements {offset}, .size_elements {1}});
 
-            return this->gpu_buffer.getDataNonCoherent()[offset];
+            return this->cpu_buffer[offset];
         }
 
         void write(std::size_t offset_, std::span<const T> data)
@@ -51,10 +50,10 @@ namespace gfx::vulkan
             this->flushes.push_back(FlushData {
                 .offset_elements {offset_}, .size_elements {data.size()}});
 
-            std::span<T> bufferData = this->gpu_buffer.getDataNonCoherent();
-
             std::memcpy(
-                bufferData.data() + offset_, data.data(), data.size_bytes());
+                this->cpu_buffer.data() + offset_,
+                data.data(),
+                data.size_bytes());
         }
 
         void flush()

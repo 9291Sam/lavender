@@ -18,6 +18,7 @@
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
 #include "util/range_allocator.hpp"
+#include "util/timer.hpp"
 #include "voxel/material_manager.hpp"
 #include "voxel/visibility_brick.hpp"
 #include "voxel_face_direction.hpp"
@@ -359,6 +360,10 @@ namespace voxel
         this->indirect_commands.flush({&wholeFlush, 1});
         this->indirect_payload.flush({&wholeFlush, 1});
 
+        this->brick_maps.flush();
+        this->material_bricks.flush();
+        this->visibility_bricks.flush();
+
         return game::FrameGenerator::RecordObject {
             .transform {game::Transform {}},
             .render_pass {
@@ -507,6 +512,8 @@ namespace voxel
     // NOLINTNEXTLINE
     std::array<util::RangeAllocation, 6> ChunkManager::meshChunk(u32 chunkId)
     {
+        util::Timer t {"mesh"};
+
         std::array<util::RangeAllocation, 6> outAllocations {};
 
         u32 normalDirection = 0;
