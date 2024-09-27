@@ -136,9 +136,10 @@ namespace verdigris
 
     Verdigris::~Verdigris()
     {
-        for (auto it = this->chunks.begin(); it != this->chunks.end(); ++it)
+        while (!this->chunks.empty())
         {
-            std::set<voxel::Chunk>::node_type node = this->chunks.extract(it);
+            std::set<voxel::Chunk>::node_type node =
+                this->chunks.extract(this->chunks.begin());
 
             this->chunk_manager.deallocateChunk(std::move(node.value()));
         }
