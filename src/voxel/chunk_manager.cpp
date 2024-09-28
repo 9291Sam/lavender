@@ -306,7 +306,7 @@ namespace voxel
                             this->voxel_face_allocator.free(a);
                         }
                     }
-                    thisChunkData.face_data    = this->meshChunk(chunkId);
+                    thisChunkData.face_data    = this->meshChunkGreedy(chunkId);
                     thisChunkData.needs_remesh = false;
                 }
 
@@ -673,32 +673,67 @@ namespace voxel
                 std::make_unique<DenseBitChunk>(*trueDenseChunk);
 
             VoxelFaceDirection dir = static_cast<VoxelFaceDirection>(normalId);
-            const auto [driving1Axis, driving2Axis] = getDrivingAxes(dir);
-            // const
+            const auto [widthAxis, heightAxis, ascensionAxis] =
+                getDrivingAxes(dir);
+            glm::i8vec3 normal = getDirFromDirection(dir);
 
             std::vector<GreedyVoxelFace> faces {};
 
-            for (i8 nonDriving = 0; nonDriving < 64; ++nonDriving)
+            for (i8 ascend = 0; ascend < 64; ++ascend)
             {
-                for (i8 driving1 = 0; driving1 < 64; ++driving1)
+                for (i8 height = 0; height < 64; ++height)
                 {
-                    for (i8 driving2 = 0; driving2 < 64; ++driving2)
+                    for (i8 width = 0; width < 64; ++width)
                     {
-                        i8 faceHeight = 0;
-                        while (workingChunk->isOccupied(glm::i8vec3 {x, h, z})
+                        i8 faceWidth = 0;
+
+                        glm::i8vec3 thisRoot = ascensionAxis * ascend
+                                             + heightAxis * height
+                                             + widthAxis * width;
+
+                        while (workingChunk->isOccupied(
+                                   thisRoot + (faceWidth * widthAxis))
                                && !workingChunk->isOccupied(
-                                   glm::i8vec3 {x, h + 1, z}))
+                                   thisRoot + (faceWidth * widthAxis) + normal))
                         {
-                            faceHeight += 1;
+                            faceWidth += 1;
                         }
 
-                        while
+                        width += faceWidth;
+
+                        if (faceWidth != 0)
+                        {
+                            faces.push_back(GreedyVoxelFace {
+                                .x {static_cast<u32>(thisRoot.x)},
+                                .y {static_cast<u32>(thisRoot.y)},
+                                .z {static_cast<u32>(thisRoot.z)},
+                                .width {static_cast<u32>(faceWidth)},
+                                .height {1},
+                                .pad {0}});
+
+                            width -= 1;
+                        }
                     }
                 }
             }
 
+            a = this->voxel_face_allocator.allocate(
+                static_cast<u32>(faces.size()));
+
+            std::copy(
+                faces.cbegin(),
+                faces.cend(),
+                this->voxel_faces.getDataNonCoherent().data() + a.offset);
+            const gfx::vulkan::FlushData flush {
+                .offset_elements {a.offset},
+                .size_elements {faces.size()},
+            };
+            this->voxel_faces.flush({&flush, 1});
+
             normalId += 1;
         }
+
+        return outAllocations;
     }
 
 } // namespace voxel

@@ -41,8 +41,8 @@ namespace voxel
         }
     }
 
-    // Width and height axes
-    inline std::pair<glm::i8vec3, glm::i8vec3>
+    // Width, height, and ascension axes
+    inline std::tuple<glm::i8vec3, glm::i8vec3, glm::i8vec3>
     getDrivingAxes(VoxelFaceDirection dir)
     {
         switch (dir)
@@ -53,6 +53,7 @@ namespace voxel
             return {
                 glm::i8vec3 {1, 0, 0},
                 glm::i8vec3 {0, 0, 1},
+                glm::i8vec3 {0, 1, 0},
             };
         case VoxelFaceDirection::Left:
             [[fallthrough]];
@@ -60,6 +61,7 @@ namespace voxel
             return {
                 glm::i8vec3 {0, 1, 0},
                 glm::i8vec3 {0, 0, 1},
+                glm::i8vec3 {1, 0, 0},
             };
         case VoxelFaceDirection::Front:
             [[fallthrough]];
@@ -67,6 +69,7 @@ namespace voxel
             return {
                 glm::i8vec3 {1, 0, 0},
                 glm::i8vec3 {0, 1, 0},
+                glm::i8vec3 {0, 0, 1},
             };
         default:
             util::panic(
