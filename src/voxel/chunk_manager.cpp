@@ -170,7 +170,7 @@ namespace voxel
                       .inputRate {vk::VertexInputRate::eInstance}}}},
                   .topology {vk::PrimitiveTopology::eTriangleList},
                   .discard_enable {false},
-                  .polygon_mode {vk::PolygonMode::eFill},
+                  .polygon_mode {vk::PolygonMode::eLine},
                   .cull_mode {vk::CullModeFlagBits::eNone},
                   .front_face {vk::FrontFace::eCounterClockwise},
                   .depth_test_enable {true},
@@ -699,8 +699,6 @@ namespace voxel
                             faceWidth += 1;
                         }
 
-                        width += faceWidth;
-
                         if (faceWidth != 0)
                         {
                             faces.push_back(GreedyVoxelFace {
@@ -711,7 +709,7 @@ namespace voxel
                                 .height {1},
                                 .pad {0}});
 
-                            width -= 1;
+                            width += faceWidth;
                         }
                     }
                 }
