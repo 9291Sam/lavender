@@ -35,11 +35,12 @@ layout(push_constant) uniform PushConstants
 } in_push_constants;
 
 layout(location = 0) in vec4 in_chunk_position;
-layout(location = 1) in u32 in_normal;
+layout(location = 1) in u32 in_normal_id;
 layout(location = 2) in u32 in_chunk_id;
 
 layout(location = 0) out u32 out_chunk_id;
 layout(location = 1) out vec3 out_chunk_local_position;
+layout(location = 2) out u32 out_normal_id;
 
 void main()
 {
@@ -57,16 +58,16 @@ void main()
     const uvec3 pos_in_chunk = uvec3(x_pos, y_pos, z_pos);
 
     const uvec3 face_point_local = uvec3(
-        FACE_LOOKUP_TABLE[in_normal][IDX_TO_VTX_TABLE[point_within_face]]);
+        FACE_LOOKUP_TABLE[in_normal_id][IDX_TO_VTX_TABLE[point_within_face]]);
 
     vec3 scaled_face_point_local = vec3(0.0);
-    if (in_normal == 0 || in_normal == 1) {
+    if (in_normal_id == 0 || in_normal_id == 1) {
         // TOP or BOTTOM face: scale X and Z
         scaled_face_point_local = vec3(face_point_local.x * float(width),
                                        face_point_local.y,
                                        face_point_local.z * float(height));
     }
-    else if (in_normal == 2 || in_normal == 3) {
+    else if (in_normal_id == 2 || in_normal_id == 3) {
         // LEFT or RIGHT face: scale Y and Z
         scaled_face_point_local = vec3(face_point_local.x,
                                        face_point_local.y * float(width),
@@ -83,8 +84,20 @@ void main()
 
     const vec3 face_point_world = in_chunk_position.xyz + point_within_chunk;
 
+    const vec3 available_normals[6] = {
+        vec3(0.0, 1.0, 0.0),
+        vec3(0.0, -1.0, 0.0),
+        vec3(-1.0, 0.0, 0.0),
+        vec3(1.0, 0.0, 0.0),
+        vec3(0.0, 0.0, -1.0),
+        vec3(0.0, 0.0, 1.0),
+    };
+
+    vec3 normal = available_normals[in_normal_id];
+
     gl_Position = in_mvp_matrices.matrix[in_push_constants.matrix_id] * vec4(face_point_world, 1.0);
-    out_chunk_local_position = point_within_chunk;
+    out_chunk_local_position = point_within_chunk + -0.5 * normal;
     out_chunk_id = in_chunk_id;
+    out_normal_id = in_normal_id;
 
 }

@@ -5,23 +5,14 @@
 
 layout(location = 0) in flat u32 in_chunk_id;
 layout(location = 1) in vec3 in_chunk_local_position;
+layout(location = 2) in flat u32 in_normal_id;
+
+
 layout(location = 0) out vec4 out_color;
 
 void main()
 {
-    
-    // const vec3 available_normals[6] = {
-    //     vec3(0.0, 1.0, 0.0),
-    //     vec3(0.0, -1.0, 0.0),
-    //     vec3(-1.0, 0.0, 0.0),
-    //     vec3(1.0, 0.0, 0.0),
-    //     vec3(0.0, 0.0, -1.0),
-    //     vec3(0.0, 0.0, 1.0),
-    // };
-
-    // vec3 normal = available_normals[in_normal];
-
-    const uvec3 chunk_local_position = uvec3(floor(in_chunk_local_position - 0.01));
+    const uvec3 chunk_local_position = uvec3(floor(in_chunk_local_position));
     
     const uvec3 brick_coordinate = chunk_local_position / 8;
     const uvec3 brick_local_position = chunk_local_position % 8;
