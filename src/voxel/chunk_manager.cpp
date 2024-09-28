@@ -686,48 +686,60 @@ namespace voxel
                 {
                     for (i8 width = 0; width < 64; ++width)
                     {
-                        i8 faceWidth = 0;
+                        // i8 faceWidth = 0;
 
-                        glm::i8vec3 thisRoot = ascensionAxis * ascend
-                                             + heightAxis * height
-                                             + widthAxis * width;
+                        const glm::i8vec3 thisRoot = ascensionAxis * ascend
+                                                   + heightAxis * height
+                                                   + widthAxis * width;
 
-                        while (DenseBitChunk::isPositionInBounds(
-                                   thisRoot + (faceWidth * widthAxis))
-                               && workingChunk->isOccupied(
-                                   thisRoot + (faceWidth * widthAxis)))
+                        if ((workingChunk->isOccupied(thisRoot)
+                             && DenseBitChunk::isPositionInBounds(
+                                 thisRoot + normal)
+                             && !workingChunk->isOccupied(thisRoot + normal))
+                            || !DenseBitChunk::isPositionInBounds(
+                                thisRoot + normal))
                         {
-                            if (DenseBitChunk::isPositionInBounds(
-                                    thisRoot + (faceWidth * widthAxis) + normal)
-                                && workingChunk->isOccupied(
-                                    thisRoot + (faceWidth * widthAxis)
-                                    + normal))
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                faceWidth += 1;
-                            }
+                            faces.push_back(GreedyVoxelFace {
+                                .x {static_cast<u32>(thisRoot.x)},
+                                .y {static_cast<u32>(thisRoot.y)},
+                                .z {static_cast<u32>(thisRoot.z)},
+                                .width {static_cast<u32>(1)},
+                                .height {static_cast<u32>(1)},
+                                .pad {0}});
                         }
+
+                        // while (DenseBitChunk::isPositionInBounds(
+                        //            thisRoot + (faceWidth * widthAxis))
+                        //        && workingChunk->isOccupied(
+                        //            thisRoot + (faceWidth * widthAxis)))
+                        // {
+                        //     if (DenseBitChunk::isPositionInBounds(
+                        //             thisRoot + (faceWidth * widthAxis) +
+                        //             normal)
+                        //         && workingChunk->isOccupied(
+                        //             thisRoot + (faceWidth * widthAxis)
+                        //             + normal))
+                        //     {
+                        //         break;
+                        //     }
+                        //     else
+                        //     {
+                        //         faceWidth += 1;
+                        //     }
+                        // }
 
                         // workingChunk->clearEntireRange(
                         //     thisRoot, widthAxis, faceWidth);
 
                         i8 faceHeight = 1;
 
-                        if (faceWidth != 0)
-                        {
-                            faces.push_back(GreedyVoxelFace {
-                                .x {static_cast<u32>(thisRoot.x)},
-                                .y {static_cast<u32>(thisRoot.y)},
-                                .z {static_cast<u32>(thisRoot.z)},
-                                .width {static_cast<u32>(faceWidth)},
-                                .height {static_cast<u32>(faceHeight)},
-                                .pad {0}});
+                        // if (faceWidth != 0)
+                        // {
 
-                            width += faceWidth - 1;
-                        }
+                        //     util::logTrace("{}", faceWidth);
+
+                        //     width += faceWidth - 1;
+                        // }
                     }
                 }
             }

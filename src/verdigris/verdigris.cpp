@@ -122,7 +122,8 @@ namespace verdigris
                             c,
                             voxel::ChunkLocalPosition {glm::u8vec3 {
                                 static_cast<u8>(i),
-                                genFunc(i + cx * 64, j + cz * 64),
+                                // genFunc(i + cx * 64, j + cz * 64),
+                                0,
                                 static_cast<u8>(j),
                             }},
                             static_cast<voxel::Voxel>(pDist(gen)));
