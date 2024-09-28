@@ -61,22 +61,36 @@ namespace voxel
         {
             std::array<std::array<u64, 64>, 64> data;
 
+            static bool isPositionInBounds(glm::i8vec3 p)
+            {
+                return p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0
+                    && p.z < 64;
+            }
+
             // returns false on out of bounds access
             [[nodiscard]] bool isOccupied(glm::i8vec3 p) const
             {
-                if (p.x < 0 || p.x >= 64 || p.y < 0 || p.y >= 64 || p.z < 0
-                    || p.z >= 64)
-                {
-                    return false;
-                }
-                else
-                {
-                    return static_cast<bool>(
-                        this->data[p.x][p.y] & (1ULL << static_cast<u64>(p.z)));
-                }
+                util::assertFatal(
+                    p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0
+                        && p.z < 64,
+                    "{} {} {}",
+                    p.x,
+                    p.y,
+                    p.z);
+
+                // if (p.x < 0 || p.x >= 64 || p.y < 0 || p.y >= 64 || p.z < 0
+                //     || p.z >= 64)
+                // {
+                //     return false;
+                // }
+                // else
+                // {
+                return static_cast<bool>(
+                    this->data[p.x][p.y] & (1ULL << static_cast<u64>(p.z)));
+                // }
             }
             // if its occupied, it removes it from the data structure
-            bool isOccupiedClearing(glm::i8vec3 p)
+            [[nodiscard]] bool isOccupiedClearing(glm::i8vec3 p)
             {
                 const bool result = this->isOccupied(p);
 
@@ -88,16 +102,47 @@ namespace voxel
                 return result;
             }
 
+            [[nodiscard]] bool isEntireRangeOccupied(
+                glm::i8vec3 base, glm::i8vec3 step, i8 range) const // NOLINT
+            {
+                bool isEntireRangeOccupied = true;
+
+                for (i8 i = 0; i < range; ++i)
+                {
+                    glm::i8vec3 probe = base + step * i;
+
+                    if (!this->isOccupied(probe))
+                    {
+                        isEntireRangeOccupied = false;
+                        break;
+                    }
+                }
+
+                return isEntireRangeOccupied;
+            }
+
+            void clearEntireRange(glm::i8vec3 base, glm::i8vec3 step, i8 range)
+            {
+                for (i8 i = 0; i < range; ++i)
+                {
+                    glm::i8vec3 probe = base + step * i;
+
+                    this->write(probe, false);
+                }
+            }
+
             void write(glm::i8vec3 p, bool filled)
             {
-                if constexpr (util::isDebugBuild())
-                {
-                    util::assertFatal(
-                        p.x < 0 || p.x >= 64 || p.y < 0 || p.y >= 64 || p.z < 0
-                            || p.z >= 64,
-                        "{}",
-                        glm::to_string(p));
-                }
+                // if constexpr (util::isDebugBuild())
+                // {
+                util::assertFatal(
+                    p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0
+                        && p.z < 64,
+                    "{} {} {}",
+                    p.x,
+                    p.y,
+                    p.z);
+                // }
 
                 if (filled)
                 {

@@ -661,6 +661,7 @@ namespace voxel
     std::array<util::RangeAllocation, 6>
     ChunkManager::meshChunkGreedy(u32 chunkId)
     {
+        util::Timer                    m {"mesh"};
         std::unique_ptr<DenseBitChunk> trueDenseChunk =
             this->makeDenseBitChunk(chunkId);
 
@@ -691,13 +692,29 @@ namespace voxel
                                              + heightAxis * height
                                              + widthAxis * width;
 
-                        while (workingChunk->isOccupiedClearing(
+                        while (DenseBitChunk::isPositionInBounds(
                                    thisRoot + (faceWidth * widthAxis))
-                               && !workingChunk->isOccupied(
-                                   thisRoot + (faceWidth * widthAxis) + normal))
+                               && workingChunk->isOccupied(
+                                   thisRoot + (faceWidth * widthAxis)))
                         {
-                            faceWidth += 1;
+                            if (DenseBitChunk::isPositionInBounds(
+                                    thisRoot + (faceWidth * widthAxis) + normal)
+                                && workingChunk->isOccupied(
+                                    thisRoot + (faceWidth * widthAxis)
+                                    + normal))
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                faceWidth += 1;
+                            }
                         }
+
+                        // workingChunk->clearEntireRange(
+                        //     thisRoot, widthAxis, faceWidth);
+
+                        i8 faceHeight = 1;
 
                         if (faceWidth != 0)
                         {
@@ -706,10 +723,10 @@ namespace voxel
                                 .y {static_cast<u32>(thisRoot.y)},
                                 .z {static_cast<u32>(thisRoot.z)},
                                 .width {static_cast<u32>(faceWidth)},
-                                .height {1},
+                                .height {static_cast<u32>(faceHeight)},
                                 .pad {0}});
 
-                            width += faceWidth;
+                            width += faceWidth - 1;
                         }
                     }
                 }

@@ -104,14 +104,14 @@ namespace verdigris
                  % 64;
         };
 
-        for (int cx = 0; cx < 16; ++cx)
+        for (int cx = 0; cx < 8; ++cx)
         {
-            for (int cz = 0; cz < 16; ++cz)
+            for (int cz = 0; cz < 8; ++cz)
             {
                 voxel::Chunk c = this->chunk_manager.allocateChunk(glm::vec3 {
-                    cx * 64.0 - 512.0,
+                    cx * 64.0 - 256.0,
                     0.0,
-                    cz * 64.0 - 512.0,
+                    cz * 64.0 - 256.0,
                 });
 
                 for (int i = 0; i < 64; ++i)
