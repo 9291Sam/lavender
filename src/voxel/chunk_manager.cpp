@@ -691,7 +691,7 @@ namespace voxel
                                              + heightAxis * height
                                              + widthAxis * width;
 
-                        while (workingChunk->isOccupied(
+                        while (workingChunk->isOccupiedClearing(
                                    thisRoot + (faceWidth * widthAxis))
                                && !workingChunk->isOccupied(
                                    thisRoot + (faceWidth * widthAxis) + normal))
