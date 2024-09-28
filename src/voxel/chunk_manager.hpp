@@ -10,10 +10,13 @@
 #include "greedy_voxel_face.hpp"
 #include "material_brick.hpp"
 #include "util/index_allocator.hpp"
+#include "util/misc.hpp"
 #include "util/range_allocator.hpp"
 #include "voxel.hpp"
 #include "voxel/material_manager.hpp"
 #include "voxel/visibility_brick.hpp"
+#include <glm/fwd.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <source_location>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
@@ -72,7 +75,41 @@ namespace voxel
                         this->data[p.x][p.y] & (1ULL << static_cast<u64>(p.z)));
                 }
             }
-            void write(glm::i8vec3, bool);
+            // if its occupied, it removes it from the data structure
+            bool isOccupiedClearing(glm::i8vec3 p)
+            {
+                const bool result = this->isOccupied(p);
+
+                if (result)
+                {
+                    this->write(p, false);
+                }
+
+                return result;
+            }
+
+            void write(glm::i8vec3 p, bool filled)
+            {
+                if constexpr (util::isDebugBuild())
+                {
+                    util::assertFatal(
+                        p.x < 0 || p.x >= 64 || p.y < 0 || p.y >= 64 || p.z < 0
+                            || p.z >= 64,
+                        "{}",
+                        glm::to_string(p));
+                }
+
+                if (filled)
+                {
+                    // NOLINTNEXTLINE
+                    this->data[p.x][p.y] |= (1 << static_cast<u64>(p.z));
+                }
+                else
+                {
+                    // NOLINTNEXTLINE
+                    this->data[p.x][p.y] &= ~(1 << static_cast<u64>(p.z));
+                }
+            }
         };
 
         std::unique_ptr<DenseBitChunk> makeDenseBitChunk(u32 chunkId);
