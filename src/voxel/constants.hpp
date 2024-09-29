@@ -16,7 +16,24 @@ namespace voxel
     {};
 
     struct BrickCoordinate : public glm::u8vec3
-    {};
+    {
+        [[nodiscard]] u32 getLinearPositionInChunk() const
+        {
+            return this->x + BrickEdgeLengthVoxels * this->y
+                 + BrickEdgeLengthVoxels * BrickEdgeLengthVoxels * this->z;
+        }
+
+        static BrickCoordinate fromLinearPositionInChunk(u32 linearIndex)
+        {
+            const u8 z =
+                linearIndex / (BrickEdgeLengthVoxels * BrickEdgeLengthVoxels);
+            const u8 y =
+                (linearIndex / BrickEdgeLengthVoxels) % BrickEdgeLengthVoxels;
+            const u8 x = linearIndex % BrickEdgeLengthVoxels;
+
+            return BrickCoordinate {{x, y, z}};
+        }
+    };
 
     struct ChunkLocalPosition : public glm::u8vec3
     {

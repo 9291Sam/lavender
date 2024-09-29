@@ -34,7 +34,9 @@
 
 namespace voxel
 {
-    static constexpr u32 MaxChunks = 4096;
+    static constexpr u32 MaxChunks          = 65536;
+    static constexpr u32 DirectionsPerChunk = 6;
+    static constexpr u32 MaxBricks          = 1048576;
 
     ChunkManager::ChunkManager(const game::Game* game)
         : renderer {game->getRenderer()}
@@ -51,26 +53,32 @@ namespace voxel
               vk::BufferUsageFlagBits::eVertexBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              static_cast<std::size_t>(MaxChunks * 6))
+              static_cast<std::size_t>(MaxChunks * DirectionsPerChunk))
         , indirect_commands(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eIndirectBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              static_cast<std::size_t>(MaxChunks * 6))
-        , brick_allocator(MaxChunks * 8 * 8 * 2)
+              static_cast<std::size_t>(MaxChunks * DirectionsPerChunk))
+        , brick_allocator(MaxBricks)
+        , brick_parent_info(
+              this->renderer->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer,
+              vk::MemoryPropertyFlagBits::eDeviceLocal
+                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              static_cast<std::size_t>(MaxBricks))
         , material_bricks(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              static_cast<std::size_t>(MaxChunks * 8 * 8 * 4))
+              static_cast<std::size_t>(MaxBricks))
         , visibility_bricks(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              static_cast<std::size_t>(MaxChunks * 8 * 8 * 4))
+              static_cast<std::size_t>(MaxBricks))
         , material_buffer {voxel::generateVoxelMaterialBuffer(this->renderer)}
         , voxel_face_allocator {16 * 1024 * 1024, MaxChunks * 6}
         , voxel_faces(
@@ -280,8 +288,8 @@ namespace voxel
                 },
             },
             {});
-        // util::logTrace(
-        //     "allocated {} bytes", gfx::vulkan::bufferBytesAllocated.load());
+        util::logTrace(
+            "allocated {} bytes", gfx::vulkan::bufferBytesAllocated.load());
     }
 
     ChunkManager::~ChunkManager() = default;
@@ -363,6 +371,7 @@ namespace voxel
         this->indirect_payload.flush({&wholeFlush, 1});
 
         this->brick_maps.flush();
+        this->brick_parent_info.flush();
         this->material_bricks.flush();
         this->visibility_bricks.flush();
 
@@ -485,6 +494,10 @@ namespace voxel
 
             maybeBrickPointer = newBrickPointer;
 
+            this->brick_parent_info.modify(maybeBrickPointer.pointer) =
+                BrickParentInformation {
+                    .parent_chunk {c.id},
+                    .position_in_parent_chunk {bC.getLinearPositionInChunk()}};
             this->material_bricks.modify(maybeBrickPointer.pointer)
                 .fill(Voxel::NullAirEmpty);
             this->visibility_bricks.modify(maybeBrickPointer.pointer)
@@ -662,7 +675,6 @@ namespace voxel
     std::array<util::RangeAllocation, 6>
     ChunkManager::meshChunkGreedy(u32 chunkId)
     {
-        util::Timer                    mesh {"mesh"};
         std::unique_ptr<DenseBitChunk> trueDenseChunk =
             this->makeDenseBitChunk(chunkId);
 

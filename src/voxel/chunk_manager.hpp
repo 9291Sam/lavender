@@ -178,9 +178,15 @@ namespace voxel
         gfx::vulkan::Buffer<ChunkDrawIndirectInstancePayload> indirect_payload;
         gfx::vulkan::Buffer<vk::DrawIndirectCommand>          indirect_commands;
 
-        BrickPointerAllocator                       brick_allocator;
-        gfx::vulkan::TrackedBuffer<MaterialBrick>   material_bricks;
-        gfx::vulkan::TrackedBuffer<VisibilityBrick> visibility_bricks;
+        struct BrickParentInformation
+        {
+            u32 parent_chunk             : 23; // actually only using 16
+            u32 position_in_parent_chunk : 9;
+        };
+        BrickPointerAllocator                              brick_allocator;
+        gfx::vulkan::TrackedBuffer<BrickParentInformation> brick_parent_info;
+        gfx::vulkan::TrackedBuffer<MaterialBrick>          material_bricks;
+        gfx::vulkan::TrackedBuffer<VisibilityBrick>        visibility_bricks;
 
         gfx::vulkan::Buffer<VoxelMaterial> material_buffer;
 
