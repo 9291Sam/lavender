@@ -19,6 +19,7 @@
 #include "util/log.hpp"
 #include "util/range_allocator.hpp"
 #include "util/timer.hpp"
+#include "voxel/constants.hpp"
 #include "voxel/material_manager.hpp"
 #include "voxel/visibility_brick.hpp"
 #include "voxel_face_direction.hpp"
@@ -661,7 +662,7 @@ namespace voxel
     std::array<util::RangeAllocation, 6>
     ChunkManager::meshChunkGreedy(u32 chunkId)
     {
-        util::Timer                    m {"mesh"};
+        util::Timer                    mesh {"mesh"};
         std::unique_ptr<DenseBitChunk> trueDenseChunk =
             this->makeDenseBitChunk(chunkId);
 
@@ -686,60 +687,40 @@ namespace voxel
                 {
                     for (i8 width = 0; width < 64; ++width)
                     {
-                        // i8 faceWidth = 0;
+                        glm::i8vec3 thisRoot = ascensionAxis * ascend
+                                             + heightAxis * height
+                                             + widthAxis * width;
 
-                        const glm::i8vec3 thisRoot = ascensionAxis * ascend
-                                                   + heightAxis * height
-                                                   + widthAxis * width;
-
-                        if ((workingChunk->isOccupied(thisRoot)
-                             && DenseBitChunk::isPositionInBounds(
-                                 thisRoot + normal)
-                             && !workingChunk->isOccupied(thisRoot + normal))
-                            || !DenseBitChunk::isPositionInBounds(
-                                thisRoot + normal))
+                        if (!(workingChunk->isOccupied(thisRoot)))
                         {
-                            faces.push_back(GreedyVoxelFace {
-                                .x {static_cast<u32>(thisRoot.x)},
-                                .y {static_cast<u32>(thisRoot.y)},
-                                .z {static_cast<u32>(thisRoot.z)},
-                                .width {static_cast<u32>(1)},
-                                .height {static_cast<u32>(1)},
-                                .pad {0}});
+                            continue;
                         }
 
-                        // while (DenseBitChunk::isPositionInBounds(
-                        //            thisRoot + (faceWidth * widthAxis))
-                        //        && workingChunk->isOccupied(
-                        //            thisRoot + (faceWidth * widthAxis)))
-                        // {
-                        //     if (DenseBitChunk::isPositionInBounds(
-                        //             thisRoot + (faceWidth * widthAxis) +
-                        //             normal)
-                        //         && workingChunk->isOccupied(
-                        //             thisRoot + (faceWidth * widthAxis)
-                        //             + normal))
-                        //     {
-                        //         break;
-                        //     }
-                        //     else
-                        //     {
-                        //         faceWidth += 1;
-                        //     }
-                        // }
+                        i8 widthFaces = 0;
 
-                        // workingChunk->clearEntireRange(
-                        //     thisRoot, widthAxis, faceWidth);
+                        while (widthFaces < ChunkEdgeLengthVoxels
+                               && DenseBitChunk::isPositionInBounds(
+                                   thisRoot + (widthFaces * widthAxis))
+                               && workingChunk->isOccupied(
+                                   thisRoot + (widthFaces * widthAxis)))
+                        {
+                            widthFaces += 1;
+                        }
 
-                        i8 faceHeight = 1;
+                        workingChunk->clearEntireRange(
+                            thisRoot, widthAxis, widthFaces);
 
-                        // if (faceWidth != 0)
-                        // {
+                        // util::assertFatal(faceWidth < 64, " ");
 
-                        //     util::logTrace("{}", faceWidth);
+                        faces.push_back(GreedyVoxelFace {
+                            .x {static_cast<u32>(thisRoot.x)},
+                            .y {static_cast<u32>(thisRoot.y)},
+                            .z {static_cast<u32>(thisRoot.z)},
+                            .width {static_cast<u32>(widthFaces - 1)},
+                            .height {0},
+                            .pad {0}});
 
-                        //     width += faceWidth - 1;
-                        // }
+                        // width += faceWidth - 1;
                     }
                 }
             }

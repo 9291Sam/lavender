@@ -70,24 +70,24 @@ namespace voxel
             // returns false on out of bounds access
             [[nodiscard]] bool isOccupied(glm::i8vec3 p) const
             {
-                util::assertFatal(
-                    p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0
-                        && p.z < 64,
-                    "{} {} {}",
-                    p.x,
-                    p.y,
-                    p.z);
+                // util::assertFatal(
+                //     p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0
+                //         && p.z < 64,
+                //     "{} {} {}",
+                //     p.x,
+                //     p.y,
+                //     p.z);
 
-                // if (p.x < 0 || p.x >= 64 || p.y < 0 || p.y >= 64 || p.z < 0
-                //     || p.z >= 64)
-                // {
-                //     return false;
-                // }
-                // else
-                // {
-                return static_cast<bool>(
-                    this->data[p.x][p.y] & (1ULL << static_cast<u64>(p.z)));
-                // }
+                if (p.x < 0 || p.x >= 64 || p.y < 0 || p.y >= 64 || p.z < 0
+                    || p.z >= 64)
+                {
+                    return false;
+                }
+                else
+                {
+                    return static_cast<bool>(
+                        this->data[p.x][p.y] & (1ULL << static_cast<u64>(p.z)));
+                }
             }
             // if its occupied, it removes it from the data structure
             [[nodiscard]] bool isOccupiedClearing(glm::i8vec3 p)
@@ -147,12 +147,16 @@ namespace voxel
                 if (filled)
                 {
                     // NOLINTNEXTLINE
-                    this->data[p.x][p.y] |= (1 << static_cast<u64>(p.z));
+                    this->data[static_cast<std::size_t>(p.x)]
+                              [static_cast<std::size_t>(p.y)] |=
+                        (u64 {1} << static_cast<u64>(p.z));
                 }
                 else
                 {
                     // NOLINTNEXTLINE
-                    this->data[p.x][p.y] &= ~(1 << static_cast<u64>(p.z));
+                    this->data[static_cast<std::size_t>(p.x)]
+                              [static_cast<std::size_t>(p.y)] &=
+                        ~(u64 {1} << static_cast<u64>(p.z));
                 }
             }
         };

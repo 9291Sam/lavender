@@ -63,20 +63,20 @@ void main()
     vec3 scaled_face_point_local = vec3(0.0);
     if (in_normal_id == 0 || in_normal_id == 1) {
         // TOP or BOTTOM face: scale X and Z
-        scaled_face_point_local = vec3(face_point_local.x * float(width),
+        scaled_face_point_local = vec3(face_point_local.x * float(1 + width),
                                        face_point_local.y,
-                                       face_point_local.z * float(height));
+                                       face_point_local.z * float(1 + height));
     }
     else if (in_normal_id == 2 || in_normal_id == 3) {
         // LEFT or RIGHT face: scale Y and Z
         scaled_face_point_local = vec3(face_point_local.x,
-                                       face_point_local.y * float(width),
-                                       face_point_local.z * float(height));
+                                       face_point_local.y * float(1 + width),
+                                       face_point_local.z * float(1 + height));
     }
     else {
         // FRONT or BACK face: scale X and Y
-        scaled_face_point_local = vec3(face_point_local.x * float(width),
-                                       face_point_local.y * float(height),
+        scaled_face_point_local = vec3(face_point_local.x * float(1 + width),
+                                       face_point_local.y * float(1 + height),
                                        face_point_local.z);
     }
     
