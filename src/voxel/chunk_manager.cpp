@@ -696,10 +696,14 @@ namespace voxel
                             continue;
                         }
 
+                        if (workingChunk->isOccupied(thisRoot + normal))
+                        {
+                            continue;
+                        }
+
                         i8 widthFaces = 0;
 
-                        while (widthFaces < ChunkEdgeLengthVoxels
-                               && DenseBitChunk::isPositionInBounds(
+                        while (DenseBitChunk::isPositionInBounds(
                                    thisRoot + (widthFaces * widthAxis))
                                && workingChunk->isOccupied(
                                    thisRoot + (widthFaces * widthAxis)))
@@ -707,10 +711,10 @@ namespace voxel
                             widthFaces += 1;
                         }
 
-                        workingChunk->clearEntireRange(
-                            thisRoot, widthAxis, widthFaces);
-
-                        // util::assertFatal(faceWidth < 64, " ");
+                        util::assertFatal(
+                            widthFaces > 0 && widthFaces <= 64,
+                            " {} ",
+                            widthFaces);
 
                         faces.push_back(GreedyVoxelFace {
                             .x {static_cast<u32>(thisRoot.x)},
@@ -720,7 +724,7 @@ namespace voxel
                             .height {0},
                             .pad {0}});
 
-                        // width += faceWidth - 1;
+                        width += widthFaces - 1;
                     }
                 }
             }
