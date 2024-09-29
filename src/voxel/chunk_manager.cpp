@@ -171,7 +171,7 @@ namespace voxel
                       .inputRate {vk::VertexInputRate::eInstance}}}},
                   .topology {vk::PrimitiveTopology::eTriangleList},
                   .discard_enable {false},
-                  .polygon_mode {vk::PolygonMode::eLine},
+                  .polygon_mode {vk::PolygonMode::eFill},
                   .cull_mode {vk::CullModeFlagBits::eNone},
                   .front_face {vk::FrontFace::eCounterClockwise},
                   .depth_test_enable {true},
