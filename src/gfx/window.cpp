@@ -263,6 +263,18 @@ namespace gfx
         this->is_cursor_attached.store(false, std::memory_order_release);
     }
 
+    void Window::toggleCursor() const
+    {
+        if (this->is_cursor_attached.load())
+        {
+            this->detachCursor();
+        }
+        else
+        {
+            this->attachCursor();
+        }
+    }
+
     std::span<const char*> Window::getRequiredExtensions()
     {
         u32 numberOfExtensions = 0;
@@ -398,6 +410,11 @@ namespace gfx
             break;
 
         case GLFW_PRESS:
+            if (!window->is_cursor_attached.load(std::memory_order_relaxed))
+            {
+                window->attachCursor();
+            }
+
             if (buttonToModify.exchange(true))
             {
                 util::logWarn("Mouse button #{} already depressed!", button);

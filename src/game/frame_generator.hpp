@@ -33,8 +33,12 @@ namespace game
         // TODO: there's better ways to write this, but this works for now
         enum class DynamicRenderingPass
         {
-            SimpleColor                  = 0,
-            DynamicRenderingPassMaxValue = 1,
+            VoxelRenderer                = 0,
+            VoxelVisibilityDetection     = 1,
+            VoxelColorCalculation        = 2,
+            VoxelColorTransfer           = 3,
+            SimpleColor                  = 4,
+            DynamicRenderingPassMaxValue = 5,
         };
 
         struct RecordObject
@@ -71,7 +75,10 @@ namespace game
         struct GlobalInfoDescriptors
         {
             gfx::vulkan::Buffer<glm::mat4> mvp_matrices;
-            gfx::vulkan::Image2D           depth_buffer;
+
+            gfx::vulkan::Image2D depth_buffer;
+
+            gfx::vulkan::Image2D voxel_id_image;
         };
 
         void internalGenerateFrame(

@@ -178,15 +178,6 @@ namespace game
             localMvpMatrices.size() * sizeof(glm::mat4),
             localMvpMatrices.data());
 
-        // std::memcpy(
-        //     thisFrameMvpMatrixBuffer.getDataNonCoherent().data(),
-        //     localMvpMatrices.data(),
-
-        //     nextFreeMvpMatrix * sizeof(glm::mat4));
-        // const gfx::vulkan::FlushData flushData {
-        //     .offset_elements {0}, .size_elements {nextFreeMvpMatrix}};
-        // thisFrameMvpMatrixBuffer.flush({&flushData, 1});
-
         for (std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>&
                  recordVec : recordablesByPass)
         {

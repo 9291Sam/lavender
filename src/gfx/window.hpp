@@ -90,6 +90,7 @@ namespace gfx
         void blockThisThreadWhileMinimized();
         void attachCursor() const;
         void detachCursor() const;
+        void toggleCursor() const;
         void endFrame();
         // TODO: void updateKeyBindings();
 

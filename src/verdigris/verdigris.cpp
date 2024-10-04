@@ -169,6 +169,12 @@ namespace verdigris
             util::logTrace("Frame: {} | {}", deltaTime, 1.0f / deltaTime);
         }
 
+        if (this->game->getRenderer()->getWindow()->isActionActive(
+                gfx::Window::Action::ToggleCursorAttachment))
+        {
+            this->game->getRenderer()->getWindow()->toggleCursor();
+        }
+
         this->camera.addPosition(
             this->camera.getForwardVector() * deltaTime * moveScale
             * (this->game->getRenderer()->getWindow()->isActionActive(
