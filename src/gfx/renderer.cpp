@@ -69,7 +69,7 @@ namespace gfx
                      .method {Window::InteractionMethod::SinglePress}}},
 
             },
-            vk::Extent2D {1280, 720}, // NOLINT
+            vk::Extent2D {1920, 1080}, // NOLINT
             "lavender");
         this->instance = std::make_unique<vulkan::Instance>();
         this->surface  = this->window->createSurface(**this->instance);
