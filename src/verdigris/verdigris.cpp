@@ -153,7 +153,7 @@ namespace verdigris
         const float moveScale =
             this->game->getRenderer()->getWindow()->isActionActive(
                 gfx::Window::Action::PlayerSprint)
-                ? 256.0f
+                ? 64.0f
                 : 16.0f;
         const float rotateSpeedScale = 6.0f;
 
@@ -166,7 +166,11 @@ namespace verdigris
         if (this->game->getRenderer()->getWindow()->isActionActive(
                 gfx::Window::Action::ToggleConsole))
         {
-            util::logTrace("Frame: {} | {}", deltaTime, 1.0f / deltaTime);
+            util::logTrace(
+                "Frame: {} | {} | {}",
+                deltaTime,
+                1.0f / deltaTime,
+                static_cast<std::string>(this->camera));
         }
 
         if (this->game->getRenderer()->getWindow()->isActionActive(
