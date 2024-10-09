@@ -8,7 +8,19 @@ nanomachines magic system
 
 The Proof Of Concept:
 
-The Sacrificed of Verdant~ temporary
+The Sacrificed of Verdant
+
+Story:
+
+
+
+Gameplay:
+Larged forced cutscene at the beginnig
+Explore, fight, and try to decyper the strange world that you have found yourself
+in
+
+
+Common puzzles: Doors with magical keys (find on the body of one of the workers)
 
 You were just a normal person, traveling between towns in your world
 
@@ -57,6 +69,14 @@ you do need some type of monster to actually scare the player
 
 perfect camoflague?
 
+
+
+abandned underground city?
+oh my god kelsie loquavian's hellship
+castle?
+
+
+(drawing something on screen to cast) gestures like the shotgun reload in jdh's
 
 
 floating island?

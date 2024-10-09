@@ -31,6 +31,15 @@ namespace voxel
         bool                                                needs_remesh;
     };
 
+    // class VoxelWorld
+    // {
+
+    // public:
+
+    // private:
+
+    // }
+
     class ChunkManager
     {
     public:
