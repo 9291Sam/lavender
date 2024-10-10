@@ -6,6 +6,8 @@ nanomachines magic system
 
 
 
+
+
 The Proof Of Concept:
 
 The Sacrificed of Verdant~ temporary
@@ -41,6 +43,29 @@ escape? theres noone there (introduces you to the mechanics of the game) what ar
 
 
 
+Wake up: 
+
+In the room is a single dead helper, with a gem key and a wand with a few charges
+adventure forth and find more
+different helpers with different things
+all it has is 3 charges of paralyse.
+anti paralyse amulet
+
+you can hide in other things
+
+
+Types of rooms:
+(the castle is a museum / power storage facility)
+Storage rooms of different creatures for study
+All of the Helpers are ???
+food storage, sleeping chambers, armories, defence force
+kitchens
+;obrary
+alcohol brewing 
+bread baking
+cellar
+
+
 
 [environment]
 this is an entire complex run by the dragon just to keep their own power
@@ -55,8 +80,16 @@ abandoned uniforms all over the place
 you do need some type of monster to actually scare the player
 
 
+spells [space-rocks]
+metor storm
+you hear it on top of the dungeon
+
+
 perfect camoflague?
 
 
-
 floating island?
+
+Echoes of the Sky Dragon
+You were going to be sacrificed to the dragon but at the last moment, something changed,
+as the dragon began to sear you, something changed
