@@ -293,7 +293,16 @@ namespace voxel
             "allocated {} bytes", gfx::vulkan::bufferBytesAllocated.load());
     }
 
-    ChunkManager::~ChunkManager() = default;
+    ChunkManager::~ChunkManager()
+    {
+        while (!this->global_chunks.empty())
+        {
+            auto node =
+                this->global_chunks.extract(this->global_chunks.begin());
+
+            this->deallocateChunk(std::move(node.mapped()));
+        }
+    }
 
     game::FrameGenerator::RecordObject ChunkManager::makeRecordObject()
     {
@@ -747,7 +756,19 @@ namespace voxel
                                && workingChunk->isOccupied(
                                    thisRoot + (widthFaces * widthAxis)))
                         {
-                            widthFaces += 1;
+                            if (DenseBitChunk::isPositionInBounds(
+                                    normal + thisRoot
+                                    + (widthFaces * widthAxis))
+                                && workingChunk->isOccupied(
+                                    normal + thisRoot
+                                    + (widthFaces * widthAxis)))
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                widthFaces += 1;
+                            }
                         }
 
                         util::assertFatal(

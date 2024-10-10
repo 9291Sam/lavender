@@ -154,7 +154,8 @@ namespace verdigris
             //     chunks[base], voxel::ChunkLocalPosition {p - base},
             //     genVoxel());
 
-            this->chunk_manager.writeVoxel(p, v);
+            this->chunk_manager.writeVoxel(
+                p, static_cast<voxel::Voxel>(pDist(gen)));
         };
 
         for (i32 x = -256; x < 255; ++x)
@@ -171,31 +172,6 @@ namespace verdigris
             }
         }
         glm::f32vec3 center = {0, 0, 0}; // Center of the structure
-
-        // // Insert the tree in the center
-        // for (int y = 0; y < 32; ++y) // Trunk height of 10 voxels
-        // {
-        //     insertVoxelAt(center + glm::i32vec3(0, y, 0),
-        //     voxel::Voxel::Stone2);
-        // }
-
-        // // Leaves for the tree (approximated as a simple sphere shape)
-        // for (int x = -4; x <= 4; ++x)
-        // {
-        //     for (int z = -4; z <= 4; ++z)
-        //     {
-        //         for (int y = 28; y <= 36; ++y) // The top of the tree
-        //         {
-        //             glm::i32vec3 pos = center + glm::i32vec3(x, y, z);
-
-        //             if (glm::length(glm::vec3(x, y - 32, z))
-        //                 <= 5) // Spherical leaves
-        //             {
-        //                 insertVoxelAt(pos, voxel::Voxel::Dirt0);
-        //             }
-        //         }
-        //     }
-        // }
 
         // Trunk of the tree
         for (int y = 0; y < 32; ++y) // Trunk height of 10 voxels
@@ -281,21 +257,6 @@ namespace verdigris
         // Build doughnut ceiling with a hole in the center
         int innerRadius = 128; // Inner radius (hole size)
         int outerRadius = 240; // Outer radius (doughnut size)
-        // for (int x = -outerRadius; x <= outerRadius; ++x)
-        // {
-        //     for (int z = -outerRadius; z <= outerRadius; ++z)
-        //     {
-        //         float dist = glm::length(glm::vec2(x, z));
-        //         if (dist >= innerRadius
-        //             && dist <= outerRadius) // Within the doughnut shape
-        //         {
-        //             // Add the top part of the doughnut (elevated)
-        //             insertVoxelAt(
-        //                 center + glm::f32vec3(x, 64, z),
-        //                 voxel::Voxel::Stone4);
-        //         }
-        //     }
-        // }
 
         for (int h = 0; h < 47; ++h)
         {
@@ -320,54 +281,9 @@ namespace verdigris
                 }
             }
         }
-
-        // for (int cx = 0; cx < 8; ++cx)
-        // {
-        //     for (int cz = 0; cz < 8; ++cz)
-        //     {
-        //         voxel::Chunk c = this->chunk_manager.allocateChunk(glm::vec3
-        //         {
-        //             cx * 64.0 - 256.0,
-        //             0.0,
-        //             cz * 64.0 - 256.0,
-        //         });
-
-        //         for (int i = 0; i < 64; ++i)
-        //         {
-        //             for (int j = 0; j < 64; ++j)
-        //             {
-        //                 this->chunk_manager.writeVoxelToChunk(
-        //                     c,
-        //                     voxel::ChunkLocalPosition {glm::u8vec3 {
-        //                         static_cast<u8>(i),
-        //                         genFunc(i + cx * 64, j + cz * 64),
-        //                         // 0,
-        //                         static_cast<u8>(j),
-        //                     }},
-        //                     static_cast<voxel::Voxel>(pDist(gen)));
-        //             }
-        //         }
-
-        //         this->chunks.insert(std::move(c));
-        //     }
-        // }
-
-        for (auto& [p, c] : chunks)
-        {
-            this->chunks.insert(std::move(c));
-        }
     }
 
-    Verdigris::~Verdigris()
-    {
-        while (!this->chunks.empty())
-        {
-            std::set<voxel::Chunk>::node_type node =
-                this->chunks.extract(this->chunks.begin());
-
-            this->chunk_manager.deallocateChunk(std::move(node.value()));
-        }
-    }
+    Verdigris::~Verdigris() = default;
 
     std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
     Verdigris::onFrame(float deltaTime) const

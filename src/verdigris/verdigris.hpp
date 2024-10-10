@@ -14,7 +14,6 @@ namespace verdigris
         const game::ec::EntityComponentManager* ec_manager;
         std::shared_ptr<vk::UniquePipeline>     triangle_pipeline;
         mutable voxel::ChunkManager             chunk_manager;
-        std::set<voxel::Chunk>                  chunks;
 
         explicit Verdigris(game::Game* game_);
 
