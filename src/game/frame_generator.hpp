@@ -33,6 +33,7 @@ namespace game
         // TODO: there's better ways to write this, but this works for now
         enum class DynamicRenderingPass
         {
+            PreFrameUpdate               = 0,
             VoxelRenderer                = 0,
             VoxelVisibilityDetection     = 1,
             VoxelColorCalculation        = 2,

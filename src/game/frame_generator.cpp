@@ -151,7 +151,10 @@ namespace game
 
         for (const FrameGenerator::RecordObject& o : recordObjects)
         {
-            util::assertFatal(o.pipeline != nullptr, "Nullpipeline");
+            if (o.render_pass != DynamicRenderingPass::PreFrameUpdate)
+            {
+                util::assertFatal(o.pipeline != nullptr, "Nullpipeline");
+            }
 
             u32 thisMatrixId = 0;
 
@@ -188,6 +191,12 @@ namespace game
                 {
                     return *l.first < *r.first;
                 });
+        }
+
+        for (auto& r : recordablesByPass[static_cast<std::size_t>(
+                 FrameGenerator::DynamicRenderingPass::PreFrameUpdate)])
+        {
+            r.first->record_func(commandBuffer, nullptr, 0);
         }
 
         const vk::Extent2D renderExtent = swapchain.getExtent();

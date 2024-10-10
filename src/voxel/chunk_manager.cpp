@@ -4,6 +4,7 @@
 #include "brick_pointer_allocator.hpp"
 #include "chunk.hpp"
 #include "constants.hpp"
+#include "game/camera.hpp"
 #include "game/frame_generator.hpp"
 #include "game/game.hpp"
 #include "game/transform.hpp"
@@ -24,6 +25,8 @@
 #include "voxel_face_direction.hpp"
 #include <cstddef>
 #include <glm/fwd.hpp>
+#include <glm/geometric.hpp>
+#include <glm/vector_relational.hpp>
 #include <memory>
 #include <optional>
 #include <source_location>
@@ -51,13 +54,15 @@ namespace voxel
               MaxChunks)
         , indirect_payload(
               this->renderer->getAllocator(),
-              vk::BufferUsageFlagBits::eVertexBuffer,
+              vk::BufferUsageFlagBits::eVertexBuffer
+                  | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxChunks * DirectionsPerChunk))
         , indirect_commands(
               this->renderer->getAllocator(),
-              vk::BufferUsageFlagBits::eIndirectBuffer,
+              vk::BufferUsageFlagBits::eIndirectBuffer
+                  | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxChunks * DirectionsPerChunk))
@@ -304,7 +309,8 @@ namespace voxel
         }
     }
 
-    game::FrameGenerator::RecordObject ChunkManager::makeRecordObject()
+    std::vector<game::FrameGenerator::RecordObject>
+    ChunkManager::makeRecordObject(const game::Game* game, game::Camera c)
     {
         std::vector<vk::DrawIndirectCommand>          indirectCommands {};
         std::vector<ChunkDrawIndirectInstancePayload> indirectPayload {};
@@ -329,9 +335,47 @@ namespace voxel
                     thisChunkData.needs_remesh = false;
                 }
 
-                // TODO: visibility tests cpu-side culling
+// TODO: visibility tests cpu-side culling
+#warning wtf is going on here
+                bool isChunkInFrustum = false;
 
-                if (thisChunkData.face_data.has_value())
+                isChunkInFrustum |=
+                    (glm::distance(
+                         c.getPosition(), thisChunkData.position.xyz())
+                     < ChunkEdgeLengthVoxels);
+
+                for (auto x :
+                     {thisChunkData.position.x,
+                      thisChunkData.position.x + ChunkEdgeLengthVoxels})
+                {
+                    for (auto y :
+                         {thisChunkData.position.y,
+                          thisChunkData.position.y + ChunkEdgeLengthVoxels})
+                    {
+                        for (auto z :
+                             {thisChunkData.position.z,
+                              thisChunkData.position.z + ChunkEdgeLengthVoxels})
+                        {
+                            glm::vec4 cornerPos {x, y, z, 1.0};
+
+                            auto res =
+                                c.getPerspectiveMatrix(
+                                    *game,
+                                    game::Transform {.translation {cornerPos}})
+                                * glm::vec4 {0.0, 0.0, 0.0, 1.0};
+
+                            if (glm::all(glm::lessThan(
+                                    res.xyz() / res.w, glm::vec3 {1.0}))
+                                && glm::all(glm::greaterThan(
+                                    res.xyz() / res.w, glm::vec3 {-1.0})))
+                            {
+                                isChunkInFrustum = true;
+                            }
+                        }
+                    }
+                }
+
+                if (thisChunkData.face_data.has_value() && isChunkInFrustum)
                 {
                     u32 normal = 0;
 
@@ -364,16 +408,6 @@ namespace voxel
         std::span<ChunkDrawIndirectInstancePayload> gpuIndirectPayload =
             this->indirect_payload.getDataNonCoherent();
 
-        std::copy(
-            indirectCommands.cbegin(),
-            indirectCommands.cend(),
-            gpuIndirectCommands.begin());
-
-        std::copy(
-            indirectPayload.cbegin(),
-            indirectPayload.cend(),
-            gpuIndirectPayload.begin());
-
         const gfx::vulkan::FlushData wholeFlush {
             .offset_elements {0}, .size_elements {indirectCommands.size()}};
 
@@ -385,38 +419,65 @@ namespace voxel
         this->material_bricks.flush();
         this->visibility_bricks.flush();
 
-        return game::FrameGenerator::RecordObject {
-            .transform {game::Transform {}},
-            .render_pass {
-                game::FrameGenerator::DynamicRenderingPass::SimpleColor},
-            .pipeline {this->chunk_renderer_pipeline},
-            .descriptors {
-                {this->global_descriptor_set,
-                 this->chunk_descriptor_set,
-                 nullptr,
-                 nullptr}},
-            .record_func {
-                [this, numberOfIndirectCommands = indirectCommands.size()](
-                    vk::CommandBuffer  commandBuffer,
-                    vk::PipelineLayout layout,
-                    u32                id)
-                {
-                    commandBuffer.bindVertexBuffers(
-                        0, {*this->indirect_payload}, {0});
+        game::FrameGenerator::RecordObject update =
+            game::FrameGenerator::RecordObject {
+                .transform {},
+                .render_pass {
+                    game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
+                .pipeline {nullptr},
+                .descriptors {},
+                .record_func {[this, indirectCommands, indirectPayload](
+                                  vk::CommandBuffer commandBuffer,
+                                  vk::PipelineLayout,
+                                  u32)
+                              {
+                                  commandBuffer.updateBuffer(
+                                      *this->indirect_commands,
+                                      0,
+                                      std::span {indirectCommands}.size_bytes(),
+                                      indirectCommands.data());
 
-                    commandBuffer.pushConstants(
-                        layout,
-                        vk::ShaderStageFlagBits::eVertex,
-                        0,
-                        sizeof(u32),
-                        &id);
+                                  commandBuffer.updateBuffer(
+                                      *this->indirect_payload,
+                                      0,
+                                      std::span {indirectPayload}.size_bytes(),
+                                      indirectPayload.data());
+                              }}};
 
-                    commandBuffer.drawIndirect(
-                        *this->indirect_commands,
-                        0,
-                        static_cast<u32>(numberOfIndirectCommands),
-                        16);
-                }}};
+        game::FrameGenerator::RecordObject chunkDraw =
+            game::FrameGenerator::RecordObject {
+                .transform {game::Transform {}},
+                .render_pass {
+                    game::FrameGenerator::DynamicRenderingPass::SimpleColor},
+                .pipeline {this->chunk_renderer_pipeline},
+                .descriptors {
+                    {this->global_descriptor_set,
+                     this->chunk_descriptor_set,
+                     nullptr,
+                     nullptr}},
+                .record_func {[this, indirectCommands, indirectPayload](
+                                  vk::CommandBuffer  commandBuffer,
+                                  vk::PipelineLayout layout,
+                                  u32                id)
+                              {
+                                  commandBuffer.bindVertexBuffers(
+                                      0, {*this->indirect_payload}, {0});
+
+                                  commandBuffer.pushConstants(
+                                      layout,
+                                      vk::ShaderStageFlagBits::eVertex,
+                                      0,
+                                      sizeof(u32),
+                                      &id);
+
+                                  commandBuffer.drawIndirect(
+                                      *this->indirect_commands,
+                                      0,
+                                      static_cast<u32>(indirectCommands.size()),
+                                      16);
+                              }}};
+
+        return {chunkDraw, update};
     }
 
     void ChunkManager::writeVoxel(glm::i32vec3 p, Voxel v)

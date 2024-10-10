@@ -16,15 +16,11 @@ namespace util
             : name {std::move(name_)}
             , start {std::chrono::steady_clock::now()}
             , location {loc}
+            , ended {false}
         {}
         ~Timer()
         {
-            util::logTrace<const char*, std::chrono::microseconds>(
-                "{} | {}",
-                this->name.data(),
-                std::chrono::duration_cast<std::chrono::microseconds>(
-                    std::chrono::steady_clock::now() - this->start),
-                this->location);
+            this->end();
         }
 
         Timer(const Timer&)             = delete;
@@ -32,9 +28,25 @@ namespace util
         Timer& operator= (const Timer&) = delete;
         Timer& operator= (Timer&&)      = delete;
 
+        void end()
+        {
+            if (!this->ended)
+            {
+                this->ended = true;
+
+                util::logTrace<const char*, std::chrono::microseconds>(
+                    "{} | {}",
+                    this->name.data(),
+                    std::chrono::duration_cast<std::chrono::microseconds>(
+                        std::chrono::steady_clock::now() - this->start),
+                    this->location);
+            }
+        }
+
     private:
         std::string                                        name;
         std::chrono::time_point<std::chrono::steady_clock> start;
         std::source_location                               location;
+        bool                                               ended;
     };
 } // namespace util

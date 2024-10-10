@@ -3,7 +3,6 @@
 #include "game/game.hpp"
 #include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
-#include <set>
 
 namespace verdigris
 {

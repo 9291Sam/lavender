@@ -413,7 +413,8 @@ namespace verdigris
                     });
                 });
 
-        draws.push_back(this->chunk_manager.makeRecordObject());
+        draws.append_range(
+            this->chunk_manager.makeRecordObject(this->game, this->camera));
 
         return {this->camera, std::move(draws)};
     }

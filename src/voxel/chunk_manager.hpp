@@ -3,6 +3,7 @@
 #include "brick_map.hpp"
 #include "brick_pointer_allocator.hpp"
 #include "chunk.hpp"
+#include "game/camera.hpp"
 #include "game/frame_generator.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/buffer.hpp"
@@ -48,7 +49,8 @@ namespace voxel
         ChunkManager& operator= (const ChunkManager&) = delete;
         ChunkManager& operator= (ChunkManager&&)      = delete;
 
-        [[nodiscard]] game::FrameGenerator::RecordObject makeRecordObject();
+        [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
+        makeRecordObject(const game::Game*, game::Camera);
 
         void writeVoxel(glm::i32vec3, Voxel);
 
