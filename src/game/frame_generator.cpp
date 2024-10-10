@@ -31,17 +31,27 @@ namespace game
             vk::ImageTiling::eOptimal,
             vk::MemoryPropertyFlagBits::eDeviceLocal};
 
-        gfx::vulkan::Buffer<glm::mat4> mvpMatrices =
-            gfx::vulkan::Buffer<glm::mat4> {
-                renderer->getAllocator(),
-                vk::BufferUsageFlagBits::eUniformBuffer
-                    | vk::BufferUsageFlagBits::eTransferDst,
-                vk::MemoryPropertyFlagBits::eDeviceLocal
-                    | vk::MemoryPropertyFlagBits::eHostVisible,
-                1024};
+        gfx::vulkan::Buffer<glm::mat4> mvpMatrices {
+            renderer->getAllocator(),
+            vk::BufferUsageFlagBits::eUniformBuffer
+                | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+                | vk::MemoryPropertyFlagBits::eHostVisible,
+            1024};
+
+        gfx::vulkan::Buffer<GlobalFrameInfo> globalFrameInfo {
+            renderer->getAllocator(),
+            vk::BufferUsageFlagBits::eUniformBuffer
+                | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal
+                | vk::MemoryPropertyFlagBits::eHostVisible,
+            1};
 
         const vk::DescriptorBufferInfo mvpMatricesBufferInfo {
             .buffer {*mvpMatrices}, .offset {0}, .range {vk::WholeSize}};
+
+        const vk::DescriptorBufferInfo globalFrameBufferInfo {
+            .buffer {*globalFrameInfo}, .offset {0}, .range {vk::WholeSize}};
 
         renderer->getDevice()->getDevice().updateDescriptorSets(
             {
@@ -57,24 +67,26 @@ namespace game
                     .pBufferInfo {&mvpMatricesBufferInfo},
                     .pTexelBufferView {nullptr},
                 },
-                // vk::WriteDescriptorSet {
-                //     .sType {vk::StructureType::eWriteDescriptorSet},
-                //     .pNext {nullptr},
-                //     .dstSet {globalDescriptorSet},
-                //     .dstBinding {1},
-                //     .dstArrayElement {0},
-                //     .descriptorCount {1},
-                //     .descriptorType {},
-                //     .pImageInfo {},
-                //     .pBufferInfo {},
-                //     .pTexelBufferView {},
-                // },
+                vk::WriteDescriptorSet {
+                    .sType {vk::StructureType::eWriteDescriptorSet},
+                    .pNext {nullptr},
+                    .dstSet {globalDescriptorSet},
+                    .dstBinding {1},
+                    .dstArrayElement {0},
+                    .descriptorCount {1},
+                    .descriptorType {vk::DescriptorType::eUniformBuffer},
+                    .pImageInfo {nullptr},
+                    .pBufferInfo {&globalFrameBufferInfo},
+                    .pTexelBufferView {nullptr},
+                },
             },
             {});
 
         return GlobalInfoDescriptors {
             .mvp_matrices {std::move(mvpMatrices)},
-            .depth_buffer {std::move(depthBuffer)}};
+            .global_frame_info {std::move(globalFrameInfo)},
+            .depth_buffer {std::move(depthBuffer)},
+        };
     }
 
     std::strong_ordering
@@ -112,6 +124,21 @@ namespace game
                                       .bindings {
                                           vk::DescriptorSetLayoutBinding {
                                               .binding {0},
+                                              .descriptorType {
+                                                  vk::DescriptorType::
+                                                      eUniformBuffer},
+                                              .descriptorCount {1},
+                                              .stageFlags {
+                                                  vk::ShaderStageFlagBits::
+                                                      eVertex
+                                                  | vk::ShaderStageFlagBits::
+                                                      eFragment
+                                                  | vk::ShaderStageFlagBits::
+                                                      eCompute},
+                                              .pImmutableSamplers {nullptr},
+                                          },
+                                          vk::DescriptorSetLayoutBinding {
+                                              .binding {1},
                                               .descriptorType {
                                                   vk::DescriptorType::
                                                       eUniformBuffer},
@@ -180,6 +207,17 @@ namespace game
             0,
             localMvpMatrices.size() * sizeof(glm::mat4),
             localMvpMatrices.data());
+
+        GlobalFrameInfo thisFrameInfo {
+            .camera_position {camera.getPosition().xyzz()},
+            .frame_number {this->frame_number},
+            .time_alive {this->time_alive}};
+
+        commandBuffer.updateBuffer(
+            *this->global_descriptors.global_frame_info,
+            0,
+            sizeof(GlobalFrameInfo),
+            &thisFrameInfo);
 
         for (std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>&
                  recordVec : recordablesByPass)

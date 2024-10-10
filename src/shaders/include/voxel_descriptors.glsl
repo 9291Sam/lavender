@@ -79,4 +79,18 @@ layout(set = 1, binding = 4) readonly buffer VoxelMaterialBuffer
     VoxelMaterial material[];
 } in_voxel_materials;
 
+vec3 unpackNormalId(u32 id)
+{
+    const vec3 available_normals[6] = {
+        vec3(0.0, 1.0, 0.0),
+        vec3(0.0, -1.0, 0.0),
+        vec3(-1.0, 0.0, 0.0),
+        vec3(1.0, 0.0, 0.0),
+        vec3(0.0, 0.0, -1.0),
+        vec3(0.0, 0.0, 1.0),
+    };
+
+    return available_normals[id];
+}
+
 #endif // SRC_SHADERS_INCLUDE_VOXEL_DESCRIPTORS_GLSL

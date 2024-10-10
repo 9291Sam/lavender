@@ -72,9 +72,17 @@ namespace game
 
     private:
 
+        struct GlobalFrameInfo
+        {
+            glm::vec4 camera_position;
+            u32       frame_number;
+            float     time_alive;
+        };
+
         struct GlobalInfoDescriptors
         {
-            gfx::vulkan::Buffer<glm::mat4> mvp_matrices;
+            gfx::vulkan::Buffer<glm::mat4>       mvp_matrices;
+            gfx::vulkan::Buffer<GlobalFrameInfo> global_frame_info;
 
             gfx::vulkan::Image2D depth_buffer;
 
@@ -93,6 +101,9 @@ namespace game
 
         const game::Game* game;
         bool              has_resize_ocurred;
+
+        float time_alive;
+        u32   frame_number;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> set_layout;
         vk::DescriptorSet global_info_descriptor_set;
