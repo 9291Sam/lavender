@@ -335,14 +335,21 @@ namespace voxel
                     thisChunkData.needs_remesh = false;
                 }
 
-// TODO: visibility tests cpu-side culling
-#warning wtf is going on here
+                // TODO: visibility tests cpu-side culling
                 bool isChunkInFrustum = false;
 
                 isChunkInFrustum |=
                     (glm::distance(
                          c.getPosition(), thisChunkData.position.xyz())
-                     < ChunkEdgeLengthVoxels);
+                     < ChunkEdgeLengthVoxels * 2);
+
+                isChunkInFrustum |=
+                    (glm::all(glm::lessThan(
+                         c.getPosition() - thisChunkData.position.xyz(),
+                         glm::vec3 {ChunkEdgeLengthVoxels}))
+                     && glm::all(glm::greaterThan(
+                         c.getPosition() - thisChunkData.position.xyz(),
+                         glm::vec3 {0})));
 
                 for (auto x :
                      {thisChunkData.position.x,
