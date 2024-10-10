@@ -9,7 +9,6 @@
 #include "triangle_component.hpp"
 #include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
-#include "voxel/constants.hpp"
 #include "voxel/voxel.hpp"
 #include <boost/container_hash/hash_fwd.hpp>
 #include <functional>
@@ -18,7 +17,7 @@
 
 namespace verdigris
 {
-    Verdigris::Verdigris(game::Game* game_)
+    Verdigris::Verdigris(game::Game* game_) // NOLINT
         : game {game_}
         , ec_manager {game_->getEntityComponentManager()}
         , chunk_manager(this->game)

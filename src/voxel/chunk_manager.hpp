@@ -8,7 +8,6 @@
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/tracked_buffer.hpp"
-#include "glm/gtx/hash.hpp"
 #include "greedy_voxel_face.hpp"
 #include "material_brick.hpp"
 #include "util/index_allocator.hpp"
@@ -18,6 +17,7 @@
 #include "voxel/material_manager.hpp"
 #include "voxel/visibility_brick.hpp"
 #include <glm/fwd.hpp>
+#include <glm/gtx/hash.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <source_location>
 #include <unordered_map>
@@ -33,10 +33,6 @@ namespace voxel
         std::optional<std::array<util::RangeAllocation, 6>> face_data;
         bool                                                needs_remesh;
     };
-
-    // World
-    // StaticEntity
-    // DynamicEntity
 
     class ChunkManager
     {
@@ -96,6 +92,7 @@ namespace voxel
                 else
                 {
                     return static_cast<bool>(
+                        // NOLINTNEXTLINE
                         this->data[p.x][p.y] & (1ULL << static_cast<u64>(p.z)));
                 }
             }

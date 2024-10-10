@@ -18,7 +18,6 @@
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
-#include "util/timer.hpp"
 #include "voxel/constants.hpp"
 #include "voxel/material_manager.hpp"
 #include "voxel/visibility_brick.hpp"
@@ -310,6 +309,7 @@ namespace voxel
     }
 
     std::vector<game::FrameGenerator::RecordObject>
+    // NOLINTNEXTLINE
     ChunkManager::makeRecordObject(const game::Game* game, game::Camera c)
     {
         std::vector<vk::DrawIndirectCommand>          indirectCommands {};
@@ -628,119 +628,121 @@ namespace voxel
         }
     }
 
-    std::array<util::RangeAllocation, 6>
-    ChunkManager::meshChunkNormal(u32 chunkId) // NOLINT
-    {
-        std::array<util::RangeAllocation, 6> outAllocations {};
+    // std::array<util::RangeAllocation, 6>
+    // ChunkManager::meshChunkNormal(u32 chunkId) // NOLINT
+    // {
+    //     std::array<util::RangeAllocation, 6> outAllocations {};
 
-        u32 normalDirection = 0;
-        for (util::RangeAllocation& a : outAllocations)
-        {
-            std::vector<GreedyVoxelFace> faces {};
+    //     u32 normalDirection = 0;
+    //     for (util::RangeAllocation& a : outAllocations)
+    //     {
+    //         std::vector<GreedyVoxelFace> faces {};
 
-            const BrickMap& thisBrickMap = this->brick_maps.read(chunkId, 1)[0];
+    //         const BrickMap& thisBrickMap = this->brick_maps.read(chunkId,
+    //         1)[0];
 
-            thisBrickMap.iterateOverPointers(
-                // NOLINTNEXTLINE
-                [&](BrickCoordinate bC, MaybeBrickPointer ptr)
-                {
-                    if (!ptr.isNull())
-                    {
-                        const VisibilityBrick& thisBrick =
-                            this->visibility_bricks.read(ptr.pointer, 1)[0];
+    //         thisBrickMap.iterateOverPointers(
+    //             // NOLINTNEXTLINE
+    //             [&](BrickCoordinate bC, MaybeBrickPointer ptr)
+    //             {
+    //                 if (!ptr.isNull())
+    //                 {
+    //                     const VisibilityBrick& thisBrick =
+    //                         this->visibility_bricks.read(ptr.pointer, 1)[0];
 
-                        thisBrick.iterateOverVoxels(
-                            [&](BrickLocalPosition bP, bool isFilled)
-                            {
-                                VoxelFaceDirection dir =
-                                    static_cast<VoxelFaceDirection>(
-                                        normalDirection);
+    //                     thisBrick.iterateOverVoxels(
+    //                         [&](BrickLocalPosition bP, bool isFilled)
+    //                         {
+    //                             VoxelFaceDirection dir =
+    //                                 static_cast<VoxelFaceDirection>(
+    //                                     normalDirection);
 
-                                ChunkLocalPosition pos =
-                                    assembleChunkLocalPosition(bC, bP);
+    //                             ChunkLocalPosition pos =
+    //                                 assembleChunkLocalPosition(bC, bP);
 
-                                std::optional<ChunkLocalPosition> adjPos =
-                                    tryMakeChunkLocalPosition(
-                                        getDirFromDirection(dir)
-                                        + static_cast<glm::i8vec3>(pos));
+    //                             std::optional<ChunkLocalPosition> adjPos =
+    //                                 tryMakeChunkLocalPosition(
+    //                                     getDirFromDirection(dir)
+    //                                     + static_cast<glm::i8vec3>(pos));
 
-                                auto emit = [&]
-                                {
-                                    faces.push_back(GreedyVoxelFace {
-                                        .x {pos.x},
-                                        .y {pos.y},
-                                        .z {pos.z},
-                                        .width {1},
-                                        .height {1},
-                                        .pad {0}});
-                                };
+    //                             auto emit = [&]
+    //                             {
+    //                                 faces.push_back(GreedyVoxelFace {
+    //                                     .x {pos.x},
+    //                                     .y {pos.y},
+    //                                     .z {pos.z},
+    //                                     .width {1},
+    //                                     .height {1},
+    //                                     .pad {0}});
+    //                             };
 
-                                if (isFilled)
-                                {
-                                    if (!adjPos.has_value())
-                                    {
-                                        emit();
-                                    }
-                                    else
-                                    {
-                                        const auto [adjBC, adjBP] =
-                                            splitChunkLocalPosition(*adjPos);
+    //                             if (isFilled)
+    //                             {
+    //                                 if (!adjPos.has_value())
+    //                                 {
+    //                                     emit();
+    //                                 }
+    //                                 else
+    //                                 {
+    //                                     const auto [adjBC, adjBP] =
+    //                                         splitChunkLocalPosition(*adjPos);
 
-                                        if (adjBC == bC)
-                                        {
-                                            if (!thisBrick.read(adjBP))
-                                            {
-                                                emit();
-                                            }
-                                        }
-                                        else
-                                        {
-                                            MaybeBrickPointer adjBrickPointer =
-                                                thisBrickMap
-                                                    .data[adjBC.x][adjBC.y]
-                                                         [adjBC.z];
+    //                                     if (adjBC == bC)
+    //                                     {
+    //                                         if (!thisBrick.read(adjBP))
+    //                                         {
+    //                                             emit();
+    //                                         }
+    //                                     }
+    //                                     else
+    //                                     {
+    //                                         MaybeBrickPointer adjBrickPointer
+    //                                         =
+    //                                             thisBrickMap
+    //                                                 .data[adjBC.x][adjBC.y]
+    //                                                      [adjBC.z];
 
-                                            if (!adjBrickPointer.isNull())
-                                            {
-                                                if (!this->visibility_bricks
-                                                         .read(
-                                                             adjBrickPointer
-                                                                 .pointer,
-                                                             1)[0]
-                                                         .read(adjBP))
-                                                {
-                                                    emit();
-                                                }
-                                            }
-                                            else
-                                            {
-                                                emit();
-                                            }
-                                        }
-                                    }
-                                }
-                            });
-                    }
-                });
+    //                                         if (!adjBrickPointer.isNull())
+    //                                         {
+    //                                             if (!this->visibility_bricks
+    //                                                      .read(
+    //                                                          adjBrickPointer
+    //                                                              .pointer,
+    //                                                          1)[0]
+    //                                                      .read(adjBP))
+    //                                             {
+    //                                                 emit();
+    //                                             }
+    //                                         }
+    //                                         else
+    //                                         {
+    //                                             emit();
+    //                                         }
+    //                                     }
+    //                                 }
+    //                             }
+    //                         });
+    //                 }
+    //             });
 
-            a = this->voxel_face_allocator.allocate(
-                static_cast<u32>(faces.size()));
+    //         a = this->voxel_face_allocator.allocate(
+    //             static_cast<u32>(faces.size()));
 
-            std::copy(
-                faces.cbegin(),
-                faces.cend(),
-                this->voxel_faces.getDataNonCoherent().data() + a.offset);
-            const gfx::vulkan::FlushData flush {
-                .offset_elements {a.offset},
-                .size_elements {faces.size()},
-            };
-            this->voxel_faces.flush({&flush, 1});
+    //         std::copy(
+    //             faces.cbegin(),
+    //             faces.cend(),
+    //             this->voxel_faces.getDataNonCoherent().data() + a.offset);
+    //         const gfx::vulkan::FlushData flush {
+    //             .offset_elements {a.offset},
+    //             .size_elements {faces.size()},
+    //         };
+    //         this->voxel_faces.flush({&flush, 1});
 
-            normalDirection += 1;
-        }
+    //         normalDirection += 1;
+    //     }
 
-        return outAllocations;
-    }
+    //     return outAllocations;
+    // }
 
     std::unique_ptr<ChunkManager::DenseBitChunk>
     ChunkManager::makeDenseBitChunk(u32 chunkId)
@@ -767,6 +769,7 @@ namespace voxel
 
                             if (isFilled)
                             {
+                                // NOLINTNEXTLINE
                                 out->data[pos.x][pos.y] |= (1ULL << pos.z);
                             }
                         });
@@ -777,7 +780,7 @@ namespace voxel
     }
 
     std::array<util::RangeAllocation, 6>
-    ChunkManager::meshChunkGreedy(u32 chunkId)
+    ChunkManager::meshChunkGreedy(u32 chunkId) // NOLINT
     {
         std::unique_ptr<DenseBitChunk> trueDenseChunk =
             this->makeDenseBitChunk(chunkId);
@@ -852,7 +855,7 @@ namespace voxel
                             .height {0},
                             .pad {0}});
 
-                        width += widthFaces - 1;
+                        width += widthFaces - 1; // NOLINT
                     }
                 }
             }

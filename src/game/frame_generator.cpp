@@ -134,10 +134,10 @@ namespace game
     {}
 
     void FrameGenerator::internalGenerateFrame(
-        vk::CommandBuffer                             commandBuffer,
-        u32                                           swapchainImageIdx,
-        const gfx::vulkan::Swapchain&                 swapchain,
-        std::size_t                                   flyingFrameIdx,
+        vk::CommandBuffer             commandBuffer,
+        u32                           swapchainImageIdx,
+        const gfx::vulkan::Swapchain& swapchain,
+        std::size_t,
         std::span<const FrameGenerator::RecordObject> recordObjects)
     {
         std::array<

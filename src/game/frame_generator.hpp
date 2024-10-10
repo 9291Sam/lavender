@@ -2,7 +2,6 @@
 
 #include "game/camera.hpp"
 #include "gfx/vulkan/buffer.hpp"
-#include "gfx/vulkan/frame_manager.hpp"
 #include "gfx/vulkan/swapchain.hpp"
 #include "transform.hpp"
 #include <compare>
@@ -34,12 +33,12 @@ namespace game
         enum class DynamicRenderingPass
         {
             PreFrameUpdate               = 0,
-            VoxelRenderer                = 0,
-            VoxelVisibilityDetection     = 1,
-            VoxelColorCalculation        = 2,
-            VoxelColorTransfer           = 3,
-            SimpleColor                  = 4,
-            DynamicRenderingPassMaxValue = 5,
+            VoxelRenderer                = 1,
+            VoxelVisibilityDetection     = 2,
+            VoxelColorCalculation        = 3,
+            VoxelColorTransfer           = 4,
+            SimpleColor                  = 5,
+            DynamicRenderingPassMaxValue = 6,
         };
 
         struct RecordObject
