@@ -10,7 +10,19 @@ nanomachines magic system
 
 The Proof Of Concept:
 
-The Sacrificed of Verdant~ temporary
+The Sacrificed of Verdant
+
+Story:
+
+
+
+Gameplay:
+Larged forced cutscene at the beginnig
+Explore, fight, and try to decyper the strange world that you have found yourself
+in
+
+
+Common puzzles: Doors with magical keys (find on the body of one of the workers)
 
 You were just a normal person, traveling between towns in your world
 
@@ -93,3 +105,12 @@ floating island?
 Echoes of the Sky Dragon
 You were going to be sacrificed to the dragon but at the last moment, something changed,
 as the dragon began to sear you, something changed
+abandned underground city?
+oh my god kelsie loquavian's hellship
+castle?
+
+
+(drawing something on screen to cast) gestures like the shotgun reload in jdh's
+
+
+floating island?

@@ -1,6 +1,8 @@
 #include "game/game.hpp"
 #include "util/log.hpp"
 #include "verdigris/verdigris.hpp"
+#include <ctti/type_id.hpp>
+#include <limits>
 
 int main()
 {

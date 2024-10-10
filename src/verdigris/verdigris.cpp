@@ -95,9 +95,9 @@ namespace verdigris
         //     render::TriangleComponent {
         //         .transform.translation {glm::vec3 {1.3, 3.0, 3.0}}});
 
-        // std::mt19937_64                    gen {std::random_device {}()};
-        // std::normal_distribution<float>    realDist {64, 3};
-        // std::uniform_int_distribution<u16> pDist {1, 15};
+        std::mt19937_64                    gen {std::random_device {}()};
+        std::normal_distribution<float>    realDist {64, 3};
+        std::uniform_int_distribution<u16> pDist {1, 15};
 
         // auto genFunc = [](int x, int z) -> u8
         // {
@@ -106,6 +106,11 @@ namespace verdigris
         //                + 32.0)
         //          % 64;
         // };
+
+        auto genVoxel = [&] -> voxel::Voxel
+        {
+            return static_cast<voxel::Voxel>(pDist(gen));
+        };
 
         struct Bar
         {
@@ -145,7 +150,7 @@ namespace verdigris
             }
 
             this->chunk_manager.writeVoxelToChunk(
-                chunks[base], voxel::ChunkLocalPosition {p - base}, v);
+                chunks[base], voxel::ChunkLocalPosition {p - base}, genVoxel());
         };
 
         for (i32 x = -256; x < 255; ++x)
@@ -291,7 +296,7 @@ namespace verdigris
         for (int h = 0; h < 47; ++h)
         {
             int currentHeight =
-                h + 20; // Start the doughnut at a base height of 20
+                h + 52; // Start the doughnut at a base height of 20
             for (int x = -outerRadius; x <= outerRadius; ++x)
             {
                 for (int z = -outerRadius; z <= outerRadius; ++z)
