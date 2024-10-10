@@ -51,4 +51,30 @@ namespace util
     struct ZSTTypeWrapper
     {};
 
+    template<class I>
+    I divideEuclidean(I lhs, I rhs) // NOLINT
+    {
+        const I quotient = lhs / rhs;
+
+        if (lhs % rhs < 0)
+        {
+            return rhs > 0 ? quotient - 1 : quotient + 1;
+        }
+
+        return quotient;
+    }
+
+    template<class I>
+    I moduloEuclidean(I lhs, I rhs)
+    {
+        const I remainder = lhs % rhs;
+
+        if (remainder < 0)
+        {
+            return rhs > 0 ? remainder + rhs : remainder - rhs;
+        }
+
+        return remainder;
+    }
+
 } // namespace util

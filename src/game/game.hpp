@@ -44,6 +44,7 @@ namespace game
                          onFrame(float) const = 0;
             virtual void onTick() const       = 0;
         };
+
     public:
         Game();
         ~Game() noexcept;

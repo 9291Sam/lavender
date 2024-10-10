@@ -7,6 +7,7 @@
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/tracked_buffer.hpp"
+#include "glm/gtx/hash.hpp"
 #include "greedy_voxel_face.hpp"
 #include "material_brick.hpp"
 #include "util/index_allocator.hpp"
@@ -18,6 +19,7 @@
 #include <glm/fwd.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <source_location>
+#include <unordered_map>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
@@ -31,14 +33,9 @@ namespace voxel
         bool                                                needs_remesh;
     };
 
-    // class VoxelWorld
-    // {
-
-    // public:
-
-    // private:
-
-    // }
+    // World
+    // StaticEntity
+    // DynamicEntity
 
     class ChunkManager
     {
@@ -52,6 +49,8 @@ namespace voxel
         ChunkManager& operator= (ChunkManager&&)      = delete;
 
         [[nodiscard]] game::FrameGenerator::RecordObject makeRecordObject();
+
+        void writeVoxel(glm::i32vec3, Voxel);
 
         Chunk allocateChunk(glm::vec3 position);
         void  deallocateChunk(Chunk);
@@ -177,6 +176,8 @@ namespace voxel
         util::IndexAllocator                 chunk_id_allocator;
         std::vector<InternalChunkData>       chunk_data;
         gfx::vulkan::TrackedBuffer<BrickMap> brick_maps;
+
+        std::unordered_map<glm::i32vec3, Chunk> global_chunks;
 
         struct ChunkDrawIndirectInstancePayload
         {

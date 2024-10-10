@@ -136,21 +136,25 @@ namespace verdigris
 
         auto insertVoxelAt = [&](glm::i32vec3 p, voxel::Voxel v)
         {
-            glm::i32vec3 base = {
-                64 * ((p.x < 0 ? (p.x + 1) / 64 - 1 : p.x / 64)),
-                64 * ((p.y < 0 ? (p.y + 1) / 64 - 1 : p.y / 64)),
-                64 * ((p.z < 0 ? (p.z + 1) / 64 - 1 : p.z / 64)),
-            };
+            // glm::i32vec3 base = {
+            //     64 * ((p.x < 0 ? (p.x + 1) / 64 - 1 : p.x / 64)),
+            //     64 * ((p.y < 0 ? (p.y + 1) / 64 - 1 : p.y / 64)),
+            //     64 * ((p.z < 0 ? (p.z + 1) / 64 - 1 : p.z / 64)),
+            // };
 
-            // util::logTrace("{} {}", glm::to_string(base), glm::to_string(p));
+            // // util::logTrace("{} {}", glm::to_string(base),
+            // glm::to_string(p));
 
-            if (!chunks.contains(base))
-            {
-                chunks[base] = this->chunk_manager.allocateChunk(base);
-            }
+            // if (!chunks.contains(base))
+            // {
+            //     chunks[base] = this->chunk_manager.allocateChunk(base);
+            // }
 
-            this->chunk_manager.writeVoxelToChunk(
-                chunks[base], voxel::ChunkLocalPosition {p - base}, genVoxel());
+            // this->chunk_manager.writeVoxelToChunk(
+            //     chunks[base], voxel::ChunkLocalPosition {p - base},
+            //     genVoxel());
+
+            this->chunk_manager.writeVoxel(p, v);
         };
 
         for (i32 x = -256; x < 255; ++x)

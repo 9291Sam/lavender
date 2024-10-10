@@ -1,5 +1,3 @@
-
-
 #include "chunk_manager.hpp"
 #include "brick_map.hpp"
 #include "brick_pointer.hpp"
@@ -17,6 +15,7 @@
 #include "shaders/shaders.hpp"
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
+#include "util/misc.hpp"
 #include "util/range_allocator.hpp"
 #include "util/timer.hpp"
 #include "voxel/constants.hpp"
@@ -24,9 +23,11 @@
 #include "voxel/visibility_brick.hpp"
 #include "voxel_face_direction.hpp"
 #include <cstddef>
+#include <glm/fwd.hpp>
 #include <memory>
 #include <optional>
 #include <source_location>
+#include <unordered_map>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
@@ -407,6 +408,32 @@ namespace voxel
                         static_cast<u32>(numberOfIndirectCommands),
                         16);
                 }}};
+    }
+
+    void ChunkManager::writeVoxel(glm::i32vec3 p, Voxel v)
+    {
+        glm::i32vec3 coord = glm::i32vec3 {
+            util::divideEuclidean(p.x, 64),
+            util::divideEuclidean(p.y, 64),
+            util::divideEuclidean(p.z, 64),
+        };
+
+        ChunkLocalPosition pos {glm::u8vec3 {
+            static_cast<u8>(util::moduloEuclidean(p.x, 64)),
+            static_cast<u8>(util::moduloEuclidean(p.y, 64)),
+            static_cast<u8>(util::moduloEuclidean(p.z, 64)),
+        }};
+
+        auto it = this->global_chunks.find(coord);
+
+        if (it == this->global_chunks.end())
+        {
+            it = this->global_chunks
+                     .insert({coord, this->allocateChunk(coord * 64)})
+                     .first;
+        }
+
+        this->writeVoxelToChunk(it->second, pos, v);
     }
 
     Chunk ChunkManager::allocateChunk(glm::vec3 position)
