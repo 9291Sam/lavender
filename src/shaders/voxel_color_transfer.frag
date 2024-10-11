@@ -1,0 +1,1 @@
+// rip (using the lookup id) the proper color from the buffer

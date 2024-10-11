@@ -801,7 +801,38 @@ namespace game
 
         // Visibility Detection
         {
-            doComputePass(DynamicRenderingPass::VoxelVisibilityDetection);
+            const vk::RenderingAttachmentInfo colorAttachmentInfo {
+                .sType {vk::StructureType::eRenderingAttachmentInfo},
+                .pNext {nullptr},
+                .imageView {this->global_descriptors.face_id_image.getView()},
+                .imageLayout {vk::ImageLayout::eColorAttachmentOptimal},
+                .resolveMode {vk::ResolveModeFlagBits::eNone},
+                .resolveImageView {nullptr},
+                .resolveImageLayout {},
+                .loadOp {vk::AttachmentLoadOp::eClear},
+                .storeOp {vk::AttachmentStoreOp::eStore},
+                .clearValue {
+                    vk::ClearColorValue {
+                        .uint32 {{~u32 {0}, ~u32 {0}, ~u32 {0}, ~u32 {0}}}},
+                },
+            };
+
+            const vk::RenderingInfo visibilityPassInfo {
+                .sType {vk::StructureType::eRenderingInfo},
+                .pNext {nullptr},
+                .flags {},
+                .renderArea {scissor},
+                .layerCount {1},
+                .viewMask {0},
+                .colorAttachmentCount {1},
+                .pColorAttachments {&colorAttachmentInfo},
+                .pDepthAttachment {nullptr},
+                .pStencilAttachment {nullptr},
+            };
+
+            doRenderPass(
+                DynamicRenderingPass::VoxelVisibilityDetection,
+                visibilityPassInfo);
         }
 
         // barrier on faceid image to make it readable
