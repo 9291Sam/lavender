@@ -411,12 +411,6 @@ namespace game
                 });
         }
 
-        for (auto& r : recordablesByPass[static_cast<std::size_t>(
-                 FrameGenerator::DynamicRenderingPass::PreFrameUpdate)])
-        {
-            r.first->record_func(commandBuffer, nullptr, 0);
-        }
-
         const vk::Extent2D renderExtent = swapchain.getExtent();
 
         const vk::Rect2D scissor {
@@ -483,6 +477,38 @@ namespace game
             currentlyBoundPipeline    = nullptr;
             currentlyBoundDescriptors = {nullptr, nullptr, nullptr, nullptr};
         };
+
+        auto doRenderPass = [&](DynamicRenderingPass p, vk::RenderingInfo info)
+        {
+            clearBindings();
+
+            commandBuffer.beginRendering(info);
+
+            for (const auto [o, matrixId] :
+                 recordablesByPass.at(static_cast<std::size_t>(p)))
+            {
+                updateBindings(*o);
+
+                o->record_func(
+                    commandBuffer,
+                    **this->game->getRenderer()
+                          ->getAllocator()
+                          ->lookupPipelineLayout(**o->pipeline),
+                    matrixId);
+            }
+
+            commandBuffer.endRendering();
+        };
+
+        auto doComputePass = [&](DynamicRenderingPass p)
+        {
+            for (auto& r : recordablesByPass[static_cast<std::size_t>(p)])
+            {
+                r.first->record_func(commandBuffer, nullptr, 0);
+            }
+        };
+
+        doComputePass(DynamicRenderingPass::PreFrameUpdate);
 
         if (this->has_resize_ocurred)
         {
@@ -593,30 +619,6 @@ namespace game
                         .baseArrayLayer {0},
                         .layerCount {1}}},
                 }});
-
-            // commandBuffer.pipelineBarrier(
-            //     vk::PipelineStageFlagBits::eEarlyFragmentTests,
-            //     vk::PipelineStageFlagBits::eEarlyFragmentTests,
-            //     {},
-            //     {},
-            //     {},
-            //     {vk::ImageMemoryBarrier {
-            //         .sType {vk::StructureType::eImageMemoryBarrier},
-            //         .pNext {nullptr},
-            //         .srcAccessMask {vk::AccessFlagBits::eNone},
-            //         .dstAccessMask {vk::AccessFlagBits::eShaderRead},
-            //         .oldLayout {vk::ImageLayout::eUndefined},
-            //         .newLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
-            //         .srcQueueFamilyIndex {graphicsQueueIndex},
-            //         .dstQueueFamilyIndex {graphicsQueueIndex},
-            //         .image {*this->global_descriptors.face_id_image},
-            //         .subresourceRange {vk::ImageSubresourceRange {
-            //             .aspectMask {vk::ImageAspectFlagBits::eColor},
-            //             .baseMipLevel {0},
-            //             .levelCount {1},
-            //             .baseArrayLayer {0},
-            //             .layerCount {1}}},
-            //     }});
         }
 
         commandBuffer.pipelineBarrier(
@@ -697,9 +699,55 @@ namespace game
         commandBuffer.setScissor(0, {scissor});
 
         // Voxel Render
-        {}
+        {
+            const vk::RenderingAttachmentInfo colorAttachmentInfo {
+                .sType {vk::StructureType::eRenderingAttachmentInfo},
+                .pNext {nullptr},
+                .imageView {
+                    this->global_descriptors.visible_voxel_image.getView()},
+                .imageLayout {vk::ImageLayout::eColorAttachmentOptimal},
+                .resolveMode {vk::ResolveModeFlagBits::eNone},
+                .resolveImageView {nullptr},
+                .resolveImageLayout {},
+                .loadOp {vk::AttachmentLoadOp::eClear},
+                .storeOp {vk::AttachmentStoreOp::eStore},
+                .clearValue {
+                    vk::ClearColorValue {
+                        .uint32 {{~u32 {0}, ~u32 {0}, ~u32 {0}, ~u32 {0}}}},
+                },
+            };
 
-        // barrier on depth buffer
+            const vk::RenderingAttachmentInfo depthAttachmentInfo {
+                .sType {vk::StructureType::eRenderingAttachmentInfo},
+                .pNext {nullptr},
+                .imageView {this->global_descriptors.depth_buffer.getView()},
+                .imageLayout {vk::ImageLayout::eDepthAttachmentOptimal},
+                .resolveMode {vk::ResolveModeFlagBits::eNone},
+                .resolveImageView {nullptr},
+                .resolveImageLayout {},
+                .loadOp {vk::AttachmentLoadOp::eClear},
+                .storeOp {vk::AttachmentStoreOp::eStore},
+                .clearValue {
+                    .depthStencil {vk::ClearDepthStencilValue {
+                        .depth {1.0}, .stencil {0}}},
+                }};
+
+            const vk::RenderingInfo voxelRenderPassInfo {
+                .sType {vk::StructureType::eRenderingInfo},
+                .pNext {nullptr},
+                .flags {},
+                .renderArea {scissor},
+                .layerCount {1},
+                .viewMask {0},
+                .colorAttachmentCount {1},
+                .pColorAttachments {&colorAttachmentInfo},
+                .pDepthAttachment {&depthAttachmentInfo},
+                .pStencilAttachment {nullptr},
+            };
+
+            doRenderPass(
+                DynamicRenderingPass::VoxelRenderer, voxelRenderPassInfo);
+        }
 
         // barrier on visible voxel image to make it readable
         commandBuffer.pipelineBarrier(
@@ -750,8 +798,11 @@ namespace game
                     .baseArrayLayer {0},
                     .layerCount {1}}},
             }});
+
         // Visibility Detection
-        {}
+        {
+            doComputePass(DynamicRenderingPass::VoxelVisibilityDetection);
+        }
 
         // barrier on faceid image to make it readable
         commandBuffer.pipelineBarrier(
@@ -779,77 +830,116 @@ namespace game
             }});
 
         // Color Calculation
-        {}
+        {
+            doComputePass(DynamicRenderingPass::VoxelColorCalculation);
+        }
 
         // barrier on storage writes before transfer
+        commandBuffer.pipelineBarrier(
+            vk::PipelineStageFlagBits::eComputeShader,
+            vk::PipelineStageFlagBits::eFragmentShader,
+            vk::DependencyFlags {},
+            {vk::MemoryBarrier {
+                .sType {vk::StructureType::eMemoryBarrier},
+                .pNext {nullptr},
+                .srcAccessMask {vk::AccessFlagBits::eShaderWrite},
+                .dstAccessMask {vk::AccessFlagBits::eShaderRead},
+            }},
+            {},
+            {});
 
         // VoxelColorTransfer
         {
-            // clear image
+            const vk::RenderingAttachmentInfo colorAttachmentInfo {
+                .sType {vk::StructureType::eRenderingAttachmentInfo},
+                .pNext {nullptr},
+                .imageView {thisSwapchainImageView},
+                .imageLayout {vk::ImageLayout::eColorAttachmentOptimal},
+                .resolveMode {vk::ResolveModeFlagBits::eNone},
+                .resolveImageView {nullptr},
+                .resolveImageLayout {},
+                .loadOp {vk::AttachmentLoadOp::eClear},
+                .storeOp {vk::AttachmentStoreOp::eStore},
+                .clearValue {
+                    vk::ClearColorValue {
+                        .float32 {{0.709f, 0.494f, 0.862f, 1.0f}}},
+                },
+            };
+
+            const vk::RenderingAttachmentInfo depthAttachmentInfo {
+                .sType {vk::StructureType::eRenderingAttachmentInfo},
+                .pNext {nullptr},
+                .imageView {this->global_descriptors.depth_buffer.getView()},
+                .imageLayout {vk::ImageLayout::eDepthAttachmentOptimal},
+                .resolveMode {vk::ResolveModeFlagBits::eNone},
+                .resolveImageView {nullptr},
+                .resolveImageLayout {},
+                .loadOp {vk::AttachmentLoadOp::eLoad},
+                .storeOp {vk::AttachmentStoreOp::eStore},
+                .clearValue {}};
+
+            const vk::RenderingInfo voxelColorTransferRenderingInfo {
+                .sType {vk::StructureType::eRenderingInfo},
+                .pNext {nullptr},
+                .flags {},
+                .renderArea {scissor},
+                .layerCount {1},
+                .viewMask {0},
+                .colorAttachmentCount {1},
+                .pColorAttachments {&colorAttachmentInfo},
+                .pDepthAttachment {&depthAttachmentInfo},
+                .pStencilAttachment {nullptr},
+            };
+
+            // clear swapchain image
+            doRenderPass(
+                DynamicRenderingPass::VoxelColorTransfer,
+                voxelColorTransferRenderingInfo);
         }
 
         // Simple Color
-        const vk::RenderingAttachmentInfo colorAttachmentInfo {
-            .sType {vk::StructureType::eRenderingAttachmentInfo},
-            .pNext {nullptr},
-            .imageView {thisSwapchainImageView},
-            .imageLayout {vk::ImageLayout::eColorAttachmentOptimal},
-            .resolveMode {vk::ResolveModeFlagBits::eNone},
-            .resolveImageView {nullptr},
-            .resolveImageLayout {},
-            .loadOp {vk::AttachmentLoadOp::eClear},
-            .storeOp {vk::AttachmentStoreOp::eStore},
-            .clearValue {
-                vk::ClearColorValue {.float32 {{0.709f, 0.494f, 0.862f, 1.0f}}},
-            },
-        };
-
-        const vk::RenderingAttachmentInfo depthAttachmentInfo {
-            .sType {vk::StructureType::eRenderingAttachmentInfo},
-            .pNext {nullptr},
-            .imageView {this->global_descriptors.depth_buffer.getView()},
-            .imageLayout {vk::ImageLayout::eDepthAttachmentOptimal},
-            .resolveMode {vk::ResolveModeFlagBits::eNone},
-            .resolveImageView {nullptr},
-            .resolveImageLayout {},
-            .loadOp {vk::AttachmentLoadOp::eClear},
-            .storeOp {vk::AttachmentStoreOp::eStore},
-            .clearValue {
-                .depthStencil {
-                    vk::ClearDepthStencilValue {.depth {1.0}, .stencil {0}}},
-            }}; // namespace game
-
-        const vk::RenderingInfo simpleColorRenderingInfo {
-            .sType {vk::StructureType::eRenderingInfo},
-            .pNext {nullptr},
-            .flags {},
-            .renderArea {scissor},
-            .layerCount {1},
-            .viewMask {0},
-            .colorAttachmentCount {1},
-            .pColorAttachments {&colorAttachmentInfo},
-            .pDepthAttachment {&depthAttachmentInfo},
-            .pStencilAttachment {nullptr},
-        };
-
-        clearBindings();
-
-        commandBuffer.beginRendering(simpleColorRenderingInfo);
-
-        for (const auto [o, matrixId] : recordablesByPass.at(
-                 static_cast<std::size_t>(DynamicRenderingPass::SimpleColor)))
         {
-            updateBindings(*o);
+            const vk::RenderingAttachmentInfo colorAttachmentInfo {
+                .sType {vk::StructureType::eRenderingAttachmentInfo},
+                .pNext {nullptr},
+                .imageView {thisSwapchainImageView},
+                .imageLayout {vk::ImageLayout::eColorAttachmentOptimal},
+                .resolveMode {vk::ResolveModeFlagBits::eNone},
+                .resolveImageView {nullptr},
+                .resolveImageLayout {},
+                .loadOp {vk::AttachmentLoadOp::eLoad},
+                .storeOp {vk::AttachmentStoreOp::eStore},
+                .clearValue {},
+            };
 
-            o->record_func(
-                commandBuffer,
-                **this->game->getRenderer()
-                      ->getAllocator()
-                      ->lookupPipelineLayout(**o->pipeline),
-                matrixId);
+            const vk::RenderingAttachmentInfo depthAttachmentInfo {
+                .sType {vk::StructureType::eRenderingAttachmentInfo},
+                .pNext {nullptr},
+                .imageView {this->global_descriptors.depth_buffer.getView()},
+                .imageLayout {vk::ImageLayout::eDepthAttachmentOptimal},
+                .resolveMode {vk::ResolveModeFlagBits::eNone},
+                .resolveImageView {nullptr},
+                .resolveImageLayout {},
+                .loadOp {vk::AttachmentLoadOp::eLoad},
+                .storeOp {vk::AttachmentStoreOp::eStore},
+                .clearValue {}};
+
+            const vk::RenderingInfo simpleColorRenderingInfo {
+                .sType {vk::StructureType::eRenderingInfo},
+                .pNext {nullptr},
+                .flags {},
+                .renderArea {scissor},
+                .layerCount {1},
+                .viewMask {0},
+                .colorAttachmentCount {1},
+                .pColorAttachments {&colorAttachmentInfo},
+                .pDepthAttachment {&depthAttachmentInfo},
+                .pStencilAttachment {nullptr},
+            };
+
+            doRenderPass(
+                DynamicRenderingPass::SimpleColor, simpleColorRenderingInfo);
         }
-
-        commandBuffer.endRendering();
 
         commandBuffer.pipelineBarrier(
             vk::PipelineStageFlagBits::eColorAttachmentOutput,
