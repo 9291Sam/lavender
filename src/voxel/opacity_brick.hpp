@@ -8,7 +8,7 @@
 
 namespace voxel
 {
-    struct VisibilityBrick
+    struct OpacityBrick
     {
         void fill(bool filled)
         {

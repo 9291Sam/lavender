@@ -15,7 +15,7 @@
 #include "util/range_allocator.hpp"
 #include "voxel.hpp"
 #include "voxel/material_manager.hpp"
-#include "voxel/visibility_brick.hpp"
+#include "voxel/opacity_brick.hpp"
 #include <glm/fwd.hpp>
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -195,7 +195,7 @@ namespace voxel
         BrickPointerAllocator                              brick_allocator;
         gfx::vulkan::TrackedBuffer<BrickParentInformation> brick_parent_info;
         gfx::vulkan::TrackedBuffer<MaterialBrick>          material_bricks;
-        gfx::vulkan::TrackedBuffer<VisibilityBrick>        visibility_bricks;
+        gfx::vulkan::TrackedBuffer<OpacityBrick>           opacity_bricks;
 
         gfx::vulkan::Buffer<VoxelMaterial> material_buffer;
 

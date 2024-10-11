@@ -13,14 +13,16 @@
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/device.hpp"
 #include "greedy_voxel_face.hpp"
+#include "opacity_brick.hpp"
 #include "shaders/shaders.hpp"
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
+#include "util/timer.hpp"
 #include "voxel/constants.hpp"
 #include "voxel/material_manager.hpp"
-#include "voxel/visibility_brick.hpp"
+#include "voxel/opacity_brick.hpp"
 #include "voxel_face_direction.hpp"
 #include <cstddef>
 #include <glm/fwd.hpp>
@@ -78,7 +80,7 @@ namespace voxel
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxBricks))
-        , visibility_bricks(
+        , opacity_bricks(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
@@ -216,8 +218,8 @@ namespace voxel
             .offset {0},
             .range {vk::WholeSize}};
 
-        const vk::DescriptorBufferInfo visibilityBrickInfo {
-            .buffer {*this->visibility_bricks},
+        const vk::DescriptorBufferInfo opacityBrickInfo {
+            .buffer {*this->opacity_bricks},
             .offset {0},
             .range {vk::WholeSize}};
 
@@ -264,7 +266,7 @@ namespace voxel
                     .descriptorCount {1},
                     .descriptorType {vk::DescriptorType::eStorageBuffer},
                     .pImageInfo {nullptr},
-                    .pBufferInfo {&visibilityBrickInfo},
+                    .pBufferInfo {&opacityBrickInfo},
                     .pTexelBufferView {nullptr},
                 },
                 vk::WriteDescriptorSet {
@@ -312,6 +314,8 @@ namespace voxel
     // NOLINTNEXTLINE
     ChunkManager::makeRecordObject(const game::Game* game, game::Camera c)
     {
+        // util::Timer t {"end make record object"};
+        // util::logTrace("starting make record obhject");
         std::vector<vk::DrawIndirectCommand>          indirectCommands {};
         std::vector<ChunkDrawIndirectInstancePayload> indirectPayload {};
 
@@ -335,7 +339,7 @@ namespace voxel
                     thisChunkData.needs_remesh = false;
                 }
 
-                // TODO: visibility tests cpu-side culling
+                // TODO: opacity tests cpu-side culling
                 bool isChunkInFrustum = false;
 
                 isChunkInFrustum |=
@@ -353,14 +357,30 @@ namespace voxel
 
                 for (auto x :
                      {thisChunkData.position.x,
+                      thisChunkData.position.x + ChunkEdgeLengthVoxels / 4.0f,
+                      thisChunkData.position.x + ChunkEdgeLengthVoxels / 2.0f,
+                      thisChunkData.position.x
+                          + ChunkEdgeLengthVoxels / 1.3333f,
                       thisChunkData.position.x + ChunkEdgeLengthVoxels})
                 {
                     for (auto y :
                          {thisChunkData.position.y,
+                          thisChunkData.position.y
+                              + ChunkEdgeLengthVoxels / 4.0f,
+                          thisChunkData.position.y
+                              + ChunkEdgeLengthVoxels / 2.0f,
+                          thisChunkData.position.y
+                              + ChunkEdgeLengthVoxels / 1.3333f,
                           thisChunkData.position.y + ChunkEdgeLengthVoxels})
                     {
                         for (auto z :
                              {thisChunkData.position.z,
+                              thisChunkData.position.z
+                                  + ChunkEdgeLengthVoxels / 4.0f,
+                              thisChunkData.position.z
+                                  + ChunkEdgeLengthVoxels / 2.0f,
+                              thisChunkData.position.z
+                                  + ChunkEdgeLengthVoxels / 1.3333f,
                               thisChunkData.position.z + ChunkEdgeLengthVoxels})
                         {
                             glm::vec4 cornerPos {x, y, z, 1.0};
@@ -410,21 +430,10 @@ namespace voxel
                 }
             });
 
-        std::span<vk::DrawIndirectCommand> gpuIndirectCommands =
-            this->indirect_commands.getDataNonCoherent();
-        std::span<ChunkDrawIndirectInstancePayload> gpuIndirectPayload =
-            this->indirect_payload.getDataNonCoherent();
-
-        const gfx::vulkan::FlushData wholeFlush {
-            .offset_elements {0}, .size_elements {indirectCommands.size()}};
-
-        this->indirect_commands.flush({&wholeFlush, 1});
-        this->indirect_payload.flush({&wholeFlush, 1});
-
         this->brick_maps.flush();
         this->brick_parent_info.flush();
         this->material_bricks.flush();
-        this->visibility_bricks.flush();
+        this->opacity_bricks.flush();
 
         game::FrameGenerator::RecordObject update =
             game::FrameGenerator::RecordObject {
@@ -604,8 +613,7 @@ namespace voxel
                     .position_in_parent_chunk {bC.getLinearPositionInChunk()}};
             this->material_bricks.modify(maybeBrickPointer.pointer)
                 .fill(Voxel::NullAirEmpty);
-            this->visibility_bricks.modify(maybeBrickPointer.pointer)
-                .fill(false);
+            this->opacity_bricks.modify(maybeBrickPointer.pointer).fill(false);
 
             // NOLINTNEXTLINE
             this->brick_maps.modify(c.id).data[bC.x][bC.y][bC.z] =
@@ -618,12 +626,12 @@ namespace voxel
 
         if (v == Voxel::NullAirEmpty)
         {
-            this->visibility_bricks.modify(maybeBrickPointer.pointer)
+            this->opacity_bricks.modify(maybeBrickPointer.pointer)
                 .write(bP, false);
         }
         else
         {
-            this->visibility_bricks.modify(maybeBrickPointer.pointer)
+            this->opacity_bricks.modify(maybeBrickPointer.pointer)
                 .write(bP, true);
         }
     }
@@ -648,7 +656,7 @@ namespace voxel
     //                 if (!ptr.isNull())
     //                 {
     //                     const VisibilityBrick& thisBrick =
-    //                         this->visibility_bricks.read(ptr.pointer, 1)[0];
+    //                         this->opacity_bricks.read(ptr.pointer, 1)[0];
 
     //                     thisBrick.iterateOverVoxels(
     //                         [&](BrickLocalPosition bP, bool isFilled)
@@ -704,7 +712,7 @@ namespace voxel
 
     //                                         if (!adjBrickPointer.isNull())
     //                                         {
-    //                                             if (!this->visibility_bricks
+    //                                             if (!this->opacity_bricks
     //                                                      .read(
     //                                                          adjBrickPointer
     //                                                              .pointer,
@@ -758,8 +766,8 @@ namespace voxel
             {
                 if (!ptr.isNull())
                 {
-                    const VisibilityBrick& thisBrick =
-                        this->visibility_bricks.read(ptr.pointer, 1)[0];
+                    const OpacityBrick& thisBrick =
+                        this->opacity_bricks.read(ptr.pointer, 1)[0];
 
                     thisBrick.iterateOverVoxels(
                         [&](BrickLocalPosition bP, bool isFilled)

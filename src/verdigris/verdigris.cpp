@@ -237,7 +237,8 @@ namespace verdigris
         float radius     = 192.0f; // Radius of the pillar circle
         for (int i = 0; i < numPillars; ++i)
         {
-            float        angle = i * (2.0f * M_PI / numPillars);
+            float angle = i * (2.0f * glm::pi<float>() / numPillars);
+
             glm::i32vec3 pillarBase =
                 center
                 + glm::f32vec3(
@@ -245,10 +246,19 @@ namespace verdigris
                     0,
                     static_cast<int>(radius * sin(angle)));
 
-            for (int y = 0; y < 64; ++y)
+            for (float theta = 0; theta < 2 * glm::pi<float>(); theta += 0.06)
             {
-                insertVoxelAt(
-                    pillarBase + glm::i32vec3(0, y, 0), voxel::Voxel::Stone1);
+                for (int r = 0; r < 16; r++)
+                {
+                    for (int y = 0; y < 64; ++y)
+                    {
+                        insertVoxelAt(
+                            pillarBase
+                                + glm::i32vec3(
+                                    r * cos(theta), y, r * sin(theta)),
+                            voxel::Voxel::Stone1);
+                    }
+                }
             }
         }
 
@@ -256,7 +266,7 @@ namespace verdigris
         int innerRadius = 128; // Inner radius (hole size)
         int outerRadius = 240; // Outer radius (doughnut size)
 
-        for (int h = 0; h < 47; ++h)
+        for (int h = 0; h < 24; ++h)
         {
             int currentHeight =
                 h + 52; // Start the doughnut at a base height of 20
