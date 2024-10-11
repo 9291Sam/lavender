@@ -1,5 +1,6 @@
 #pragma once
 
+#include "game/game.hpp"
 #include <bit>
 #include <compare>
 #include <functional>

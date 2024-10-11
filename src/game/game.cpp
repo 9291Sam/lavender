@@ -14,6 +14,17 @@
 
 namespace game
 {
+
+    namespace
+    {
+        const Game* globalGame = nullptr; // NOLINT
+    } // namespace
+
+    const Game* getGame()
+    {
+        return globalGame;
+    }
+
     Game::Game()
         : renderer {std::make_unique<gfx::Renderer>()}
         , frame_generator {std::make_unique<FrameGenerator>(this)}
@@ -21,7 +32,12 @@ namespace game
         , active_game_state {util::Mutex<std::unique_ptr<GameState>> {nullptr}}
         , should_game_keep_ticking {true}
         , should_game_close {false}
-    {}
+    {
+        util::assertFatal(
+            globalGame == nullptr, "Don't create multiple Game s");
+
+        globalGame = this;
+    }
 
     Game::~Game() noexcept
     {

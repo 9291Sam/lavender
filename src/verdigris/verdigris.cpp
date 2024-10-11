@@ -153,8 +153,7 @@ namespace verdigris
             //     chunks[base], voxel::ChunkLocalPosition {p - base},
             //     genVoxel());
 
-            this->chunk_manager.writeVoxel(
-                p, static_cast<voxel::Voxel>(pDist(gen)));
+            this->chunk_manager.writeVoxel(p, v);
         };
 
         for (i32 x = -256; x < 255; ++x)
