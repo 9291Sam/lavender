@@ -545,6 +545,54 @@ namespace game
                         .baseArrayLayer {0},
                         .layerCount {1}}},
                 }});
+
+            // commandBuffer.pipelineBarrier(
+            //     vk::PipelineStageFlagBits::eEarlyFragmentTests,
+            //     vk::PipelineStageFlagBits::eEarlyFragmentTests,
+            //     {},
+            //     {},
+            //     {},
+            //     {vk::ImageMemoryBarrier {
+            //         .sType {vk::StructureType::eImageMemoryBarrier},
+            //         .pNext {nullptr},
+            //         .srcAccessMask {vk::AccessFlagBits::eNone},
+            //         .dstAccessMask {vk::AccessFlagBits::eShaderRead},
+            //         .oldLayout {vk::ImageLayout::eUndefined},
+            //         .newLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+            //         .srcQueueFamilyIndex {graphicsQueueIndex},
+            //         .dstQueueFamilyIndex {graphicsQueueIndex},
+            //         .image {*this->global_descriptors.visible_voxel_image},
+            //         .subresourceRange {vk::ImageSubresourceRange {
+            //             .aspectMask {vk::ImageAspectFlagBits::eColor},
+            //             .baseMipLevel {0},
+            //             .levelCount {1},
+            //             .baseArrayLayer {0},
+            //             .layerCount {1}}},
+            //     }});
+
+            // commandBuffer.pipelineBarrier(
+            //     vk::PipelineStageFlagBits::eEarlyFragmentTests,
+            //     vk::PipelineStageFlagBits::eEarlyFragmentTests,
+            //     {},
+            //     {},
+            //     {},
+            //     {vk::ImageMemoryBarrier {
+            //         .sType {vk::StructureType::eImageMemoryBarrier},
+            //         .pNext {nullptr},
+            //         .srcAccessMask {vk::AccessFlagBits::eNone},
+            //         .dstAccessMask {vk::AccessFlagBits::eShaderRead},
+            //         .oldLayout {vk::ImageLayout::eUndefined},
+            //         .newLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+            //         .srcQueueFamilyIndex {graphicsQueueIndex},
+            //         .dstQueueFamilyIndex {graphicsQueueIndex},
+            //         .image {*this->global_descriptors.face_id_image},
+            //         .subresourceRange {vk::ImageSubresourceRange {
+            //             .aspectMask {vk::ImageAspectFlagBits::eColor},
+            //             .baseMipLevel {0},
+            //             .levelCount {1},
+            //             .baseArrayLayer {0},
+            //             .layerCount {1}}},
+            //     }});
         }
 
         commandBuffer.pipelineBarrier(
@@ -597,9 +645,104 @@ namespace game
                     .layerCount {1}}},
             }});
 
+        // commandBuffer.pipelineBarrier(
+        //     vk::PipelineStageFlagBits::eFragmentShader,
+        //     vk::PipelineStageFlagBits::eFragmentShader,
+        //     vk::DependencyFlags {},
+        //     {},
+        //     {},
+        //     {vk::ImageMemoryBarrier {
+        //         .sType {vk::StructureType::eImageMemoryBarrier},
+        //         .pNext {nullptr},
+        //         .srcAccessMask {vk::AccessFlagBits::eShaderRead},
+        //         .dstAccessMask {vk::AccessFlagBits::eColorAttachmentWrite},
+        //         .oldLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+        //         .newLayout {vk::ImageLayout::eColorAttachmentOptimal},
+        //         .srcQueueFamilyIndex {graphicsQueueIndex},
+        //         .dstQueueFamilyIndex {graphicsQueueIndex},
+        //         .image {*this->global_descriptors.visible_voxel_image},
+        //         .subresourceRange {vk::ImageSubresourceRange {
+        //             .aspectMask {vk::ImageAspectFlagBits::eColor},
+        //             .baseMipLevel {0},
+        //             .levelCount {1},
+        //             .baseArrayLayer {0},
+        //             .layerCount {1}}},
+        //     }});
+
         commandBuffer.setViewport(0, {renderViewport});
         commandBuffer.setScissor(0, {scissor});
 
+        // Voxel Render
+        {}
+
+        // barrier on depth buffer
+
+        // barrier on visible voxel image to make it readable
+        // commandBuffer.pipelineBarrier(
+        //     vk::PipelineStageFlagBits::eFragmentShader,
+        //     vk::PipelineStageFlagBits::eFragmentShader,
+        //     vk::DependencyFlags {},
+        //     {},
+        //     {},
+        //     {vk::ImageMemoryBarrier {
+        //         .sType {vk::StructureType::eImageMemoryBarrier},
+        //         .pNext {nullptr},
+        //         .srcAccessMask {vk::AccessFlagBits::eColorAttachmentWrite},
+        //         .dstAccessMask {vk::AccessFlagBits::eShaderRead},
+        //         .oldLayout {vk::ImageLayout::eColorAttachmentOptimal},
+        //         .newLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+        //         .srcQueueFamilyIndex {graphicsQueueIndex},
+        //         .dstQueueFamilyIndex {graphicsQueueIndex},
+        //         .image {*this->global_descriptors.visible_voxel_image},
+        //         .subresourceRange {vk::ImageSubresourceRange {
+        //             .aspectMask {vk::ImageAspectFlagBits::eColor},
+        //             .baseMipLevel {0},
+        //             .levelCount {1},
+        //             .baseArrayLayer {0},
+        //             .layerCount {1}}},
+        //     }});
+
+        // barrier on face id image to make it writable
+        // commandBuffer.pipelineBarrier(
+        //     vk::PipelineStageFlagBits::eFragmentShader,
+        //     vk::PipelineStageFlagBits::eFragmentShader,
+        //     vk::DependencyFlags {},
+        //     {},
+        //     {},
+        //     {vk::ImageMemoryBarrier {
+        //         .sType {vk::StructureType::eImageMemoryBarrier},
+        //         .pNext {nullptr},
+        //         .srcAccessMask {vk::AccessFlagBits::eShaderRead},
+        //         .dstAccessMask {vk::AccessFlagBits::eColorAttachmentWrite},
+        //         .oldLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+        //         .newLayout {vk::ImageLayout::eColorAttachmentOptimal},
+        //         .srcQueueFamilyIndex {graphicsQueueIndex},
+        //         .dstQueueFamilyIndex {graphicsQueueIndex},
+        //         .image {*this->global_descriptors.face_id_image},
+        //         .subresourceRange {vk::ImageSubresourceRange {
+        //             .aspectMask {vk::ImageAspectFlagBits::eColor},
+        //             .baseMipLevel {0},
+        //             .levelCount {1},
+        //             .baseArrayLayer {0},
+        //             .layerCount {1}}},
+        //     }});
+
+        // Visibility Detection
+        {}
+
+        // barrier on faceid image to make it readable
+
+        // Color Calculation
+        {}
+
+        // barrier on storage writes before transfer
+
+        // VoxelColorTransfer
+        {
+            // clear image
+        }
+
+        // Simple Color
         const vk::RenderingAttachmentInfo colorAttachmentInfo {
             .sType {vk::StructureType::eRenderingAttachmentInfo},
             .pNext {nullptr},

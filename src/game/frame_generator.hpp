@@ -32,11 +32,17 @@ namespace game
         // TODO: there's better ways to write this, but this works for now
         enum class DynamicRenderingPass
         {
+            // Outside of renderpass, put your transfer operations here
             PreFrameUpdate               = 0,
+            // Rendering of Voxels to u32 image
             VoxelRenderer                = 1,
+            // detect which voxels are visible and write id to new u32 image
             VoxelVisibilityDetection     = 2,
+            // calculate the colors / shadows / GI etc...
             VoxelColorCalculation        = 3,
+            // write voxel colors back to the color buffer
             VoxelColorTransfer           = 4,
+            // render everything else
             SimpleColor                  = 5,
             DynamicRenderingPassMaxValue = 6,
         };
