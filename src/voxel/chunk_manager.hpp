@@ -13,6 +13,7 @@
 #include "util/index_allocator.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
+#include "visibility_brick.hpp"
 #include "voxel.hpp"
 #include "voxel/material_manager.hpp"
 #include "voxel/opacity_brick.hpp"
@@ -196,11 +197,26 @@ namespace voxel
         gfx::vulkan::TrackedBuffer<BrickParentInformation> brick_parent_info;
         gfx::vulkan::TrackedBuffer<MaterialBrick>          material_bricks;
         gfx::vulkan::TrackedBuffer<OpacityBrick>           opacity_bricks;
+        gfx::vulkan::Buffer<VisibilityBrick>               visibility_bricks;
 
         gfx::vulkan::Buffer<VoxelMaterial> material_buffer;
 
         util::RangeAllocator                 voxel_face_allocator;
         gfx::vulkan::Buffer<GreedyVoxelFace> voxel_faces;
+
+        struct VisibleVoxelFaces
+        {
+            u32 number_of_visible_faces;
+        };
+
+        struct VisibleFaceData
+        {
+            u32       corresponding_brick;
+            u32       location_within_brick_and_dir;
+            glm::vec3 calculated_color;
+        };
+        gfx::vulkan::Buffer<VisibleVoxelFaces> number_of_visible_faces;
+        gfx::vulkan::Buffer<VisibleFaceData>   visible_face_data;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> descriptor_set_layout;
         std::shared_ptr<vk::UniquePipeline>            chunk_renderer_pipeline;

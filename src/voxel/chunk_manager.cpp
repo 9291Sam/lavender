@@ -42,6 +42,7 @@ namespace voxel
     static constexpr u32 MaxChunks          = 65536;
     static constexpr u32 DirectionsPerChunk = 6;
     static constexpr u32 MaxBricks          = 1048576;
+    static constexpr u32 MaxFaces           = 16777216;
 
     ChunkManager::ChunkManager(const game::Game* game)
         : renderer {game->getRenderer()}
@@ -86,14 +87,32 @@ namespace voxel
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxBricks))
+        , visibility_bricks(
+              this->renderer->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer
+                  | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
+              static_cast<std::size_t>(MaxBricks))
         , material_buffer {voxel::generateVoxelMaterialBuffer(this->renderer)}
-        , voxel_face_allocator {16 * 1024 * 1024, MaxChunks * 6}
+        , voxel_face_allocator {MaxFaces, MaxChunks * 6}
         , voxel_faces(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              static_cast<std::size_t>(16 * 1024 * 1024))
+              static_cast<std::size_t>(MaxFaces))
+        , number_of_visible_faces(
+              this->renderer->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer
+                  | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
+              1)
+        , visible_face_data(
+              this->renderer->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer
+                  | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
+              static_cast<std::size_t>(MaxFaces))
         , descriptor_set_layout {this->renderer->getAllocator()->cacheDescriptorSetLayout(
               gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo {.bindings {{
                   vk::DescriptorSetLayoutBinding {
@@ -442,23 +461,36 @@ namespace voxel
                     game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
                 .pipeline {nullptr},
                 .descriptors {},
-                .record_func {[this, indirectCommands, indirectPayload](
-                                  vk::CommandBuffer commandBuffer,
-                                  vk::PipelineLayout,
-                                  u32)
-                              {
-                                  commandBuffer.updateBuffer(
-                                      *this->indirect_commands,
-                                      0,
-                                      std::span {indirectCommands}.size_bytes(),
-                                      indirectCommands.data());
+                .record_func {
+                    [this, indirectCommands, indirectPayload](
+                        vk::CommandBuffer commandBuffer,
+                        vk::PipelineLayout,
+                        u32)
+                    {
+                        commandBuffer.updateBuffer(
+                            *this->indirect_commands,
+                            0,
+                            std::span {indirectCommands}.size_bytes(),
+                            indirectCommands.data());
 
-                                  commandBuffer.updateBuffer(
-                                      *this->indirect_payload,
-                                      0,
-                                      std::span {indirectPayload}.size_bytes(),
-                                      indirectPayload.data());
-                              }}};
+                        commandBuffer.updateBuffer(
+                            *this->indirect_payload,
+                            0,
+                            std::span {indirectPayload}.size_bytes(),
+                            indirectPayload.data());
+
+                        commandBuffer.fillBuffer(
+                            *this->visibility_bricks, 0, vk::WholeSize, 0);
+
+                        commandBuffer.fillBuffer(
+                            *this->number_of_visible_faces,
+                            0,
+                            vk::WholeSize,
+                            0);
+
+                        commandBuffer.fillBuffer(
+                            *this->visible_face_data, 0, vk::WholeSize, 0);
+                    }}};
 
         game::FrameGenerator::RecordObject chunkDraw =
             game::FrameGenerator::RecordObject {
