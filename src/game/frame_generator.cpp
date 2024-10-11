@@ -546,29 +546,29 @@ namespace game
                         .layerCount {1}}},
                 }});
 
-            // commandBuffer.pipelineBarrier(
-            //     vk::PipelineStageFlagBits::eEarlyFragmentTests,
-            //     vk::PipelineStageFlagBits::eEarlyFragmentTests,
-            //     {},
-            //     {},
-            //     {},
-            //     {vk::ImageMemoryBarrier {
-            //         .sType {vk::StructureType::eImageMemoryBarrier},
-            //         .pNext {nullptr},
-            //         .srcAccessMask {vk::AccessFlagBits::eNone},
-            //         .dstAccessMask {vk::AccessFlagBits::eShaderRead},
-            //         .oldLayout {vk::ImageLayout::eUndefined},
-            //         .newLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
-            //         .srcQueueFamilyIndex {graphicsQueueIndex},
-            //         .dstQueueFamilyIndex {graphicsQueueIndex},
-            //         .image {*this->global_descriptors.visible_voxel_image},
-            //         .subresourceRange {vk::ImageSubresourceRange {
-            //             .aspectMask {vk::ImageAspectFlagBits::eColor},
-            //             .baseMipLevel {0},
-            //             .levelCount {1},
-            //             .baseArrayLayer {0},
-            //             .layerCount {1}}},
-            //     }});
+            commandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eFragmentShader,
+                vk::PipelineStageFlagBits::eFragmentShader,
+                {},
+                {},
+                {},
+                {vk::ImageMemoryBarrier {
+                    .sType {vk::StructureType::eImageMemoryBarrier},
+                    .pNext {nullptr},
+                    .srcAccessMask {vk::AccessFlagBits::eNone},
+                    .dstAccessMask {vk::AccessFlagBits::eShaderRead},
+                    .oldLayout {vk::ImageLayout::eUndefined},
+                    .newLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+                    .srcQueueFamilyIndex {graphicsQueueIndex},
+                    .dstQueueFamilyIndex {graphicsQueueIndex},
+                    .image {*this->global_descriptors.visible_voxel_image},
+                    .subresourceRange {vk::ImageSubresourceRange {
+                        .aspectMask {vk::ImageAspectFlagBits::eColor},
+                        .baseMipLevel {0},
+                        .levelCount {1},
+                        .baseArrayLayer {0},
+                        .layerCount {1}}},
+                }});
 
             // commandBuffer.pipelineBarrier(
             //     vk::PipelineStageFlagBits::eEarlyFragmentTests,
@@ -679,8 +679,8 @@ namespace game
 
         // barrier on visible voxel image to make it readable
         // commandBuffer.pipelineBarrier(
-        //     vk::PipelineStageFlagBits::eFragmentShader,
-        //     vk::PipelineStageFlagBits::eFragmentShader,
+        //     vk::PipelineStageFlagBits::eColorAttachmentOutput,
+        //     vk::PipelineStageFlagBits::eColorAttachmentOutput,
         //     vk::DependencyFlags {},
         //     {},
         //     {},
