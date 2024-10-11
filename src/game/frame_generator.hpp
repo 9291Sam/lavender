@@ -86,7 +86,8 @@ namespace game
 
             gfx::vulkan::Image2D depth_buffer;
 
-            gfx::vulkan::Image2D voxel_id_image;
+            gfx::vulkan::Image2D visible_voxel_image;
+            gfx::vulkan::Image2D face_id_image;
         };
 
         void internalGenerateFrame(
@@ -101,9 +102,6 @@ namespace game
 
         const game::Game* game;
         bool              has_resize_ocurred;
-
-        float time_alive;
-        u32   frame_number;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> set_layout;
         vk::DescriptorSet global_info_descriptor_set;

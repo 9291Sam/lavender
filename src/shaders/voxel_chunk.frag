@@ -73,7 +73,7 @@ void main()
         in_global_info.camera_position.xyz,
         in_world_position_fragment.xyz,
         unpackNormalId(in_normal_id), 
-        PointLight(vec3(3.0, 10.0, 0.0), vec4(1.0, 1.0, 1.0, 256.0), vec4(0.0, 1.0, 0.0, 0.0)),
+        PointLight(vec3(64.0 * sin(in_global_info.time_alive), 10.0, 64.0 * cos(in_global_info.time_alive)), vec4(1.0, 1.0, 1.0, 256.0), vec4(0.0, 1.0, 0.0, 0.0)),
         1.0
     );
 

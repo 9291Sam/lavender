@@ -82,11 +82,36 @@ namespace game
             },
             {});
 
+        gfx::vulkan::Image2D visibleVoxelImage {
+            renderer->getAllocator(),
+            renderer->getDevice()->getDevice(),
+            renderer->getWindow()->getFramebufferSize(),
+            vk::Format::eR32Uint,
+            vk::ImageLayout::eUndefined,
+            vk::ImageUsageFlagBits::eColorAttachment
+                | vk::ImageUsageFlagBits::eStorage,
+            vk::ImageAspectFlagBits::eColor,
+            vk::ImageTiling::eOptimal,
+            vk::MemoryPropertyFlagBits::eDeviceLocal};
+
+        gfx::vulkan::Image2D faceIdImage {
+            renderer->getAllocator(),
+            renderer->getDevice()->getDevice(),
+            renderer->getWindow()->getFramebufferSize(),
+            vk::Format::eR32Uint,
+            vk::ImageLayout::eUndefined,
+            vk::ImageUsageFlagBits::eColorAttachment
+                | vk::ImageUsageFlagBits::eStorage,
+            vk::ImageAspectFlagBits::eColor,
+            vk::ImageTiling::eOptimal,
+            vk::MemoryPropertyFlagBits::eDeviceLocal};
+
         return GlobalInfoDescriptors {
             .mvp_matrices {std::move(mvpMatrices)},
             .global_frame_info {std::move(globalFrameInfo)},
             .depth_buffer {std::move(depthBuffer)},
-        };
+            .visible_voxel_image {std::move(visibleVoxelImage)},
+            .face_id_image {std::move(faceIdImage)}};
     }
 
     std::strong_ordering
@@ -210,8 +235,8 @@ namespace game
 
         GlobalFrameInfo thisFrameInfo {
             .camera_position {camera.getPosition().xyzz()},
-            .frame_number {this->frame_number},
-            .time_alive {this->time_alive}};
+            .frame_number {this->game->getRenderer()->getFrameNumber()},
+            .time_alive {this->game->getRenderer()->getTimeAlive()}};
 
         commandBuffer.updateBuffer(
             *this->global_descriptors.global_frame_info,

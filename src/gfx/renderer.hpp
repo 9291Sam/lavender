@@ -47,6 +47,8 @@ namespace gfx
         [[nodiscard]] const vulkan::Device*    getDevice() const noexcept;
         [[nodiscard]] const vulkan::Allocator* getAllocator() const noexcept;
         [[nodiscard]] const Window*            getWindow() const noexcept;
+        [[nodiscard]] u32                      getFrameNumber() const noexcept;
+        [[nodiscard]] float                    getTimeAlive() const noexcept;
 
     private:
         struct RenderingCriticalSection
@@ -66,5 +68,8 @@ namespace gfx
         std::unique_ptr<vulkan::Allocator> allocator;
 
         util::Mutex<std::unique_ptr<RenderingCriticalSection>> critical_section;
+
+        mutable std::atomic<float> time_alive;
+        mutable std::atomic<u32>   frame_number;
     };
 } // namespace gfx

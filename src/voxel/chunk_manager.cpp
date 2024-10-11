@@ -633,6 +633,10 @@ namespace voxel
         const BrickMap emptyBrickMap {};
         this->brick_maps.write(thisChunkId, {&emptyBrickMap, 1});
 
+        glm::vec4 pos4 = position.xyzz();
+
+        this->chunk_positions.write(thisChunkId, {&pos4, 1});
+
         return Chunk {thisChunkId};
     }
 

@@ -1,6 +1,7 @@
 #include "renderer.hpp"
 #include "gfx/vulkan/frame_manager.hpp"
 #include "gfx/vulkan/swapchain.hpp"
+#include "util/atomic.hpp"
 #include "util/threads.hpp"
 #include "vulkan/allocator.hpp"
 #include "vulkan/device.hpp"
@@ -8,6 +9,7 @@
 #include "vulkan/instance.hpp"
 #include "window.hpp"
 #include <GLFW/glfw3.h>
+#include <atomic>
 #include <memory>
 #include <vulkan/vulkan_handles.hpp>
 
@@ -129,6 +131,10 @@ namespace gfx
 
         this->window->endFrame();
 
+        util::atomicAbaAdd(
+            this->time_alive, this->window->getDeltaTimeSeconds());
+        this->frame_number.fetch_add(1);
+
         return resizeOcurred;
     }
 
@@ -170,5 +176,15 @@ namespace gfx
     const Window* Renderer::getWindow() const noexcept
     {
         return &*this->window;
+    }
+
+    u32 Renderer::getFrameNumber() const noexcept
+    {
+        return this->frame_number.load(std::memory_order_seq_cst);
+    }
+
+    float Renderer::getTimeAlive() const noexcept
+    {
+        return this->time_alive.load(std::memory_order_seq_cst);
     }
 } // namespace gfx
