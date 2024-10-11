@@ -12,4 +12,9 @@ layout(set = 0, binding = 1) uniform GlobalInfo
     float time_alive;
 } in_global_info;
 
+layout(set = 0, binding = 2, r32f) uniform image2D depth_buffer;
+layout(set = 0, binding = 3, r32ui) uniform uimage2D visible_voxel_image;
+layout(set = 0, binding = 4, r32ui) uniform uimage2D face_id_image;
+layout(set = 0, binding = 5) uniform sampler do_nothing_sampler; 
+
 #endif // SRC_SHADERS_INCLUDE_GLOBAL_DESCRIPTOR_SET_GLSL

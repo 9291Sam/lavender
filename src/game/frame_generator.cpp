@@ -26,7 +26,8 @@ namespace game
             renderer->getWindow()->getFramebufferSize(),
             vk::Format::eD32Sfloat,
             vk::ImageLayout::eUndefined,
-            vk::ImageUsageFlagBits::eDepthStencilAttachment,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment
+                | vk::ImageUsageFlagBits::eSampled,
             vk::ImageAspectFlagBits::eDepth,
             vk::ImageTiling::eOptimal,
             vk::MemoryPropertyFlagBits::eDeviceLocal};
@@ -52,6 +53,74 @@ namespace game
 
         const vk::DescriptorBufferInfo globalFrameBufferInfo {
             .buffer {*globalFrameInfo}, .offset {0}, .range {vk::WholeSize}};
+
+        gfx::vulkan::Image2D visibleVoxelImage {
+            renderer->getAllocator(),
+            renderer->getDevice()->getDevice(),
+            renderer->getWindow()->getFramebufferSize(),
+            vk::Format::eR32Uint,
+            vk::ImageLayout::eUndefined,
+            vk::ImageUsageFlagBits::eColorAttachment
+                | vk::ImageUsageFlagBits::eSampled,
+            vk::ImageAspectFlagBits::eColor,
+            vk::ImageTiling::eOptimal,
+            vk::MemoryPropertyFlagBits::eDeviceLocal};
+
+        gfx::vulkan::Image2D faceIdImage {
+            renderer->getAllocator(),
+            renderer->getDevice()->getDevice(),
+            renderer->getWindow()->getFramebufferSize(),
+            vk::Format::eR32Uint,
+            vk::ImageLayout::eUndefined,
+            vk::ImageUsageFlagBits::eColorAttachment
+                | vk::ImageUsageFlagBits::eSampled,
+            vk::ImageAspectFlagBits::eColor,
+            vk::ImageTiling::eOptimal,
+            vk::MemoryPropertyFlagBits::eDeviceLocal};
+
+        vk::UniqueSampler doNothingSampler =
+            renderer->getDevice()->getDevice().createSamplerUnique(
+                vk::SamplerCreateInfo {
+                    .sType {vk::StructureType::eSamplerCreateInfo},
+                    .pNext {nullptr},
+                    .flags {},
+                    .magFilter {vk::Filter::eLinear},
+                    .minFilter {vk::Filter::eLinear},
+                    .mipmapMode {vk::SamplerMipmapMode::eLinear},
+                    .addressModeU {vk::SamplerAddressMode::eRepeat},
+                    .addressModeV {vk::SamplerAddressMode::eRepeat},
+                    .addressModeW {vk::SamplerAddressMode::eRepeat},
+                    .mipLodBias {},
+                    .anisotropyEnable {vk::False},
+                    .maxAnisotropy {1.0f},
+                    .compareEnable {vk::False},
+                    .compareOp {vk::CompareOp::eNever},
+                    .minLod {0},
+                    .maxLod {1},
+                    .borderColor {vk::BorderColor::eFloatTransparentBlack},
+                    .unnormalizedCoordinates {},
+                });
+
+        const vk::DescriptorImageInfo depthBufferInfo {
+            .sampler {nullptr},
+            .imageView {depthBuffer.getView()},
+            .imageLayout {vk::ImageLayout::eDepthReadOnlyOptimal},
+        };
+        const vk::DescriptorImageInfo visibleVoxelImageInfo {
+            .sampler {nullptr},
+            .imageView {visibleVoxelImage.getView()},
+            .imageLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+        };
+        const vk::DescriptorImageInfo faceIdImageInfo {
+            .sampler {nullptr},
+            .imageView {faceIdImage.getView()},
+            .imageLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+        };
+        const vk::DescriptorImageInfo doNothingSamplerInfo {
+            .sampler {*doNothingSampler},
+            .imageView {nullptr},
+            .imageLayout {},
+        };
 
         renderer->getDevice()->getDevice().updateDescriptorSets(
             {
@@ -79,39 +148,65 @@ namespace game
                     .pBufferInfo {&globalFrameBufferInfo},
                     .pTexelBufferView {nullptr},
                 },
+                vk::WriteDescriptorSet {
+                    .sType {vk::StructureType::eWriteDescriptorSet},
+                    .pNext {nullptr},
+                    .dstSet {globalDescriptorSet},
+                    .dstBinding {2},
+                    .dstArrayElement {0},
+                    .descriptorCount {1},
+                    .descriptorType {vk::DescriptorType::eSampledImage},
+                    .pImageInfo {&depthBufferInfo},
+                    .pBufferInfo {nullptr},
+                    .pTexelBufferView {nullptr},
+                },
+                vk::WriteDescriptorSet {
+                    .sType {vk::StructureType::eWriteDescriptorSet},
+                    .pNext {nullptr},
+                    .dstSet {globalDescriptorSet},
+                    .dstBinding {3},
+                    .dstArrayElement {0},
+                    .descriptorCount {1},
+                    .descriptorType {vk::DescriptorType::eSampledImage},
+                    .pImageInfo {&visibleVoxelImageInfo},
+                    .pBufferInfo {nullptr},
+                    .pTexelBufferView {nullptr},
+                },
+                vk::WriteDescriptorSet {
+                    .sType {vk::StructureType::eWriteDescriptorSet},
+                    .pNext {nullptr},
+                    .dstSet {globalDescriptorSet},
+                    .dstBinding {4},
+                    .dstArrayElement {0},
+                    .descriptorCount {1},
+                    .descriptorType {vk::DescriptorType::eSampledImage},
+                    .pImageInfo {&faceIdImageInfo},
+                    .pBufferInfo {nullptr},
+                    .pTexelBufferView {nullptr},
+                },
+                vk::WriteDescriptorSet {
+                    .sType {vk::StructureType::eWriteDescriptorSet},
+                    .pNext {nullptr},
+                    .dstSet {globalDescriptorSet},
+                    .dstBinding {5},
+                    .dstArrayElement {0},
+                    .descriptorCount {1},
+                    .descriptorType {vk::DescriptorType::eSampler},
+                    .pImageInfo {&doNothingSamplerInfo},
+                    .pBufferInfo {nullptr},
+                    .pTexelBufferView {nullptr},
+                },
             },
             {});
-
-        gfx::vulkan::Image2D visibleVoxelImage {
-            renderer->getAllocator(),
-            renderer->getDevice()->getDevice(),
-            renderer->getWindow()->getFramebufferSize(),
-            vk::Format::eR32Uint,
-            vk::ImageLayout::eUndefined,
-            vk::ImageUsageFlagBits::eColorAttachment
-                | vk::ImageUsageFlagBits::eStorage,
-            vk::ImageAspectFlagBits::eColor,
-            vk::ImageTiling::eOptimal,
-            vk::MemoryPropertyFlagBits::eDeviceLocal};
-
-        gfx::vulkan::Image2D faceIdImage {
-            renderer->getAllocator(),
-            renderer->getDevice()->getDevice(),
-            renderer->getWindow()->getFramebufferSize(),
-            vk::Format::eR32Uint,
-            vk::ImageLayout::eUndefined,
-            vk::ImageUsageFlagBits::eColorAttachment
-                | vk::ImageUsageFlagBits::eStorage,
-            vk::ImageAspectFlagBits::eColor,
-            vk::ImageTiling::eOptimal,
-            vk::MemoryPropertyFlagBits::eDeviceLocal};
 
         return GlobalInfoDescriptors {
             .mvp_matrices {std::move(mvpMatrices)},
             .global_frame_info {std::move(globalFrameInfo)},
             .depth_buffer {std::move(depthBuffer)},
             .visible_voxel_image {std::move(visibleVoxelImage)},
-            .face_id_image {std::move(faceIdImage)}};
+            .face_id_image {std::move(faceIdImage)},
+            .do_nothing_sampler {std::move(doNothingSampler)},
+        };
     }
 
     std::strong_ordering
@@ -176,7 +271,67 @@ namespace game
                                                   | vk::ShaderStageFlagBits::
                                                       eCompute},
                                               .pImmutableSamplers {nullptr},
-                                          }}})}
+                                          },
+                                          vk::DescriptorSetLayoutBinding {
+                                              .binding {2},
+                                              .descriptorType {
+                                                  vk::DescriptorType::
+                                                      eSampledImage},
+                                              .descriptorCount {1},
+                                              .stageFlags {
+                                                  vk::ShaderStageFlagBits::
+                                                      eVertex
+                                                  | vk::ShaderStageFlagBits::
+                                                      eFragment
+                                                  | vk::ShaderStageFlagBits::
+                                                      eCompute},
+                                              .pImmutableSamplers {nullptr},
+                                          },
+                                          vk::DescriptorSetLayoutBinding {
+                                              .binding {3},
+                                              .descriptorType {
+                                                  vk::DescriptorType::
+                                                      eSampledImage},
+                                              .descriptorCount {1},
+                                              .stageFlags {
+                                                  vk::ShaderStageFlagBits::
+                                                      eVertex
+                                                  | vk::ShaderStageFlagBits::
+                                                      eFragment
+                                                  | vk::ShaderStageFlagBits::
+                                                      eCompute},
+                                              .pImmutableSamplers {nullptr},
+                                          },
+                                          vk::DescriptorSetLayoutBinding {
+                                              .binding {4},
+                                              .descriptorType {
+                                                  vk::DescriptorType::
+                                                      eSampledImage},
+                                              .descriptorCount {1},
+                                              .stageFlags {
+                                                  vk::ShaderStageFlagBits::
+                                                      eVertex
+                                                  | vk::ShaderStageFlagBits::
+                                                      eFragment
+                                                  | vk::ShaderStageFlagBits::
+                                                      eCompute},
+                                              .pImmutableSamplers {nullptr},
+                                          },
+                                          vk::DescriptorSetLayoutBinding {
+                                              .binding {5},
+                                              .descriptorType {
+                                                  vk::DescriptorType::eSampler},
+                                              .descriptorCount {1},
+                                              .stageFlags {
+                                                  vk::ShaderStageFlagBits::
+                                                      eVertex
+                                                  | vk::ShaderStageFlagBits::
+                                                      eFragment
+                                                  | vk::ShaderStageFlagBits::
+                                                      eCompute},
+                                              .pImmutableSamplers {nullptr},
+                                          },
+                                      }})}
         , global_info_descriptor_set {this->game->getRenderer()
                                           ->getAllocator()
                                           ->allocateDescriptorSet(
