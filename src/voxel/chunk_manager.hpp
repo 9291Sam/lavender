@@ -173,9 +173,10 @@ namespace voxel
 
         const gfx::Renderer* renderer;
 
-        util::IndexAllocator                 chunk_id_allocator;
-        std::vector<InternalChunkData>       chunk_data;
-        gfx::vulkan::TrackedBuffer<BrickMap> brick_maps;
+        util::IndexAllocator                  chunk_id_allocator;
+        std::vector<InternalChunkData>        chunk_data;
+        gfx::vulkan::TrackedBuffer<glm::vec4> chunk_positions;
+        gfx::vulkan::TrackedBuffer<BrickMap>  brick_maps;
 
         std::unordered_map<glm::i32vec3, Chunk> global_chunks;
 
@@ -199,10 +200,10 @@ namespace voxel
         gfx::vulkan::TrackedBuffer<OpacityBrick>           opacity_bricks;
         gfx::vulkan::Buffer<VisibilityBrick>               visibility_bricks;
 
-        gfx::vulkan::Buffer<VoxelMaterial> material_buffer;
-
         util::RangeAllocator                 voxel_face_allocator;
         gfx::vulkan::Buffer<GreedyVoxelFace> voxel_faces;
+
+        gfx::vulkan::Buffer<VoxelMaterial> material_buffer;
 
         struct VisibleVoxelFaces
         {

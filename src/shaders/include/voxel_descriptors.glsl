@@ -54,30 +54,72 @@ struct VoxelMaterial
     vec4  coat_color_power;
 };
 
-layout(set = 1, binding = 0) readonly buffer BrickMapBuffer
+struct BrickParentInfo
+{
+    u32 data;
+};
+
+struct VisibilityBrick
+{
+    OpacityBrick view_dir[6];
+};
+
+struct VisibleFaceData
+{
+    u32 brick;
+    u32 brick_local_location_and_dir;
+    vec3 color;
+};
+
+layout(set = 1, binding = 0) readonly buffer ChunkPositionsBuffer
+{
+    vec4 positions[];
+} in_chunk_positions;
+
+layout(set = 1, binding = 1) readonly buffer BrickMapBuffer
 {
    BrickMap map[];
 } in_brick_maps;
 
-layout(set = 1, binding = 1) readonly buffer MaterialBrickBuffer
+layout(set = 1, binding = 2) readonly buffer BrickParentInfoBuffer
+{
+    BrickParentInfo info[];
+} in_brick_parent_info;
+
+layout(set = 1, binding = 3) readonly buffer MaterialBrickBuffer
 {
     MaterialBrick brick[];
 } in_material_bricks;
 
-layout(set = 1, binding = 2) readonly buffer VisilityBrickBuffer
+layout(set = 1, binding = 4) readonly buffer OpacityBrickBuffer
 {
     OpacityBrick brick[];
 } in_opacity_bricks;
 
-layout(set = 1, binding = 3) readonly buffer GreedyVoxelFaces
+layout(set = 1, binding = 5) readonly buffer VisibilityBrickBuffer
+{
+    VisibilityBrick brick[];
+} in_visibility_bricks;
+
+layout(set = 1, binding = 6) readonly buffer GreedyVoxelFaces
 {
     GreedyVoxelFace face[];
 } in_greedy_voxel_faces;
 
-layout(set = 1, binding = 4) readonly buffer VoxelMaterialBuffer
+layout(set = 1, binding = 7) readonly buffer VoxelMaterialBuffer
 {
     VoxelMaterial material[];
 } in_voxel_materials;
+
+layout(set = 1, binding = 8) readonly buffer NuumberOfVisibleVoxelFacesBuffer
+{
+    u32 number_of_visible_faces;
+} in_number_of_visibile_faces;
+
+layout(set = 1, binding = 9) readonly buffer VisibleFaceDataBuffer
+{
+    VisibleFaceData data[];
+} in_visible_face_data;
 
 vec3 unpackNormalId(u32 id)
 {

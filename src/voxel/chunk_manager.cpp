@@ -48,6 +48,12 @@ namespace voxel
         : renderer {game->getRenderer()}
         , chunk_id_allocator {MaxChunks}
         , chunk_data {MaxChunks, InternalChunkData {}}
+        , chunk_positions(
+              this->renderer->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer,
+              vk::MemoryPropertyFlagBits::eDeviceLocal
+                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              MaxChunks)
         , brick_maps(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
@@ -93,7 +99,6 @@ namespace voxel
                   | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxBricks))
-        , material_buffer {voxel::generateVoxelMaterialBuffer(this->renderer)}
         , voxel_face_allocator {MaxFaces, MaxChunks * 6}
         , voxel_faces(
               this->renderer->getAllocator(),
@@ -101,6 +106,7 @@ namespace voxel
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxFaces))
+        , material_buffer {voxel::generateVoxelMaterialBuffer(this->renderer)}
         , number_of_visible_faces(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer
@@ -149,11 +155,66 @@ namespace voxel
                       .binding {3},
                       .descriptorType {vk::DescriptorType::eStorageBuffer},
                       .descriptorCount {1},
-                      .stageFlags {vk::ShaderStageFlagBits::eVertex},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
                       .pImmutableSamplers {nullptr},
                   },
                   vk::DescriptorSetLayoutBinding {
                       .binding {4},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {5},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {6},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {7},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {8},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {9},
                       .descriptorType {vk::DescriptorType::eStorageBuffer},
                       .descriptorCount {1},
                       .stageFlags {
@@ -229,93 +290,90 @@ namespace voxel
                                         **this->descriptor_set_layout)}
         , global_descriptor_set {game->getGlobalInfoDescriptorSet()}
     {
-        const vk::DescriptorBufferInfo brickMapBufferInfo {
-            .buffer {*this->brick_maps}, .offset {0}, .range {vk::WholeSize}};
+        const auto bufferInfo = {
+            vk::DescriptorBufferInfo {
+                .buffer {*this->chunk_positions},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->brick_maps},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->brick_parent_info},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->material_bricks},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->opacity_bricks},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
 
-        const vk::DescriptorBufferInfo materialBrickInfo {
-            .buffer {*this->material_bricks},
-            .offset {0},
-            .range {vk::WholeSize}};
+            vk::DescriptorBufferInfo {
+                .buffer {*this->visibility_bricks},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->voxel_faces},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->material_buffer},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->number_of_visible_faces},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->visible_face_data},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+        };
 
-        const vk::DescriptorBufferInfo opacityBrickInfo {
-            .buffer {*this->opacity_bricks},
-            .offset {0},
-            .range {vk::WholeSize}};
+        std::vector<vk::WriteDescriptorSet> writes {};
 
-        const vk::DescriptorBufferInfo voxelFacesBufferInfo {
-            .buffer {*this->voxel_faces}, .offset {0}, .range {vk::WholeSize}};
+        u32 idx = 0;
+        for (const vk::DescriptorBufferInfo& i : bufferInfo)
+        {
+            writes.push_back(vk::WriteDescriptorSet {
+                .sType {vk::StructureType::eWriteDescriptorSet},
+                .pNext {nullptr},
+                .dstSet {this->chunk_descriptor_set},
+                .dstBinding {idx},
+                .dstArrayElement {0},
+                .descriptorCount {1},
+                .descriptorType {vk::DescriptorType::eStorageBuffer},
+                .pImageInfo {nullptr},
+                .pBufferInfo {&i},
+                .pTexelBufferView {nullptr},
+            });
 
-        const vk::DescriptorBufferInfo materialBufferInfo {
-            .buffer {*this->material_buffer},
-            .offset {0},
-            .range {vk::WholeSize}};
+            idx += 1;
+        }
 
         this->renderer->getDevice()->getDevice().updateDescriptorSets(
-            {
-                vk::WriteDescriptorSet {
-                    .sType {vk::StructureType::eWriteDescriptorSet},
-                    .pNext {nullptr},
-                    .dstSet {this->chunk_descriptor_set},
-                    .dstBinding {0},
-                    .dstArrayElement {0},
-                    .descriptorCount {1},
-                    .descriptorType {vk::DescriptorType::eStorageBuffer},
-                    .pImageInfo {nullptr},
-                    .pBufferInfo {&brickMapBufferInfo},
-                    .pTexelBufferView {nullptr},
-                },
-                vk::WriteDescriptorSet {
-                    .sType {vk::StructureType::eWriteDescriptorSet},
-                    .pNext {nullptr},
-                    .dstSet {this->chunk_descriptor_set},
-                    .dstBinding {1},
-                    .dstArrayElement {0},
-                    .descriptorCount {1},
-                    .descriptorType {vk::DescriptorType::eStorageBuffer},
-                    .pImageInfo {nullptr},
-                    .pBufferInfo {&materialBrickInfo},
-                    .pTexelBufferView {nullptr},
-                },
-                vk::WriteDescriptorSet {
-                    .sType {vk::StructureType::eWriteDescriptorSet},
-                    .pNext {nullptr},
-                    .dstSet {this->chunk_descriptor_set},
-                    .dstBinding {2},
-                    .dstArrayElement {0},
-                    .descriptorCount {1},
-                    .descriptorType {vk::DescriptorType::eStorageBuffer},
-                    .pImageInfo {nullptr},
-                    .pBufferInfo {&opacityBrickInfo},
-                    .pTexelBufferView {nullptr},
-                },
-                vk::WriteDescriptorSet {
-                    .sType {vk::StructureType::eWriteDescriptorSet},
-                    .pNext {nullptr},
-                    .dstSet {this->chunk_descriptor_set},
-                    .dstBinding {3},
-                    .dstArrayElement {0},
-                    .descriptorCount {1},
-                    .descriptorType {vk::DescriptorType::eStorageBuffer},
-                    .pImageInfo {nullptr},
-                    .pBufferInfo {&voxelFacesBufferInfo},
-                    .pTexelBufferView {nullptr},
-                },
-                vk::WriteDescriptorSet {
-                    .sType {vk::StructureType::eWriteDescriptorSet},
-                    .pNext {nullptr},
-                    .dstSet {this->chunk_descriptor_set},
-                    .dstBinding {4},
-                    .dstArrayElement {0},
-                    .descriptorCount {1},
-                    .descriptorType {vk::DescriptorType::eStorageBuffer},
-                    .pImageInfo {nullptr},
-                    .pBufferInfo {&materialBufferInfo},
-                    .pTexelBufferView {nullptr},
-                },
-            },
-            {});
-        util::logTrace(
-            "allocated {} bytes", gfx::vulkan::bufferBytesAllocated.load());
+            static_cast<u32>(writes.size()), writes.data(), 0, nullptr);
+
+        const std::size_t bytesAllocated =
+            gfx::vulkan::bufferBytesAllocated.load();
+        const double gibAllocated =
+            static_cast<double>(bytesAllocated) / (1024 * 1024 * 1024);
+
+        util::logTrace("allocated {:.3} GiB", gibAllocated);
     }
 
     ChunkManager::~ChunkManager()
@@ -449,6 +507,7 @@ namespace voxel
                 }
             });
 
+        this->chunk_positions.flush();
         this->brick_maps.flush();
         this->brick_parent_info.flush();
         this->material_bricks.flush();
