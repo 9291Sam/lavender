@@ -46,6 +46,8 @@ vec3 exp_strength_falloff(vec3 strengths)
     return 1.0 - exp2(-0.25 * strengths);
 }
 
+layout(local_size_x = 1024, local_size_y = 1, local_size_z = 1) in;
+
 void main()
 {
     const u32 global_invocation_index = gl_GlobalInvocationID.x;

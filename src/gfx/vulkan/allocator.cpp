@@ -373,7 +373,7 @@ namespace gfx::vulkan
                         };
 
                     auto [result, pipeline] =
-                        this->device.createComputePipeline(
+                        this->device.createComputePipelineUnique(
                             nullptr, computePipelineCreateInfo);
 
                     util::assertFatal(

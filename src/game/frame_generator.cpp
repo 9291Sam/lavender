@@ -61,7 +61,7 @@ namespace game
             vk::Format::eR32Uint,
             vk::ImageLayout::eUndefined,
             vk::ImageUsageFlagBits::eColorAttachment
-                | vk::ImageUsageFlagBits::eSampled,
+                | vk::ImageUsageFlagBits::eStorage,
             vk::ImageAspectFlagBits::eColor,
             vk::ImageTiling::eOptimal,
             vk::MemoryPropertyFlagBits::eDeviceLocal};
@@ -73,7 +73,7 @@ namespace game
             vk::Format::eR32Uint,
             vk::ImageLayout::eUndefined,
             vk::ImageUsageFlagBits::eColorAttachment
-                | vk::ImageUsageFlagBits::eSampled,
+                | vk::ImageUsageFlagBits::eStorage,
             vk::ImageAspectFlagBits::eColor,
             vk::ImageTiling::eOptimal,
             vk::MemoryPropertyFlagBits::eDeviceLocal};
@@ -109,12 +109,12 @@ namespace game
         const vk::DescriptorImageInfo visibleVoxelImageInfo {
             .sampler {nullptr},
             .imageView {visibleVoxelImage.getView()},
-            .imageLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+            .imageLayout {vk::ImageLayout::eGeneral},
         };
         const vk::DescriptorImageInfo faceIdImageInfo {
             .sampler {nullptr},
             .imageView {faceIdImage.getView()},
-            .imageLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+            .imageLayout {vk::ImageLayout::eGeneral},
         };
         const vk::DescriptorImageInfo doNothingSamplerInfo {
             .sampler {*doNothingSampler},
@@ -167,7 +167,7 @@ namespace game
                     .dstBinding {3},
                     .dstArrayElement {0},
                     .descriptorCount {1},
-                    .descriptorType {vk::DescriptorType::eSampledImage},
+                    .descriptorType {vk::DescriptorType::eStorageImage},
                     .pImageInfo {&visibleVoxelImageInfo},
                     .pBufferInfo {nullptr},
                     .pTexelBufferView {nullptr},
@@ -179,7 +179,7 @@ namespace game
                     .dstBinding {4},
                     .dstArrayElement {0},
                     .descriptorCount {1},
-                    .descriptorType {vk::DescriptorType::eSampledImage},
+                    .descriptorType {vk::DescriptorType::eStorageImage},
                     .pImageInfo {&faceIdImageInfo},
                     .pBufferInfo {nullptr},
                     .pTexelBufferView {nullptr},
@@ -291,7 +291,7 @@ namespace game
                                               .binding {3},
                                               .descriptorType {
                                                   vk::DescriptorType::
-                                                      eSampledImage},
+                                                      eStorageImage},
                                               .descriptorCount {1},
                                               .stageFlags {
                                                   vk::ShaderStageFlagBits::
@@ -306,7 +306,7 @@ namespace game
                                               .binding {4},
                                               .descriptorType {
                                                   vk::DescriptorType::
-                                                      eSampledImage},
+                                                      eStorageImage},
                                               .descriptorCount {1},
                                               .stageFlags {
                                                   vk::ShaderStageFlagBits::
@@ -584,7 +584,7 @@ namespace game
                     .srcAccessMask {vk::AccessFlagBits::eNone},
                     .dstAccessMask {vk::AccessFlagBits::eShaderRead},
                     .oldLayout {vk::ImageLayout::eUndefined},
-                    .newLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+                    .newLayout {vk::ImageLayout::eGeneral},
                     .srcQueueFamilyIndex {graphicsQueueIndex},
                     .dstQueueFamilyIndex {graphicsQueueIndex},
                     .image {*this->global_descriptors.visible_voxel_image},
@@ -608,7 +608,7 @@ namespace game
                     .srcAccessMask {vk::AccessFlagBits::eNone},
                     .dstAccessMask {vk::AccessFlagBits::eShaderRead},
                     .oldLayout {vk::ImageLayout::eUndefined},
-                    .newLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+                    .newLayout {vk::ImageLayout::eGeneral},
                     .srcQueueFamilyIndex {graphicsQueueIndex},
                     .dstQueueFamilyIndex {graphicsQueueIndex},
                     .image {*this->global_descriptors.face_id_image},
@@ -682,7 +682,7 @@ namespace game
                 .pNext {nullptr},
                 .srcAccessMask {vk::AccessFlagBits::eShaderRead},
                 .dstAccessMask {vk::AccessFlagBits::eColorAttachmentWrite},
-                .oldLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+                .oldLayout {vk::ImageLayout::eGeneral},
                 .newLayout {vk::ImageLayout::eColorAttachmentOptimal},
                 .srcQueueFamilyIndex {graphicsQueueIndex},
                 .dstQueueFamilyIndex {graphicsQueueIndex},
@@ -762,7 +762,7 @@ namespace game
                 .srcAccessMask {vk::AccessFlagBits::eColorAttachmentWrite},
                 .dstAccessMask {vk::AccessFlagBits::eShaderRead},
                 .oldLayout {vk::ImageLayout::eColorAttachmentOptimal},
-                .newLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+                .newLayout {vk::ImageLayout::eGeneral},
                 .srcQueueFamilyIndex {graphicsQueueIndex},
                 .dstQueueFamilyIndex {graphicsQueueIndex},
                 .image {*this->global_descriptors.visible_voxel_image},
@@ -848,7 +848,7 @@ namespace game
                 .srcAccessMask {vk::AccessFlagBits::eColorAttachmentWrite},
                 .dstAccessMask {vk::AccessFlagBits::eShaderRead},
                 .oldLayout {vk::ImageLayout::eColorAttachmentOptimal},
-                .newLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+                .newLayout {vk::ImageLayout::eGeneral},
                 .srcQueueFamilyIndex {graphicsQueueIndex},
                 .dstQueueFamilyIndex {graphicsQueueIndex},
                 .image {*this->global_descriptors.face_id_image},
