@@ -235,8 +235,13 @@ compile_shader(lavender
     SOURCES
     src/shaders/triangle.vert
     src/shaders/triangle.frag
-    src/shaders/voxel_chunk.vert
-    src/shaders/voxel_chunk.frag
+    src/shaders/voxel_color_calculation.comp
+    src/shaders/voxel_color_transfer.vert
+    src/shaders/voxel_color_transfer.frag
+    src/shaders/voxel_render.vert
+    src/shaders/voxel_render.frag
+    src/shaders/voxel_visibility_detection.vert
+    src/shaders/voxel_visibility_detection.frag
 )
 
 cmrc_add_resource_library(
@@ -245,8 +250,13 @@ cmrc_add_resource_library(
     NAMESPACE lav
     build/src/shaders/triangle.frag.bin
     build/src/shaders/triangle.vert.bin
-    build/src/shaders/voxel_chunk.frag.bin
-    build/src/shaders/voxel_chunk.vert.bin
+    build/src/shaders/voxel_color_calculation.comp.bin
+    build/src/shaders/voxel_color_transfer.vert.bin
+    build/src/shaders/voxel_color_transfer.frag.bin
+    build/src/shaders/voxel_render.vert.bin
+    build/src/shaders/voxel_render.frag.bin
+    build/src/shaders/voxel_visibility_detection.vert.bin
+    build/src/shaders/voxel_visibility_detection.frag.bin
 )
 
 target_link_libraries(lavender lav2)

@@ -1,2 +1,106 @@
+#version 460
 
+#include "types.glsl"
+#include "voxel_descriptors.glsl"
+#include "global_descriptor_set.glsl"
+
+struct PointLight {
+    vec3 position;
+    vec4 color_and_power;  // xyz = color, w = power
+    vec4 falloffs;         // x = constant, y = linear, z = quadratic, w = cubic
+};
+
+struct CalculatedLightPower {
+    vec3 diffuse_strength;
+    vec3 specular_strength;
+};
+
+CalculatedLightPower calculate_light_power(
+    vec3 camera_position,
+    vec3 voxel_position,
+    vec3 voxel_normal,
+    PointLight light,
+    float specular_power
+) {
+    vec3 to_light_vector = light.position - voxel_position;
+    float to_light_distance = length(to_light_vector);
+    to_light_vector /= to_light_distance;
+
+    vec3 view_vector = normalize(camera_position - voxel_position);
+    vec3 reflect_vector = 2.0 * dot(to_light_vector, voxel_normal) * voxel_normal - to_light_vector;
+
+    float attenuation = 1.0 / (
+        light.falloffs.x +
+        light.falloffs.y * to_light_distance +
+        light.falloffs.z * to_light_distance * to_light_distance +
+        light.falloffs.w * to_light_distance * to_light_distance * to_light_distance);
+
+    vec3 diffuse_strength = max(dot(voxel_normal, to_light_vector), 0.0) * light.color_and_power.rgb * light.color_and_power.w * attenuation;
+    vec3 specular_strength = pow(max(dot(reflect_vector, view_vector), 0.0), specular_power) * light.color_and_power.rgb * light.color_and_power.w * attenuation;
+
+    return CalculatedLightPower(diffuse_strength, specular_strength);
+}
+
+vec3 exp_strength_falloff(vec3 strengths)
+{
+    return 1.0 - exp2(-0.25 * strengths);
+}
+
+void main()
+{
+    const u32 global_invocation_index = gl_GlobalInvocationID.x;
+
+    if (global_invocation_index < in_number_of_visible_faces.number_of_visible_faces)
+    {
+        const u32 this_face_data = in_visible_face_data.data[global_invocation_index].data;
+        
+        const u32 brick_pointer = bitfieldExtract(this_face_data, 0, 20);
+        const u32 face_number   = bitfieldExtract(this_face_data, 20, 9);
+        const u32 normal        = bitfieldExtract(this_face_data, 29, 3);
+
+        const uvec3 brick_local_position = uvec3(
+            face_number % 8,
+            (face_number % 64) / 8,
+            face_number / 64
+        );
+
+        const u32 parent_chunk = bitfieldExtract(in_brick_parent_info.info[brick_pointer].data, 0, 16);
+        const u32 brick_parent_number = bitfieldExtract(in_brick_parent_info.info[brick_pointer].data, 23, 9);
+
+        const uvec3 brick_coordinate = uvec3(
+            brick_parent_number % 8,
+            (brick_parent_number % 64) / 8,
+            brick_parent_number / 64
+        );
+
+        const uvec3 chunk_local_position = brick_coordinate * 8 + brick_local_position;
+
+        const Voxel this_voxel = in_material_bricks.brick[brick_pointer]
+            .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
+
+        const VoxelMaterial this_material = in_voxel_materials.material[this_voxel.data];
+
+        // TODO: shouldn't be 0.5 the normal should be removed from this
+        const vec3 position_world = in_chunk_positions.positions[parent_chunk].xyz + vec3(0.5) + vec3(chunk_local_position);
+
+        CalculatedLightPower power = calculate_light_power(
+            in_global_info.camera_position.xyz,
+            position_world,
+            unpackNormalId(normal), 
+            PointLight(vec3(64.0 * sin(in_global_info.time_alive), 10.0, 64.0 * cos(in_global_info.time_alive)), vec4(1.0, 1.0, 1.0, 256.0), vec4(0.0, 1.0, 0.0, 0.0)),
+            1.0
+        );
+
+        vec3 realColor = clamp(
+            exp_strength_falloff(power.diffuse_strength) * this_material.diffuse_color.xyz +
+            exp_strength_falloff(power.specular_strength) * this_material.specular_color.xyz,
+            0.0,
+            1.0
+        );
+
+
+
+        in_visible_face_data.data[global_invocation_index].color = realColor;
+    }
+}
 // iterate over visible faces, calculate colors based on lights

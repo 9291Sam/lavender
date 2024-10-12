@@ -1,6 +1,8 @@
 #ifndef SRC_SHADERS_INCLUDE_VOXEL_DESCRIPTORS_GLSL
 #define SRC_SHADERS_INCLUDE_VOXEL_DESCRIPTORS_GLSL
 
+#include "types.glsl"
+
 struct MaybeBrickPointer
 {
     u32 pointer;
@@ -66,8 +68,7 @@ struct VisibilityBrick
 
 struct VisibleFaceData
 {
-    u32 brick;
-    u32 brick_local_location_and_dir;
+    u32 data;
     vec3 color;
 };
 
@@ -96,7 +97,7 @@ layout(set = 1, binding = 4) readonly buffer OpacityBrickBuffer
     OpacityBrick brick[];
 } in_opacity_bricks;
 
-layout(set = 1, binding = 5) readonly buffer VisibilityBrickBuffer
+layout(set = 1, binding = 5) buffer VisibilityBrickBuffer
 {
     VisibilityBrick brick[];
 } in_visibility_bricks;
@@ -111,12 +112,12 @@ layout(set = 1, binding = 7) readonly buffer VoxelMaterialBuffer
     VoxelMaterial material[];
 } in_voxel_materials;
 
-layout(set = 1, binding = 8) readonly buffer NuumberOfVisibleVoxelFacesBuffer
+layout(set = 1, binding = 8) buffer NuumberOfVisibleVoxelFacesBuffer
 {
     u32 number_of_visible_faces;
-} in_number_of_visibile_faces;
+} in_number_of_visible_faces;
 
-layout(set = 1, binding = 9) readonly buffer VisibleFaceDataBuffer
+layout(set = 1, binding = 9)  buffer VisibleFaceDataBuffer
 {
     VisibleFaceData data[];
 } in_visible_face_data;

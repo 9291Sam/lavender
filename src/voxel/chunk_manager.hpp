@@ -212,8 +212,7 @@ namespace voxel
 
         struct VisibleFaceData
         {
-            u32       corresponding_brick;
-            u32       location_within_brick_and_dir;
+            u32       data;
             glm::vec3 calculated_color;
         };
         gfx::vulkan::Buffer<VisibleVoxelFaces> number_of_visible_faces;

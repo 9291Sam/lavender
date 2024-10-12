@@ -1,5 +1,4 @@
 #version 460
-#extension GL_EXT_nonuniform_qualifier : require
 
 #include "global_descriptor_set.glsl"
 #include "types.glsl"
@@ -84,7 +83,7 @@ void main()
 
     gl_Position = in_mvp_matrices.matrix[in_push_constants.matrix_id] * vec4(face_point_world, 1.0);
 
-    const uvec3 chunk_local_position = uvec3(floor(point_within_chunk + -0.5 * normal));
+    const uvec3 chunk_local_position = uvec3(floor(point_within_chunk + -0.5 * unpackNormalId(in_normal_id)));
     
     const uvec3 brick_coordinate = chunk_local_position / 8;
     const uvec3 brick_local_position = chunk_local_position % 8;
@@ -92,9 +91,12 @@ void main()
     const MaybeBrickPointer this_brick_pointer = in_brick_maps.map[in_chunk_id]
         .data[brick_coordinate.x][brick_coordinate.y][brick_coordinate.z];
 
-    const u32 brick_local_number = brick_local_position.x + brick_local_position.y * 8 + brick_local_position * 8 * 8;
+    const u32 brick_local_number = 
+        brick_local_position.x +
+        brick_local_position.y * 8 +
+        brick_local_position.z * 8 * 8;
 
-    bitfieldInsert(out_face_data, this_brick_pointer, 0, 20);
+    bitfieldInsert(out_face_data, this_brick_pointer.pointer, 0, 20);
     bitfieldInsert(out_face_data, brick_local_number, 20, 9);
-    bitfieldInsert(out_face_data, normal_id, 29, 3);
+    bitfieldInsert(out_face_data, in_normal_id, 29, 3);
 }

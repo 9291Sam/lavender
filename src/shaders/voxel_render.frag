@@ -1,5 +1,7 @@
 #version 460
 
+#include "types.glsl"
+
 layout(location = 0) in flat u32 in_face_data;
 
 layout(location = 0) out u32 out_face_data;

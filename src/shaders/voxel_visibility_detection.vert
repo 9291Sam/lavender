@@ -1,3 +1,12 @@
+#version 460
 
+void main()
+{
+	const vec4 positions[3] = vec4[3](
+		vec4(-1.0, -1.0, 0.0, 1.0),
+        vec4(-1.0, 3.0, 0.0, 1.0),
+        vec4(3.0, -1.0, 0.0, 1.0)
+	);
 
-// read in brick stuff, mark it as visible if first make a new id and leave it
+    gl_Position = positions[gl_VertexIndex];
+}
