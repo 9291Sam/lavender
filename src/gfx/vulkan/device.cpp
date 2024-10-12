@@ -197,8 +197,9 @@ namespace gfx::vulkan
         };
 
         vk::PhysicalDeviceFeatures features {};
-        features.shaderInt16       = vk::True;
-        features.multiDrawIndirect = vk::True;
+        features.shaderInt16              = vk::True;
+        features.multiDrawIndirect        = vk::True;
+        features.fragmentStoresAndAtomics = vk::True;
 
         vk::PhysicalDeviceVulkan12Features features12 {};
         features12.sType = vk::StructureType::ePhysicalDeviceVulkan12Features;

@@ -179,6 +179,29 @@ namespace gfx::vulkan
                 }
             });
 
+        this->compute_pipeline_cache.lock(
+            [](std::unordered_map<
+                gfx::vulkan::CacheableComputePipelineCreateInfo,
+                std::shared_ptr<vk::UniquePipeline>>& cache)
+            {
+                std::vector<gfx::vulkan::CacheableComputePipelineCreateInfo>
+                    createInfosToRemove {};
+
+                for (const auto& [info, ptr] : cache)
+                {
+                    if (ptr.use_count() == 1)
+                    {
+                        createInfosToRemove.push_back(info);
+                    }
+                }
+
+                for (const gfx::vulkan::CacheableComputePipelineCreateInfo& i :
+                     createInfosToRemove)
+                {
+                    cache.erase(i);
+                }
+            });
+
         this->shader_module_cache.lock(
             [](std::unordered_map<
                 std::string,
@@ -310,6 +333,69 @@ namespace gfx::vulkan
                     cache[info] = sharedLayout;
 
                     return sharedLayout;
+                }
+            });
+    }
+
+    std::shared_ptr<vk::UniquePipeline>
+    Allocator::cachePipeline(CacheableComputePipelineCreateInfo info) const
+    {
+        return this->compute_pipeline_cache.lock(
+            [&](auto& cache)
+            {
+                if (cache.contains(info))
+                {
+                    return cache.at(info);
+                }
+                else
+                {
+                    const vk::PipelineShaderStageCreateInfo shaderCreateInfo {
+                        .sType {
+                            vk::StructureType::ePipelineShaderStageCreateInfo},
+                        .pNext {nullptr},
+                        .flags {},
+                        .stage {vk::ShaderStageFlagBits::eCompute},
+                        .module {**info.shader},
+                        .pName {info.entry_point.c_str()},
+                        .pSpecializationInfo {},
+                    };
+
+                    const vk::ComputePipelineCreateInfo
+                        computePipelineCreateInfo {
+                            .sType {
+                                vk::StructureType::eComputePipelineCreateInfo},
+                            .pNext {nullptr},
+                            .flags {},
+                            .stage {shaderCreateInfo},
+                            .layout {**info.layout},
+                            .basePipelineHandle {},
+                            .basePipelineIndex {},
+                        };
+
+                    auto [result, pipeline] =
+                        this->device.createComputePipeline(
+                            nullptr, computePipelineCreateInfo);
+
+                    util::assertFatal(
+                        result == vk::Result::eSuccess,
+                        "Graphics Pipeline Construction Failed! | {}",
+                        vk::to_string(result));
+
+                    std::shared_ptr<vk::UniquePipeline> // NOLINT
+                        sharedPipeline {
+                            new vk::UniquePipeline {std::move(pipeline)}};
+
+                    this->pipeline_layout_lookup.lock(
+                        [&](std::unordered_map<
+                            vk::Pipeline,
+                            std::weak_ptr<vk::UniquePipelineLayout>>& lookup)
+                        {
+                            lookup[**sharedPipeline] = info.layout;
+                        });
+
+                    cache[info] = sharedPipeline;
+
+                    return sharedPipeline;
                 }
             });
     }

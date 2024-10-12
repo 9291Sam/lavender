@@ -63,6 +63,16 @@ namespace gfx::vulkan
         bool
         operator== (const CacheableGraphicsPipelineCreateInfo&) const = default;
     };
+
+    struct CacheableComputePipelineCreateInfo
+    {
+        std::string                               entry_point;
+        std::shared_ptr<vk::UniqueShaderModule>   shader;
+        std::shared_ptr<vk::UniquePipelineLayout> layout;
+
+        bool
+        operator== (const CacheableComputePipelineCreateInfo&) const = default;
+    };
 } // namespace gfx::vulkan
 
 template<>
@@ -179,6 +189,26 @@ struct std::hash<gfx::vulkan::CacheableGraphicsPipelineCreateInfo>
     }
 };
 
+template<>
+struct std::hash<gfx::vulkan::CacheableComputePipelineCreateInfo>
+{
+    std::size_t operator() (
+        const gfx::vulkan::CacheableComputePipelineCreateInfo& i) const noexcept
+    {
+        std::size_t result = 5783547893548971;
+
+        util::hashCombine(result, std::hash<std::string> {}(i.entry_point));
+
+        util::hashCombine(
+            result, static_cast<std::size_t>(std::bit_cast<u64>(**i.layout)));
+
+        util::hashCombine(
+            result, static_cast<std::size_t>(std::bit_cast<u64>(**i.shader)));
+
+        return result;
+    }
+};
+
 namespace gfx::vulkan
 {
     class Instance;
@@ -213,6 +243,8 @@ namespace gfx::vulkan
             cachePipelineLayout(CacheablePipelineLayoutCreateInfo) const;
         [[nodiscard]] std::shared_ptr<vk::UniquePipeline>
             cachePipeline(CacheableGraphicsPipelineCreateInfo) const;
+        [[nodiscard]] std::shared_ptr<vk::UniquePipeline>
+            cachePipeline(CacheableComputePipelineCreateInfo) const;
         [[nodiscard]] std::shared_ptr<vk::UniqueShaderModule>
             cacheShaderModule(std::span<const std::byte>) const;
         [[nodiscard]] std::shared_ptr<vk::UniquePipelineLayout>
@@ -241,6 +273,11 @@ namespace gfx::vulkan
             CacheableGraphicsPipelineCreateInfo,
             std::shared_ptr<vk::UniquePipeline>>>
             graphics_pipeline_cache;
+
+        util::Mutex<std::unordered_map<
+            CacheableComputePipelineCreateInfo,
+            std::shared_ptr<vk::UniquePipeline>>>
+            compute_pipeline_cache;
 
         util::Mutex<std::unordered_map<
             std::string,

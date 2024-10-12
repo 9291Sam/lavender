@@ -224,20 +224,20 @@ namespace voxel
                       .pImmutableSamplers {nullptr},
                   },
               }}})}
-        , chunk_renderer_pipeline {this->renderer->getAllocator()->cachePipeline(
+        , voxel_render_pipeline {this->renderer->getAllocator()->cachePipeline(
               gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
                   .stages {{
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eVertex},
-                          .shader {this->renderer->getAllocator()
-                                       ->cacheShaderModule(shaders::load(
-                                           "voxel_chunk.vert"))},
+                          .shader {
+                              this->renderer->getAllocator()->cacheShaderModule(
+                                  shaders::load("voxel_render.vert"))},
                           .entry_point {"main"}},
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eFragment},
-                          .shader {this->renderer->getAllocator()
-                                       ->cacheShaderModule(shaders::load(
-                                           "voxel_chunk.frag"))},
+                          .shader {
+                              this->renderer->getAllocator()->cacheShaderModule(
+                                  shaders::load("voxel_render.frag"))},
                           .entry_point {"main"}},
                   }},
                   .vertex_attributes {{
@@ -284,6 +284,92 @@ namespace voxel
                               .offset {0},
                               .size {sizeof(u32)},
                           }}})},
+              })}
+        , voxel_visibility_pipeline {this->renderer->getAllocator()->cachePipeline(
+              gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
+                  .stages {{
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eVertex},
+                          .shader {
+                              this->renderer->getAllocator()->cacheShaderModule(
+                                  shaders::load("voxel_visibility_detection."
+                                                "vert"))},
+                          .entry_point {"main"}},
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eFragment},
+                          .shader {
+                              this->renderer->getAllocator()->cacheShaderModule(
+                                  shaders::load("voxel_visibility_detection."
+                                                "frag"))},
+                          .entry_point {"main"}},
+                  }},
+                  .vertex_attributes {},
+                  .vertex_bindings {},
+                  .topology {vk::PrimitiveTopology::eTriangleList},
+                  .discard_enable {false},
+                  .polygon_mode {vk::PolygonMode::eFill},
+                  .cull_mode {vk::CullModeFlagBits::eNone},
+                  .front_face {vk::FrontFace::eCounterClockwise},
+                  .depth_test_enable {false},
+                  .depth_write_enable {false},
+                  .depth_compare_op {vk::CompareOp::eNever},
+                  .color_format {vk::Format::eR32Uint},
+                  .depth_format {},
+                  .layout {this->renderer->getAllocator()->cachePipelineLayout(
+                      gfx::vulkan::CacheablePipelineLayoutCreateInfo {
+                          .descriptors {
+                              {game->getGlobalInfoDescriptorSetLayout(),
+                               this->descriptor_set_layout}},
+                          .push_constants {}})},
+              })}
+        , voxel_color_calculation_pipeline {this->renderer->getAllocator()->cachePipeline(
+              gfx::vulkan::CacheableComputePipelineCreateInfo {
+                  .entry_point {"main"},
+                  .shader {this->renderer->getAllocator()->cacheShaderModule(
+                      shaders::load("voxel_color_calculation.comp"))},
+                  .layout {this->renderer->getAllocator()->cachePipelineLayout(
+                      gfx::vulkan::CacheablePipelineLayoutCreateInfo {
+                          .descriptors {
+                              {game->getGlobalInfoDescriptorSetLayout(),
+                               this->descriptor_set_layout}},
+                          .push_constants {}})},
+              })}
+        , voxel_color_transfer_pipeline {this->renderer->getAllocator()->cachePipeline(
+              gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
+                  .stages {{
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eVertex},
+                          .shader {
+                              this->renderer->getAllocator()->cacheShaderModule(
+                                  shaders::load("voxel_color_transfer."
+                                                "vert"))},
+                          .entry_point {"main"}},
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eFragment},
+                          .shader {
+                              this->renderer->getAllocator()->cacheShaderModule(
+                                  shaders::load("voxel_color_transfer."
+                                                "frag"))},
+                          .entry_point {"main"}},
+                  }},
+                  .vertex_attributes {},
+                  .vertex_bindings {},
+                  .topology {vk::PrimitiveTopology::eTriangleList},
+                  .discard_enable {false},
+                  .polygon_mode {vk::PolygonMode::eFill},
+                  .cull_mode {vk::CullModeFlagBits::eNone},
+                  .front_face {vk::FrontFace::eCounterClockwise},
+                  .depth_test_enable {false},
+                  .depth_write_enable {false},
+                  .depth_compare_op {vk::CompareOp::eNever},
+                  .color_format {vk::Format::eR32Uint},
+                  .depth_format {},
+                  .layout {this->renderer->getAllocator()->cachePipelineLayout(
+                      gfx::vulkan::CacheablePipelineLayoutCreateInfo {
+                          .descriptors {
+                              {game->getGlobalInfoDescriptorSetLayout(),
+                               this->descriptor_set_layout}},
+                          .push_constants {}})},
               })}
         , chunk_descriptor_set {this->renderer->getAllocator()
                                     ->allocateDescriptorSet(
@@ -555,14 +641,14 @@ namespace voxel
             game::FrameGenerator::RecordObject {
                 .transform {game::Transform {}},
                 .render_pass {
-                    game::FrameGenerator::DynamicRenderingPass::SimpleColor},
-                .pipeline {this->chunk_renderer_pipeline},
+                    game::FrameGenerator::DynamicRenderingPass::VoxelRenderer},
+                .pipeline {this->voxel_render_pipeline},
                 .descriptors {
                     {this->global_descriptor_set,
                      this->chunk_descriptor_set,
                      nullptr,
                      nullptr}},
-                .record_func {[this, indirectCommands, indirectPayload](
+                .record_func {[this, s = indirectCommands.size()](
                                   vk::CommandBuffer  commandBuffer,
                                   vk::PipelineLayout layout,
                                   u32                id)
@@ -580,11 +666,64 @@ namespace voxel
                                   commandBuffer.drawIndirect(
                                       *this->indirect_commands,
                                       0,
-                                      static_cast<u32>(indirectCommands.size()),
+                                      static_cast<u32>(s),
                                       16);
                               }}};
 
-        return {chunkDraw, update};
+        game::FrameGenerator::RecordObject visibilityDraw =
+            game::FrameGenerator::RecordObject {
+                .transform {game::Transform {}},
+                .render_pass {game::FrameGenerator::DynamicRenderingPass::
+                                  VoxelVisibilityDetection},
+                .pipeline {this->voxel_visibility_pipeline},
+                .descriptors {
+                    {this->global_descriptor_set,
+                     this->chunk_descriptor_set,
+                     nullptr,
+                     nullptr}},
+                .record_func {
+                    [](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                    {
+                        commandBuffer.draw(3, 1, 0, 0);
+                    }}};
+
+        game::FrameGenerator::RecordObject colorCalculation =
+            game::FrameGenerator::RecordObject {
+                .transform {game::Transform {}},
+                .render_pass {game::FrameGenerator::DynamicRenderingPass::
+                                  VoxelColorCalculation},
+                .pipeline {this->voxel_color_calculation_pipeline},
+                .descriptors {
+                    {this->global_descriptor_set,
+                     this->chunk_descriptor_set,
+                     nullptr,
+                     nullptr}},
+                .record_func {
+                    [](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                    {
+                        // TODO: do indirect things
+                        commandBuffer.dispatch(256, 1, 1);
+                    }}};
+
+        game::FrameGenerator::RecordObject colorTransfer =
+            game::FrameGenerator::RecordObject {
+                .transform {game::Transform {}},
+                .render_pass {game::FrameGenerator::DynamicRenderingPass::
+                                  VoxelColorTransfer},
+                .pipeline {this->voxel_color_transfer_pipeline},
+                .descriptors {
+                    {this->global_descriptor_set,
+                     this->chunk_descriptor_set,
+                     nullptr,
+                     nullptr}},
+                .record_func {
+                    [](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                    {
+                        commandBuffer.draw(3, 1, 0, 0);
+                    }}};
+
+        return {
+            update, chunkDraw, visibilityDraw, colorCalculation, colorTransfer};
     }
 
     void ChunkManager::writeVoxel(glm::i32vec3 p, Voxel v)

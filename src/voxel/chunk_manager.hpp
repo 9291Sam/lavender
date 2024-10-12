@@ -219,7 +219,11 @@ namespace voxel
         gfx::vulkan::Buffer<VisibleFaceData>   visible_face_data;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> descriptor_set_layout;
-        std::shared_ptr<vk::UniquePipeline>            chunk_renderer_pipeline;
+
+        std::shared_ptr<vk::UniquePipeline> voxel_render_pipeline;
+        std::shared_ptr<vk::UniquePipeline> voxel_visibility_pipeline;
+        std::shared_ptr<vk::UniquePipeline> voxel_color_calculation_pipeline;
+        std::shared_ptr<vk::UniquePipeline> voxel_color_transfer_pipeline;
 
         vk::DescriptorSet chunk_descriptor_set;
         vk::DescriptorSet global_descriptor_set;
