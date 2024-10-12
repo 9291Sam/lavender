@@ -720,27 +720,25 @@ namespace voxel
                         commandBuffer.dispatch(32, 1, 1);
                     }}};
 
-        // game::FrameGenerator::RecordObject colorTransfer =
-        //     game::FrameGenerator::RecordObject {
-        //         .transform {},
-        //         .render_pass {game::FrameGenerator::DynamicRenderingPass::
-        //                           VoxelColorTransfer},
-        //         .pipeline {this->voxel_color_transfer_pipeline},
-        //         .descriptors {
-        //             {this->global_descriptor_set,
-        //              this->chunk_descriptor_set,
-        //              nullptr,
-        //              nullptr}},
-        //         .record_func {
-        //             [](vk::CommandBuffer commandBuffer, vk::PipelineLayout,
-        //             u32)
-        //             {
-        //                 commandBuffer.draw(3, 1, 0, 0);
-        //             }}};
+        game::FrameGenerator::RecordObject colorTransfer =
+            game::FrameGenerator::RecordObject {
+                .transform {},
+                .render_pass {game::FrameGenerator::DynamicRenderingPass::
+                                  VoxelColorTransfer},
+                .pipeline {this->voxel_color_transfer_pipeline},
+                .descriptors {
+                    {this->global_descriptor_set,
+                     this->chunk_descriptor_set,
+                     nullptr,
+                     nullptr}},
+                .record_func {
+                    [](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                    {
+                        commandBuffer.draw(3, 1, 0, 0);
+                    }}};
 
         return {
-            update, chunkDraw, visibilityDraw, colorCalculation,
-            /*colorTransfer*/};
+            update, chunkDraw, visibilityDraw, colorCalculation, colorTransfer};
     }
 
     void ChunkManager::writeVoxel(glm::i32vec3 p, Voxel v)

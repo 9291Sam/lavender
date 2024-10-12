@@ -53,7 +53,7 @@ void main()
 
     u32 face_id = ~0u;
 
-    for (int i = 0; i < maxelem; ++i)
+    for (int i = 0; i < min(maxelem, 1024); ++i)
     {
         if (in_visible_face_data.data[i].data == in_face_brick_data)
         {
@@ -61,6 +61,11 @@ void main()
 
             break;
         }
+    }
+
+    if (face_id == ~0u)
+    {
+        face_id = 1023;
     }
 
     out_face_id = face_id;

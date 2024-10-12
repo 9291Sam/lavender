@@ -467,7 +467,9 @@ namespace game
                     }
 
                     commandBuffer.bindDescriptorSets(
-                        vk::PipelineBindPoint::eGraphics,
+                        this->game->getRenderer()
+                            ->getAllocator()
+                            ->lookupPipelineBindPoint(**o.pipeline),
                         **this->game->getRenderer()
                               ->getAllocator()
                               ->lookupPipelineLayout(**o.pipeline),
@@ -919,18 +921,6 @@ namespace game
                 },
             };
 
-            const vk::RenderingAttachmentInfo depthAttachmentInfo {
-                .sType {vk::StructureType::eRenderingAttachmentInfo},
-                .pNext {nullptr},
-                .imageView {this->global_descriptors.depth_buffer.getView()},
-                .imageLayout {vk::ImageLayout::eDepthAttachmentOptimal},
-                .resolveMode {vk::ResolveModeFlagBits::eNone},
-                .resolveImageView {nullptr},
-                .resolveImageLayout {},
-                .loadOp {vk::AttachmentLoadOp::eLoad},
-                .storeOp {vk::AttachmentStoreOp::eStore},
-                .clearValue {}};
-
             const vk::RenderingInfo voxelColorTransferRenderingInfo {
                 .sType {vk::StructureType::eRenderingInfo},
                 .pNext {nullptr},
@@ -940,7 +930,7 @@ namespace game
                 .viewMask {0},
                 .colorAttachmentCount {1},
                 .pColorAttachments {&colorAttachmentInfo},
-                .pDepthAttachment {&depthAttachmentInfo},
+                .pDepthAttachment {nullptr},
                 .pStencilAttachment {nullptr},
             };
 
