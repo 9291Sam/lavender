@@ -135,16 +135,18 @@ namespace gfx::vulkan
                 }
             });
 
-        this->pipeline_layout_lookup.lock(
+        this->pipeline_layout_and_bind_lookup.lock(
             [](std::unordered_map<
                 vk::Pipeline,
-                std::weak_ptr<vk::UniquePipelineLayout>>& cache)
+                std::pair<
+                    std::weak_ptr<vk::UniquePipelineLayout>,
+                    vk::PipelineBindPoint>>& cache)
             {
                 std::vector<vk::Pipeline> pipelinesToRemove {};
 
                 for (const auto& [pipeline, ptr] : cache)
                 {
-                    if (ptr.expired())
+                    if (ptr.first.expired())
                     {
                         pipelinesToRemove.push_back(pipeline);
                     }
@@ -385,12 +387,15 @@ namespace gfx::vulkan
                         sharedPipeline {
                             new vk::UniquePipeline {std::move(pipeline)}};
 
-                    this->pipeline_layout_lookup.lock(
+                    this->pipeline_layout_and_bind_lookup.lock(
                         [&](std::unordered_map<
                             vk::Pipeline,
-                            std::weak_ptr<vk::UniquePipelineLayout>>& lookup)
+                            std::pair<
+                                std::weak_ptr<vk::UniquePipelineLayout>,
+                                vk::PipelineBindPoint>>& lookup)
                         {
-                            lookup[**sharedPipeline] = info.layout;
+                            lookup[**sharedPipeline] = {
+                                info.layout, vk::PipelineBindPoint::eCompute};
                         });
 
                     cache[info] = sharedPipeline;
@@ -529,7 +534,7 @@ namespace gfx::vulkan
 
                     const vk::PipelineColorBlendAttachmentState
                         pipelineColorBlendAttachmentState {
-                            .blendEnable {vk::True},
+                            .blendEnable {info.blend_enable},
                             .srcColorBlendFactor {vk::BlendFactor::eSrcAlpha},
                             .dstColorBlendFactor {
                                 vk::BlendFactor::eOneMinusSrcAlpha},
@@ -624,12 +629,15 @@ namespace gfx::vulkan
                         sharedPipeline {
                             new vk::UniquePipeline {std::move(pipeline)}};
 
-                    this->pipeline_layout_lookup.lock(
+                    this->pipeline_layout_and_bind_lookup.lock(
                         [&](std::unordered_map<
                             vk::Pipeline,
-                            std::weak_ptr<vk::UniquePipelineLayout>>& lookup)
+                            std::pair<
+                                std::weak_ptr<vk::UniquePipelineLayout>,
+                                vk::PipelineBindPoint>>& lookup)
                         {
-                            lookup[**sharedPipeline] = info.layout;
+                            lookup[**sharedPipeline] = {
+                                info.layout, vk::PipelineBindPoint::eGraphics};
                         });
 
                     cache[info] = sharedPipeline;
@@ -694,18 +702,35 @@ namespace gfx::vulkan
     std::shared_ptr<vk::UniquePipelineLayout>
     Allocator::lookupPipelineLayout(vk::Pipeline pipeline) const
     {
-        return this->pipeline_layout_lookup.lock(
+        return this->pipeline_layout_and_bind_lookup.lock(
             [&](std::unordered_map<
                 vk::Pipeline,
-                std::weak_ptr<vk::UniquePipelineLayout>>& cache)
+                std::pair<
+                    std::weak_ptr<vk::UniquePipelineLayout>,
+                    vk::PipelineBindPoint>>& cache)
             {
-                std::shared_ptr shouldBeLayout = cache.at(pipeline).lock();
+                std::shared_ptr shouldBeLayout =
+                    cache.at(pipeline).first.lock();
 
                 util::assertFatal(
                     shouldBeLayout != nullptr,
                     "Tried to lookup pipeline layout of expired pipeline");
 
                 return shouldBeLayout;
+            });
+    }
+
+    vk::PipelineBindPoint
+    Allocator::lookupPipelineBindPoint(vk::Pipeline pipeline) const
+    {
+        return this->pipeline_layout_and_bind_lookup.lock(
+            [&](std::unordered_map<
+                vk::Pipeline,
+                std::pair<
+                    std::weak_ptr<vk::UniquePipelineLayout>,
+                    vk::PipelineBindPoint>>& cache)
+            {
+                return cache.at(pipeline).second;
             });
     }
 

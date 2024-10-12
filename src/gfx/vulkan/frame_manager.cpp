@@ -8,6 +8,11 @@
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
+namespace voxel
+{
+    extern u32* foobar;
+}
+
 namespace gfx::vulkan
 {
     Frame::Frame(const Device& device_, vk::SwapchainKHR swapchain_)
@@ -140,6 +145,8 @@ namespace gfx::vulkan
                     std::ignore = this->device->getDevice().waitForFences(
                         *previousFrameFence, vk::True, TimeoutNs);
                 }
+
+                util::logTrace("{}", *voxel::foobar);
 
                 const vk::PresentInfoKHR presentInfo {
                     .sType {vk::StructureType::ePresentInfoKHR},

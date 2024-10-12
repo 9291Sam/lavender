@@ -58,6 +58,7 @@ namespace gfx::vulkan
         vk::CompareOp                                       depth_compare_op;
         vk::Format                                          color_format;
         vk::Format                                          depth_format;
+        bool                                                blend_enable;
         std::shared_ptr<vk::UniquePipelineLayout>           layout;
 
         bool
@@ -182,6 +183,7 @@ struct std::hash<gfx::vulkan::CacheableGraphicsPipelineCreateInfo>
             result, std::hash<vk::CompareOp> {}(i.depth_compare_op));
         util::hashCombine(result, std::hash<vk::Format> {}(i.color_format));
         util::hashCombine(result, std::hash<vk::Format> {}(i.depth_format));
+        util::hashCombine(result, std::hash<bool> {}(i.blend_enable));
         util::hashCombine(
             result, static_cast<std::size_t>(std::bit_cast<u64>(**i.layout)));
 
@@ -247,8 +249,11 @@ namespace gfx::vulkan
             cachePipeline(CacheableComputePipelineCreateInfo) const;
         [[nodiscard]] std::shared_ptr<vk::UniqueShaderModule>
             cacheShaderModule(std::span<const std::byte>) const;
+
         [[nodiscard]] std::shared_ptr<vk::UniquePipelineLayout>
             lookupPipelineLayout(vk::Pipeline) const;
+        [[nodiscard]] vk::PipelineBindPoint
+            lookupPipelineBindPoint(vk::Pipeline) const;
 
     private:
         vk::Device               device;
@@ -266,8 +271,10 @@ namespace gfx::vulkan
 
         util::Mutex<std::unordered_map<
             vk::Pipeline,
-            std::weak_ptr<vk::UniquePipelineLayout>>>
-            pipeline_layout_lookup;
+            std::pair<
+                std::weak_ptr<vk::UniquePipelineLayout>,
+                vk::PipelineBindPoint>>>
+            pipeline_layout_and_bind_lookup;
 
         util::Mutex<std::unordered_map<
             CacheableGraphicsPipelineCreateInfo,

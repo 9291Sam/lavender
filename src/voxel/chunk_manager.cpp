@@ -39,6 +39,8 @@
 
 namespace voxel
 {
+    u32* foobar = nullptr;
+
     static constexpr u32 MaxChunks          = 65536;
     static constexpr u32 DirectionsPerChunk = 6;
     static constexpr u32 MaxBricks          = 1048576;
@@ -274,6 +276,7 @@ namespace voxel
                   .depth_compare_op {vk::CompareOp::eLess},
                   .color_format {vk::Format::eR32Uint},
                   .depth_format {gfx::Renderer::DepthFormat},
+                  .blend_enable {false},
                   .layout {this->renderer->getAllocator()->cachePipelineLayout(
                       gfx::vulkan::CacheablePipelineLayoutCreateInfo {
                           .descriptors {
@@ -315,6 +318,7 @@ namespace voxel
                   .depth_compare_op {vk::CompareOp::eNever},
                   .color_format {vk::Format::eR32Uint},
                   .depth_format {},
+                  .blend_enable {false},
                   .layout {this->renderer->getAllocator()->cachePipelineLayout(
                       gfx::vulkan::CacheablePipelineLayoutCreateInfo {
                           .descriptors {
@@ -362,8 +366,9 @@ namespace voxel
                   .depth_test_enable {false},
                   .depth_write_enable {false},
                   .depth_compare_op {vk::CompareOp::eNever},
-                  .color_format {vk::Format::eR32Uint},
+                  .color_format {gfx::Renderer::ColorFormat.format},
                   .depth_format {},
+                  .blend_enable {false},
                   .layout {this->renderer->getAllocator()->cachePipelineLayout(
                       gfx::vulkan::CacheablePipelineLayoutCreateInfo {
                           .descriptors {
@@ -612,17 +617,23 @@ namespace voxel
                         vk::PipelineLayout,
                         u32)
                     {
-                        commandBuffer.updateBuffer(
-                            *this->indirect_commands,
-                            0,
-                            std::span {indirectCommands}.size_bytes(),
-                            indirectCommands.data());
+                        if (!indirectCommands.empty())
+                        {
+                            commandBuffer.updateBuffer(
+                                *this->indirect_commands,
+                                0,
+                                std::span {indirectCommands}.size_bytes(),
+                                indirectCommands.data());
+                        }
 
-                        commandBuffer.updateBuffer(
-                            *this->indirect_payload,
-                            0,
-                            std::span {indirectPayload}.size_bytes(),
-                            indirectPayload.data());
+                        if (!indirectPayload.empty())
+                        {
+                            commandBuffer.updateBuffer(
+                                *this->indirect_payload,
+                                0,
+                                std::span {indirectPayload}.size_bytes(),
+                                indirectPayload.data());
+                        }
 
                         commandBuffer.fillBuffer(
                             *this->visibility_bricks, 0, vk::WholeSize, 0);
@@ -670,46 +681,48 @@ namespace voxel
                                       16);
                               }}};
 
-        // game::FrameGenerator::RecordObject visibilityDraw =
-        //     game::FrameGenerator::RecordObject {
-        //         .transform {game::Transform {}},
-        //         .render_pass {game::FrameGenerator::DynamicRenderingPass::
-        //                           VoxelVisibilityDetection},
-        //         .pipeline {this->voxel_visibility_pipeline},
-        //         .descriptors {
-        //             {this->global_descriptor_set,
-        //              this->chunk_descriptor_set,
-        //              nullptr,
-        //              nullptr}},
-        //         .record_func {
-        //             [](vk::CommandBuffer commandBuffer, vk::PipelineLayout,
-        //             u32)
-        //             {
-        //                 commandBuffer.draw(3, 1, 0, 0);
-        //             }}};
+        foobar = &this->number_of_visible_faces.getDataNonCoherent()
+                      .data()
+                      ->number_of_visible_faces;
 
-        // game::FrameGenerator::RecordObject colorCalculation =
-        //     game::FrameGenerator::RecordObject {
-        //         .transform {game::Transform {}},
-        //         .render_pass {game::FrameGenerator::DynamicRenderingPass::
-        //                           VoxelColorCalculation},
-        //         .pipeline {this->voxel_color_calculation_pipeline},
-        //         .descriptors {
-        //             {this->global_descriptor_set,
-        //              this->chunk_descriptor_set,
-        //              nullptr,
-        //              nullptr}},
-        //         .record_func {
-        //             [](vk::CommandBuffer commandBuffer, vk::PipelineLayout,
-        //             u32)
-        //             {
-        //                 // TODO: do indirect things
-        //                 commandBuffer.dispatch(256, 1, 1);
-        //             }}};
+        game::FrameGenerator::RecordObject visibilityDraw =
+            game::FrameGenerator::RecordObject {
+                .transform {game::Transform {}},
+                .render_pass {game::FrameGenerator::DynamicRenderingPass::
+                                  VoxelVisibilityDetection},
+                .pipeline {this->voxel_visibility_pipeline},
+                .descriptors {
+                    {this->global_descriptor_set,
+                     this->chunk_descriptor_set,
+                     nullptr,
+                     nullptr}},
+                .record_func {
+                    [](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                    {
+                        commandBuffer.draw(3, 1, 0, 0);
+                    }}};
+
+        game::FrameGenerator::RecordObject colorCalculation =
+            game::FrameGenerator::RecordObject {
+                .transform {},
+                .render_pass {game::FrameGenerator::DynamicRenderingPass::
+                                  VoxelColorCalculation},
+                .pipeline {this->voxel_color_calculation_pipeline},
+                .descriptors {
+                    {this->global_descriptor_set,
+                     this->chunk_descriptor_set,
+                     nullptr,
+                     nullptr}},
+                .record_func {
+                    [](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                    {
+                        // TODO: do indirect things
+                        commandBuffer.dispatch(32, 1, 1);
+                    }}};
 
         // game::FrameGenerator::RecordObject colorTransfer =
         //     game::FrameGenerator::RecordObject {
-        //         .transform {game::Transform {}},
+        //         .transform {},
         //         .render_pass {game::FrameGenerator::DynamicRenderingPass::
         //                           VoxelColorTransfer},
         //         .pipeline {this->voxel_color_transfer_pipeline},
@@ -726,8 +739,8 @@ namespace voxel
         //             }}};
 
         return {
-            update,
-            chunkDraw}; // visibilityDraw, colorCalculation, colorTransfer};
+            update, chunkDraw, visibilityDraw, colorCalculation,
+            /*colorTransfer*/};
     }
 
     void ChunkManager::writeVoxel(glm::i32vec3 p, Voxel v)

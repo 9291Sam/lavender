@@ -443,10 +443,16 @@ namespace game
 
         auto updateBindings = [&](const RecordObject& o)
         {
+            util::assertFatal(o.pipeline != nullptr, "nullshared");
+            util::assertFatal(**o.pipeline != nullptr, "nullpipeline");
+
             if (currentlyBoundPipeline != **o.pipeline)
             {
                 commandBuffer.bindPipeline(
-                    vk::PipelineBindPoint::eGraphics, **o.pipeline);
+                    this->game->getRenderer()
+                        ->getAllocator()
+                        ->lookupPipelineBindPoint(**o.pipeline),
+                    **o.pipeline);
             }
 
             for (u32 i = 0; i < 4; ++i)
@@ -502,13 +508,27 @@ namespace game
 
         auto doComputePass = [&](DynamicRenderingPass p)
         {
-            for (auto& r : recordablesByPass[static_cast<std::size_t>(p)])
+            clearBindings();
+
+            for (const auto [o, matrixId] :
+                 recordablesByPass[static_cast<std::size_t>(p)])
             {
-                r.first->record_func(commandBuffer, nullptr, 0);
+                updateBindings(*o);
+
+                o->record_func(commandBuffer, nullptr, 0);
             }
         };
 
-        doComputePass(DynamicRenderingPass::PreFrameUpdate);
+        auto doTransferPass = [&](DynamicRenderingPass p)
+        {
+            for (const auto [o, matrixId] :
+                 recordablesByPass[static_cast<std::size_t>(p)])
+            {
+                o->record_func(commandBuffer, nullptr, 0);
+            }
+        };
+
+        doTransferPass(DynamicRenderingPass::PreFrameUpdate);
 
         if (this->has_resize_ocurred)
         {
@@ -786,7 +806,7 @@ namespace game
                 .pNext {nullptr},
                 .srcAccessMask {vk::AccessFlagBits::eShaderRead},
                 .dstAccessMask {vk::AccessFlagBits::eColorAttachmentWrite},
-                .oldLayout {vk::ImageLayout::eShaderReadOnlyOptimal},
+                .oldLayout {vk::ImageLayout::eGeneral},
                 .newLayout {vk::ImageLayout::eColorAttachmentOptimal},
                 .srcQueueFamilyIndex {graphicsQueueIndex},
                 .dstQueueFamilyIndex {graphicsQueueIndex},
@@ -862,7 +882,9 @@ namespace game
 
         // Color Calculation
         {
+            util::logTrace("before color cal");
             doComputePass(DynamicRenderingPass::VoxelColorCalculation);
+            util::logTrace("after color cal");
         }
 
         // barrier on storage writes before transfer

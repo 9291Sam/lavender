@@ -96,7 +96,11 @@ void main()
         brick_local_position.y * 8 +
         brick_local_position.z * 8 * 8;
 
-    bitfieldInsert(out_face_data, this_brick_pointer.pointer, 0, 20);
-    bitfieldInsert(out_face_data, brick_local_number, 20, 9);
-    bitfieldInsert(out_face_data, in_normal_id, 29, 3);
+    u32 res = 0;
+
+    res = bitfieldInsert(res, this_brick_pointer.pointer, 0, 20);
+    res = bitfieldInsert(res, brick_local_number, 20, 9);
+    res = bitfieldInsert(res, in_normal_id, 29, 3);
+
+    out_face_data = res;
 }

@@ -58,6 +58,7 @@ namespace verdigris
                     .depth_compare_op {vk::CompareOp::eLess},
                     .color_format {gfx::Renderer::ColorFormat.format},
                     .depth_format {gfx::Renderer::DepthFormat},
+                    .blend_enable {true},
                     .layout {
                         this->game->getRenderer()
                             ->getAllocator()

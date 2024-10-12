@@ -10,6 +10,10 @@ void main()
 {
     const u32 in_face_brick_data = imageLoad(visible_voxel_image, ivec2(floor(gl_FragCoord.xy))).x;
 
+    if (in_face_brick_data == ~0u)
+    {
+        discard;
+    }
     
     const u32 brick_pointer = bitfieldExtract(in_face_brick_data, 0, 20);
     const u32 face_number   = bitfieldExtract(in_face_brick_data, 20, 9);
