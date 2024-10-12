@@ -18,8 +18,12 @@ namespace voxel
         operator= (const BrickPointerAllocator&)                   = delete;
         BrickPointerAllocator& operator= (BrickPointerAllocator&&) = delete;
 
-        BrickPointer allocate();
-        void         free(BrickPointer);
+        BrickPointer        allocate();
+        void                free(BrickPointer);
+        [[nodiscard]] float getPercentAllocated() const
+        {
+            return this->allocator.getPercentAllocated();
+        }
     private:
         util::IndexAllocator allocator;
     };

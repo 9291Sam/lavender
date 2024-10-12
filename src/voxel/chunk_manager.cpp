@@ -43,7 +43,7 @@ namespace voxel
 
     static constexpr u32 MaxChunks          = 65536;
     static constexpr u32 DirectionsPerChunk = 6;
-    static constexpr u32 MaxBricks          = 1048576;
+    static constexpr u32 MaxBricks          = 65536;
     static constexpr u32 MaxFaces           = 16777216;
 
     ChunkManager::ChunkManager(const game::Game* game)
@@ -101,6 +101,12 @@ namespace voxel
                   | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxBricks))
+        , face_id_bricks(
+              this->renderer->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer
+                  | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
+              static_cast<std::size_t>(MaxBricks))
         , voxel_face_allocator {MaxFaces, MaxChunks * 6}
         , voxel_faces(
               this->renderer->getAllocator(),
@@ -112,7 +118,8 @@ namespace voxel
         , number_of_visible_faces(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer
-                  | vk::BufferUsageFlagBits::eTransferDst,
+                  | vk::BufferUsageFlagBits::eTransferDst
+                  | vk::BufferUsageFlagBits::eIndirectBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               1)
         , visible_face_data(
@@ -204,7 +211,6 @@ namespace voxel
                           | vk::ShaderStageFlagBits::eCompute},
                       .pImmutableSamplers {nullptr},
                   },
-
                   vk::DescriptorSetLayoutBinding {
                       .binding {8},
                       .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -215,8 +221,19 @@ namespace voxel
                           | vk::ShaderStageFlagBits::eCompute},
                       .pImmutableSamplers {nullptr},
                   },
+
                   vk::DescriptorSetLayoutBinding {
                       .binding {9},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {10},
                       .descriptorType {vk::DescriptorType::eStorageBuffer},
                       .descriptorCount {1},
                       .stageFlags {
@@ -407,9 +424,13 @@ namespace voxel
                 .offset {0},
                 .range {vk::WholeSize},
             },
-
             vk::DescriptorBufferInfo {
                 .buffer {*this->visibility_bricks},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->face_id_bricks},
                 .offset {0},
                 .range {vk::WholeSize},
             },
@@ -482,6 +503,9 @@ namespace voxel
     // NOLINTNEXTLINE
     ChunkManager::makeRecordObject(const game::Game* game, game::Camera c)
     {
+        util::logTrace(
+            "active bricks: {}",
+            this->brick_allocator.getPercentAllocated() * (float)MaxBricks);
         // util::Timer t {"end make record object"};
         // util::logTrace("starting make record obhject");
         std::vector<vk::DrawIndirectCommand>          indirectCommands {};
@@ -639,6 +663,9 @@ namespace voxel
                             *this->visibility_bricks, 0, vk::WholeSize, 0);
 
                         commandBuffer.fillBuffer(
+                            *this->face_id_bricks, 0, vk::WholeSize, 0);
+
+                        commandBuffer.fillBuffer(
                             *this->number_of_visible_faces,
                             0,
                             vk::WholeSize,
@@ -713,12 +740,14 @@ namespace voxel
                      this->chunk_descriptor_set,
                      nullptr,
                      nullptr}},
-                .record_func {
-                    [](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
-                    {
-                        // TODO: do indirect things
-                        commandBuffer.dispatch(32, 1, 1);
-                    }}};
+                .record_func {[this](
+                                  vk::CommandBuffer commandBuffer,
+                                  vk::PipelineLayout,
+                                  u32)
+                              {
+                                  commandBuffer.dispatchIndirect(
+                                      *this->number_of_visible_faces, 4);
+                              }}};
 
         game::FrameGenerator::RecordObject colorTransfer =
             game::FrameGenerator::RecordObject {

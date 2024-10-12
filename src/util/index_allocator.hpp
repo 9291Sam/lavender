@@ -50,7 +50,7 @@ namespace util
             return static_cast<float>(
                        this->next_available_block
                        - this->free_block_list.size())
-                 / static_cast<float>(this->next_available_block);
+                 / static_cast<float>(this->max_number_of_blocks);
         }
 
         std::expected<IndexType, OutOfBlocks> allocate();

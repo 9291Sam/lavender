@@ -72,6 +72,16 @@ struct VisibleFaceData
     vec3 color;
 };
 
+struct FaceIdBrick
+{
+    u32 data[8][8][8];
+};
+
+struct DirectionalFaceIdBricks
+{
+    FaceIdBrick dir[6];
+};
+
 layout(set = 1, binding = 0) readonly buffer ChunkPositionsBuffer
 {
     vec4 positions[];
@@ -102,22 +112,30 @@ layout(set = 1, binding = 5) buffer VisibilityBrickBuffer
     VisibilityBrick brick[];
 } in_visibility_bricks;
 
-layout(set = 1, binding = 6) readonly buffer GreedyVoxelFaces
+layout(set = 1, binding = 6) buffer DirectionalFaceIdBrickBuffer
+{
+    DirectionalFaceIdBricks brick[];
+} in_face_id_bricks;
+
+layout(set = 1, binding = 7) readonly buffer GreedyVoxelFaces
 {
     GreedyVoxelFace face[];
 } in_greedy_voxel_faces;
 
-layout(set = 1, binding = 7) readonly buffer VoxelMaterialBuffer
+layout(set = 1, binding = 8) readonly buffer VoxelMaterialBuffer
 {
     VoxelMaterial material[];
 } in_voxel_materials;
 
-layout(set = 1, binding = 8) buffer NuumberOfVisibleVoxelFacesBuffer
+layout(set = 1, binding = 9) buffer NuumberOfVisibleVoxelFacesBuffer
 {
     u32 number_of_visible_faces;
+    u32 number_of_indirect_dispatches_x;
+    u32 number_of_indirect_dispatches_y;
+    u32 number_of_indirect_dispatches_z;
 } in_number_of_visible_faces;
 
-layout(set = 1, binding = 9)  buffer VisibleFaceDataBuffer
+layout(set = 1, binding = 10)  buffer VisibleFaceDataBuffer
 {
     VisibleFaceData data[];
 } in_visible_face_data;

@@ -3,6 +3,7 @@
 #include "brick_map.hpp"
 #include "brick_pointer_allocator.hpp"
 #include "chunk.hpp"
+#include "directional_face_id_brick.hpp"
 #include "game/camera.hpp"
 #include "game/frame_generator.hpp"
 #include "gfx/renderer.hpp"
@@ -199,6 +200,7 @@ namespace voxel
         gfx::vulkan::TrackedBuffer<MaterialBrick>          material_bricks;
         gfx::vulkan::TrackedBuffer<OpacityBrick>           opacity_bricks;
         gfx::vulkan::Buffer<VisibilityBrick>               visibility_bricks;
+        gfx::vulkan::Buffer<DirectionalFaceIdBrick>        face_id_bricks;
 
         util::RangeAllocator                 voxel_face_allocator;
         gfx::vulkan::Buffer<GreedyVoxelFace> voxel_faces;
@@ -208,6 +210,9 @@ namespace voxel
         struct VisibleVoxelFaces
         {
             u32 number_of_visible_faces;
+            u32 number_of_calculating_draws_x;
+            u32 number_of_calculating_draws_y;
+            u32 number_of_calculating_draws_z;
         };
 
         struct VisibleFaceData

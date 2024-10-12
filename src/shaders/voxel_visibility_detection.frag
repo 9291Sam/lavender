@@ -19,6 +19,12 @@ void main()
     const u32 face_number   = bitfieldExtract(in_face_brick_data, 20, 9);
     const u32 normal        = bitfieldExtract(in_face_brick_data, 29, 3);
 
+    const uvec3 brick_local_position = uvec3(
+        face_number % 8,
+        (face_number % 64) / 8,
+        face_number / 64
+    );
+
     const u32 face_number_index = face_number / 32;
     const u32 face_number_bit   = face_number % 32;
 
@@ -39,34 +45,31 @@ void main()
             in_face_brick_data,
             vec3(0.0)
         );
+
+        if (this_visible_face % 1024 == 0)
+        {
+            atomicAdd(in_number_of_visible_faces.number_of_indirect_dispatches_x, 1);
+
+            if (this_visible_face == 0)
+            {
+                in_number_of_visible_faces.number_of_indirect_dispatches_y = 1;
+                in_number_of_visible_faces.number_of_indirect_dispatches_z = 1;
+            }
+        }
+
+
+        in_face_id_bricks
+            .brick[brick_pointer]
+            .dir[normal]
+            .data[brick_local_position.x][brick_local_position.y][brick_local_position.z]
+            = this_visible_face;
     }
 
+    // TODO: this is the race right here.
     memoryBarrierBuffer();
 
-    u32 maxelem = 0;
-    if (subgroupElect())
-    {
-        maxelem = in_number_of_visible_faces.number_of_visible_faces;
-    }
-
-    maxelem = subgroupBroadcastFirst(maxelem);
-
-    u32 face_id = ~0u;
-
-    for (int i = 0; i < min(maxelem, 1024); ++i)
-    {
-        if (in_visible_face_data.data[i].data == in_face_brick_data)
-        {
-            face_id = i;
-
-            break;
-        }
-    }
-
-    if (face_id == ~0u)
-    {
-        face_id = 1023;
-    }
-
-    out_face_id = face_id;
+    out_face_id =  in_face_id_bricks
+            .brick[brick_pointer]
+            .dir[normal]
+            .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
 }
