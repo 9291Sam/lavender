@@ -583,7 +583,9 @@ namespace gfx::vulkan
                             vk::StructureType::ePipelineRenderingCreateInfo},
                         .pNext {nullptr},
                         .viewMask {0},
-                        .colorAttachmentCount {1},
+                        .colorAttachmentCount {
+                            info.color_format == vk::Format::eUndefined ? 0u
+                                                                        : 1u},
                         .pColorAttachmentFormats {&info.color_format},
                         .depthAttachmentFormat {info.depth_format},
                         .stencilAttachmentFormat {},

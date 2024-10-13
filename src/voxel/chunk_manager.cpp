@@ -333,7 +333,7 @@ namespace voxel
                   .depth_test_enable {false},
                   .depth_write_enable {false},
                   .depth_compare_op {vk::CompareOp::eNever},
-                  .color_format {vk::Format::eR32Uint},
+                  .color_format {},
                   .depth_format {},
                   .blend_enable {false},
                   .layout {this->renderer->getAllocator()->cachePipelineLayout(

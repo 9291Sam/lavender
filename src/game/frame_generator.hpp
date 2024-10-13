@@ -93,7 +93,6 @@ namespace game
             gfx::vulkan::Image2D depth_buffer;
 
             gfx::vulkan::Image2D visible_voxel_image;
-            gfx::vulkan::Image2D face_id_image;
 
             vk::UniqueSampler do_nothing_sampler;
         };
