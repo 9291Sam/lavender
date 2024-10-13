@@ -747,11 +747,22 @@ namespace game
                 visibilityPassInfo);
         }
 
+        commandBuffer.pipelineBarrier(
+            vk::PipelineStageFlagBits::eFragmentShader,
+            vk::PipelineStageFlagBits::eComputeShader,
+            vk::DependencyFlags {},
+            {vk::MemoryBarrier {
+                .sType {vk::StructureType::eMemoryBarrier},
+                .pNext {nullptr},
+                .srcAccessMask {vk::AccessFlagBits::eShaderWrite},
+                .dstAccessMask {vk::AccessFlagBits::eMemoryRead},
+            }},
+            {},
+            {});
+
         // Color Calculation
         {
-            util::logTrace("before color cal");
             doComputePass(DynamicRenderingPass::VoxelColorCalculation);
-            util::logTrace("after color cal");
         }
 
         // barrier on storage writes before transfer

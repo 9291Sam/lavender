@@ -57,19 +57,10 @@ void main()
             }
         }
 
-
         in_face_id_bricks
             .brick[brick_pointer]
             .dir[normal]
             .data[brick_local_position.x][brick_local_position.y][brick_local_position.z]
             = this_visible_face;
     }
-
-    // // TODO: this is the race right here.
-    // memoryBarrierBuffer();
-
-    // out_face_id =  in_face_id_bricks
-    //         .brick[brick_pointer]
-    //         .dir[normal]
-    //         .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
 }

@@ -39,11 +39,10 @@
 
 namespace voxel
 {
-    u32* foobar = nullptr;
 
     static constexpr u32 MaxChunks          = 65536;
     static constexpr u32 DirectionsPerChunk = 6;
-    static constexpr u32 MaxBricks          = 65536;
+    static constexpr u32 MaxBricks          = 131072;
     static constexpr u32 MaxFaces           = 16777216;
 
     ChunkManager::ChunkManager(const game::Game* game)
@@ -503,9 +502,6 @@ namespace voxel
     // NOLINTNEXTLINE
     ChunkManager::makeRecordObject(const game::Game* game, game::Camera c)
     {
-        util::logTrace(
-            "active bricks: {}",
-            this->brick_allocator.getPercentAllocated() * (float)MaxBricks);
         // util::Timer t {"end make record object"};
         // util::logTrace("starting make record obhject");
         std::vector<vk::DrawIndirectCommand>          indirectCommands {};
@@ -660,19 +656,47 @@ namespace voxel
                         }
 
                         commandBuffer.fillBuffer(
-                            *this->visibility_bricks, 0, vk::WholeSize, 0);
+                            *this->visibility_bricks,
+                            0,
+                            this->visibility_bricks.getDataNonCoherent()
+                                .size_bytes(),
+                            0);
 
-                        commandBuffer.fillBuffer(
-                            *this->face_id_bricks, 0, vk::WholeSize, 0);
+                        // commandBuffer.fillBuffer(
+                        //     *this->face_id_bricks,
+                        //     0,
+                        //     this->face_id_bricks.getDataNonCoherent()
+                        //         .size_bytes(),
+                        //     0);
 
                         commandBuffer.fillBuffer(
                             *this->number_of_visible_faces,
                             0,
-                            vk::WholeSize,
+                            this->number_of_visible_faces.getDataNonCoherent()
+                                .size_bytes(),
                             0);
 
-                        commandBuffer.fillBuffer(
-                            *this->visible_face_data, 0, vk::WholeSize, 0);
+                        // commandBuffer.fillBuffer(
+                        //     *this->visible_face_data,
+                        //     0,
+                        //     this->visible_face_data.getDataNonCoherent()
+                        //         .size_bytes(),
+                        //     0);
+
+                        commandBuffer.pipelineBarrier(
+                            vk::PipelineStageFlagBits::eAllCommands,
+                            vk::PipelineStageFlagBits::eAllCommands,
+                            vk::DependencyFlags {},
+                            {vk::MemoryBarrier {
+                                .sType {vk::StructureType::eMemoryBarrier},
+                                .pNext {nullptr},
+                                .srcAccessMask {
+                                    vk::AccessFlagBits::eMemoryWrite},
+                                .dstAccessMask {
+                                    vk::AccessFlagBits::eMemoryWrite},
+                            }},
+                            {},
+                            {});
                     }}};
 
         game::FrameGenerator::RecordObject chunkDraw =
@@ -707,10 +731,6 @@ namespace voxel
                                       static_cast<u32>(s),
                                       16);
                               }}};
-
-        foobar = &this->number_of_visible_faces.getDataNonCoherent()
-                      .data()
-                      ->number_of_visible_faces;
 
         game::FrameGenerator::RecordObject visibilityDraw =
             game::FrameGenerator::RecordObject {

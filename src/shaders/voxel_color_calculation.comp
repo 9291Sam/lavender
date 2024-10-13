@@ -101,5 +101,11 @@ void main()
         );
 
         in_visible_face_data.data[global_invocation_index].color = realColor;
+        
+        // clear out old stuff now that the frame is over
+        // in_face_id_bricks
+        //     .brick[brick_pointer]
+        //     .dir[normal]
+        //     .data[brick_local_position.x][brick_local_position.y][brick_local_position.z] = 0u;
     }
 }
