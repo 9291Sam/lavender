@@ -240,8 +240,7 @@ compile_shader(lavender
     src/shaders/voxel_color_transfer.frag
     src/shaders/voxel_render.vert
     src/shaders/voxel_render.frag
-    src/shaders/voxel_visibility_detection.vert
-    src/shaders/voxel_visibility_detection.frag
+    src/shaders/voxel_visibility_detection.comp
 )
 
 cmrc_add_resource_library(
@@ -255,8 +254,7 @@ cmrc_add_resource_library(
     build/src/shaders/voxel_color_transfer.frag.bin
     build/src/shaders/voxel_render.vert.bin
     build/src/shaders/voxel_render.frag.bin
-    build/src/shaders/voxel_visibility_detection.vert.bin
-    build/src/shaders/voxel_visibility_detection.frag.bin
+    build/src/shaders/voxel_visibility_detection.comp.bin
 )
 
 target_link_libraries(lavender lav2)
