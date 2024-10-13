@@ -82,6 +82,12 @@ struct DirectionalFaceIdBricks
     FaceIdBrick dir[6];
 };
 
+struct PointLight {
+    vec4 position;
+    vec4 color_and_power;  // xyz = color, w = power
+    vec4 falloffs;         // x = constant, y = linear, z = quadratic, w = cubic
+};
+
 layout(set = 1, binding = 0) readonly buffer ChunkPositionsBuffer
 {
     vec4 positions[];
@@ -139,6 +145,12 @@ layout(set = 1, binding = 10)  buffer VisibleFaceDataBuffer
 {
     VisibleFaceData data[];
 } in_visible_face_data;
+
+layout(set = 1, binding = 11)  buffer PointLightDataBuffer
+{
+    u32 number_of_point_lights;
+    PointLight light[];
+} in_point_lights;
 
 vec3 unpackNormalId(u32 id)
 {

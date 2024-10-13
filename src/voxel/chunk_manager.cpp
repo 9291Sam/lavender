@@ -14,6 +14,7 @@
 #include "gfx/vulkan/device.hpp"
 #include "greedy_voxel_face.hpp"
 #include "opacity_brick.hpp"
+#include "point_light.hpp"
 #include "shaders/shaders.hpp"
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
@@ -127,6 +128,14 @@ namespace voxel
                   | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxFaces))
+        , point_lights(
+              this->renderer->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer
+                  | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal
+                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              1)
+        , point_light_allocator {1280}
         , descriptor_set_layout {this->renderer->getAllocator()->cacheDescriptorSetLayout(
               gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo {.bindings {{
                   vk::DescriptorSetLayoutBinding {
@@ -233,6 +242,16 @@ namespace voxel
                   },
                   vk::DescriptorSetLayoutBinding {
                       .binding {10},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {
+                          vk::ShaderStageFlagBits::eVertex
+                          | vk::ShaderStageFlagBits::eFragment
+                          | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {11},
                       .descriptorType {vk::DescriptorType::eStorageBuffer},
                       .descriptorCount {1},
                       .stageFlags {
@@ -450,6 +469,11 @@ namespace voxel
             },
             vk::DescriptorBufferInfo {
                 .buffer {*this->visible_face_data},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->point_lights},
                 .offset {0},
                 .range {vk::WholeSize},
             },
@@ -683,20 +707,41 @@ namespace voxel
                         //         .size_bytes(),
                         //     0);
 
-                        commandBuffer.pipelineBarrier(
-                            vk::PipelineStageFlagBits::eAllCommands,
-                            vk::PipelineStageFlagBits::eAllCommands,
-                            vk::DependencyFlags {},
-                            {vk::MemoryBarrier {
-                                .sType {vk::StructureType::eMemoryBarrier},
-                                .pNext {nullptr},
-                                .srcAccessMask {
-                                    vk::AccessFlagBits::eMemoryWrite},
-                                .dstAccessMask {
-                                    vk::AccessFlagBits::eMemoryWrite},
-                            }},
-                            {},
-                            {});
+                        std::vector<InternalPointLight> lights {};
+                        lights.reserve(this->point_light_id_payload.size());
+
+                        for (const auto& [id, data] :
+                             this->point_light_id_payload)
+                        {
+                            lights.push_back(data);
+                        }
+
+                        PointLightStorage s {};
+                        s.number_of_point_lights =
+                            static_cast<u32>(lights.size());
+                        std::copy(
+                            lights.cbegin(), lights.cend(), s.lights.begin());
+
+                        commandBuffer.updateBuffer(
+                            *this->point_lights,
+                            0,
+                            sizeof(PointLightStorage),
+                            &s);
+
+                        // commandBuffer.pipelineBarrier(
+                        //     vk::PipelineStageFlagBits::eAllCommands,
+                        //     vk::PipelineStageFlagBits::eAllCommands,
+                        //     vk::DependencyFlags {},
+                        //     {vk::MemoryBarrier {
+                        //         .sType {vk::StructureType::eMemoryBarrier},
+                        //         .pNext {nullptr},
+                        //         .srcAccessMask {
+                        //             vk::AccessFlagBits::eMemoryWrite},
+                        //         .dstAccessMask {
+                        //             vk::AccessFlagBits::eMemoryWrite},
+                        //     }},
+                        //     {},
+                        //     {});
                     }}};
 
         game::FrameGenerator::RecordObject chunkDraw =
@@ -788,6 +833,46 @@ namespace voxel
 
         return {
             update, chunkDraw, visibilityDraw, colorCalculation, colorTransfer};
+    }
+
+    PointLight ChunkManager::createPointLight()
+    {
+        const std::expected<u32, util::IndexAllocator::OutOfBlocks>
+            maybePointLightId = this->point_light_allocator.allocate();
+
+        if (!maybePointLightId.has_value())
+        {
+            util::panic("Failed to allocate new point light!");
+        }
+
+        const u32 thisPointLightId = *maybePointLightId;
+
+        this->point_light_id_payload[thisPointLightId] = {};
+
+        return PointLight {thisPointLightId};
+    }
+
+    void ChunkManager::destroyPointLight(PointLight toFree)
+    {
+        this->point_light_allocator.free(toFree.id);
+
+        this->point_light_id_payload.erase(toFree.id);
+
+        toFree.id = PointLight::NullPointLight;
+    }
+
+    void ChunkManager::modifyPointLight(
+        const PointLight& light,
+        glm::vec3         position,
+        glm::vec4         colorAndPower,
+        glm::vec4         falloffs)
+    {
+        this->point_light_id_payload.insert_or_assign(
+            light.id,
+            InternalPointLight {
+                .position {position.xyzz()},
+                .color_and_power {colorAndPower},
+                .falloffs {falloffs}});
     }
 
     void ChunkManager::writeVoxel(glm::i32vec3 p, Voxel v)

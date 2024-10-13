@@ -3,6 +3,7 @@
 #include "game/game.hpp"
 #include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
+#include <set>
 
 namespace verdigris
 {
@@ -13,6 +14,7 @@ namespace verdigris
         const game::ec::EntityComponentManager* ec_manager;
         std::shared_ptr<vk::UniquePipeline>     triangle_pipeline;
         mutable voxel::ChunkManager             chunk_manager;
+        std::vector<voxel::PointLight>          lights;
 
         explicit Verdigris(game::Game* game_);
 

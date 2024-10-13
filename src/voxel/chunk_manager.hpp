@@ -11,6 +11,7 @@
 #include "gfx/vulkan/tracked_buffer.hpp"
 #include "greedy_voxel_face.hpp"
 #include "material_brick.hpp"
+#include "point_light.hpp"
 #include "util/index_allocator.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
@@ -49,6 +50,15 @@ namespace voxel
 
         [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
         makeRecordObject(const game::Game*, game::Camera);
+
+        PointLight createPointLight();
+        void       destroyPointLight(PointLight);
+
+        void modifyPointLight(
+            const PointLight&,
+            glm::vec3 position,
+            glm::vec4 colorAndPower,
+            glm::vec4 falloffs);
 
         void writeVoxel(glm::i32vec3, Voxel);
 
@@ -222,6 +232,24 @@ namespace voxel
         };
         gfx::vulkan::Buffer<VisibleVoxelFaces> number_of_visible_faces;
         gfx::vulkan::Buffer<VisibleFaceData>   visible_face_data;
+
+        struct InternalPointLight
+        {
+            glm::vec4 position;
+            glm::vec4 color_and_power;
+            glm::vec4 falloffs;
+        };
+        struct PointLightStorage
+        {
+            u32                                  number_of_point_lights;
+            u32                                  pad0;
+            u32                                  pad1;
+            u32                                  pad2;
+            std::array<InternalPointLight, 1280> lights;
+        };
+        gfx::vulkan::Buffer<PointLightStorage>      point_lights;
+        util::IndexAllocator                        point_light_allocator;
+        std::unordered_map<u32, InternalPointLight> point_light_id_payload;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> descriptor_set_layout;
 
