@@ -305,7 +305,7 @@ namespace voxel
                       .inputRate {vk::VertexInputRate::eInstance}}}},
                   .topology {vk::PrimitiveTopology::eTriangleList},
                   .discard_enable {false},
-                  .polygon_mode {vk::PolygonMode::eFill},
+                  .polygon_mode {vk::PolygonMode::eLine},
                   .cull_mode {vk::CullModeFlagBits::eNone},
                   .front_face {vk::FrontFace::eCounterClockwise},
                   .depth_test_enable {true},
@@ -1224,6 +1224,9 @@ namespace voxel
                     {
                         if (thisSlice.data[height] & (1UL << width))
                         {
+                            const u64 faceWidth = std::countr_one(
+                                thisSlice.data[height] >> width);
+
                             VoxelFaceDirection dir =
                                 static_cast<VoxelFaceDirection>(normalId);
                             const auto [widthAxis, heightAxis, ascensionAxis] =
@@ -1238,9 +1241,11 @@ namespace voxel
                                 .x {static_cast<u32>(thisRoot.x)},
                                 .y {static_cast<u32>(thisRoot.y)},
                                 .z {static_cast<u32>(thisRoot.z)},
-                                .width {0},
+                                .width {static_cast<u32>(faceWidth - 1)},
                                 .height {0},
                                 .pad {0}});
+
+                            width += faceWidth;
                         }
                     }
                 }
@@ -1248,7 +1253,7 @@ namespace voxel
 
             thisAllocation = this->voxel_face_allocator.allocate(
                 static_cast<u32>(faces.size()));
-            util::logTrace("allocating {}", thisAllocation.offset);
+            // util::logTrace("allocating {}", thisAllocation.offset);
 
             std::copy(
                 faces.cbegin(),
