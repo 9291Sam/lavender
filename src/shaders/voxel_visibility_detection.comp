@@ -4,16 +4,11 @@
 #include "types.glsl"
 #include "voxel_descriptors.glsl"
 
-layout(location = 0) out u32 out_face_id;
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 void main()
 {
-    const u32 in_face_brick_data = imageLoad(visible_voxel_image, ivec2(floor(gl_FragCoord.xy))).x;
-
-    if (in_face_brick_data == ~0u)
-    {
-        discard;
-    }
+    const u32 in_face_brick_data = imageLoad(visible_voxel_image, ivec2(gl_GlobalInvocationID.xy)).x;
     
     const u32 brick_pointer = bitfieldExtract(in_face_brick_data, 0, 20);
     const u32 face_number   = bitfieldExtract(in_face_brick_data, 20, 9);

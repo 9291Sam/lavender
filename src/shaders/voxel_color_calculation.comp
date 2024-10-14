@@ -99,7 +99,7 @@ void main()
 
         vec3 realColor = clamp(
             exp_strength_falloff(sum_diffuse) * this_material.diffuse_color.xyz +
-            exp_strength_falloff(sum_specular ) * this_material.specular_color.xyz,
+            exp_strength_falloff(sum_specular) * this_material.specular_color.xyz,
             0.0,
             1.0
         );

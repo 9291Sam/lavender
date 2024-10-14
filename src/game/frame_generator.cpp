@@ -729,22 +729,7 @@ namespace game
 
         // Visibility Detection
         {
-            const vk::RenderingInfo visibilityPassInfo {
-                .sType {vk::StructureType::eRenderingInfo},
-                .pNext {nullptr},
-                .flags {},
-                .renderArea {scissor},
-                .layerCount {1},
-                .viewMask {0},
-                .colorAttachmentCount {0},
-                .pColorAttachments {nullptr},
-                .pDepthAttachment {nullptr},
-                .pStencilAttachment {nullptr},
-            };
-
-            doRenderPass(
-                DynamicRenderingPass::VoxelVisibilityDetection,
-                visibilityPassInfo);
+            doComputePass(DynamicRenderingPass::VoxelVisibilityDetection);
         }
 
         commandBuffer.pipelineBarrier(

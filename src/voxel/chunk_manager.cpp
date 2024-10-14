@@ -12,6 +12,7 @@
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/device.hpp"
+#include "gfx/window.hpp"
 #include "greedy_voxel_face.hpp"
 #include "opacity_brick.hpp"
 #include "point_light.hpp"
@@ -324,36 +325,11 @@ namespace voxel
                           }}})},
               })}
         , voxel_visibility_pipeline {this->renderer->getAllocator()->cachePipeline(
-              gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
-                  .stages {{
-                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-                          .stage {vk::ShaderStageFlagBits::eVertex},
-                          .shader {
-                              this->renderer->getAllocator()->cacheShaderModule(
-                                  shaders::load("voxel_visibility_detection."
-                                                "vert"))},
-                          .entry_point {"main"}},
-                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-                          .stage {vk::ShaderStageFlagBits::eFragment},
-                          .shader {
-                              this->renderer->getAllocator()->cacheShaderModule(
-                                  shaders::load("voxel_visibility_detection."
-                                                "frag"))},
-                          .entry_point {"main"}},
-                  }},
-                  .vertex_attributes {},
-                  .vertex_bindings {},
-                  .topology {vk::PrimitiveTopology::eTriangleList},
-                  .discard_enable {false},
-                  .polygon_mode {vk::PolygonMode::eFill},
-                  .cull_mode {vk::CullModeFlagBits::eNone},
-                  .front_face {vk::FrontFace::eCounterClockwise},
-                  .depth_test_enable {false},
-                  .depth_write_enable {false},
-                  .depth_compare_op {vk::CompareOp::eNever},
-                  .color_format {},
-                  .depth_format {},
-                  .blend_enable {false},
+              gfx::vulkan::CacheableComputePipelineCreateInfo {
+                  .entry_point {"main"},
+                  .shader {this->renderer->getAllocator()->cacheShaderModule(
+                      shaders::load(
+                          "voxel_visibility_detection.comp"))},
                   .layout {this->renderer->getAllocator()->cachePipelineLayout(
                       gfx::vulkan::CacheablePipelineLayoutCreateInfo {
                           .descriptors {
@@ -789,9 +765,18 @@ namespace voxel
                      nullptr,
                      nullptr}},
                 .record_func {
-                    [](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                    [this](
+                        vk::CommandBuffer commandBuffer,
+                        vk::PipelineLayout,
+                        u32)
                     {
-                        commandBuffer.draw(3, 1, 0, 0);
+                        vk::Extent2D fbSize =
+                            this->renderer->getWindow()->getFramebufferSize();
+
+                        commandBuffer.dispatch(
+                            util::divideEuclidean(fbSize.width, 32u) + 1,
+                            util::divideEuclidean(fbSize.height, 32u) + 1,
+                            1);
                     }}};
 
         game::FrameGenerator::RecordObject colorCalculation =
