@@ -62,6 +62,8 @@ namespace voxel
 
         void writeVoxel(glm::i32vec3, Voxel);
 
+    private:
+
         Chunk allocateChunk(glm::vec3 position);
         void  deallocateChunk(Chunk);
 
@@ -71,7 +73,6 @@ namespace voxel
             Voxel,
             std::source_location = std::source_location::current());
 
-    private:
         std::array<util::RangeAllocation, 6> meshChunkNormal(u32 chunkId);
         std::array<util::RangeAllocation, 6> meshChunkGreedy(u32 chunkId);
 

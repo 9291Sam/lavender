@@ -329,6 +329,35 @@ namespace verdigris
                 glm::vec4 {0.0, 0.7, 1.3, 0.0});
         }
 
+        auto genSpiralPos = [](i32 f)
+        {
+            const float t = static_cast<float>(f) / 256.0f;
+
+            const float x = 32.0f * std::sin(t);
+            const float z = 32.0f * std::cos(t);
+
+            return glm::i32vec3 {
+                static_cast<i32>(x), 64.0, static_cast<i32>(z)};
+        };
+
+        const i32 frameNumber =
+            static_cast<i32>(this->game->getRenderer()->getFrameNumber());
+
+        auto thisPos = genSpiralPos(frameNumber);
+        auto prevPos = genSpiralPos(frameNumber - 1);
+
+        if (thisPos != prevPos)
+        {
+            for (i32 i = 0; i < 32; ++i)
+            {
+                this->chunk_manager.writeVoxel(
+                    thisPos + glm::i32vec3 {0, i, 0}, voxel::Voxel::Dirt3);
+                this->chunk_manager.writeVoxel(
+                    prevPos + glm::i32vec3 {0, i, 0},
+                    voxel::Voxel::NullAirEmpty);
+            }
+        }
+
         // TODO: moving diagonally is faster
         const float moveScale =
             this->game->getRenderer()->getWindow()->isActionActive(
