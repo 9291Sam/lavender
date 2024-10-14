@@ -74,6 +74,7 @@ namespace voxel
             std::source_location = std::source_location::current());
 
         std::array<util::RangeAllocation, 6> meshChunkNormal(u32 chunkId);
+        std::array<util::RangeAllocation, 6> meshChunkLinear(u32 chunkId);
         std::array<util::RangeAllocation, 6> meshChunkGreedy(u32 chunkId);
 
         struct DenseBitChunk

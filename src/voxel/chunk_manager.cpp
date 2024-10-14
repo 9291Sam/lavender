@@ -26,6 +26,7 @@
 #include "voxel/material_manager.hpp"
 #include "voxel/opacity_brick.hpp"
 #include "voxel_face_direction.hpp"
+#include <bit>
 #include <cstddef>
 #include <glm/fwd.hpp>
 #include <glm/geometric.hpp>
@@ -45,7 +46,7 @@ namespace voxel
     static constexpr u32 MaxChunks          = 65536;
     static constexpr u32 DirectionsPerChunk = 6;
     static constexpr u32 MaxBricks          = 131072;
-    static constexpr u32 MaxFaces           = 16777216;
+    static constexpr u32 MaxFaces           = 16777216 * 15;
 
     ChunkManager::ChunkManager(const game::Game* game)
         : renderer {game->getRenderer()}
@@ -1156,7 +1157,118 @@ namespace voxel
     }
 
     std::array<util::RangeAllocation, 6>
-    ChunkManager::meshChunkGreedy(u32 chunkId) // NOLINT
+    ChunkManager::meshChunkGreedy(u32 chunkId)
+    {
+        std::unique_ptr<DenseBitChunk> thisChunkData =
+            this->makeDenseBitChunk(chunkId);
+
+        std::array<util::RangeAllocation, 6> outAllocations {};
+
+        struct ChunkSlice
+        {
+            // width is within each u64, height is the index
+            std::array<u64, 64> data;
+        };
+
+        auto makeChunkSlice = [&](u32 normalId, u64 offset) -> ChunkSlice
+        {
+            VoxelFaceDirection dir = static_cast<VoxelFaceDirection>(normalId);
+            const auto [widthAxis, heightAxis, ascensionAxis] =
+                getDrivingAxes(dir);
+            glm::i8vec3 normal = getDirFromDirection(dir);
+
+            ChunkSlice res {}; // NOLINT
+
+            for (i8 h = 0; h < 64; ++h)
+            {
+                for (i8 w = 0; w < 64; ++w)
+                {
+                    if (thisChunkData->isOccupied(
+                            w * widthAxis + h * heightAxis
+                            + static_cast<i8>(offset) * ascensionAxis))
+                    {
+                        if (DenseBitChunk::isPositionInBounds(
+                                w * widthAxis + h * heightAxis
+                                + static_cast<i8>(offset) * ascensionAxis
+                                + normal)
+                            && thisChunkData->isOccupied(
+                                w * widthAxis + h * heightAxis
+                                + static_cast<i8>(offset) * ascensionAxis
+                                + normal))
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            res.data[h] |= (1UL << static_cast<u64>(w));
+                        }
+                    }
+                }
+            }
+
+            return res;
+        };
+
+        u32 normalId = 0;
+        for (util::RangeAllocation& thisAllocation : outAllocations)
+        {
+            std::vector<GreedyVoxelFace> faces {};
+
+            for (u64 ascend = 0; ascend < 64; ++ascend)
+            {
+                ChunkSlice thisSlice = makeChunkSlice(normalId, ascend);
+
+                for (u64 height = 0; height < 64; ++height)
+                {
+                    for (u64 width = 0; width < 64; ++width)
+                    {
+                        if (thisSlice.data[height] & (1UL << width))
+                        {
+                            VoxelFaceDirection dir =
+                                static_cast<VoxelFaceDirection>(normalId);
+                            const auto [widthAxis, heightAxis, ascensionAxis] =
+                                getDrivingAxes(dir);
+
+                            glm::i8vec3 thisRoot =
+                                ascensionAxis * static_cast<i8>(ascend)
+                                + heightAxis * static_cast<i8>(height)
+                                + widthAxis * static_cast<i8>(width);
+
+                            faces.push_back(GreedyVoxelFace {
+                                .x {static_cast<u32>(thisRoot.x)},
+                                .y {static_cast<u32>(thisRoot.y)},
+                                .z {static_cast<u32>(thisRoot.z)},
+                                .width {0},
+                                .height {0},
+                                .pad {0}});
+                        }
+                    }
+                }
+            }
+
+            thisAllocation = this->voxel_face_allocator.allocate(
+                static_cast<u32>(faces.size()));
+            util::logTrace("allocating {}", thisAllocation.offset);
+
+            std::copy(
+                faces.cbegin(),
+                faces.cend(),
+                this->voxel_faces.getDataNonCoherent().data()
+                    + thisAllocation.offset);
+            const gfx::vulkan::FlushData flush {
+                .offset_elements {thisAllocation.offset},
+                .size_elements {faces.size()},
+            };
+            this->voxel_faces.flush({&flush, 1});
+
+            normalId += 1;
+        }
+
+        return outAllocations;
+    }
+
+    std::array<util::RangeAllocation, 6>
+    ChunkManager::meshChunkLinear(u32 chunkId) // NOLINT
     {
         std::unique_ptr<DenseBitChunk> trueDenseChunk =
             this->makeDenseBitChunk(chunkId);
