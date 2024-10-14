@@ -46,7 +46,7 @@ namespace voxel
     static constexpr u32 MaxChunks          = 65536;
     static constexpr u32 DirectionsPerChunk = 6;
     static constexpr u32 MaxBricks          = 131072;
-    static constexpr u32 MaxFaces           = 16777216 * 15;
+    static constexpr u32 MaxFaces           = 16777216;
 
     ChunkManager::ChunkManager(const game::Game* game)
         : renderer {game->getRenderer()}
@@ -305,7 +305,7 @@ namespace voxel
                       .inputRate {vk::VertexInputRate::eInstance}}}},
                   .topology {vk::PrimitiveTopology::eTriangleList},
                   .discard_enable {false},
-                  .polygon_mode {vk::PolygonMode::eLine},
+                  .polygon_mode {vk::PolygonMode::eFill},
                   .cull_mode {vk::CullModeFlagBits::eNone},
                   .front_face {vk::FrontFace::eCounterClockwise},
                   .depth_test_enable {true},
