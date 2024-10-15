@@ -305,7 +305,7 @@ namespace voxel
                       .inputRate {vk::VertexInputRate::eInstance}}}},
                   .topology {vk::PrimitiveTopology::eTriangleList},
                   .discard_enable {false},
-                  .polygon_mode {vk::PolygonMode::eFill},
+                  .polygon_mode {vk::PolygonMode::eLine},
                   .cull_mode {vk::CullModeFlagBits::eNone},
                   .front_face {vk::FrontFace::eCounterClockwise},
                   .depth_test_enable {true},
@@ -1239,12 +1239,37 @@ namespace voxel
                                 + heightAxis * static_cast<i8>(height)
                                 + widthAxis * static_cast<i8>(width);
 
+                            const u64 mask = ((1ULL << faceWidth) - 1ULL)
+                                          << width;
+
+                            u64 faceHeight = 1;
+                            // while (faceHeight + height < 64)
+                            // {
+                            //     if ((thisSlice.data[height + faceHeight] &
+                            //     mask)
+                            //         == mask)
+                            //     {
+                            //         faceHeight += 1;
+                            //     }
+                            //     else
+                            //     {
+                            //         break;
+                            //     }
+                            // }
+
+                            // for (u64 h = height; h < (height + faceHeight);
+                            // ++h)
+                            // {
+                            //     thisSlice.data[h] = thisSlice.data[h] &
+                            //     (~mask);
+                            // }
+
                             faces.push_back(GreedyVoxelFace {
                                 .x {static_cast<u32>(thisRoot.x)},
                                 .y {static_cast<u32>(thisRoot.y)},
                                 .z {static_cast<u32>(thisRoot.z)},
                                 .width {static_cast<u32>(faceWidth - 1)},
-                                .height {0},
+                                .height {static_cast<u32>(faceHeight - 1)},
                                 .pad {0}});
 
                             width += faceWidth;
