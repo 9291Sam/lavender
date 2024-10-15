@@ -305,7 +305,7 @@ namespace voxel
                       .inputRate {vk::VertexInputRate::eInstance}}}},
                   .topology {vk::PrimitiveTopology::eTriangleList},
                   .discard_enable {false},
-                  .polygon_mode {vk::PolygonMode::eLine},
+                  .polygon_mode {vk::PolygonMode::eFill},
                   .cull_mode {vk::CullModeFlagBits::eNone},
                   .front_face {vk::FrontFace::eCounterClockwise},
                   .depth_test_enable {true},
@@ -1243,11 +1243,9 @@ namespace voxel
                                           << width;
 
                             u64 faceHeight = 1;
-                            // while (faceHeight + height < 64)
+                            // for (u64 h = height; h < 64; ++h)
                             // {
-                            //     if ((thisSlice.data[height + faceHeight] &
-                            //     mask)
-                            //         == mask)
+                            //     if ((thisSlice.data[h] & mask) == mask)
                             //     {
                             //         faceHeight += 1;
                             //     }
@@ -1257,11 +1255,12 @@ namespace voxel
                             //     }
                             // }
 
+                            util::assertFatal(faceHeight != 0, "hmmm");
+
                             // for (u64 h = height; h < (height + faceHeight);
                             // ++h)
                             // {
-                            //     thisSlice.data[h] = thisSlice.data[h] &
-                            //     (~mask);
+                            //     thisSlice.data[h] &= ~mask;
                             // }
 
                             faces.push_back(GreedyVoxelFace {
