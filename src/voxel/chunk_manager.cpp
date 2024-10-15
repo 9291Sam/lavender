@@ -1200,7 +1200,7 @@ namespace voxel
                         }
                         else
                         {
-                            res.data[h] |= (1ULL << static_cast<u64>(w));
+                            res.data[h] |= (UINT64_C(1) << static_cast<u64>(w));
                         }
                     }
                 }
@@ -1222,7 +1222,7 @@ namespace voxel
                 {
                     for (u64 width = 0; width < 64; ++width)
                     {
-                        if (thisSlice.data[height] & (1ULL << width))
+                        if (thisSlice.data[height] & (UINT64_C(1) << width))
                         {
                             const u64 faceWidth = std::countr_one(
                                 thisSlice.data[height] >> width);
