@@ -1220,7 +1220,9 @@ namespace voxel
 
                 for (u64 height = 0; height < 64; ++height)
                 {
-                    for (u64 width = 0; width < 64; ++width)
+                    for (u64 width = std::countr_zero(thisSlice.data[height]);
+                         width < 64;
+                         ++width)
                     {
                         if (thisSlice.data[height] & (UINT64_C(1) << width))
                         {
@@ -1246,6 +1248,12 @@ namespace voxel
                                 .pad {0}});
 
                             width += faceWidth;
+                        }
+                        else
+                        {
+                            width += std::countr_zero(
+                                         thisSlice.data[height] >> width)
+                                   - 1;
                         }
                     }
                 }
