@@ -158,6 +158,14 @@ namespace verdigris
             this->chunk_manager.writeVoxel(p, v);
         };
 
+        // for (i32 x = 0; x < 64; ++x)
+        // {
+        //     for (i32 z = 0; z < 64; ++z)
+        //     {
+        //         insertVoxelAt(glm::ivec3 {x, 0, z}, voxel::Voxel::Stone3);
+        //     }
+        // }
+
         for (i32 x = -256; x < 255; ++x)
         {
             for (i32 z = -256; z < 255; ++z)
@@ -171,6 +179,7 @@ namespace verdigris
                 }
             }
         }
+
         glm::f32vec3 center = {0, 0, 0}; // Center of the structure
 
         // Trunk of the tree
@@ -296,6 +305,30 @@ namespace verdigris
         {
             this->lights.push_back(this->chunk_manager.createPointLight());
         }
+
+        // std::mt19937_64                       gen {std::random_device {}()};
+        std::uniform_real_distribution<float> ddist {-1.0, 1.0};
+
+        auto genVec3 = [&]() -> glm::vec3
+        {
+            return glm::vec3 {ddist(gen), ddist(gen), ddist(gen)};
+        };
+
+        for (const voxel::PointLight& l : this->lights)
+        {
+            this->chunk_manager.modifyPointLight(
+                l,
+                glm::vec4 {
+                    genVec3() * glm::vec3 {256.0, 42.0, 256.0}
+                        + glm::vec3 {0.0, 41.0, 0.0},
+                    0.0},
+                glm::vec4 {genVec3() / 2.0f + 0.5f, 64.0},
+                glm::vec4 {0.0, 0.7, 1.3, 0.0});
+        }
+
+        this->camera.addPosition({-5.0f, 20.0f, -2.5f});
+        this->camera.addPitch(0.75);
+        this->camera.addYaw(1.87);
     }
 
     Verdigris::~Verdigris()
@@ -316,18 +349,6 @@ namespace verdigris
         {
             return glm::vec3 {pDist(gen), pDist(gen), pDist(gen)};
         };
-
-        for (const voxel::PointLight& l : this->lights)
-        {
-            this->chunk_manager.modifyPointLight(
-                l,
-                glm::vec4 {
-                    genVec3() * glm::vec3 {256.0, 42.0, 256.0}
-                        + glm::vec3 {0.0, 42.0, 0.0},
-                    0.0},
-                glm::vec4 {genVec3() / 2.0f + 0.5f, 64.0},
-                glm::vec4 {0.0, 0.7, 1.3, 0.0});
-        }
 
         auto genSpiralPos = [](i32 f)
         {

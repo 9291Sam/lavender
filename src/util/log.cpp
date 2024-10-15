@@ -293,7 +293,8 @@ namespace util
             }(),
             message);
 
-        if (level >= LoggingLevel::Warn || level == LoggingLevel::Debug)
+        if (level >= LoggingLevel::Warn || level == LoggingLevel::Debug
+            || output.starts_with("BLOCK_ON"))
         {
             LOGGER.load(std::memory_order_relaxed)
                 ->sendBlocking(std::move(output));

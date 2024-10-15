@@ -305,7 +305,7 @@ namespace voxel
                       .inputRate {vk::VertexInputRate::eInstance}}}},
                   .topology {vk::PrimitiveTopology::eTriangleList},
                   .discard_enable {false},
-                  .polygon_mode {vk::PolygonMode::eFill},
+                  .polygon_mode {vk::PolygonMode::eLine},
                   .cull_mode {vk::CullModeFlagBits::eNone},
                   .front_face {vk::FrontFace::eCounterClockwise},
                   .depth_test_enable {true},
@@ -618,6 +618,13 @@ namespace voxel
                     }
                 }
             });
+
+        u32 tris = 0;
+        for (vk::DrawIndirectCommand c : indirectCommands)
+        {
+            tris += c.vertexCount / 3;
+        }
+        util::logTrace("{}", tris);
 
         this->chunk_positions.flush();
         this->brick_maps.flush();
@@ -1239,29 +1246,46 @@ namespace voxel
                                 + heightAxis * static_cast<i8>(height)
                                 + widthAxis * static_cast<i8>(width);
 
-                            const u64 mask = ((1ULL << faceWidth) - 1ULL)
-                                          << width;
+                            u64 mask;
 
-                            u64 faceHeight = 1;
-                            // for (u64 h = height; h < 64; ++h)
-                            // {
-                            //     if ((thisSlice.data[h] & mask) == mask)
-                            //     {
-                            //         faceHeight += 1;
-                            //     }
-                            //     else
-                            //     {
-                            //         break;
-                            //     }
-                            // }
+                            if (faceWidth == 64)
+                            {
+                                mask = ~0ULL;
+                            }
+                            else
+                            {
+                                mask = ((1ULL << faceWidth) - 1ULL) << width;
+                            }
+
+                            u64 faceHeight = 0;
+                            for (u64 h = height; h < 64; ++h)
+                            {
+                                if ((thisSlice.data[h] & mask) == mask)
+                                {
+                                    faceHeight += 1;
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
 
                             util::assertFatal(faceHeight != 0, "hmmm");
 
-                            // for (u64 h = height; h < (height + faceHeight);
-                            // ++h)
-                            // {
-                            //     thisSlice.data[h] &= ~mask;
-                            // }
+                            // util::logTrace(
+                            //     "height:{} width:{} @ faceHeight:{} "
+                            //     "faceWidth:{} mask:{:064b}",
+                            //     height,
+                            //     width,
+                            //     faceHeight,
+                            //     faceWidth,
+                            //     mask);
+                            for (u64 h = height; h < (height + faceHeight); ++h)
+                            {
+                                thisSlice.data[h] &= ~mask;
+                            }
+
+                            // util::assertFatal()
 
                             faces.push_back(GreedyVoxelFace {
                                 .x {static_cast<u32>(thisRoot.x)},
@@ -1272,6 +1296,8 @@ namespace voxel
                                 .pad {0}});
 
                             width += faceWidth;
+
+                            // goto next_layer;
                         }
                         else
                         {
@@ -1281,6 +1307,8 @@ namespace voxel
                         }
                     }
                 }
+
+            next_layer:
             }
 
             thisAllocation = this->voxel_face_allocator.allocate(
