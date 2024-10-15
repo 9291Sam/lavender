@@ -100,13 +100,12 @@ namespace verdigris
         std::normal_distribution<float>    realDist {64, 3};
         std::uniform_int_distribution<u16> pDist {1, 15};
 
-        // auto genFunc = [](int x, int z) -> u8
-        // {
-        //     return static_cast<u8>(
-        //                8 * std::sin(x / 24.0) + 8 * std::cos(z / 24.0)
-        //                + 32.0)
-        //          % 64;
-        // };
+        auto genFunc = [](i32 x, i32 z) -> i32
+        {
+            return static_cast<i32>(
+                       8 * std::sin(x / 24.0) + 8 * std::cos(z / 24.0) + 32.0)
+                 - 128;
+        };
 
         auto genVoxel = [&] -> voxel::Voxel
         {
@@ -158,13 +157,13 @@ namespace verdigris
             this->chunk_manager.writeVoxel(p, v);
         };
 
-        // for (i32 x = 0; x < 64; ++x)
-        // {
-        //     for (i32 z = 0; z < 64; ++z)
-        //     {
-        //         insertVoxelAt(glm::ivec3 {x, 0, z}, voxel::Voxel::Stone3);
-        //     }
-        // }
+        for (i32 x = -1024; x < 1024; ++x)
+        {
+            for (i32 z = -1024; z < 1024; ++z)
+            {
+                insertVoxelAt(glm::ivec3 {x, genFunc(x, z), z}, genVoxel());
+            }
+        }
 
         for (i32 x = -256; x < 255; ++x)
         {
@@ -301,7 +300,7 @@ namespace verdigris
             }
         }
 
-        for (int i = 0; i < 1279; ++i)
+        for (int i = 0; i < 128; ++i)
         {
             this->lights.push_back(this->chunk_manager.createPointLight());
         }
@@ -375,7 +374,7 @@ namespace verdigris
                     genVec3() * glm::vec3 {256.0, 42.0, 256.0}
                         + glm::vec3 {0.0, 41.0, 0.0},
                     0.0},
-                glm::vec4 {genVec3() / 2.0f + 0.5f, 64.0},
+                glm::vec4 {genVec3() / 2.0f + 0.5f, 512.0},
                 glm::vec4 {0.0, 0.7, 1.3, 0.0});
         }
 
