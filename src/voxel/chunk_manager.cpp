@@ -305,7 +305,7 @@ namespace voxel
                       .inputRate {vk::VertexInputRate::eInstance}}}},
                   .topology {vk::PrimitiveTopology::eTriangleList},
                   .discard_enable {false},
-                  .polygon_mode {vk::PolygonMode::eLine},
+                  .polygon_mode {vk::PolygonMode::eFill},
                   .cull_mode {vk::CullModeFlagBits::eNone},
                   .front_face {vk::FrontFace::eCounterClockwise},
                   .depth_test_enable {true},
@@ -618,13 +618,6 @@ namespace voxel
                     }
                 }
             });
-
-        u32 tris = 0;
-        for (vk::DrawIndirectCommand c : indirectCommands)
-        {
-            tris += c.vertexCount / 3;
-        }
-        util::logTrace("{}", tris);
 
         this->chunk_positions.flush();
         this->brick_maps.flush();

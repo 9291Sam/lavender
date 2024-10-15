@@ -314,18 +314,6 @@ namespace verdigris
             return glm::vec3 {ddist(gen), ddist(gen), ddist(gen)};
         };
 
-        for (const voxel::PointLight& l : this->lights)
-        {
-            this->chunk_manager.modifyPointLight(
-                l,
-                glm::vec4 {
-                    genVec3() * glm::vec3 {256.0, 42.0, 256.0}
-                        + glm::vec3 {0.0, 41.0, 0.0},
-                    0.0},
-                glm::vec4 {genVec3() / 2.0f + 0.5f, 64.0},
-                glm::vec4 {0.0, 0.7, 1.3, 0.0});
-        }
-
         this->camera.addPosition({-5.0f, 20.0f, -2.5f});
         this->camera.addPitch(0.75);
         this->camera.addYaw(1.87);
@@ -377,6 +365,18 @@ namespace verdigris
                     prevPos + glm::i32vec3 {0, i, 0},
                     voxel::Voxel::NullAirEmpty);
             }
+        }
+
+        for (const voxel::PointLight& l : this->lights)
+        {
+            this->chunk_manager.modifyPointLight(
+                l,
+                glm::vec4 {
+                    genVec3() * glm::vec3 {256.0, 42.0, 256.0}
+                        + glm::vec3 {0.0, 41.0, 0.0},
+                    0.0},
+                glm::vec4 {genVec3() / 2.0f + 0.5f, 64.0},
+                glm::vec4 {0.0, 0.7, 1.3, 0.0});
         }
 
         // TODO: moving diagonally is faster
