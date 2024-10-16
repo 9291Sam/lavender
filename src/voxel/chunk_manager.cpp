@@ -1265,20 +1265,10 @@ namespace voxel
 
                             util::assertFatal(faceHeight != 0, "hmmm");
 
-                            // util::logTrace(
-                            //     "height:{} width:{} @ faceHeight:{} "
-                            //     "faceWidth:{} mask:{:064b}",
-                            //     height,
-                            //     width,
-                            //     faceHeight,
-                            //     faceWidth,
-                            //     mask);
                             for (u64 h = height; h < (height + faceHeight); ++h)
                             {
                                 thisSlice.data[h] &= ~mask;
                             }
-
-                            // util::assertFatal()
 
                             faces.push_back(GreedyVoxelFace {
                                 .x {static_cast<u32>(thisRoot.x)},

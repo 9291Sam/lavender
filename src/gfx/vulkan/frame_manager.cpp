@@ -194,7 +194,7 @@ namespace gfx::vulkan
         const Device& device_, vk::SwapchainKHR swapchain)
         : device {device_.getDevice()}
         , previous_frame_finished_fence {std::nullopt}
-        , flying_frames {Frame {device_, swapchain}, Frame {device_, swapchain}, Frame {device_, swapchain}, Frame {device_, swapchain}, Frame {device_, swapchain}}
+        , flying_frames {Frame {device_, swapchain}, Frame {device_, swapchain}, Frame {device_, swapchain}}
         , flying_frame_index {0}
     {}
 

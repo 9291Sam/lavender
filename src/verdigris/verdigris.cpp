@@ -21,6 +21,7 @@ namespace verdigris
     Verdigris::Verdigris(game::Game* game_) // NOLINT
         : game {game_}
         , ec_manager {game_->getEntityComponentManager()}
+        , stager {this->game->getRenderer()->getAllocator()}
         , chunk_manager(this->game)
     {
         const game::ec::Entity entity =

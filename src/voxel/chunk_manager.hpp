@@ -8,6 +8,7 @@
 #include "game/frame_generator.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/buffer.hpp"
+#include "gfx/vulkan/buffer_stager.hpp"
 #include "gfx/vulkan/tracked_buffer.hpp"
 #include "greedy_voxel_face.hpp"
 #include "material_brick.hpp"

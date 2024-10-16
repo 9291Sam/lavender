@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game/game.hpp"
+#include "gfx/vulkan/buffer_stager.hpp"
 #include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
 #include <set>
@@ -13,6 +14,7 @@ namespace verdigris
         game::Game*                             game;
         const game::ec::EntityComponentManager* ec_manager;
         std::shared_ptr<vk::UniquePipeline>     triangle_pipeline;
+        gfx::vulkan::BufferStager               stager;
         mutable voxel::ChunkManager             chunk_manager;
         std::vector<voxel::PointLight>          lights;
 
