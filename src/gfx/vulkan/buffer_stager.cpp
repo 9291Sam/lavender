@@ -93,7 +93,7 @@ namespace gfx::vulkan
                             &bufferCopy);
                     }
 
-                    if (t.frames_alive > FramesInFlight + 3)
+                    if (t.frames_alive > FramesInFlight)
                     {
                         allocationsToFree.push_back(t.staging_allocation);
                     }

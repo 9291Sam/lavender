@@ -3,6 +3,7 @@
 #include "util/misc.hpp"
 #include <expected>
 #include <memory>
+#include <source_location>
 
 namespace OffsetAllocator // NOLINT stupid library
 {
@@ -40,7 +41,8 @@ namespace util
         RangeAllocator& operator= (const RangeAllocator&)     = delete;
         RangeAllocator& operator= (RangeAllocator&&) noexcept = default;
 
-        [[nodiscard]] RangeAllocation allocate(u32 size);
+        [[nodiscard]] RangeAllocation allocate(
+            u32 size, std::source_location = std::source_location::current());
         [[nodiscard]] std::expected<RangeAllocation, OutOfBlocks>
         tryAllocate(u32 size);
 

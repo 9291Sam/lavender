@@ -31,11 +31,18 @@
 namespace voxel
 {
 
+    struct ChunkSlice
+    {
+        // width is within each u64, height is the index
+        std::array<u64, 64> data;
+    };
+
     struct InternalChunkData
     {
         glm::vec4                                           position;
         std::optional<std::array<util::RangeAllocation, 6>> face_data;
         bool                                                needs_remesh;
+        std::array<std::array<ChunkSlice, 64>, 6>           slice_data;
     };
 
     class ChunkManager

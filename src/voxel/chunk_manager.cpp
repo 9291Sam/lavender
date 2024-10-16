@@ -44,10 +44,10 @@
 namespace voxel
 {
 
-    static constexpr u32 MaxChunks          = 65536;
+    static constexpr u32 MaxChunks          = 4096;
     static constexpr u32 DirectionsPerChunk = 6;
     static constexpr u32 MaxBricks          = 131072;
-    static constexpr u32 MaxFaces           = 16777216;
+    static constexpr u32 MaxFaces           = 1048576 * 4;
 
     ChunkManager::ChunkManager(const game::Game* game)
         : renderer {game->getRenderer()}
@@ -873,6 +873,8 @@ namespace voxel
 
         this->chunk_positions.write(thisChunkId, {&pos4, 1});
 
+        util::logTrace("allocated Chunk #{}", thisChunkId);
+
         return Chunk {thisChunkId};
     }
 
@@ -1125,12 +1127,6 @@ namespace voxel
             this->makeDenseBitChunk(chunkId);
 
         std::array<util::RangeAllocation, 6> outAllocations {};
-
-        struct ChunkSlice
-        {
-            // width is within each u64, height is the index
-            std::array<u64, 64> data;
-        };
 
         auto makeChunkSlice = [&](u32 normalId, u64 offset) -> ChunkSlice
         {

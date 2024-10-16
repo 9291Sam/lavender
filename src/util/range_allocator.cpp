@@ -4,6 +4,8 @@
 // tldr this lib's cmake file is fucked and doesnt have header guards, this is
 // the easiest solution
 #include "offsetAllocator.cpp" // NOLINT: stupid fucking library
+#include "util/log.hpp"
+#include <source_location>
 
 namespace util
 {
@@ -14,13 +16,15 @@ namespace util
 
     RangeAllocator::~RangeAllocator() = default;
 
-    RangeAllocation RangeAllocator::allocate(u32 size)
+    RangeAllocation RangeAllocator::allocate(u32 size, std::source_location l)
     {
         std::expected<RangeAllocation, OutOfBlocks> result =
             this->tryAllocate(size);
 
         if (!result.has_value())
         {
+            util::logTrace<>("RangeAllocator::OutOfBlocks", l);
+
             throw OutOfBlocks {};
         }
 

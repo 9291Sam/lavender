@@ -7,3 +7,6 @@ Full fledged Entity Component manager with simple systems
 TODO: Dynamic VoxelEntity
     - physics
     - changing
+
+
+    add in extra tracking data to make remeshes like 50us
