@@ -3,6 +3,7 @@
 #include "buffer.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
+#include <type_traits>
 #include <vulkan/vulkan_format_traits.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_to_string.hpp>
@@ -23,7 +24,20 @@ namespace gfx::vulkan
         BufferStager& operator= (const BufferStager&) = delete;
         BufferStager& operator= (BufferStager&&)      = delete;
 
+        template<class T>
+            requires std::is_trivially_copyable_v<T>
         void enqueueTransfer(
+            const Buffer<T>& buffer, u32 offset, std::span<T> data) const
+        {
+            this->enqueueByteTransfer(
+                *buffer,
+                offset,
+                std::span<const std::byte> {
+                    reinterpret_cast<const std::byte*>(data.data()),
+                    data.size_bytes()});
+        }
+
+        void enqueueByteTransfer(
             vk::Buffer, u32 offset, std::span<const std::byte>) const;
 
         void flushTransfers(vk::CommandBuffer) const;

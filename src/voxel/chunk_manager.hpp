@@ -50,7 +50,8 @@ namespace voxel
         ChunkManager& operator= (ChunkManager&&)      = delete;
 
         [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
-        makeRecordObject(const game::Game*, game::Camera);
+        makeRecordObject(
+            const game::Game*, const gfx::vulkan::BufferStager&, game::Camera);
 
         PointLight createPointLight();
         void       destroyPointLight(PointLight);

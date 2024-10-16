@@ -11,6 +11,7 @@
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer.hpp"
+#include "gfx/vulkan/buffer_stager.hpp"
 #include "gfx/vulkan/device.hpp"
 #include "gfx/window.hpp"
 #include "greedy_voxel_face.hpp"
@@ -501,7 +502,10 @@ namespace voxel
 
     std::vector<game::FrameGenerator::RecordObject>
     // NOLINTNEXTLINE
-    ChunkManager::makeRecordObject(const game::Game* game, game::Camera c)
+    ChunkManager::makeRecordObject(
+        const game::Game*                game,
+        const gfx::vulkan::BufferStager& stager,
+        game::Camera                     c)
     {
         // util::Timer t {"end make record object"};
         // util::logTrace("starting make record obhject");
@@ -625,6 +629,18 @@ namespace voxel
         this->material_bricks.flush();
         this->opacity_bricks.flush();
 
+        if (!indirectCommands.empty())
+        {
+            stager.enqueueTransfer(
+                this->indirect_commands, 0, std::span {indirectCommands});
+        }
+
+        if (!indirectPayload.empty())
+        {
+            stager.enqueueTransfer(
+                this->indirect_payload, 0, std::span {indirectPayload});
+        }
+
         game::FrameGenerator::RecordObject update =
             game::FrameGenerator::RecordObject {
                 .transform {},
@@ -638,24 +654,6 @@ namespace voxel
                         vk::PipelineLayout,
                         u32)
                     {
-                        if (!indirectCommands.empty())
-                        {
-                            commandBuffer.updateBuffer(
-                                *this->indirect_commands,
-                                0,
-                                std::span {indirectCommands}.size_bytes(),
-                                indirectCommands.data());
-                        }
-
-                        if (!indirectPayload.empty())
-                        {
-                            commandBuffer.updateBuffer(
-                                *this->indirect_payload,
-                                0,
-                                std::span {indirectPayload}.size_bytes(),
-                                indirectPayload.data());
-                        }
-
                         commandBuffer.fillBuffer(
                             *this->visibility_bricks,
                             0,
@@ -663,63 +661,27 @@ namespace voxel
                                 .size_bytes(),
                             0);
 
-                        // commandBuffer.fillBuffer(
-                        //     *this->face_id_bricks,
-                        //     0,
-                        //     this->face_id_bricks.getDataNonCoherent()
-                        //         .size_bytes(),
-                        //     0);
-
                         commandBuffer.fillBuffer(
                             *this->number_of_visible_faces,
                             0,
                             this->number_of_visible_faces.getDataNonCoherent()
                                 .size_bytes(),
                             0);
-
-                        // commandBuffer.fillBuffer(
-                        //     *this->visible_face_data,
-                        //     0,
-                        //     this->visible_face_data.getDataNonCoherent()
-                        //         .size_bytes(),
-                        //     0);
-
-                        std::vector<InternalPointLight> lights {};
-                        lights.reserve(this->point_light_id_payload.size());
-
-                        for (const auto& [id, data] :
-                             this->point_light_id_payload)
-                        {
-                            lights.push_back(data);
-                        }
-
-                        PointLightStorage s {};
-                        s.number_of_point_lights =
-                            static_cast<u32>(lights.size());
-                        std::copy(
-                            lights.cbegin(), lights.cend(), s.lights.begin());
-
-                        commandBuffer.updateBuffer(
-                            *this->point_lights,
-                            0,
-                            sizeof(PointLightStorage),
-                            &s);
-
-                        // commandBuffer.pipelineBarrier(
-                        //     vk::PipelineStageFlagBits::eAllCommands,
-                        //     vk::PipelineStageFlagBits::eAllCommands,
-                        //     vk::DependencyFlags {},
-                        //     {vk::MemoryBarrier {
-                        //         .sType {vk::StructureType::eMemoryBarrier},
-                        //         .pNext {nullptr},
-                        //         .srcAccessMask {
-                        //             vk::AccessFlagBits::eMemoryWrite},
-                        //         .dstAccessMask {
-                        //             vk::AccessFlagBits::eMemoryWrite},
-                        //     }},
-                        //     {},
-                        //     {});
                     }}};
+
+        std::vector<InternalPointLight> lights {};
+        lights.reserve(this->point_light_id_payload.size());
+
+        for (const auto& [id, data] : this->point_light_id_payload)
+        {
+            lights.push_back(data);
+        }
+
+        PointLightStorage s {};
+        s.number_of_point_lights = static_cast<u32>(lights.size());
+        std::copy(lights.cbegin(), lights.cend(), s.lights.begin());
+
+        stager.enqueueTransfer(this->point_lights, 0, std::span {&s, 1});
 
         game::FrameGenerator::RecordObject chunkDraw =
             game::FrameGenerator::RecordObject {

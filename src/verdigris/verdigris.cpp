@@ -504,8 +504,23 @@ namespace verdigris
                     });
                 });
 
-        draws.append_range(
-            this->chunk_manager.makeRecordObject(this->game, this->camera));
+        draws.push_back(game::FrameGenerator::RecordObject {
+            .transform {},
+            .render_pass {
+                game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
+            .pipeline {},
+            .descriptors {},
+            .record_func {[this](
+                              vk::CommandBuffer  commandBuffer,
+                              vk::PipelineLayout layout,
+                              u32                id)
+                          {
+                              this->stager.flushTransfers(commandBuffer);
+                          }},
+        });
+
+        draws.append_range(this->chunk_manager.makeRecordObject(
+            this->game, this->stager, this->camera));
 
         return {this->camera, std::move(draws)};
     }

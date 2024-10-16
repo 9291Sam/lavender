@@ -9,7 +9,6 @@
 #include <type_traits>
 #include <vulkan/vulkan_enums.hpp>
 
-
 namespace gfx::vulkan
 {
     static constexpr std::size_t StagingBufferSize = 128UZ * 1024 * 1024;
@@ -25,14 +24,14 @@ namespace gfx::vulkan
         , transfers {std::vector<BufferTransfer> {}}
     {}
 
-    void BufferStager::enqueueTransfer(
+    void BufferStager::enqueueByteTransfer(
         vk::Buffer                 buffer,
         u32                        offset,
         std::span<const std::byte> dataToWrite) const
     {
         util::assertFatal(
             dataToWrite.size_bytes() < std::numeric_limits<u32>::max(),
-            "Buffer::enqueueTransfer of size {} is too large",
+            "Buffer::enqueueByteTransfer of size {} is too large",
             dataToWrite.size_bytes());
 
         util::RangeAllocation thisAllocation = this->transfer_allocator.lock(
@@ -73,7 +72,7 @@ namespace gfx::vulkan
                 std::vector<BufferTransfer> transfersToRetain {};
                 transfersToRetain.reserve(lockedTransfers.size());
 
-                for (BufferTransfer t : lockedTransfers)
+                for (BufferTransfer& t : lockedTransfers)
                 {
                     if (t.frames_alive == 0)
                     {
@@ -94,16 +93,16 @@ namespace gfx::vulkan
                             &bufferCopy);
                     }
 
-                    if (t.frames_alive > FramesInFlight)
+                    if (t.frames_alive > FramesInFlight + 3)
                     {
                         allocationsToFree.push_back(t.staging_allocation);
                     }
                     else
                     {
+                        t.frames_alive += 1;
+
                         transfersToRetain.push_back(t);
                     }
-
-                    t.frames_alive += 1;
                 }
 
                 lockedTransfers = transfersToRetain;

@@ -190,7 +190,13 @@ namespace game
                <=> util::toUnderlying(other.render_pass);
         }
 
-        if (this->pipeline->get() != other.pipeline->get())
+        if (this->pipeline != other.pipeline)
+        {
+            return this->pipeline <=> other.pipeline;
+        }
+
+        if (this->pipeline && other.pipeline
+            && this->pipeline->get() != other.pipeline->get())
         {
             return this->pipeline->get() <=> other.pipeline->get();
         }
@@ -486,6 +492,19 @@ namespace game
         };
 
         doTransferPass(DynamicRenderingPass::PreFrameUpdate);
+
+        commandBuffer.pipelineBarrier(
+            vk::PipelineStageFlagBits::eTransfer,
+            vk::PipelineStageFlagBits::eAllCommands,
+            vk::DependencyFlags {},
+            {vk::MemoryBarrier {
+                .sType {vk::StructureType::eMemoryBarrier},
+                .pNext {nullptr},
+                .srcAccessMask {vk::AccessFlagBits::eTransferWrite},
+                .dstAccessMask {vk::AccessFlagBits::eMemoryRead},
+            }},
+            {},
+            {});
 
         if (this->has_resize_ocurred)
         {
