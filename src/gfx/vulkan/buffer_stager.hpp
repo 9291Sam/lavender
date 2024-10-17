@@ -33,6 +33,7 @@ namespace gfx::vulkan
                 *buffer,
                 offset,
                 std::span<const std::byte> {
+                    // NOLINTNEXTLINE
                     reinterpret_cast<const std::byte*>(data.data()),
                     data.size_bytes()});
         }

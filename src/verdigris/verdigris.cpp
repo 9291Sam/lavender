@@ -11,9 +11,7 @@
 #include "voxel/chunk_manager.hpp"
 #include "voxel/voxel.hpp"
 #include <boost/container_hash/hash_fwd.hpp>
-#include <functional>
 #include <glm/fwd.hpp>
-#include <iterator>
 #include <random>
 
 namespace verdigris
@@ -306,7 +304,7 @@ namespace verdigris
                     0.0},
                 glm::vec4 {genVec3() / 2.0f + 0.5f, 10.0},
                 // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
-                glm::vec4 {0.0, 0.0, 0.1, 0.0});
+                glm::vec4 {0.0, 0.0, 0.025, 0.0});
         }
     }
 
@@ -324,10 +322,10 @@ namespace verdigris
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {-1.0, 1.0};
 
-        // auto genVec3 = [&]() -> glm::vec3
-        // {
-        //     return glm::vec3 {pDist(gen), pDist(gen), pDist(gen)};
-        // };
+        auto genVec3 = [&]() -> glm::vec3
+        {
+            return glm::vec3 {pDist(gen), pDist(gen), pDist(gen)};
+        };
 
         auto genSpiralPos = [](i32 f)
         {
