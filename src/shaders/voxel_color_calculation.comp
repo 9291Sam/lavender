@@ -85,6 +85,11 @@ void main()
 
         for (int i = 0; i < in_point_lights.number_of_point_lights; ++i)
         {
+            // const bool isInShadow = traceShadowRay(
+            //     ivec3()
+            //     ivec3(floor(in_point_lights.light[i].xyz))
+            // );
+
             CalculatedLightPower power = calculate_light_power(
                 in_global_info.camera_position.xyz,
                 position_world,
@@ -94,7 +99,8 @@ void main()
             );
 
             sum_diffuse += power.diffuse_strength;
-            sum_specular += power.specular_strength;
+            // #warning no specular
+            // sum_specular += power.specular_strength;
         }
 
         vec3 realColor = clamp(
