@@ -32,7 +32,8 @@ Checks: >
   -fuchsia-trailing-return,
   -modernize-use-emplace,
   -hicpp-use-emplace,
-  -cppcoreguidelines-avoid-do-while
+  -cppcoreguidelines-avoid-do-while,
+  -cert-flp30-c
   
 CheckOptions:
   - { key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor, value: true       }

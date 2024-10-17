@@ -116,6 +116,7 @@ add_executable(lavender
     
     src/voxel/brick_pointer_allocator.cpp
     src/voxel/chunk_manager.cpp
+    src/voxel/material_manager.cpp
 )
 
 target_include_directories(lavender PUBLIC src)

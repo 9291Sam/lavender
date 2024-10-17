@@ -93,7 +93,7 @@ namespace util
                         location,                                              \
                         std::chrono::system_clock::now());                     \
                                                                                \
-                    util::debugBreak();                                        \
+                    util::debugBreak(location);                                \
                                                                                \
                     throw std::runtime_error {std::move(message)};             \
                 }                                                              \
@@ -139,7 +139,7 @@ namespace util
                 location,
                 std::chrono::system_clock::now());
 
-            util::debugBreak();
+            util::debugBreak(location);
 
             throw std::runtime_error {message};
         }

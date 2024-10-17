@@ -99,7 +99,7 @@ namespace verdigris
 
         std::mt19937_64                    gen {std::random_device {}()};
         std::normal_distribution<float>    realDist {64, 3};
-        std::uniform_int_distribution<u16> pDist {1, 15};
+        std::uniform_int_distribution<u16> pDist {1, 8};
 
         auto genFunc = [](i32 x, i32 z) -> i32
         {
@@ -111,28 +111,6 @@ namespace verdigris
         auto genVoxel = [&] -> voxel::Voxel
         {
             return static_cast<voxel::Voxel>(pDist(gen));
-        };
-
-        struct Bar
-        {
-            std::size_t operator() (glm::i32vec3 p) const
-            {
-                std::size_t foo {48584};
-
-                boost::hash_combine(foo, std::hash<i32> {}(p.x));
-                boost::hash_combine(foo, std::hash<i32> {}(p.y));
-                boost::hash_combine(foo, std::hash<i32> {}(p.z));
-
-                return foo;
-            }
-        };
-
-        std::unordered_map<glm::i32vec3, voxel::Chunk, Bar> chunks {};
-
-        auto eucRem = [](i32 a, i32 b)
-        {
-            i32 r = a % b;
-            return r >= 0 ? r : r + std::abs(b);
         };
 
         auto insertVoxelAt = [&](glm::i32vec3 p, voxel::Voxel v)
@@ -174,7 +152,7 @@ namespace verdigris
                 {
                     if (y == 0)
                     {
-                        insertVoxelAt({x, y, z}, voxel::Voxel::Stone3);
+                        insertVoxelAt({x, y, z}, voxel::Voxel::Gold);
                     }
                 }
             }
@@ -185,7 +163,7 @@ namespace verdigris
         // Trunk of the tree
         for (int y = 0; y < 32; ++y) // Trunk height of 10 voxels
         {
-            insertVoxelAt(center + glm::f32vec3(0, y, 0), voxel::Voxel::Stone3);
+            insertVoxelAt(center + glm::f32vec3(0, y, 0), voxel::Voxel::Copper);
         }
 
         // Branches
@@ -219,7 +197,7 @@ namespace verdigris
             for (float i = 0; i < branch.length; ++i)
             {
                 glm::f32vec3 pos = start + direction * i;
-                insertVoxelAt(pos, voxel::Voxel::Stone0);
+                insertVoxelAt(pos, voxel::Voxel::Obsidian);
             }
 
             // Leaves (spherical cluster at the tip of the branch)
@@ -236,7 +214,7 @@ namespace verdigris
                         if (glm::length(glm::vec3(x, y, z))
                             <= leafRadius) // Check to make it spherical
                         {
-                            insertVoxelAt(leafPos, voxel::Voxel::Dirt5);
+                            insertVoxelAt(leafPos, voxel::Voxel::Copper);
                         }
                     }
                 }
@@ -244,9 +222,9 @@ namespace verdigris
         }
 
         // Build pillars in a circular formation
-        int   numPillars = 12;     // Number of pillars
+        float numPillars = 12;     // Number of pillars
         float radius     = 192.0f; // Radius of the pillar circle
-        for (int i = 0; i < numPillars; ++i)
+        for (float i = 0; i < numPillars; ++i)
         {
             float angle = i * (2.0f * glm::pi<float>() / numPillars);
 
@@ -257,33 +235,33 @@ namespace verdigris
                     0,
                     static_cast<int>(radius * sin(angle)));
 
-            for (float theta = 0; theta < 2 * glm::pi<float>(); theta += 0.06)
+            for (float theta = 0; theta < 2 * glm::pi<float>(); theta += 0.06f)
             {
-                for (int r = 0; r < 16; r++)
+                for (float r = 0; r < 16; r++)
                 {
-                    for (int y = 0; y < 64; ++y)
+                    for (float y = 0; y < 64; ++y)
                     {
                         insertVoxelAt(
                             pillarBase
                                 + glm::i32vec3(
                                     r * cos(theta), y, r * sin(theta)),
-                            voxel::Voxel::Stone1);
+                            voxel::Voxel::Pearl);
                     }
                 }
             }
         }
 
         // Build doughnut ceiling with a hole in the center
-        int innerRadius = 128; // Inner radius (hole size)
-        int outerRadius = 240; // Outer radius (doughnut size)
+        float innerRadius = 128; // Inner radius (hole size)
+        float outerRadius = 240; // Outer radius (doughnut size)
 
         for (int h = 0; h < 24; ++h)
         {
             int currentHeight =
                 h + 52; // Start the doughnut at a base height of 20
-            for (int x = -outerRadius; x <= outerRadius; ++x)
+            for (float x = -outerRadius; x <= outerRadius; ++x)
             {
-                for (int z = -outerRadius; z <= outerRadius; ++z)
+                for (float z = -outerRadius; z <= outerRadius; ++z)
                 {
                     float dist = glm::length(glm::vec2(x, z));
 
@@ -295,13 +273,13 @@ namespace verdigris
                         // height layer
                         insertVoxelAt(
                             center + glm::f32vec3(x, currentHeight, z),
-                            voxel::Voxel::Stone0);
+                            voxel::Voxel::Ruby);
                     }
                 }
             }
         }
 
-        for (int i = 0; i < 128; ++i)
+        for (int i = 0; i < 1028; ++i)
         {
             this->lights.push_back(this->chunk_manager.createPointLight());
         }
@@ -315,8 +293,20 @@ namespace verdigris
         };
 
         this->camera.addPosition({-5.0f, 20.0f, -2.5f});
-        this->camera.addPitch(0.75);
-        this->camera.addYaw(1.87);
+        this->camera.addPitch(0.75f);
+        this->camera.addYaw(1.87f);
+
+        for (const voxel::PointLight& l : this->lights)
+        {
+            this->chunk_manager.modifyPointLight(
+                l,
+                glm::vec4 {
+                    genVec3() * glm::vec3 {256.0, 42.0, 256.0}
+                        + glm::vec3 {0.0, 41.0, 0.0},
+                    0.0},
+                glm::vec4 {genVec3() / 2.0f + 0.5f, 512.0},
+                glm::vec4 {0.0, 0.7, 1.3, 0.0});
+        }
     }
 
     Verdigris::~Verdigris()
@@ -333,10 +323,10 @@ namespace verdigris
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {-1.0, 1.0};
 
-        auto genVec3 = [&]() -> glm::vec3
-        {
-            return glm::vec3 {pDist(gen), pDist(gen), pDist(gen)};
-        };
+        // auto genVec3 = [&]() -> glm::vec3
+        // {
+        //     return glm::vec3 {pDist(gen), pDist(gen), pDist(gen)};
+        // };
 
         auto genSpiralPos = [](i32 f)
         {
@@ -360,23 +350,11 @@ namespace verdigris
             for (i32 i = 0; i < 32; ++i)
             {
                 this->chunk_manager.writeVoxel(
-                    thisPos + glm::i32vec3 {0, i, 0}, voxel::Voxel::Dirt3);
+                    thisPos + glm::i32vec3 {0, i, 0}, voxel::Voxel::Pearl);
                 this->chunk_manager.writeVoxel(
                     prevPos + glm::i32vec3 {0, i, 0},
                     voxel::Voxel::NullAirEmpty);
             }
-        }
-
-        for (const voxel::PointLight& l : this->lights)
-        {
-            this->chunk_manager.modifyPointLight(
-                l,
-                glm::vec4 {
-                    genVec3() * glm::vec3 {256.0, 42.0, 256.0}
-                        + glm::vec3 {0.0, 41.0, 0.0},
-                    0.0},
-                glm::vec4 {genVec3() / 2.0f + 0.5f, 512.0},
-                glm::vec4 {0.0, 0.7, 1.3, 0.0});
         }
 
         // TODO: moving diagonally is faster
@@ -510,13 +488,11 @@ namespace verdigris
                 game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
             .pipeline {},
             .descriptors {},
-            .record_func {[this](
-                              vk::CommandBuffer  commandBuffer,
-                              vk::PipelineLayout layout,
-                              u32                id)
-                          {
-                              this->stager.flushTransfers(commandBuffer);
-                          }},
+            .record_func {
+                [this](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                {
+                    this->stager.flushTransfers(commandBuffer);
+                }},
         });
 
         draws.append_range(this->chunk_manager.makeRecordObject(

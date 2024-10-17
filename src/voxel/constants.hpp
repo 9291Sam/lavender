@@ -25,8 +25,8 @@ namespace voxel
 
         static BrickCoordinate fromLinearPositionInChunk(u32 linearIndex)
         {
-            const u8 z =
-                linearIndex / (BrickEdgeLengthVoxels * BrickEdgeLengthVoxels);
+            const u8 z = static_cast<u8>(
+                linearIndex / (BrickEdgeLengthVoxels * BrickEdgeLengthVoxels));
             const u8 y =
                 (linearIndex / BrickEdgeLengthVoxels) % BrickEdgeLengthVoxels;
             const u8 x = linearIndex % BrickEdgeLengthVoxels;

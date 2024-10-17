@@ -45,8 +45,8 @@ struct OpacityBrick
 
 struct VoxelMaterial
 {
+    vec4  ambient_color;
     vec4  diffuse_color;
-    vec4  subsurface_color;
     vec4  specular_color;
     float diffuse_subsurface_weight;
     float specular;

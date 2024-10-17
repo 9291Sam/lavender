@@ -22,7 +22,6 @@
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
-#include "util/timer.hpp"
 #include "voxel/constants.hpp"
 #include "voxel/material_manager.hpp"
 #include "voxel/opacity_brick.hpp"
@@ -694,7 +693,7 @@ namespace voxel
                      this->chunk_descriptor_set,
                      nullptr,
                      nullptr}},
-                .record_func {[this, s = indirectCommands.size()](
+                .record_func {[this, size = indirectCommands.size()](
                                   vk::CommandBuffer  commandBuffer,
                                   vk::PipelineLayout layout,
                                   u32                id)
@@ -712,7 +711,7 @@ namespace voxel
                                   commandBuffer.drawIndirect(
                                       *this->indirect_commands,
                                       0,
-                                      static_cast<u32>(s),
+                                      static_cast<u32>(size),
                                       16);
                               }}};
 
@@ -864,7 +863,8 @@ namespace voxel
         this->chunk_data[thisChunkId] = InternalChunkData {
             .position {glm::vec4 {position.x, position.y, position.z, 0.0}},
             .face_data {std::nullopt},
-            .needs_remesh {true}};
+            .needs_remesh {true},
+            .slice_data {}};
 
         const BrickMap emptyBrickMap {};
         this->brick_maps.write(thisChunkId, {&emptyBrickMap, 1});
@@ -872,8 +872,6 @@ namespace voxel
         glm::vec4 pos4 = position.xyzz();
 
         this->chunk_positions.write(thisChunkId, {&pos4, 1});
-
-        util::logTrace("allocated Chunk #{}", thisChunkId);
 
         return Chunk {thisChunkId};
     }
@@ -1121,7 +1119,7 @@ namespace voxel
     }
 
     std::array<util::RangeAllocation, 6>
-    ChunkManager::meshChunkGreedy(u32 chunkId)
+    ChunkManager::meshChunkGreedy(u32 chunkId) // NOLINT
     {
         std::unique_ptr<DenseBitChunk> thisChunkData =
             this->makeDenseBitChunk(chunkId);
@@ -1158,7 +1156,9 @@ namespace voxel
                         }
                         else
                         {
-                            res.data[h] |= (UINT64_C(1) << static_cast<u64>(w));
+                            // NOLINTNEXTLINE
+                            res.data[static_cast<std::size_t>(h)] |=
+                                (UINT64_C(1) << static_cast<u64>(w));
                         }
                     }
                 }
@@ -1178,14 +1178,19 @@ namespace voxel
 
                 for (u64 height = 0; height < 64; ++height)
                 {
+                    // NOLINTNEXTLINE
                     for (u64 width = std::countr_zero(thisSlice.data[height]);
                          width < 64;
                          ++width)
                     {
-                        if (thisSlice.data[height] & (UINT64_C(1) << width))
+                        // NOLINTNEXTLINE
+                        if ((thisSlice.data[height] & (UINT64_C(1) << width))
+                            != 0ULL)
                         {
-                            const u64 faceWidth = std::countr_one(
-                                thisSlice.data[height] >> width);
+                            const u64 faceWidth =
+                                static_cast<u64>(std::countr_one(
+                                    // NOLINTNEXTLINE
+                                    thisSlice.data[height] >> width));
 
                             VoxelFaceDirection dir =
                                 static_cast<VoxelFaceDirection>(normalId);
@@ -1197,7 +1202,7 @@ namespace voxel
                                 + heightAxis * static_cast<i8>(height)
                                 + widthAxis * static_cast<i8>(width);
 
-                            u64 mask;
+                            u64 mask = 0;
 
                             if (faceWidth == 64)
                             {
@@ -1211,6 +1216,7 @@ namespace voxel
                             u64 faceHeight = 0;
                             for (u64 h = height; h < 64; ++h)
                             {
+                                // NOLINTNEXTLINE
                                 if ((thisSlice.data[h] & mask) == mask)
                                 {
                                     faceHeight += 1;
@@ -1225,6 +1231,7 @@ namespace voxel
 
                             for (u64 h = height; h < (height + faceHeight); ++h)
                             {
+                                // NOLINTNEXTLINE
                                 thisSlice.data[h] &= ~mask;
                             }
 
@@ -1242,14 +1249,15 @@ namespace voxel
                         }
                         else
                         {
-                            width += std::countr_zero(
-                                         thisSlice.data[height] >> width)
-                                   - 1;
+                            // NOLINTNEXTLINE
+                            width += static_cast<u64>(
+                                std::countr_zero(
+                                    // NOLINTNEXTLINE
+                                    thisSlice.data[height] >> width)
+                                - 1);
                         }
                     }
                 }
-
-            next_layer:
             }
 
             thisAllocation = this->voxel_face_allocator.allocate(

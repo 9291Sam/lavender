@@ -115,8 +115,9 @@ namespace voxel
                 else
                 {
                     return static_cast<bool>(
-                        // NOLINTNEXTLINE
-                        this->data[p.x][p.y] & (1ULL << static_cast<u64>(p.z)));
+                        this->data[static_cast<std::size_t>(p.x)] // NOLINT
+                                  [static_cast<std::size_t>(p.y)] // NOLINT
+                        & (1ULL << static_cast<u64>(p.z)));
                 }
             }
             // if its occupied, it removes it from the data structure

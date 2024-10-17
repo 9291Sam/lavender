@@ -1,4 +1,5 @@
 #include "log.hpp"
+#include "misc.hpp"
 #include "util/threads.hpp"
 #include <atomic>
 #include <cassert>
@@ -263,30 +264,7 @@ namespace util
                 return std::string {outBuffer.data(), dateStringLength};
                 // NOLINTEND
             }(),
-            [&] // 1 location
-            {
-                constexpr std::array<std::string_view, 2> FolderIdentifiers {
-                    "/src/", "/inc/"};
-                const std::string rawFileName {location.file_name()};
-
-                std::size_t index = std::string::npos; // NOLINT
-
-                for (const std::string_view str : FolderIdentifiers)
-                {
-                    if (index != std::string::npos)
-                    {
-                        break;
-                    }
-
-                    index = rawFileName.find(str);
-                }
-
-                return std::format(
-                    "{}:{}:{}",
-                    rawFileName.substr(index + 1),
-                    location.line(),
-                    location.column());
-            }(),
+            util::formCallingLocation(location),
             [&] // 2 message level
             {
                 return getStringOfLoggingLevel(level);

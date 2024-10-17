@@ -1,6 +1,11 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
+#include <format>
+#include <source_location>
+#include <string>
+#include <string_view>
 #include <type_traits>
 
 using u8  = unsigned char; // for aliasing rules
@@ -23,7 +28,8 @@ namespace util
     template<class T>
     using Fn = T;
 
-    void debugBreak();
+    [[noreturn]] void
+        debugBreak(std::source_location = std::source_location::current());
 
     consteval bool isDebugBuild()
     {
@@ -38,6 +44,32 @@ namespace util
     constexpr std::underlying_type_t<T> toUnderlying(T t) noexcept
     {
         return static_cast<std::underlying_type_t<T>>(t);
+    }
+
+    constexpr inline std::string
+    formCallingLocation(std::source_location location)
+    {
+        constexpr std::array<std::string_view, 2> FolderIdentifiers {
+            "/src/", "/inc/"};
+        const std::string rawFileName {location.file_name()};
+
+        std::size_t index = std::string::npos; // NOLINT
+
+        for (const std::string_view str : FolderIdentifiers)
+        {
+            if (index != std::string::npos)
+            {
+                break;
+            }
+
+            index = rawFileName.find(str);
+        }
+
+        return std::format(
+            "{}:{}:{}",
+            rawFileName.substr(index + 1),
+            location.line(),
+            location.column());
     }
 
     constexpr inline void

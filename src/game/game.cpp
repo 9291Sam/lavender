@@ -20,10 +20,10 @@ namespace game
         const Game* globalGame = nullptr; // NOLINT
     } // namespace
 
-    const Game* getGame()
-    {
-        return globalGame;
-    }
+    // const Game* getGame()
+    // {
+    //     return globalGame;
+    // }
 
     Game::Game()
         : renderer {std::make_unique<gfx::Renderer>()}

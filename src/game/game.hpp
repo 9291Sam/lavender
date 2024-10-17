@@ -26,7 +26,7 @@ namespace game
 
     class FrameGenerator;
 
-    static const Game* getGame();
+    // static const Game* getGame();
 
     class Game
     {
