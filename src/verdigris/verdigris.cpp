@@ -157,6 +157,14 @@ namespace verdigris
             }
         }
 
+        for (i32 x = -64; x < 64; ++x)
+        {
+            for (i32 z = -64; z < 64; ++z)
+            {
+                insertVoxelAt({x, 42, z}, voxel::Voxel::Emerald);
+            }
+        }
+
         glm::f32vec3 center = {0, 0, 0}; // Center of the structure
 
         // Trunk of the tree
