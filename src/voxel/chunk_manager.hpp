@@ -73,7 +73,7 @@ namespace voxel
 
     private:
 
-        Chunk allocateChunk(glm::vec3 position);
+        Chunk allocateChunk(glm::ivec3 position);
         void  deallocateChunk(Chunk);
 
         void writeVoxelToChunk(

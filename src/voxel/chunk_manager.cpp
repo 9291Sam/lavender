@@ -31,6 +31,7 @@
 #include <glm/fwd.hpp>
 #include <glm/geometric.hpp>
 #include <glm/vector_relational.hpp>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <source_location>
@@ -848,8 +849,13 @@ namespace voxel
         this->writeVoxelToChunk(it->second, pos, v);
     }
 
-    Chunk ChunkManager::allocateChunk(glm::vec3 position)
+    Chunk ChunkManager::allocateChunk(glm::ivec3 position)
     {
+        util::assertFatal(
+            position % glm::ivec3 {64, 64, 64} == glm::ivec3 {0, 0, 0},
+            "Tried to create a chunk at {}",
+            glm::to_string(position));
+
         const std::expected<u32, util::IndexAllocator::OutOfBlocks>
             maybeThisChunkId = this->chunk_id_allocator.allocate();
 
@@ -871,7 +877,56 @@ namespace voxel
 
         GpuChunkData gpuChunkData {
             .position {position.xyzz()}, .adjacent_chunks {}};
-        util::logWarn("do!");
+
+        // TODO: make better
+        std::memset(
+            gpuChunkData.adjacent_chunks.data(),
+            -1,
+            sizeof(gpuChunkData.adjacent_chunks));
+
+        std::initializer_list<i32> relativePositions {-64, 0, 64};
+
+        for (i32 x : relativePositions)
+        {
+            for (i32 y : relativePositions)
+            {
+                for (i32 z : relativePositions)
+                {
+                    if (x == 0 && y == 0 && z == 0)
+                    {
+                        continue;
+                    }
+
+                    const glm::ivec3 otherOffsetRelative {x, y, z};
+
+                    const glm::ivec3 otherChunkPosition {
+                        position + otherOffsetRelative};
+
+                    if (auto maybeChunkIt =
+                            this->global_chunks.find(otherChunkPosition);
+                        maybeChunkIt != this->global_chunks.cend())
+                    {
+                        const glm::ivec3 indexVectorThis {
+                            otherOffsetRelative / 64 + 1};
+                        const glm::ivec3 indexVectorOther {
+                            -otherOffsetRelative / 64 + 1};
+
+                        const u32 otherChunkId {maybeChunkIt->second.id};
+
+                        // NOLINTNEXTLINE
+                        gpuChunkData.adjacent_chunks[indexVectorThis.x]
+                                                    [indexVectorThis.y]
+                                                    [indexVectorThis.z] =
+                            otherChunkId;
+
+                        this->gpu_chunk_data.modify(otherChunkId)
+                            .adjacent_chunks[indexVectorOther.x]
+                                            [indexVectorOther.y]
+                                            [indexVectorOther.z] = thisChunkId;
+                    }
+                }
+            }
+        }
 
         this->gpu_chunk_data.write(thisChunkId, {&gpuChunkData, 1});
 
@@ -898,6 +953,17 @@ namespace voxel
                 }
             }
         }
+
+// we need to remove references to ourself in the adjacent chunks that
+// border this
+#warning implement
+        // for (xyz)
+        // {
+        //     u32 otherChunkId = func(xyz);
+
+        //     this->gpu_chunk_data.modify(otherChunkId)
+        //         .adjacent_chunks[otherindexvector] = ~0;
+        // }
 
         std::optional<std::array<util::RangeAllocation, 6>>& maybeFacesToFree =
             this->cpu_chunk_data[toFree.id].face_data;
