@@ -31,22 +31,10 @@
 namespace voxel
 {
 
-    struct ChunkSlice
-    {
-        // width is within each u64, height is the index
-        std::array<u64, 64> data;
-    };
-
-    struct CpuChunkData
-    {
-        glm::vec4                                           position;
-        std::optional<std::array<util::RangeAllocation, 6>> face_data;
-        bool                                                needs_remesh;
-        std::array<std::array<ChunkSlice, 64>, 6>           slice_data;
-    };
-
     class ChunkManager
     {
+    public:
+        static constexpr std::size_t NumberOfPointLightsPerChunk = 128;
     public:
         explicit ChunkManager(const game::Game*);
         ~ChunkManager();
@@ -196,14 +184,38 @@ namespace voxel
 
         const gfx::Renderer* renderer;
 
-        util::IndexAllocator      chunk_id_allocator;
+        util::IndexAllocator chunk_id_allocator;
+
+        struct ChunkSlice
+        {
+            // width is within each u64, height is the index
+            std::array<u64, 64> data;
+        };
+
+        struct CpuChunkData
+        {
+            glm::vec4                                           position;
+            std::optional<std::array<util::RangeAllocation, 6>> face_data;
+            bool                                                needs_remesh;
+            std::array<std::array<ChunkSlice, 64>, 6>           slice_data;
+            util::IndexAllocator point_light_allocator;
+        };
+
         std::vector<CpuChunkData> cpu_chunk_data;
+
+        struct InternalPointLight
+        {
+            glm::vec4 position;
+            glm::vec4 color_and_power;
+            glm::vec4 falloffs;
+        };
         struct GpuChunkData // TODO: modify this so the adjacent chunks are
                             // uploaded
         {
             glm::i32vec4                                     position;
             std::array<std::array<std::array<u32, 3>, 3>, 3> adjacent_chunks;
-            u32                                              padding;
+            u32                                              number_of_lights;
+            std::array<InternalPointLight, NumberOfPointLightsPerChunk> lights;
         };
         gfx::vulkan::TrackedBuffer<GpuChunkData> gpu_chunk_data;
         gfx::vulkan::TrackedBuffer<BrickMap>     brick_maps;
@@ -251,24 +263,6 @@ namespace voxel
         };
         gfx::vulkan::Buffer<VisibleVoxelFaces> number_of_visible_faces;
         gfx::vulkan::Buffer<VisibleFaceData>   visible_face_data;
-
-        struct InternalPointLight
-        {
-            glm::vec4 position;
-            glm::vec4 color_and_power;
-            glm::vec4 falloffs;
-        };
-        struct PointLightStorage
-        {
-            u32                                  number_of_point_lights;
-            u32                                  pad0;
-            u32                                  pad1;
-            u32                                  pad2;
-            std::array<InternalPointLight, 1280> lights;
-        };
-        gfx::vulkan::Buffer<PointLightStorage>      point_lights;
-        util::IndexAllocator                        point_light_allocator;
-        std::unordered_map<u32, InternalPointLight> point_light_id_payload;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> descriptor_set_layout;
 
