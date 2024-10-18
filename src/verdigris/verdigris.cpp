@@ -283,15 +283,6 @@ namespace verdigris
             this->lights.push_back(this->chunk_manager.createPointLight());
         }
 
-        for (int i = 8; i < 64; ++i)
-        {
-            this->chunk_manager.modifyPointLight(
-                this->lights[i],
-                glm::vec3 {i * 16 - 256, 3.0, 64.0},
-                {1.0, 1.0, 1.0, 64.0},
-                {0.0, 0.0, 0.25, 0.03125});
-        }
-
         // voxel::PointLight light = this->chunk_manager.createPointLight();
         // this->lights.push_back(std::move(light));
 
@@ -319,6 +310,18 @@ namespace verdigris
         //         // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
         //         glm::vec4 {0.0, 0.0, 0.025, 0.0});
         // }
+
+        for (const voxel::PointLight& l : this->lights)
+        {
+            this->chunk_manager.modifyPointLight(
+                l,
+                glm::vec4 {
+                    genVec3() * glm::vec3 {256.0, 42.0, 256.0}
+                        + glm::vec3 {0.0, 41.0, 0.0},
+                    0.0},
+                glm::vec4 {genVec3() / 2.0f + 0.5f, 512.0},
+                glm::vec4 {0.0, 0.0, 0.25, 0.025});
+        }
     }
 
     Verdigris::~Verdigris()
@@ -362,7 +365,7 @@ namespace verdigris
                         / glm::vec3 {1.0f, 2.0f, 1.0f}
                     - glm::vec3 {0.0, 30.0, 0.0},
                 {1.0, 1.0, 1.0, 512.0},
-                {0.0, 0.0, 0.25, 0.03125});
+                {0.0, 0.0, 0.25, 0.0});
         }
 
         auto thisPos = genSpiralPos(frameNumber);
