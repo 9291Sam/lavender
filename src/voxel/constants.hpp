@@ -2,6 +2,7 @@
 
 #include "util/misc.hpp"
 #include <glm/fwd.hpp>
+#include <glm/gtx/hash.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vector_relational.hpp>
 #include <optional>
@@ -47,6 +48,9 @@ namespace voxel
         }
     };
 
+    struct ChunkCoordinate : public glm::i32vec3
+    {};
+
     inline std::pair<BrickCoordinate, BrickLocalPosition>
     splitChunkLocalPosition(ChunkLocalPosition p)
     {
@@ -75,3 +79,15 @@ namespace voxel
         }
     }
 } // namespace voxel
+
+namespace std
+{
+    template<>
+    struct hash<voxel::ChunkCoordinate>
+    {
+        std::size_t operator() (const voxel::ChunkCoordinate& c) const
+        {
+            return std::hash<glm::i32vec3> {}(static_cast<glm::i32vec3>(c));
+        }
+    };
+} // namespace std

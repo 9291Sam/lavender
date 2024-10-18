@@ -208,7 +208,7 @@ namespace voxel
         gfx::vulkan::TrackedBuffer<GpuChunkData> gpu_chunk_data;
         gfx::vulkan::TrackedBuffer<BrickMap>     brick_maps;
 
-        std::unordered_map<glm::i32vec3, Chunk> global_chunks;
+        std::unordered_map<ChunkCoordinate, Chunk> global_chunks;
 
         struct ChunkDrawIndirectInstancePayload
         {

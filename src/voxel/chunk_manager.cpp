@@ -825,11 +825,11 @@ namespace voxel
 
     void ChunkManager::writeVoxel(glm::i32vec3 p, Voxel v)
     {
-        glm::i32vec3 coord = glm::i32vec3 {
+        ChunkCoordinate coord {glm::i32vec3 {
             util::divideEuclidean(p.x, 64),
             util::divideEuclidean(p.y, 64),
             util::divideEuclidean(p.z, 64),
-        };
+        }};
 
         ChunkLocalPosition pos {glm::u8vec3 {
             static_cast<u8>(util::moduloEuclidean(p.x, 64)),
@@ -902,8 +902,13 @@ namespace voxel
                     const glm::ivec3 otherChunkPosition {
                         position + otherOffsetRelative};
 
-                    if (auto maybeChunkIt =
-                            this->global_chunks.find(otherChunkPosition);
+                    const ChunkCoordinate coord {glm::i32vec3 {
+                        util::divideEuclidean(otherChunkPosition.x, 64),
+                        util::divideEuclidean(otherChunkPosition.y, 64),
+                        util::divideEuclidean(otherChunkPosition.z, 64),
+                    }};
+
+                    if (auto maybeChunkIt = this->global_chunks.find(coord);
                         maybeChunkIt != this->global_chunks.cend())
                     {
                         const glm::ivec3 indexVectorThis {
@@ -956,7 +961,7 @@ namespace voxel
 
 // we need to remove references to ourself in the adjacent chunks that
 // border this
-#warning implement
+#warning implement unlinking
         // for (xyz)
         // {
         //     u32 otherChunkId = func(xyz);
