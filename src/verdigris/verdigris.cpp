@@ -9,6 +9,7 @@
 #include "triangle_component.hpp"
 #include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
+#include "voxel/point_light.hpp"
 #include "voxel/voxel.hpp"
 #include <boost/container_hash/hash_fwd.hpp>
 #include <glm/fwd.hpp>
@@ -277,10 +278,22 @@ namespace verdigris
             }
         }
 
-        for (int i = 0; i < 1028; ++i)
+        for (int i = 0; i < 128; ++i)
         {
             this->lights.push_back(this->chunk_manager.createPointLight());
         }
+
+        for (int i = 8; i < 64; ++i)
+        {
+            this->chunk_manager.modifyPointLight(
+                this->lights[i],
+                glm::vec3 {i * 16 - 256, 3.0, 64.0},
+                {1.0, 1.0, 1.0, 64.0},
+                {0.0, 0.0, 0.25, 0.03125});
+        }
+
+        // voxel::PointLight light = this->chunk_manager.createPointLight();
+        // this->lights.push_back(std::move(light));
 
         // std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> ddist {-1.0, 1.0};
@@ -294,18 +307,18 @@ namespace verdigris
         this->camera.addPitch(0.75f);
         this->camera.addYaw(1.87f);
 
-        for (const voxel::PointLight& l : this->lights)
-        {
-            this->chunk_manager.modifyPointLight(
-                l,
-                glm::vec4 {
-                    genVec3() * glm::vec3 {256.0, 42.0, 256.0}
-                        + glm::vec3 {0.0, 41.0, 0.0},
-                    0.0},
-                glm::vec4 {genVec3() / 2.0f + 0.5f, 10.0},
-                // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
-                glm::vec4 {0.0, 0.0, 0.025, 0.0});
-        }
+        // for (const voxel::PointLight& l : this->lights)
+        // {
+        //     this->chunk_manager.modifyPointLight(
+        //         l,
+        //         glm::vec4 {
+        //             genVec3() * glm::vec3 {256.0, 42.0, 256.0}
+        //                 + glm::vec3 {0.0, 41.0, 0.0},
+        //             0.0},
+        //         glm::vec4 {genVec3() / 2.0f + 0.5f, 10.0},
+        //         // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
+        //         glm::vec4 {0.0, 0.0, 0.025, 0.0});
+        // }
     }
 
     Verdigris::~Verdigris()
@@ -340,6 +353,17 @@ namespace verdigris
 
         const i32 frameNumber =
             static_cast<i32>(this->game->getRenderer()->getFrameNumber());
+
+        for (int i = 0; i < 8; ++i)
+        {
+            this->chunk_manager.modifyPointLight(
+                this->lights[i],
+                glm::vec3 {genSpiralPos(frameNumber * 7 + 384 * i)}
+                        / glm::vec3 {1.0f, 2.0f, 1.0f}
+                    - glm::vec3 {0.0, 30.0, 0.0},
+                {1.0, 1.0, 1.0, 512.0},
+                {0.0, 0.0, 0.25, 0.03125});
+        }
 
         auto thisPos = genSpiralPos(frameNumber);
         auto prevPos = genSpiralPos(frameNumber - 1);

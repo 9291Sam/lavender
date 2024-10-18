@@ -21,6 +21,11 @@ CalculatedLightPower calculate_light_power(
     float to_light_distance = length(to_light_vector);
     to_light_vector /= to_light_distance;
 
+    if (to_light_distance > 64.0 || light.color_and_power.w < 0.25)
+    {
+        return CalculatedLightPower(vec3(0.0), vec3(0.0));
+    }
+
     vec3 view_vector = normalize(camera_position - voxel_position);
     vec3 reflect_vector = 2.0 * dot(to_light_vector, voxel_normal) * voxel_normal - to_light_vector;
 
