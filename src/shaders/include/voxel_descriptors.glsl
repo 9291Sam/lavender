@@ -88,10 +88,17 @@ struct PointLight {
     vec4 falloffs;         // x = constant, y = linear, z = quadratic, w = cubic
 };
 
-layout(set = 1, binding = 0) readonly buffer ChunkPositionsBuffer
+struct GpuChunkData
 {
-    vec4 positions[];
-} in_chunk_positions;
+    ivec4 position;
+    u32 adjacent_chunks[3][3][3];
+    u32 padding;
+};
+
+layout(set = 1, binding = 0) readonly buffer GpuChunkDataBuffer
+{
+    GpuChunkData data[];
+} in_chunk_data;
 
 layout(set = 1, binding = 1) readonly buffer BrickMapBuffer
 {

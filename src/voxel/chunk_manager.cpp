@@ -51,8 +51,8 @@ namespace voxel
     ChunkManager::ChunkManager(const game::Game* game)
         : renderer {game->getRenderer()}
         , chunk_id_allocator {MaxChunks}
-        , chunk_data {MaxChunks, InternalChunkData {}}
-        , chunk_positions(
+        , cpu_chunk_data {MaxChunks, CpuChunkData {}}
+        , gpu_chunk_data(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
@@ -395,7 +395,7 @@ namespace voxel
     {
         const auto bufferInfo = {
             vk::DescriptorBufferInfo {
-                .buffer {*this->chunk_positions},
+                .buffer {*this->gpu_chunk_data},
                 .offset {0},
                 .range {vk::WholeSize},
             },
@@ -516,7 +516,7 @@ namespace voxel
         this->chunk_id_allocator.iterateThroughAllocatedElements(
             [&, this](u32 chunkId)
             {
-                InternalChunkData& thisChunkData = this->chunk_data[chunkId];
+                CpuChunkData& thisChunkData = this->cpu_chunk_data[chunkId];
 
                 if (thisChunkData.needs_remesh)
                 {
@@ -622,7 +622,7 @@ namespace voxel
                 }
             });
 
-        this->chunk_positions.flush();
+        this->gpu_chunk_data.flush();
         this->brick_maps.flush();
         this->brick_parent_info.flush();
         this->material_bricks.flush();
@@ -860,7 +860,7 @@ namespace voxel
 
         const u32 thisChunkId = *maybeThisChunkId;
 
-        this->chunk_data[thisChunkId] = InternalChunkData {
+        this->cpu_chunk_data[thisChunkId] = CpuChunkData {
             .position {glm::vec4 {position.x, position.y, position.z, 0.0}},
             .face_data {std::nullopt},
             .needs_remesh {true},
@@ -869,9 +869,11 @@ namespace voxel
         const BrickMap emptyBrickMap {};
         this->brick_maps.write(thisChunkId, {&emptyBrickMap, 1});
 
-        glm::vec4 pos4 = position.xyzz();
+        GpuChunkData gpuChunkData {
+            .position {position.xyzz()}, .adjacent_chunks {}};
+        util::logWarn("do!");
 
-        this->chunk_positions.write(thisChunkId, {&pos4, 1});
+        this->gpu_chunk_data.write(thisChunkId, {&gpuChunkData, 1});
 
         return Chunk {thisChunkId};
     }
@@ -898,7 +900,7 @@ namespace voxel
         }
 
         std::optional<std::array<util::RangeAllocation, 6>>& maybeFacesToFree =
-            this->chunk_data[toFree.id].face_data;
+            this->cpu_chunk_data[toFree.id].face_data;
 
         if (maybeFacesToFree.has_value())
         {
@@ -914,7 +916,7 @@ namespace voxel
     void ChunkManager::writeVoxelToChunk(
         const Chunk& c, ChunkLocalPosition p, Voxel v, std::source_location loc)
     {
-        this->chunk_data[c.id].needs_remesh = true;
+        this->cpu_chunk_data[c.id].needs_remesh = true;
 
         util::assertFatal<u8, u8, u8>(
             p.x < ChunkEdgeLengthVoxels && p.y < ChunkEdgeLengthVoxels

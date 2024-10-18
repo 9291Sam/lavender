@@ -213,7 +213,7 @@ int main()
 
         for (auto it : ListOfPoints)
         {
-            util::logTrace("{} {} {}", it[0], it[1], it[2]);
+            // util::logTrace("{} {} {}", it[0], it[1], it[2]);
         }
 
         game::Game game {};

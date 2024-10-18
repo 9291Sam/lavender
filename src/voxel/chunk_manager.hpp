@@ -37,7 +37,7 @@ namespace voxel
         std::array<u64, 64> data;
     };
 
-    struct InternalChunkData
+    struct CpuChunkData
     {
         glm::vec4                                           position;
         std::optional<std::array<util::RangeAllocation, 6>> face_data;
@@ -196,10 +196,17 @@ namespace voxel
 
         const gfx::Renderer* renderer;
 
-        util::IndexAllocator                  chunk_id_allocator;
-        std::vector<InternalChunkData>        chunk_data;
-        gfx::vulkan::TrackedBuffer<glm::vec4> chunk_positions;
-        gfx::vulkan::TrackedBuffer<BrickMap>  brick_maps;
+        util::IndexAllocator      chunk_id_allocator;
+        std::vector<CpuChunkData> cpu_chunk_data;
+        struct GpuChunkData // TODO: modify this so the adjacent chunks are
+                            // uploaded
+        {
+            glm::i32vec4                                     position;
+            std::array<std::array<std::array<u32, 3>, 3>, 3> adjacent_chunks;
+            u32                                              padding;
+        };
+        gfx::vulkan::TrackedBuffer<GpuChunkData> gpu_chunk_data;
+        gfx::vulkan::TrackedBuffer<BrickMap>     brick_maps;
 
         std::unordered_map<glm::i32vec3, Chunk> global_chunks;
 
