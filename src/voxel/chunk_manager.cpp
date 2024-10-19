@@ -609,7 +609,7 @@ namespace voxel
                 }
             });
 
-        this->gpu_chunk_data.flush();
+        this->gpu_chunk_data.flushViaStager(stager);
         this->brick_maps.flush();
         this->brick_parent_info.flush();
         this->material_bricks.flush();

@@ -2,7 +2,9 @@
 
 #include "buffer.hpp"
 #include "gfx/vulkan/allocator.hpp"
+#include "gfx/vulkan/buffer_stager.hpp"
 #include <vector>
+#include <vulkan/vulkan_handles.hpp>
 
 namespace gfx::vulkan
 {
@@ -54,6 +56,23 @@ namespace gfx::vulkan
                 this->cpu_buffer.data() + offset_,
                 data.data(),
                 data.size_bytes());
+        }
+
+        void flushViaStager(const gfx::vulkan::BufferStager& stager)
+        {
+            util::panic(
+                "doesnt work!!!! 9proablly to many calls to vkCmdCopyBuffer");
+            for (const FlushData& f : this->flushes)
+            {
+                stager.enqueueTransfer(
+                    this->gpu_buffer,
+                    f.offset_elements,
+                    {this->cpu_buffer.data() + f.offset_elements,
+                     this->cpu_buffer.data() + f.offset_elements
+                         + f.size_elements});
+            }
+
+            this->flushes.clear();
         }
 
         void flush()
