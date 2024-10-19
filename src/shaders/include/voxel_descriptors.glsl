@@ -92,7 +92,8 @@ struct GpuChunkData
 {
     ivec4 position;
     u32 adjacent_chunks[3][3][3];
-    u32 padding;
+    u32 number_of_point_lights;
+    PointLight lights[128];
 };
 
 layout(set = 1, binding = 0) readonly buffer GpuChunkDataBuffer
@@ -152,12 +153,6 @@ layout(set = 1, binding = 10)  buffer VisibleFaceDataBuffer
 {
     VisibleFaceData data[];
 } in_visible_face_data;
-
-layout(set = 1, binding = 11)  buffer PointLightDataBuffer
-{
-    u32 number_of_point_lights;
-    PointLight light[];
-} in_point_lights;
 
 vec3 unpackNormalId(u32 id)
 {

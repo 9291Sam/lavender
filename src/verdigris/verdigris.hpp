@@ -16,7 +16,7 @@ namespace verdigris
         std::shared_ptr<vk::UniquePipeline>     triangle_pipeline;
         gfx::vulkan::BufferStager               stager;
         mutable voxel::ChunkManager             chunk_manager;
-        std::vector<voxel::PointLight>          lights;
+        mutable std::vector<voxel::PointLight>  lights;
 
         explicit Verdigris(game::Game* game_);
 

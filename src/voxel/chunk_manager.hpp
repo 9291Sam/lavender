@@ -20,30 +20,19 @@
 #include "voxel.hpp"
 #include "voxel/material_manager.hpp"
 #include "voxel/opacity_brick.hpp"
+#include <boost/container_hash/hash_fwd.hpp>
+#include <compare>
 #include <glm/fwd.hpp>
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <source_location>
 #include <unordered_map>
+#include <unordered_set>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
 namespace voxel
 {
-
-    struct ChunkSlice
-    {
-        // width is within each u64, height is the index
-        std::array<u64, 64> data;
-    };
-
-    struct CpuChunkData
-    {
-        glm::vec4                                           position;
-        std::optional<std::array<util::RangeAllocation, 6>> face_data;
-        bool                                                needs_remesh;
-        std::array<std::array<ChunkSlice, 64>, 6>           slice_data;
-    };
 
     class ChunkManager
     {
@@ -60,14 +49,9 @@ namespace voxel
         makeRecordObject(
             const game::Game*, const gfx::vulkan::BufferStager&, game::Camera);
 
-        PointLight createPointLight();
-        void       destroyPointLight(PointLight);
-
-        void modifyPointLight(
-            const PointLight&,
-            glm::vec3 position,
-            glm::vec4 colorAndPower,
-            glm::vec4 falloffs);
+        PointLight createPointLight(
+            glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs);
+        void destroyPointLight(PointLight);
 
         void writeVoxel(glm::i32vec3, Voxel);
 
@@ -196,14 +180,34 @@ namespace voxel
 
         const gfx::Renderer* renderer;
 
+        struct ChunkSlice
+        {
+            // width is within each u64, height is the index
+            std::array<u64, 64> data;
+        };
+
+        struct CpuChunkData
+        {
+            glm::vec4                                           position;
+            std::optional<std::array<util::RangeAllocation, 6>> face_data;
+            bool                                                needs_remesh;
+            std::array<std::array<ChunkSlice, 64>, 6>           slice_data;
+            std::unordered_set<InternalPointLight, InternalPointLightHasher>
+                lights;
+        };
+
         util::IndexAllocator      chunk_id_allocator;
         std::vector<CpuChunkData> cpu_chunk_data;
-        struct GpuChunkData // TODO: modify this so the adjacent chunks are
-                            // uploaded
+
+        struct GpuChunkData
         {
             glm::i32vec4                                     position;
-            std::array<std::array<std::array<u32, 3>, 3>, 3> adjacent_chunks;
-            u32                                              padding;
+            std::array<std::array<std::array<u32, 3>, 3>, 3> adjacent_chunks {
+                ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u,
+                ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u,
+                ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u};
+            u32                                 number_of_point_lights;
+            std::array<InternalPointLight, 128> lights;
         };
         gfx::vulkan::TrackedBuffer<GpuChunkData> gpu_chunk_data;
         gfx::vulkan::TrackedBuffer<BrickMap>     brick_maps;
@@ -251,24 +255,6 @@ namespace voxel
         };
         gfx::vulkan::Buffer<VisibleVoxelFaces> number_of_visible_faces;
         gfx::vulkan::Buffer<VisibleFaceData>   visible_face_data;
-
-        struct InternalPointLight
-        {
-            glm::vec4 position;
-            glm::vec4 color_and_power;
-            glm::vec4 falloffs;
-        };
-        struct PointLightStorage
-        {
-            u32                                  number_of_point_lights;
-            u32                                  pad0;
-            u32                                  pad1;
-            u32                                  pad2;
-            std::array<InternalPointLight, 1280> lights;
-        };
-        gfx::vulkan::Buffer<PointLightStorage>      point_lights;
-        util::IndexAllocator                        point_light_allocator;
-        std::unordered_map<u32, InternalPointLight> point_light_id_payload;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> descriptor_set_layout;
 

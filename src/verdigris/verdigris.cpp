@@ -14,6 +14,7 @@
 #include <boost/container_hash/hash_fwd.hpp>
 #include <glm/fwd.hpp>
 #include <random>
+#include <utility>
 
 namespace verdigris
 {
@@ -286,11 +287,6 @@ namespace verdigris
             }
         }
 
-        for (int i = 0; i < 128; ++i)
-        {
-            this->lights.push_back(this->chunk_manager.createPointLight());
-        }
-
         // voxel::PointLight light = this->chunk_manager.createPointLight();
         // this->lights.push_back(std::move(light));
 
@@ -319,16 +315,15 @@ namespace verdigris
         //         glm::vec4 {0.0, 0.0, 0.025, 0.0});
         // }
 
-        for (const voxel::PointLight& l : this->lights)
+        for (int i = 0; i < 128; ++i)
         {
-            this->chunk_manager.modifyPointLight(
-                l,
+            this->lights.push_back(this->chunk_manager.createPointLight(
                 glm::vec4 {
                     genVec3() * glm::vec3 {256.0, 42.0, 256.0}
                         + glm::vec3 {0.0, 41.0, 0.0},
                     0.0},
                 glm::vec4 {genVec3() / 2.0f + 0.5f, 512.0},
-                glm::vec4 {0.0, 0.0, 0.25, 0.025});
+                glm::vec4 {0.0, 0.0, 0.25, 0.025}));
         }
     }
 
@@ -367,13 +362,16 @@ namespace verdigris
 
         for (int i = 0; i < 8; ++i)
         {
-            this->chunk_manager.modifyPointLight(
+            voxel::PointLight old = std::exchange(
                 this->lights[i],
-                glm::vec3 {genSpiralPos(frameNumber * 7 + 384 * i)}
-                        / glm::vec3 {1.0f, 2.0f, 1.0f}
-                    - glm::vec3 {0.0, 30.0, 0.0},
-                {1.0, 1.0, 1.0, 512.0},
-                {0.0, 0.0, 0.25, 0.0});
+                this->chunk_manager.createPointLight(
+                    glm::vec3 {genSpiralPos(frameNumber * 7 + 384 * i)}
+                            / glm::vec3 {1.0f, 2.0f, 1.0f}
+                        - glm::vec3 {0.0, 30.0, 0.0},
+                    {1.0, 1.0, 1.0, 512.0},
+                    {0.0, 0.0, 0.25, 0.0}));
+
+            this->chunk_manager.destroyPointLight(std::move(old));
         }
 
         auto thisPos = genSpiralPos(frameNumber);
