@@ -58,22 +58,23 @@ namespace gfx::vulkan
                 data.size_bytes());
         }
 
-        void flushViaStager(const gfx::vulkan::BufferStager& stager)
-        {
-            util::panic(
-                "doesnt work!!!! 9proablly to many calls to vkCmdCopyBuffer");
-            for (const FlushData& f : this->flushes)
-            {
-                stager.enqueueTransfer(
-                    this->gpu_buffer,
-                    f.offset_elements,
-                    {this->cpu_buffer.data() + f.offset_elements,
-                     this->cpu_buffer.data() + f.offset_elements
-                         + f.size_elements});
-            }
+        // void flushViaStager(const gfx::vulkan::BufferStager& stager)
+        // {
+        //     util::panic(
+        //         "doesnt work!!!! 9proablly to many calls to
+        //         vkCmdCopyBuffer");
+        //     for (const FlushData& f : this->flushes)
+        //     {
+        //         stager.enqueueTransfer(
+        //             this->gpu_buffer,
+        //             f.offset_elements,
+        //             {this->cpu_buffer.data() + f.offset_elements,
+        //              this->cpu_buffer.data() + f.offset_elements
+        //                  + f.size_elements});
+        //     }
 
-            this->flushes.clear();
-        }
+        //     this->flushes.clear();
+        // }
 
         void flush()
         {

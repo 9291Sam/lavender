@@ -609,7 +609,7 @@ namespace voxel
                 }
             });
 
-        this->gpu_chunk_data.flushViaStager(stager);
+        this->gpu_chunk_data.flush();
         this->brick_maps.flush();
         this->brick_parent_info.flush();
         this->material_bricks.flush();
@@ -783,6 +783,13 @@ namespace voxel
             this->cpu_chunk_data[maybeChunk->second.id];
         GpuChunkData& gpuChunkData =
             this->gpu_chunk_data.modify(maybeChunk->second.id);
+
+        if (cpuChunkData.lights.contains(internal))
+        {
+            util::logWarn("duplicate insertion of light");
+
+            return PointLight {};
+        }
 
         cpuChunkData.lights.insert(internal);
 

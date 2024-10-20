@@ -367,7 +367,7 @@ namespace verdigris
                 this->chunk_manager.createPointLight(
                     glm::vec3 {genSpiralPos(frameNumber * 7 + 384 * i)}
                             / glm::vec3 {1.0f, 2.0f, 1.0f}
-                        - glm::vec3 {0.0, 30.0, 0.0},
+                        - glm::vec3 {0.0, 30.0, 0.0} + 0.0001f * genVec3(),
                     {1.0, 1.0, 1.0, 512.0},
                     {0.0, 0.0, 0.25, 0.0}));
 
