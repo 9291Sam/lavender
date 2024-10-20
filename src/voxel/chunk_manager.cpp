@@ -908,10 +908,10 @@ namespace voxel
             {
                 for (i32 z : relativePositions)
                 {
-                    if (x == 0 && y == 0 && z == 0)
-                    {
-                        continue;
-                    }
+                    // if (x == 0 && y == 0 && z == 0)
+                    // {
+                    //     continue;
+                    // }
 
                     const glm::ivec3 otherOffsetRelative {x, y, z};
 
