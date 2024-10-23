@@ -823,6 +823,7 @@ namespace voxel
         if (internalIt == cpuChunkData.lights.cend())
         {
             util::logWarn("tried to destroy a non existant point light");
+            // return;
         }
         else
         {
@@ -834,6 +835,8 @@ namespace voxel
             cpuChunkData.lights.cbegin(),
             cpuChunkData.lights.cend(),
             gpuChunkData.lights.begin());
+
+        gpuChunkData.number_of_point_lights = cpuChunkData.lights.size();
 
         toFree.chunk = PointLight::NullChunk;
         toFree.data  = {};

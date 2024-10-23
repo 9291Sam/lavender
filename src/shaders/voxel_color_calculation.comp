@@ -272,8 +272,8 @@ void main()
                     {
                         const bool isFaceInShadow = traceShadowRay(
                             parent_chunk,
-                            ivec3(chunk_local_position),
-                            ivec3(in_chunk_data.data[adjacentChunkId].lights[i].position.xyz)
+                            ivec3(chunk_local_position) + ivec3(unpackNormalId(normal)),
+                            ivec3(in_chunk_data.data[adjacentChunkId].lights[i].position.xyz) 
                         );
 
                         if (!isFaceInShadow)
