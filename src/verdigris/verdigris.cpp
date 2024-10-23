@@ -287,6 +287,17 @@ namespace verdigris
             }
         }
 
+        for (int x = 32; x < 36; ++x)
+        {
+            for (int z = 32; z < 36; ++z)
+            {
+                for (int y = 0; y < 32; ++y)
+                {
+                    insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+                }
+            }
+        }
+
         // voxel::PointLight light = this->chunk_manager.createPointLight();
         // this->lights.push_back(std::move(light));
 
