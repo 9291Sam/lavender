@@ -298,6 +298,13 @@ namespace verdigris
             }
         }
 
+        for (int x = -32; x < 32; ++x)
+        {
+            for (int y = 0; y < 64; ++y)
+            {
+                insertVoxelAt({x, y, -56}, voxel::Voxel::Brass);
+            }
+        }
         // voxel::PointLight light = this->chunk_manager.createPointLight();
         // this->lights.push_back(std::move(light));
 
