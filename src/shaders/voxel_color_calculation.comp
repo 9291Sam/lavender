@@ -85,128 +85,120 @@ GetIdxAndBitResult getIdxAndBit(ivec3 p)
     return GetIdxAndBitResult(linearIndex / 32, linearIndex % 32);
 }
 
-// bool isChunkRelativePositionOccupied(u32 parent_chunk, ivec3 pos)
-// {
-//     ivec3 relativeCoordinate = ivec3(
-//         divideEuclidean(pos.x, 64),
-//         divideEuclidean(pos.y, 64),
-//         divideEuclidean(pos.z, 64)
-//     );
+bool isGlobalPositionOccupied(ivec3 pos)
+{
+    ivec3 chunkCoordinate = ivec3(
+        divideEuclidean(pos.x, 64),
+        divideEuclidean(pos.y, 64),
+        divideEuclidean(pos.z, 64)
+    );
 
-//     ivec3 relativeLocalPosition = ivec3(
-//         moduloEuclidean(pos.x, 64),
-//         moduloEuclidean(pos.y, 64),
-//         moduloEuclidean(pos.z, 64)
-//     );
+    ivec3 chunkPosition = ivec3(
+        moduloEuclidean(pos.x, 64),
+        moduloEuclidean(pos.y, 64),
+        moduloEuclidean(pos.z, 64)
+    );
 
-//     u32 chunkToLookAt;
+    u16 chunk = in_global_chunks.chunk[chunkCoordinate.x + 128][chunkCoordinate.y + 128][chunkCoordinate.z + 128];
 
-//     if (relativeCoordinate == ivec3(0))
-//     {
-//         chunkToLookAt = parent_chunk;
-//     }
-//     else
-//     {
-//         chunkToLookAt = in_chunk_data.data[parent_chunk].adjacent_chunks[relativeCoordinate.x + 1][relativeCoordinate.y + 1][relativeCoordinate.z + 1];
-//     }
+    if (chunk == u16(-1))
+    {
+        return false;
+    }
 
-//     if (any(greaterThan(relativeCoordinate, ivec3(1))) || any(lessThan(relativeCoordinate, ivec3(-1))))
-//     {
-//         chunkToLookAt = ~0u;
-//     }
+    ivec3 brickCoordinate = chunkPosition / 8;
+    ivec3 brickPosition = chunkPosition % 8;
 
-//     ivec3 brickCoordinate = relativeLocalPosition / 8;
-//     ivec3 brickPosition = relativeLocalPosition % 8;
+    MaybeBrickPointer maybePtr = in_brick_maps.map[chunk].data[brickCoordinate.x][brickCoordinate.y][brickCoordinate.z];
 
-//     MaybeBrickPointer maybePtr = in_brick_maps.map[chunkToLookAt].data[brickCoordinate.x][brickCoordinate.y][brickCoordinate.z];
+    if (maybePtr.pointer == ~0u)
+    {
+        return false;
+    }
 
-//     if (maybePtr.pointer == ~0u)
-//     {
-//         return false;
-//     }
+    GetIdxAndBitResult r = getIdxAndBit(brickPosition);
 
-//     GetIdxAndBitResult r = getIdxAndBit(brickPosition);
-
-//     if ((in_opacity_bricks.brick[maybePtr.pointer].data[r.idx] & (1u << r.bit)) == 0)
-//     {
-//         return false;
-//     }
-//     else
-//     {
-//         return true;
-//     }
+    if ((in_opacity_bricks.brick[maybePtr.pointer].data[r.idx] & (1u << r.bit)) == 0)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
 
     
-// }
+}
 
-// bool traceShadowRay(u32 parent_chunk, ivec3 startWorld, ivec3 endWorld)
-// {
-    
-//     const ivec3 start = startWorld - in_chunk_data.data[parent_chunk].position.xyz;
-//     const ivec3 end = endWorld - in_chunk_data.data[parent_chunk].position.xyz;
+bool traceShadowRay(const ivec3 start, const ivec3 end)
+{
+    if (length(vec3(end) - vec3(start)) > 256.0)
+    {
+        return true;
+    }
 
-//     const ivec3 dir = abs(end - start);
-//     const ivec3 step = ivec3(
-//         end.x > start.x ? 1 : -1,
-//         end.y > start.y ? 1 : -1,
-//         end.z > start.z ? 1 : -1
-//     );
+    const ivec3 dir = abs(end - start);
+    const ivec3 step = ivec3(
+        end.x > start.x ? 1 : -1,
+        end.y > start.y ? 1 : -1,
+        end.z > start.z ? 1 : -1
+    );
 
-//     DrivingAxis drivingAxis = 0;
-//     DrivingAxis errorAxis0 = 0;
-//     DrivingAxis errorAxis1 = 0;
+    DrivingAxis drivingAxis = 0;
+    DrivingAxis errorAxis0 = 0;
+    DrivingAxis errorAxis1 = 0;
 
-//     if (dir.x >= dir.y && dir.x >= dir.z)
-//     {
-//         drivingAxis = DrivingAxis_X;
-//         errorAxis0  = DrivingAxis_Y;
-//         errorAxis1  = DrivingAxis_Z;
-//     }
-//     else if (dir.y >= dir.x && dir.y >= dir.z)
-//     {
-//         drivingAxis = DrivingAxis_Y;
-//         errorAxis0  = DrivingAxis_X;
-//         errorAxis1  = DrivingAxis_Z;
-//     }
-//     else
-//     {
-//         drivingAxis = DrivingAxis_Z;
-//         errorAxis0  = DrivingAxis_Y;
-//         errorAxis1  = DrivingAxis_X;
-//     }
+    if (dir.x >= dir.y && dir.x >= dir.z)
+    {
+        drivingAxis = DrivingAxis_X;
+        errorAxis0  = DrivingAxis_Y;
+        errorAxis1  = DrivingAxis_Z;
+    }
+    else if (dir.y >= dir.x && dir.y >= dir.z)
+    {
+        drivingAxis = DrivingAxis_Y;
+        errorAxis0  = DrivingAxis_X;
+        errorAxis1  = DrivingAxis_Z;
+    }
+    else
+    {
+        drivingAxis = DrivingAxis_Z;
+        errorAxis0  = DrivingAxis_Y;
+        errorAxis1  = DrivingAxis_X;
+    }
 
-//     ivec3 traverse = start;
+    ivec3 traverse = start;
 
-//     int err0 = 2 * dir[errorAxis0] - dir[drivingAxis];
-//     int err1 = 2 * dir[errorAxis1] - dir[drivingAxis];
+    int err0 = 2 * dir[errorAxis0] - dir[drivingAxis];
+    int err1 = 2 * dir[errorAxis1] - dir[drivingAxis];
 
-//     while (traverse[drivingAxis] != end[drivingAxis])
-//     {
-//         traverse[drivingAxis] += step[drivingAxis];
+    while (traverse[drivingAxis] != end[drivingAxis])
+    {
+        traverse[drivingAxis] += step[drivingAxis];
 
-//         if (err0 >= 0)
-//         {
-//             traverse[errorAxis0] += step[errorAxis0];
-//             err0 -= 2 * dir[drivingAxis];
-//         }
+        if (err0 >= 0)
+        {
+            traverse[errorAxis0] += step[errorAxis0];
+            err0 -= 2 * dir[drivingAxis];
+        }
 
-//         if (err1 >= 0)
-//         {
-//             traverse[errorAxis1] += step[errorAxis0];
-//             err1 -= 2 * dir[drivingAxis];
-//         }
+        if (err1 >= 0)
+        {
+            traverse[errorAxis1] += step[errorAxis0];
+            err1 -= 2 * dir[drivingAxis];
+        }
 
-//         err0 += 2 * dir[errorAxis0];
-//         err1 += 2 * dir[errorAxis1];
+        err0 += 2 * dir[errorAxis0];
+        err1 += 2 * dir[errorAxis1];
 
-//         if (isChunkRelativePositionOccupied(parent_chunk, traverse))
-//         {
-//             return true;
-//         }
-//     }
+        if (isGlobalPositionOccupied(traverse))
+        {
+            return true;
+        }
+    }
 
-//     return false;
-// }
+    return false;
+}
 
 
 vec3 exp_strength_falloff(vec3 strengths)
@@ -258,14 +250,13 @@ void main()
 
         for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
         {
-            // const bool isFaceInShadow = traceShadowRay(
-            //     parent_chunk,
-            //     ivec3(chunk_local_position) + ivec3(unpackNormalId(normal)),
-            //     ivec3(in_chunk_data.data[adjacentChunkId].lights[i].position.xyz) 
-            // );
+            const bool isFaceInShadow = traceShadowRay(
+                ivec3(position_world) + ivec3(unpackNormalId(normal)),
+                ivec3(in_point_lights.lights[i].position.xyz) 
+            );
 
-            // if (!isFaceInShadow)
-            // {
+            if (!isFaceInShadow)
+            {
                 CalculatedLightPower power = calculate_light_power(
                     in_global_info.camera_position.xyz,
                     position_world,
@@ -277,7 +268,7 @@ void main()
                 sum_diffuse += power.diffuse_strength;
                 // #warning no specular
                 sum_specular += power.specular_strength;
-            // }
+            }
         }
 
         vec3 realColor = clamp(
