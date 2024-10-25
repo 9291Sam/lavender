@@ -99,7 +99,7 @@ namespace voxel
                 .diffuse_color {0.75164, 0.60648, 0.22648, 1.0},
                 .specular_color {0.628281, 0.555802, 0.366065, 1.0},
                 .diffuse_subsurface_weight {0.0},
-                .specular {251.74935f},
+                .specular {2513.74935f},
                 .roughness {0.0},
                 .metallic {0.0},
                 .emissive_color_power {},

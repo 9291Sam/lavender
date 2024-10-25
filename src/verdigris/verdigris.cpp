@@ -113,7 +113,7 @@ namespace verdigris
             return static_cast<voxel::Voxel>(pDist(gen));
         };
 
-        auto insertVoxelAt = [&](glm::i32vec3 p, voxel::Voxel v)
+        auto insertVoxelAt = [&](glm::i32vec3 p, voxel::Voxel v) mutable
         {
             // glm::i32vec3 base = {
             //     64 * ((p.x < 0 ? (p.x + 1) / 64 - 1 : p.x / 64)),
@@ -326,7 +326,7 @@ namespace verdigris
         //         glm::vec4 {0.0, 0.0, 0.025, 0.0});
         // }
 
-        for (int i = 0; i < 8; ++i)
+        for (int i = 0; i < 128; ++i)
         {
             this->lights.push_back(this->chunk_manager.createPointLight(
                 glm::vec4 {

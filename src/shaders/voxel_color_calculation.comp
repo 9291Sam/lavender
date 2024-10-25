@@ -110,6 +110,11 @@ bool isChunkRelativePositionOccupied(u32 parent_chunk, ivec3 pos)
         chunkToLookAt = in_chunk_data.data[parent_chunk].adjacent_chunks[relativeCoordinate.x + 1][relativeCoordinate.y + 1][relativeCoordinate.z + 1];
     }
 
+    if (any(greaterThan(relativeCoordinate, ivec3(1))) || any(lessThan(relativeCoordinate, ivec3(-1))))
+    {
+        chunkToLookAt = ~0u;
+    }
+
     ivec3 brickCoordinate = relativeLocalPosition / 8;
     ivec3 brickPosition = relativeLocalPosition % 8;
 
@@ -136,6 +141,7 @@ bool isChunkRelativePositionOccupied(u32 parent_chunk, ivec3 pos)
 
 bool traceShadowRay(u32 parent_chunk, ivec3 startWorld, ivec3 endWorld)
 {
+    
     const ivec3 start = startWorld - in_chunk_data.data[parent_chunk].position.xyz;
     const ivec3 end = endWorld - in_chunk_data.data[parent_chunk].position.xyz;
 
@@ -283,12 +289,12 @@ void main()
                                 position_world,
                                 unpackNormalId(normal), 
                                 in_chunk_data.data[adjacentChunkId].lights[i],
-                                1.0
+                                this_material.specular
                             );
 
                             sum_diffuse += power.diffuse_strength;
                             // #warning no specular
-                            // sum_specular += power.specular_strength;
+                            sum_specular += power.specular_strength;
                         }
                     }
                 }
