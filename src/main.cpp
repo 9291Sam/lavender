@@ -200,23 +200,6 @@ int main()
 
     try
     {
-        int                           x1 = -11;
-        int                           y1 = 1;
-        int                           z1 = 1;
-        int                           x2 = 53;
-        int                           y2 = 3;
-        int                           z2 = -133;
-        std::vector<std::vector<int>> ListOfPoints =
-            Bresenham3D(x1, y1, z1, x2, y2, z2);
-        auto l2 = Bresenham3D2(x1, y1, z1, x2, y2, z2);
-
-        util::assertFatal(ListOfPoints == l2, "oop");
-
-        for (auto it : ListOfPoints)
-        {
-            // util::logTrace("{} {} {}", it[0], it[1], it[2]);
-        }
-
         game::Game game {};
 
         game.loadGameState<verdigris::Verdigris>();

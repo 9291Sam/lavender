@@ -646,17 +646,13 @@ namespace voxel
                 }
             });
 
-        util::logTrace("start flushes");
-
         this->gpu_chunk_data.flush();
         this->brick_maps.flush();
         this->brick_parent_info.flush();
         this->material_bricks.flush();
         this->opacity_bricks.flush();
         this->lights_buffer.flushWhole();
-        util::logTrace("mid flushes");
         this->global_chunks_buffer.flushWhole();
-        util::logTrace("end flushes");
 
         if (!indirectCommands.empty())
         {
@@ -954,7 +950,7 @@ namespace voxel
 
         if (it == this->global_chunks.cend())
         {
-            util::logWarn(":eyes:");
+            util::panic(":eyes:");
         }
         else
         {
