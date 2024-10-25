@@ -130,11 +130,11 @@ bool isGlobalPositionOccupied(ivec3 pos)
     
 }
 
-bool traceShittyShadowRay(ivec3 start, ivec3 end)
+bool traceShittyShadowRay(vec3 start, vec3 end)
 {
     const float step = 0.5;
-    const vec3 orig = vec3(start) + 0.5;
-    const vec3 dest = vec3(end) + 0.5;
+    const vec3 orig = start;
+    const vec3 dest = end;
     const float dist = length(dest - orig);
 
     
@@ -271,7 +271,7 @@ void main()
         const VoxelMaterial this_material = in_voxel_materials.material[this_voxel.data];
 
         // TODO: shouldn't be 0.5 the normal should be removed from this
-        const vec3 position_world = vec3(in_chunk_data.data[parent_chunk].position.xyz) + vec3(0.5) + vec3(chunk_local_position);
+        const vec3 position_world = vec3(in_chunk_data.data[parent_chunk].position.xyz) + vec3(0.5) - 0.5 * unpackNormalId(normal)  + vec3(chunk_local_position);
 
         vec3 sum_diffuse = vec3(0.0);
         vec3 sum_specular = vec3(0.0);
@@ -279,8 +279,8 @@ void main()
         for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
         {
             const bool isFaceInShadow = traceShittyShadowRay(
-                ivec3(position_world) + ivec3(unpackNormalId(normal)),
-                ivec3(in_point_lights.lights[i].position.xyz) 
+                position_world, 
+                in_point_lights.lights[i].position.xyz
             );
 
             if (!isFaceInShadow)
