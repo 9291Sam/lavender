@@ -157,6 +157,11 @@ layout(set = 1, binding = 11) buffer PointLightsBuffer
     PointLight lights[];
 } in_point_lights;
 
+layout(set = 1, binding = 12) buffer GlobalChunkBuffer
+{   
+    u16 chunk[256][256][256];
+} in_global_chunks;
+
 vec3 unpackNormalId(u32 id)
 {
     const vec3 available_normals[6] = {

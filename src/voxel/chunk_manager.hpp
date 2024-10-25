@@ -212,7 +212,7 @@ namespace voxel
 
         struct ChunkDrawIndirectInstancePayload
         {
-            glm::vec4 position;
+            glm::vec4 position; // TODO: what the fuck
             u32       normal;
             u32       chunk_id;
         };
@@ -255,6 +255,10 @@ namespace voxel
 
         util::IndexAllocator                           light_allocator;
         gfx::vulkan::TrackedBuffer<InternalPointLight> lights_buffer;
+
+        gfx::vulkan::TrackedBuffer<
+            std::array<std::array<std::array<u16, 256>, 256>, 256>>
+            global_chunks_buffer;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> descriptor_set_layout;
 

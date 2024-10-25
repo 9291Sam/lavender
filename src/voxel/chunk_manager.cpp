@@ -139,6 +139,11 @@ namespace voxel
                   | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxLights))
+        , global_chunks_buffer(
+              this->renderer->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
+              1)
         , descriptor_set_layout {this->renderer->getAllocator()->cacheDescriptorSetLayout(
               gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo {.bindings {{
                   vk::DescriptorSetLayoutBinding {
@@ -261,6 +266,13 @@ namespace voxel
                           vk::ShaderStageFlagBits::eVertex
                           | vk::ShaderStageFlagBits::eFragment
                           | vk::ShaderStageFlagBits::eCompute},
+                      .pImmutableSamplers {nullptr},
+                  },
+                  vk::DescriptorSetLayoutBinding {
+                      .binding {12},
+                      .descriptorType {vk::DescriptorType::eStorageBuffer},
+                      .descriptorCount {1},
+                      .stageFlags {vk::ShaderStageFlagBits::eCompute},
                       .pImmutableSamplers {nullptr},
                   },
               }}})}
@@ -454,7 +466,13 @@ namespace voxel
                 .buffer {*this->lights_buffer},
                 .offset {0},
                 .range {vk::WholeSize},
-            }};
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->global_chunks_buffer},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+        };
 
         std::vector<vk::WriteDescriptorSet> writes {};
 
@@ -476,6 +494,12 @@ namespace voxel
 
             idx += 1;
         }
+
+        std::array<std::array<std::array<u16, 256>, 256>, 256>*
+            gpuChunksBufferPtr = &this->global_chunks_buffer.modify(0);
+
+        const std::size_t len = sizeof(*gpuChunksBufferPtr);
+        std::memset(gpuChunksBufferPtr, -1, len);
 
         this->renderer->getDevice()->getDevice().updateDescriptorSets(
             static_cast<u32>(writes.size()), writes.data(), 0, nullptr);
@@ -622,12 +646,17 @@ namespace voxel
                 }
             });
 
+        util::logTrace("start flushes");
+
         this->gpu_chunk_data.flush();
         this->brick_maps.flush();
         this->brick_parent_info.flush();
         this->material_bricks.flush();
         this->opacity_bricks.flush();
-        this->lights_buffer.flush();
+        this->lights_buffer.flushWhole();
+        util::logTrace("mid flushes");
+        this->global_chunks_buffer.flushWhole();
+        util::logTrace("end flushes");
 
         if (!indirectCommands.empty())
         {
@@ -864,6 +893,17 @@ namespace voxel
         this->gpu_chunk_data.write(
             thisChunkId, GpuChunkData {.position {position.xyzz()}});
 
+        ChunkCoordinate coord {glm::i32vec3 {
+            util::divideEuclidean(position.x, 64),
+            util::divideEuclidean(position.y, 64),
+            util::divideEuclidean(position.z, 64),
+        }};
+
+        util::logTrace("allocating chunk");
+
+        this->global_chunks_buffer.modify(
+            0)[coord.x + 128][coord.y + 128][coord.z + 128] = *maybeThisChunkId;
+
         return Chunk {thisChunkId};
     }
 
@@ -888,8 +928,10 @@ namespace voxel
             }
         }
 
+        CpuChunkData& cpuChunkData = this->cpu_chunk_data[toFree.id];
+
         std::optional<std::array<util::RangeAllocation, 6>>& maybeFacesToFree =
-            this->cpu_chunk_data[toFree.id].face_data;
+            cpuChunkData.face_data;
 
         if (maybeFacesToFree.has_value())
         {
@@ -897,6 +939,29 @@ namespace voxel
             {
                 this->voxel_face_allocator.free(allocation);
             }
+        }
+
+        ChunkCoordinate coord {glm::i32vec3 {
+            util::divideEuclidean(
+                static_cast<i32>(cpuChunkData.position.x), 64),
+            util::divideEuclidean(
+                static_cast<i32>(cpuChunkData.position.y), 64),
+            util::divideEuclidean(
+                static_cast<i32>(cpuChunkData.position.z), 64),
+        }};
+
+        auto it = this->global_chunks.find(coord);
+
+        if (it == this->global_chunks.cend())
+        {
+            util::logWarn(":eyes:");
+        }
+        else
+        {
+            this->global_chunks.erase(it);
+
+            this->global_chunks_buffer.modify(
+                0)[coord.x + 128][coord.y + 128][coord.z + 128] = ~UINT16_C(0);
         }
 
         toFree.id = Chunk::NullChunk;

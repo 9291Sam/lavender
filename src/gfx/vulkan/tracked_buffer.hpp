@@ -97,6 +97,20 @@ namespace gfx::vulkan
             this->flushes.clear();
         }
 
+        void flushWhole()
+        {
+            if (!this->flushes.empty())
+            {
+                std::span<T> gpuData = this->gpu_buffer.getDataNonCoherent();
+                std::span<const T> cpuData = this->cpu_buffer;
+
+                std::memcpy(
+                    gpuData.data(), cpuData.data(), cpuData.size_bytes());
+
+                this->flushes.clear();
+            }
+        }
+
 
 
 
