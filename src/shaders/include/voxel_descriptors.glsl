@@ -91,9 +91,6 @@ struct PointLight {
 struct GpuChunkData
 {
     ivec4 position;
-    u32 adjacent_chunks[3][3][3];
-    u32 number_of_point_lights;
-    PointLight lights[128];
 };
 
 layout(set = 1, binding = 0) readonly buffer GpuChunkDataBuffer
@@ -141,18 +138,24 @@ layout(set = 1, binding = 8) readonly buffer VoxelMaterialBuffer
     VoxelMaterial material[];
 } in_voxel_materials;
 
-layout(set = 1, binding = 9) buffer NuumberOfVisibleVoxelFacesBuffer
+layout(set = 1, binding = 9) buffer GlobalVoxelDataBuffer
 {
     u32 number_of_visible_faces;
     u32 number_of_indirect_dispatches_x;
     u32 number_of_indirect_dispatches_y;
     u32 number_of_indirect_dispatches_z;
-} in_number_of_visible_faces;
+    u32 number_of_lights;
+} in_global_voxel_data;
 
 layout(set = 1, binding = 10)  buffer VisibleFaceDataBuffer
 {
     VisibleFaceData data[];
 } in_visible_face_data;
+
+layout(set = 1, binding = 11) buffer PointLightsBuffer
+{
+    PointLight lights[];
+} in_point_lights;
 
 vec3 unpackNormalId(u32 id)
 {

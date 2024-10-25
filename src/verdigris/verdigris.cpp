@@ -313,28 +313,22 @@ namespace verdigris
         this->camera.addPitch(0.75f);
         this->camera.addYaw(1.87f);
 
-        // for (const voxel::PointLight& l : this->lights)
-        // {
-        //     this->chunk_manager.modifyPointLight(
-        //         l,
-        //         glm::vec4 {
-        //             genVec3() * glm::vec3 {256.0, 42.0, 256.0}
-        //                 + glm::vec3 {0.0, 41.0, 0.0},
-        //             0.0},
-        //         glm::vec4 {genVec3() / 2.0f + 0.5f, 10.0},
-        //         // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
-        //         glm::vec4 {0.0, 0.0, 0.025, 0.0});
-        // }
-
         for (int i = 0; i < 128; ++i)
         {
-            this->lights.push_back(this->chunk_manager.createPointLight(
+            this->lights.push_back(this->chunk_manager.createPointLight());
+        }
+
+        for (const voxel::PointLight& l : this->lights)
+        {
+            this->chunk_manager.modifyPointLight(
+                l,
                 glm::vec4 {
                     genVec3() * glm::vec3 {256.0, 42.0, 256.0}
                         + glm::vec3 {0.0, 41.0, 0.0},
                     0.0},
-                glm::vec4 {genVec3() / 2.0f + 0.5f, 512.0},
-                glm::vec4 {0.0, 0.0, 0.25, 0.025}));
+                glm::vec4 {genVec3() / 2.0f + 0.5f, 10.0},
+                // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
+                glm::vec4 {0.0, 0.0, 0.025, 0.0});
         }
     }
 
@@ -373,16 +367,13 @@ namespace verdigris
 
         for (int i = 0; i < 8; ++i)
         {
-            voxel::PointLight old = std::exchange(
+            this->chunk_manager.modifyPointLight(
                 this->lights[i],
-                this->chunk_manager.createPointLight(
-                    glm::vec3 {genSpiralPos(frameNumber * 7 + 384 * i)}
-                            / glm::vec3 {1.0f, 2.0f, 1.0f}
-                        - glm::vec3 {0.0, 28.0, 0.0} + 0.0001f * genVec3(),
-                    {1.0, 1.0, 1.0, 256.0},
-                    {0.0, 0.0, 0.25, 0.0}));
-
-            this->chunk_manager.destroyPointLight(std::move(old));
+                glm::vec3 {genSpiralPos(frameNumber * 7 + 384 * i)}
+                        / glm::vec3 {1.0f, 2.0f, 1.0f}
+                    - glm::vec3 {0.0, 28.0, 0.0} + 0.0001f * genVec3(),
+                {1.0, 1.0, 1.0, 256.0},
+                {0.0, 0.0, 0.25, 0.0});
         }
 
         auto thisPos = genSpiralPos(frameNumber);

@@ -49,8 +49,13 @@ namespace voxel
         makeRecordObject(
             const game::Game*, const gfx::vulkan::BufferStager&, game::Camera);
 
-        PointLight createPointLight(
-            glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs);
+        PointLight createPointLight();
+
+        void modifyPointLight(
+            const PointLight&,
+            glm::vec3 position,
+            glm::vec4 colorAndPower,
+            glm::vec4 falloffs);
         void destroyPointLight(PointLight);
 
         void writeVoxel(glm::i32vec3, Voxel);
@@ -191,9 +196,6 @@ namespace voxel
             glm::vec4                                           position;
             std::optional<std::array<util::RangeAllocation, 6>> face_data;
             bool                                                needs_remesh;
-            std::array<std::array<ChunkSlice, 64>, 6>           slice_data;
-            std::unordered_set<InternalPointLight, InternalPointLightHasher>
-                lights;
         };
 
         util::IndexAllocator      chunk_id_allocator;
@@ -201,13 +203,7 @@ namespace voxel
 
         struct GpuChunkData
         {
-            glm::i32vec4                                     position;
-            std::array<std::array<std::array<u32, 3>, 3>, 3> adjacent_chunks {
-                ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u,
-                ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u,
-                ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u};
-            u32                                 number_of_point_lights;
-            std::array<InternalPointLight, 128> lights;
+            glm::i32vec4 position;
         };
         gfx::vulkan::TrackedBuffer<GpuChunkData> gpu_chunk_data;
         gfx::vulkan::TrackedBuffer<BrickMap>     brick_maps;
@@ -240,12 +236,13 @@ namespace voxel
 
         gfx::vulkan::Buffer<VoxelMaterial> material_buffer;
 
-        struct VisibleVoxelFaces
+        struct GlobalVoxelData
         {
             u32 number_of_visible_faces;
             u32 number_of_calculating_draws_x;
             u32 number_of_calculating_draws_y;
             u32 number_of_calculating_draws_z;
+            u32 number_of_lights;
         };
 
         struct VisibleFaceData
@@ -253,8 +250,11 @@ namespace voxel
             u32       data;
             glm::vec3 calculated_color;
         };
-        gfx::vulkan::Buffer<VisibleVoxelFaces> number_of_visible_faces;
-        gfx::vulkan::Buffer<VisibleFaceData>   visible_face_data;
+        gfx::vulkan::Buffer<GlobalVoxelData> global_voxel_data;
+        gfx::vulkan::Buffer<VisibleFaceData> visible_face_data;
+
+        util::IndexAllocator                           light_allocator;
+        gfx::vulkan::TrackedBuffer<InternalPointLight> lights_buffer;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> descriptor_set_layout;
 

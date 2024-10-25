@@ -47,6 +47,11 @@ namespace gfx::vulkan
             return this->cpu_buffer[offset];
         }
 
+        void write(std::size_t offset, const T& t)
+        {
+            this->write(offset, std::span {&t, 1});
+        }
+
         void write(std::size_t offset_, std::span<const T> data)
         {
             this->flushes.push_back(FlushData {

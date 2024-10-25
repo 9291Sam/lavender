@@ -39,7 +39,7 @@ void main()
 
     if (is_first_write)
     {
-        const u32 this_visible_face = atomicAdd(in_number_of_visible_faces.number_of_visible_faces, 1);
+        const u32 this_visible_face = atomicAdd(in_global_voxel_data.number_of_visible_faces, 1);
 
         in_visible_face_data.data[this_visible_face] = VisibleFaceData(
             in_face_brick_data,
@@ -48,12 +48,12 @@ void main()
 
         if (this_visible_face % 1024 == 0)
         {
-            atomicAdd(in_number_of_visible_faces.number_of_indirect_dispatches_x, 1);
+            atomicAdd(in_global_voxel_data.number_of_indirect_dispatches_x, 1);
 
             if (this_visible_face == 0)
             {
-                in_number_of_visible_faces.number_of_indirect_dispatches_y = 1;
-                in_number_of_visible_faces.number_of_indirect_dispatches_z = 1;
+                in_global_voxel_data.number_of_indirect_dispatches_y = 1;
+                in_global_voxel_data.number_of_indirect_dispatches_z = 1;
             }
         }
 

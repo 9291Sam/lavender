@@ -39,18 +39,18 @@ namespace voxel
         }
     };
 
+    // TODO: extract into a UniqueId class that can be inherited from
     class PointLight
     {
     public:
-        static constexpr u32 NullChunk = static_cast<u32>(-1);
+        static constexpr u32 NullId = static_cast<u32>(-1);
     public:
         PointLight()
-            : chunk {NullChunk}
-            , data {}
+            : id {NullId}
         {}
         ~PointLight()
         {
-            if (this->chunk != NullChunk)
+            if (this->id != NullId)
             {
                 util::logWarn("Leaked PointLight!");
             }
@@ -58,22 +58,17 @@ namespace voxel
 
         PointLight(const PointLight&) = delete;
         PointLight(PointLight&& other) noexcept
-            : chunk {other.chunk}
-            , data {other.data}
+            : id {other.id}
         {
-            other.chunk = NullChunk;
-            other.data  = {};
+            other.id = NullId;
         }
         PointLight& operator= (const PointLight&) = delete;
         PointLight& operator= (PointLight&& other) noexcept
         {
             if (&other != this)
             {
-                this->chunk = other.chunk;
-                other.chunk = NullChunk;
-
-                this->data = other.data;
-                other.data = {};
+                this->id = other.id;
+                other.id = NullId;
             }
 
             return *this;
@@ -81,19 +76,17 @@ namespace voxel
 
         [[nodiscard]] bool isNull() const
         {
-            return this->chunk == NullChunk;
+            return this->id == NullId;
         }
 
         std::strong_ordering operator<=> (const PointLight&) const = delete;
 
     private:
-        explicit PointLight(u32 chunk_, InternalPointLight data_)
-            : chunk {chunk_}
-            , data {data_}
+        explicit PointLight(u32 id_)
+            : id {id_}
         {}
         friend class ChunkManager;
 
-        u32                chunk;
-        InternalPointLight data;
+        u32 id;
     };
 } // namespace voxel

@@ -68,6 +68,11 @@ namespace util
             }
         }
 
+        [[nodiscard]] IndexType getUpperBoundOnAllocatedElements() const
+        {
+            return this->next_available_block;
+        }
+
     private:
         boost::container::flat_set<IndexType> free_block_list;
         IndexType                             next_available_block;

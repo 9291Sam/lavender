@@ -48,6 +48,7 @@ namespace voxel
     static constexpr u32 DirectionsPerChunk = 6;
     static constexpr u32 MaxBricks          = 131072;
     static constexpr u32 MaxFaces           = 1048576 * 4;
+    static constexpr u32 MaxLights          = 4096;
 
     ChunkManager::ChunkManager(const game::Game* game)
         : renderer {game->getRenderer()}
@@ -118,7 +119,7 @@ namespace voxel
                   | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxFaces))
         , material_buffer {voxel::generateVoxelMaterialBuffer(this->renderer)}
-        , number_of_visible_faces(
+        , global_voxel_data(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer
                   | vk::BufferUsageFlagBits::eTransferDst
@@ -131,6 +132,13 @@ namespace voxel
                   | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxFaces))
+        , light_allocator {MaxLights}
+        , lights_buffer(
+              this->renderer->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer
+                  | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
+              static_cast<std::size_t>(MaxLights))
         , descriptor_set_layout {this->renderer->getAllocator()->cacheDescriptorSetLayout(
               gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo {.bindings {{
                   vk::DescriptorSetLayoutBinding {
@@ -433,12 +441,17 @@ namespace voxel
                 .range {vk::WholeSize},
             },
             vk::DescriptorBufferInfo {
-                .buffer {*this->number_of_visible_faces},
+                .buffer {*this->global_voxel_data},
                 .offset {0},
                 .range {vk::WholeSize},
             },
             vk::DescriptorBufferInfo {
                 .buffer {*this->visible_face_data},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->lights_buffer},
                 .offset {0},
                 .range {vk::WholeSize},
             }};
@@ -614,6 +627,7 @@ namespace voxel
         this->brick_parent_info.flush();
         this->material_bricks.flush();
         this->opacity_bricks.flush();
+        this->lights_buffer.flush();
 
         if (!indirectCommands.empty())
         {
@@ -647,12 +661,21 @@ namespace voxel
                                 .size_bytes(),
                             0);
 
-                        commandBuffer.fillBuffer(
-                            *this->number_of_visible_faces,
+                        GlobalVoxelData data {
+                            .number_of_visible_faces {},
+                            .number_of_calculating_draws_x {},
+                            .number_of_calculating_draws_y {},
+                            .number_of_calculating_draws_z {},
+                            .number_of_lights {
+                                this->light_allocator
+                                    .getUpperBoundOnAllocatedElements()},
+                        };
+
+                        commandBuffer.updateBuffer(
+                            *this->global_voxel_data,
                             0,
-                            this->number_of_visible_faces.getDataNonCoherent()
-                                .size_bytes(),
-                            0);
+                            sizeof(GlobalVoxelData),
+                            &data);
                     }}};
 
         game::FrameGenerator::RecordObject chunkDraw =
@@ -731,7 +754,7 @@ namespace voxel
                                   u32)
                               {
                                   commandBuffer.dispatchIndirect(
-                                      *this->number_of_visible_faces, 4);
+                                      *this->global_voxel_data, 4);
                               }}};
 
         game::FrameGenerator::RecordObject colorTransfer =
@@ -755,91 +778,38 @@ namespace voxel
             update, chunkDraw, visibilityDraw, colorCalculation, colorTransfer};
     }
 
-    PointLight ChunkManager::createPointLight(
-        glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs)
+    PointLight ChunkManager::createPointLight()
     {
-        // TODO: migrate to a better place
-        const ChunkCoordinate coord {glm::i32vec3 {
-            util::divideEuclidean(static_cast<i32>(position.x), 64),
-            util::divideEuclidean(static_cast<i32>(position.y), 64),
-            util::divideEuclidean(static_cast<i32>(position.z), 64),
-        }};
+        std::expected<u32, util::IndexAllocator::OutOfBlocks>
+            maybeNewPointLightId = this->light_allocator.allocate();
 
-        auto maybeChunk = this->global_chunks.find(coord);
+        util::assertFatal(
+            maybeNewPointLightId.has_value(),
+            "Failed to allocate new point light!");
 
-        if (maybeChunk == this->global_chunks.cend())
-        {
-            util::logWarn("Tried to insert light in nonexistant chunk");
+        this->lights_buffer.modify(*maybeNewPointLightId) =
+            InternalPointLight {};
 
-            return PointLight {};
-        }
+        return PointLight {*maybeNewPointLightId};
+    }
 
-        const InternalPointLight internal {
+    void ChunkManager::modifyPointLight(
+        const PointLight& l,
+        glm::vec3         position,
+        glm::vec4         colorAndPower,
+        glm::vec4         falloffs)
+    {
+        this->lights_buffer.modify(l.id) = InternalPointLight {
             .position {position.xyzz()},
             .color_and_power {colorAndPower},
             .falloffs {falloffs}};
-
-        CpuChunkData& cpuChunkData =
-            this->cpu_chunk_data[maybeChunk->second.id];
-        GpuChunkData& gpuChunkData =
-            this->gpu_chunk_data.modify(maybeChunk->second.id);
-
-        if (cpuChunkData.lights.contains(internal))
-        {
-            util::logWarn("duplicate insertion of light");
-
-            return PointLight {};
-        }
-
-        cpuChunkData.lights.insert(internal);
-
-        gpuChunkData.number_of_point_lights = cpuChunkData.lights.size();
-
-        util::assertFatal(
-            cpuChunkData.lights.size() < 128, "too many lights in one chunk");
-
-        std::copy(
-            cpuChunkData.lights.cbegin(),
-            cpuChunkData.lights.cend(),
-            gpuChunkData.lights.begin());
-
-        return PointLight {maybeChunk->second.id, internal};
     }
 
     void ChunkManager::destroyPointLight(PointLight toFree)
     {
-        if (toFree.isNull())
-        {
-            util::logWarn("destroy of null PointLight");
-            return;
-        }
+        this->light_allocator.free(toFree.id);
 
-        // TODO: test for chunk aliveness (chunk optional...)
-        CpuChunkData& cpuChunkData = this->cpu_chunk_data[toFree.chunk];
-        GpuChunkData& gpuChunkData = this->gpu_chunk_data.modify(toFree.chunk);
-
-        auto internalIt = cpuChunkData.lights.find(toFree.data);
-
-        if (internalIt == cpuChunkData.lights.cend())
-        {
-            util::logWarn("tried to destroy a non existant point light");
-            // return;
-        }
-        else
-        {
-            cpuChunkData.lights.erase(internalIt);
-        }
-
-        // TODO: exact same thing from earlier
-        std::copy(
-            cpuChunkData.lights.cbegin(),
-            cpuChunkData.lights.cend(),
-            gpuChunkData.lights.begin());
-
-        gpuChunkData.number_of_point_lights = cpuChunkData.lights.size();
-
-        toFree.chunk = PointLight::NullChunk;
-        toFree.data  = {};
+        this->lights_buffer.modify(toFree.id) = InternalPointLight {};
     }
 
     void ChunkManager::writeVoxel(glm::i32vec3 p, Voxel v)
@@ -888,71 +858,11 @@ namespace voxel
         this->cpu_chunk_data[thisChunkId] = CpuChunkData {
             .position {glm::vec4 {position.x, position.y, position.z, 0.0}},
             .face_data {std::nullopt},
-            .needs_remesh {true},
-            .slice_data {}};
+            .needs_remesh {true}};
 
-        const BrickMap emptyBrickMap {};
-        this->brick_maps.write(thisChunkId, {&emptyBrickMap, 1});
-
-        GpuChunkData gpuChunkData {
-            .position {position.xyzz()}, .adjacent_chunks {}};
-
-        // TODO: make better
-        std::memset(
-            gpuChunkData.adjacent_chunks.data(),
-            -1,
-            sizeof(gpuChunkData.adjacent_chunks));
-
-        std::initializer_list<i32> relativePositions {-64, 0, 64};
-
-        for (i32 x : relativePositions)
-        {
-            for (i32 y : relativePositions)
-            {
-                for (i32 z : relativePositions)
-                {
-                    // if (x == 0 && y == 0 && z == 0)
-                    // {
-                    //     continue;
-                    // }
-
-                    const glm::ivec3 otherOffsetRelative {x, y, z};
-
-                    const glm::ivec3 otherChunkPosition {
-                        position + otherOffsetRelative};
-
-                    const ChunkCoordinate coord {glm::i32vec3 {
-                        util::divideEuclidean(otherChunkPosition.x, 64),
-                        util::divideEuclidean(otherChunkPosition.y, 64),
-                        util::divideEuclidean(otherChunkPosition.z, 64),
-                    }};
-
-                    if (auto maybeChunkIt = this->global_chunks.find(coord);
-                        maybeChunkIt != this->global_chunks.cend())
-                    {
-                        const glm::ivec3 indexVectorThis {
-                            otherOffsetRelative / 64 + 1};
-                        const glm::ivec3 indexVectorOther {
-                            -otherOffsetRelative / 64 + 1};
-
-                        const u32 otherChunkId {maybeChunkIt->second.id};
-
-                        // NOLINTNEXTLINE
-                        gpuChunkData.adjacent_chunks[indexVectorThis.x]
-                                                    [indexVectorThis.y]
-                                                    [indexVectorThis.z] =
-                            otherChunkId;
-
-                        this->gpu_chunk_data.modify(otherChunkId)
-                            .adjacent_chunks[indexVectorOther.x]
-                                            [indexVectorOther.y]
-                                            [indexVectorOther.z] = thisChunkId;
-                    }
-                }
-            }
-        }
-
-        this->gpu_chunk_data.write(thisChunkId, {&gpuChunkData, 1});
+        this->brick_maps.write(thisChunkId, BrickMap {});
+        this->gpu_chunk_data.write(
+            thisChunkId, GpuChunkData {.position {position.xyzz()}});
 
         return Chunk {thisChunkId};
     }
@@ -977,17 +887,6 @@ namespace voxel
                 }
             }
         }
-
-// we need to remove references to ourself in the adjacent chunks that
-// border this
-#warning implement unlinking
-        // for (xyz)
-        // {
-        //     u32 otherChunkId = func(xyz);
-
-        //     this->gpu_chunk_data.modify(otherChunkId)
-        //         .adjacent_chunks[otherindexvector] = ~0;
-        // }
 
         std::optional<std::array<util::RangeAllocation, 6>>& maybeFacesToFree =
             this->cpu_chunk_data[toFree.id].face_data;

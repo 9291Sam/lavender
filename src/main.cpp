@@ -2,6 +2,7 @@
 #include "util/log.hpp"
 #include "verdigris/verdigris.hpp"
 #include <ctti/type_id.hpp>
+#include <glm/gtx/hash.hpp>
 
 std::vector<std::vector<int>>
 Bresenham3D(int x1, int y1, int z1, int x2, int y2, int z2)
