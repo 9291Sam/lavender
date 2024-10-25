@@ -276,7 +276,7 @@ void main()
 
                 sum_diffuse += power.diffuse_strength;
                 // #warning no specular
-                // sum_specular += power.specular_strength;
+                sum_specular += power.specular_strength;
             // }
         }
 
