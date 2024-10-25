@@ -130,6 +130,34 @@ bool isGlobalPositionOccupied(ivec3 pos)
     
 }
 
+bool traceShittyShadowRay(ivec3 start, ivec3 end)
+{
+    const float step = 0.5;
+    const vec3 orig = vec3(start) + 0.5;
+    const vec3 dest = vec3(end) + 0.5;
+    const float dist = length(dest - orig);
+
+    
+    if (dist > 256.0)
+    {
+        return true;
+    }
+
+    const vec3 dir = normalize(dest - orig);
+
+    for (float t = 0; t < dist; t += step)
+    {
+        const vec3 s = orig + t * dir;
+
+        if (isGlobalPositionOccupied(ivec3(s)))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool traceShadowRay(const ivec3 start, const ivec3 end)
 {
     if (length(vec3(end) - vec3(start)) > 256.0)
@@ -250,7 +278,7 @@ void main()
 
         for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
         {
-            const bool isFaceInShadow = traceShadowRay(
+            const bool isFaceInShadow = traceShittyShadowRay(
                 ivec3(position_world) + ivec3(unpackNormalId(normal)),
                 ivec3(in_point_lights.lights[i].position.xyz) 
             );
