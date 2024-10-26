@@ -17,6 +17,7 @@ namespace verdigris
         gfx::vulkan::BufferStager               stager;
         mutable voxel::ChunkManager             chunk_manager;
         mutable std::vector<voxel::PointLight>  lights;
+        mutable float                           time_alive;
 
         explicit Verdigris(game::Game* game_);
 

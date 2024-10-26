@@ -13,6 +13,7 @@
 #include "voxel/voxel.hpp"
 #include <boost/container_hash/hash_fwd.hpp>
 #include <glm/fwd.hpp>
+#include <numbers>
 #include <random>
 #include <utility>
 
@@ -350,6 +351,7 @@ namespace verdigris
     std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
     Verdigris::onFrame(float deltaTime) const
     {
+        this->time_alive += deltaTime;
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {-1.0, 1.0};
 
@@ -372,13 +374,15 @@ namespace verdigris
         const i32 frameNumber =
             static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
-        for (int i = 0; i < 8; ++i)
+        for (int i = 0; i < 8; i++)
         {
+            const float offset = i * 2 * std::numbers::pi_v<float> / 8.0;
             this->chunk_manager.modifyPointLight(
                 this->lights[i],
-                glm::vec3 {genSpiralPos(frameNumber * 7 + 384 * i)}
-                        / glm::vec3 {1.0f, 2.0f, 1.0f}
-                    - glm::vec3 {0.0, 28.0, 0.0} + 0.0001f * genVec3(),
+                glm::vec3 {
+                    32.0f * std::cos(this->time_alive * 2 + offset),
+                    4.0f,
+                    32.0f * std::sin(this->time_alive * 2 + offset)},
                 {1.0, 1.0, 1.0, 256.0},
                 {0.0, 0.0, 0.25, 0.0});
         }
