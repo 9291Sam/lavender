@@ -163,7 +163,7 @@ namespace verdigris
         {
             for (i32 z = -64; z < 64; ++z)
             {
-                insertVoxelAt({x, 42, z}, voxel::Voxel::Emerald);
+                insertVoxelAt({x, 64, z}, voxel::Voxel::Emerald);
             }
         }
 
@@ -306,19 +306,19 @@ namespace verdigris
                 for (int y = 0; y < 32; ++y)
                 {
                     insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+                    insertVoxelAt({-x, y, z}, voxel::Voxel::Ruby);
+                    insertVoxelAt({x, y, -z}, voxel::Voxel::Ruby);
                     insertVoxelAt({-x, y, -z}, voxel::Voxel::Ruby);
                 }
             }
         }
 
-        for (int x = -32; x < 32; ++x)
+        for (int x = -64; x < 64; ++x)
         {
             for (int y = 0; y < 64; ++y)
             {
-                for (int z = -56; z < -54; ++z)
-                {
-                    insertVoxelAt({x, y, z}, voxel::Voxel::Brass);
-                }
+                insertVoxelAt({x, y, -64}, voxel::Voxel::Brass);
+                insertVoxelAt({x, y, 64}, voxel::Voxel::Brass);
             }
         }
         // voxel::PointLight light = this->chunk_manager.createPointLight();
@@ -332,9 +332,9 @@ namespace verdigris
             return glm::vec3 {ddist(gen), ddist(gen), ddist(gen)};
         };
 
-        this->camera.addPosition({-5.0f, 20.0f, -2.5f});
-        this->camera.addPitch(0.75f);
-        this->camera.addYaw(1.87f);
+        this->camera.addPosition({79.606, 15.586, 16.78});
+        this->camera.addPitch(-0.12f);
+        this->camera.addYaw(4.87f);
 
         for (int i = 0; i < 16; ++i)
         {
@@ -383,7 +383,7 @@ namespace verdigris
             const float z = 32.0f * std::cos(t);
 
             return glm::i32vec3 {
-                static_cast<i32>(x), 64.0, static_cast<i32>(z)};
+                static_cast<i32>(x), 66.0, static_cast<i32>(z)};
         };
 
         const i32 frameNumber =

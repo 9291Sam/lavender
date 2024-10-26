@@ -46,7 +46,7 @@ const u32 DrivingAxis_X = 0;
 const u32 DrivingAxis_Y = 1;
 const u32 DrivingAxis_Z = 2;
 
-u32 divideEuclidean(u32 lhs, u32 rhs)
+u32 divideEuclideanu32(u32 lhs, u32 rhs)
 {
     const u32 quotient = lhs / rhs;
 
@@ -58,9 +58,33 @@ u32 divideEuclidean(u32 lhs, u32 rhs)
     return quotient;
 }
 
-u32 moduloEuclidean(u32 lhs, u32 rhs)
+u32 moduloEuclideanu32(u32 lhs, u32 rhs)
 {
     const u32 remainder = lhs % rhs;
+
+    if (remainder < 0)
+    {
+        return rhs > 0 ? remainder + rhs : remainder - rhs;
+    }
+
+    return remainder;
+}
+
+i32 divideEuclideani32(i32 lhs, i32 rhs)
+{
+    const i32 quotient = lhs / rhs;
+
+    if (lhs % rhs < 0)
+    {
+        return rhs > 0 ? quotient - 1 : quotient + 1;
+    }
+
+    return quotient;
+}
+
+i32 moduloEuclideani32(i32 lhs, i32 rhs)
+{
+    const i32 remainder = lhs % rhs;
 
     if (remainder < 0)
     {
@@ -87,27 +111,28 @@ GetIdxAndBitResult getIdxAndBit(ivec3 p)
 
 bool isGlobalPositionOccupied(ivec3 pos)
 {
-    ivec3 chunkCoordinate = ivec3(
-        divideEuclidean(pos.x, 64),
-        divideEuclidean(pos.y, 64),
-        divideEuclidean(pos.z, 64)
+    // TODO: this isnt the right coordinate
+    ivec3 globalChunkCoordinate = ivec3(
+        divideEuclideani32(pos.x, 64),
+        divideEuclideani32(pos.y, 64),
+        divideEuclideani32(pos.z, 64)
     );
 
-    ivec3 chunkPosition = ivec3(
-        moduloEuclidean(pos.x, 64),
-        moduloEuclidean(pos.y, 64),
-        moduloEuclidean(pos.z, 64)
+    ivec3 positionWithinChunk = ivec3(
+        moduloEuclideanu32(pos.x, 64),
+        moduloEuclideanu32(pos.y, 64),
+        moduloEuclideanu32(pos.z, 64)
     );
 
-    u16 chunk = in_global_chunks.chunk[chunkCoordinate.x + 128][chunkCoordinate.y + 128][chunkCoordinate.z + 128];
+    u16 chunk = in_global_chunks.chunk[globalChunkCoordinate.x + 128][globalChunkCoordinate.y + 128][globalChunkCoordinate.z + 128];
 
     if (chunk == u16(-1))
     {
         return false;
     }
 
-    ivec3 brickCoordinate = chunkPosition / 8;
-    ivec3 brickPosition = chunkPosition % 8;
+    ivec3 brickCoordinate = positionWithinChunk / 8;
+    ivec3 brickPosition = positionWithinChunk % 8;
 
     MaybeBrickPointer maybePtr = in_brick_maps.map[chunk].data[brickCoordinate.x][brickCoordinate.y][brickCoordinate.z];
 
@@ -132,13 +157,13 @@ bool isGlobalPositionOccupied(ivec3 pos)
 
 bool traceShittyShadowRay(vec3 start, vec3 end)
 {
-    const float step = 0.5;
+    const float step = 0.35;
     const vec3 orig = start;
     const vec3 dest = end;
     const float dist = length(dest - orig);
 
     
-    if (dist > 256.0)
+    if (dist > 128.0)
     {
         return true;
     }
@@ -277,12 +302,6 @@ void main()
         vec3 sum_diffuse = vec3(0.0);
         vec3 sum_specular = vec3(0.0);
 
-        if (!isGlobalPositionOccupied(voxel_corner_pos_world))
-        {
-            in_visible_face_data.data[global_invocation_index].color = vec3(1.0); 
-            return;
-        }
-
         for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
         {
             const bool isFaceInShadow = traceShittyShadowRay(
@@ -312,6 +331,13 @@ void main()
             0.0,
             1.0
         );
+
+
+        if (!isGlobalPositionOccupied(voxel_corner_pos_world))
+        {
+            in_visible_face_data.data[global_invocation_index].color = vec3(1.0); 
+            return;
+        }
 
         in_visible_face_data.data[global_invocation_index].color = realColor;           
     }
