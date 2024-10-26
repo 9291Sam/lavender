@@ -149,7 +149,7 @@ bool traceShittyShadowRay(vec3 start, vec3 end)
     {
         const vec3 s = orig + t * dir;
 
-        if (isGlobalPositionOccupied(ivec3(s)))
+        if (isGlobalPositionOccupied(ivec3(floor(s))))
         {
             return true;
         }
@@ -271,7 +271,8 @@ void main()
         const VoxelMaterial this_material = in_voxel_materials.material[this_voxel.data];
 
         // TODO: shouldn't be 0.5 the normal should be removed from this
-        const vec3 position_world = vec3(in_chunk_data.data[parent_chunk].position.xyz) + vec3(chunk_local_position);
+        const ivec3 voxel_corner_pos_world = in_chunk_data.data[parent_chunk].position.xyz + ivec3(chunk_local_position);
+        const vec3 sample_positon_world = vec3(voxel_corner_pos_world) + 0.5 + unpackNormalId(normal);
 
         vec3 sum_diffuse = vec3(0.0);
         vec3 sum_specular = vec3(0.0);
@@ -279,7 +280,7 @@ void main()
         for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
         {
             const bool isFaceInShadow = traceShittyShadowRay(
-                position_world + unpackNormalId(normal), 
+                sample_positon_world, 
                 in_point_lights.lights[i].position.xyz
             );
 
@@ -287,7 +288,7 @@ void main()
             {
                 CalculatedLightPower power = calculate_light_power(
                     in_global_info.camera_position.xyz,
-                    position_world,
+                    sample_positon_world,
                     unpackNormalId(normal), 
                     in_point_lights.lights[i],
                     this_material.specular
@@ -306,7 +307,6 @@ void main()
             1.0
         );
 
-        in_visible_face_data.data[global_invocation_index].color = realColor;
-        
+        in_visible_face_data.data[global_invocation_index].color = realColor;        
     }
 }

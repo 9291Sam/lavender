@@ -136,13 +136,13 @@ namespace verdigris
             this->chunk_manager.writeVoxel(p, v);
         };
 
-        for (i32 x = -1024; x < 1024; ++x)
-        {
-            for (i32 z = -1024; z < 1024; ++z)
-            {
-                insertVoxelAt(glm::ivec3 {x, genFunc(x, z), z}, genVoxel());
-            }
-        }
+        // for (i32 x = -1024; x < 1024; ++x)
+        // {
+        //     for (i32 z = -1024; z < 1024; ++z)
+        //     {
+        //         insertVoxelAt(glm::ivec3 {x, genFunc(x, z), z}, genVoxel());
+        //     }
+        // }
 
         for (i32 x = -256; x < 255; ++x)
         {

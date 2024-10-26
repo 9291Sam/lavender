@@ -319,7 +319,7 @@ namespace voxel
                   .topology {vk::PrimitiveTopology::eTriangleList},
                   .discard_enable {false},
                   .polygon_mode {vk::PolygonMode::eFill},
-                  .cull_mode {vk::CullModeFlagBits::eNone},
+                  .cull_mode {vk::CullModeFlagBits::eBack},
                   .front_face {vk::FrontFace::eCounterClockwise},
                   .depth_test_enable {true},
                   .depth_write_enable {true},
