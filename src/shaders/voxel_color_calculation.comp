@@ -277,6 +277,12 @@ void main()
         vec3 sum_diffuse = vec3(0.0);
         vec3 sum_specular = vec3(0.0);
 
+        if (!isGlobalPositionOccupied(voxel_corner_pos_world))
+        {
+            in_visible_face_data.data[global_invocation_index].color = vec3(1.0); 
+            return;
+        }
+
         for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
         {
             const bool isFaceInShadow = traceShittyShadowRay(
