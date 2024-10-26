@@ -307,6 +307,6 @@ void main()
             1.0
         );
 
-        in_visible_face_data.data[global_invocation_index].color = realColor;        
+        in_visible_face_data.data[global_invocation_index].color = realColor;           
     }
 }
