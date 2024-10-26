@@ -288,6 +288,17 @@ namespace verdigris
             }
         }
 
+        for (int x = -3; x < 4; ++x)
+        {
+            for (int z = -3; z < 4; ++z)
+            {
+                for (int y = 0; y < 12; ++y)
+                {
+                    insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+                }
+            }
+        }
+
         for (int x = 32; x < 36; ++x)
         {
             for (int z = 32; z < 36; ++z)
@@ -295,6 +306,7 @@ namespace verdigris
                 for (int y = 0; y < 32; ++y)
                 {
                     insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+                    insertVoxelAt({-x, y, -z}, voxel::Voxel::Ruby);
                 }
             }
         }
@@ -303,7 +315,10 @@ namespace verdigris
         {
             for (int y = 0; y < 64; ++y)
             {
-                insertVoxelAt({x, y, -56}, voxel::Voxel::Brass);
+                for (int z = -56; z < -54; ++z)
+                {
+                    insertVoxelAt({x, y, z}, voxel::Voxel::Brass);
+                }
             }
         }
         // voxel::PointLight light = this->chunk_manager.createPointLight();
