@@ -17,10 +17,17 @@ namespace gfx::vulkan
             const Allocator*        allocator,
             vk::BufferUsageFlags    usage,
             vk::MemoryPropertyFlags memoryPropertyFlags,
-            std::size_t             elements)
-            : cpu_buffer {elements, T {}}
-            , gpu_buffer {allocator, usage, memoryPropertyFlags, elements}
-        {}
+            std::size_t             elements,
+            std::string             name)
+            : gpu_buffer {
+                  allocator,
+                  usage,
+                  memoryPropertyFlags,
+                  elements,
+                  std::move(name)}
+        {
+            this->cpu_buffer.resize(elements);
+        }
 
         ~TrackedBuffer() = default;
 

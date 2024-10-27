@@ -2,9 +2,12 @@
 
 #include "gfx/vulkan/allocator.hpp"
 #include "util/log.hpp"
+#include "util/misc.hpp"
 #include <type_traits>
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_enums.hpp>
+#include <vulkan/vulkan_structs.hpp>
 
 namespace gfx::vulkan
 {
@@ -36,13 +39,19 @@ namespace gfx::vulkan
             const Allocator*        allocator_,
             vk::BufferUsageFlags    usage,
             vk::MemoryPropertyFlags memoryPropertyFlags,
-            std::size_t             elements_)
+            std::size_t             elements_,
+            std::string             name)
             : allocator {allocator_}
             , buffer {nullptr}
             , allocation {nullptr}
             , elements {elements_}
             , mapped_memory {nullptr}
         {
+            if constexpr (!util::isDebugBuild())
+            {
+                this->name = {};
+            }
+
             util::assertFatal(
                 !(memoryPropertyFlags
                   & vk::MemoryPropertyFlagBits::eHostCoherent),
@@ -88,6 +97,19 @@ namespace gfx::vulkan
                 this->elements * sizeof(T));
 
             this->buffer = outputBuffer;
+
+            if constexpr (util::isDebugBuild())
+            {
+                this->allocator->getDevice().setDebugUtilsObjectNameEXT(
+                    vk::DebugUtilsObjectNameInfoEXT {
+                        .sType {
+                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                        .pNext {nullptr},
+                        .objectType {vk::ObjectType::eBuffer},
+                        .objectHandle {std::bit_cast<u64>(this->buffer)},
+                        .pObjectName {name.c_str()},
+                    });
+            }
 
             bufferBytesAllocated += (this->elements * sizeof(T));
         }

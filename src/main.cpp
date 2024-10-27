@@ -1,5 +1,6 @@
 #include "game/game.hpp"
 #include "util/log.hpp"
+#include "util/misc.hpp"
 #include "verdigris/verdigris.hpp"
 #include <ctti/type_id.hpp>
 #include <glm/gtx/hash.hpp>
@@ -200,6 +201,13 @@ int main()
 
     try
     {
+        util::logLog(
+            "starting lavender {}.{}.{}.{}{}",
+            LAVENDER_VERSION_MAJOR,
+            LAVENDER_VERSION_MINOR,
+            LAVENDER_VERSION_PATCH,
+            LAVENDER_VERSION_TWEAK,
+            util::isDebugBuild() ? " | Debug Build" : "");
         game::Game game {};
 
         game.loadGameState<verdigris::Verdigris>();

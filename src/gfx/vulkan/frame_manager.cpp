@@ -10,7 +10,8 @@
 
 namespace gfx::vulkan
 {
-    Frame::Frame(const Device& device_, vk::SwapchainKHR swapchain_)
+    Frame::Frame(
+        const Device& device_, vk::SwapchainKHR swapchain_, std::size_t number)
         : device {&device_}
         , swapchain {swapchain_}
     {
@@ -37,6 +38,15 @@ namespace gfx::vulkan
                     .value()},
         };
 
+        const std::string commandPoolName =
+            std::format("Frame #{} Command Pool", number);
+        const std::string imageAvailableName =
+            std::format("Frame #{} Image Available Semaphore", number);
+        const std::string renderFinishedName =
+            std::format("Frame #{} Render Finished Semaphore", number);
+        const std::string frameInFlightName =
+            std::format("Frame #{} Frame In Flight Fence", number);
+
         this->command_pool = this->device->getDevice().createCommandPoolUnique(
             commandPoolCreateInfo);
 
@@ -46,6 +56,45 @@ namespace gfx::vulkan
             semaphoreCreateInfo);
         this->frame_in_flight =
             this->device->getDevice().createFenceUnique(fenceCreateInfo);
+
+        if constexpr (util::isDebugBuild())
+        {
+            device->getDevice().setDebugUtilsObjectNameEXT(
+                vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eCommandPool},
+                    .objectHandle {std::bit_cast<u64>(*this->command_pool)},
+                    .pObjectName {commandPoolName.c_str()},
+                });
+
+            device->getDevice().setDebugUtilsObjectNameEXT(
+                vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eSemaphore},
+                    .objectHandle {std::bit_cast<u64>(*this->image_available)},
+                    .pObjectName {imageAvailableName.c_str()},
+                });
+
+            device->getDevice().setDebugUtilsObjectNameEXT(
+                vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eSemaphore},
+                    .objectHandle {std::bit_cast<u64>(*this->render_finished)},
+                    .pObjectName {renderFinishedName.c_str()},
+                });
+
+            device->getDevice().setDebugUtilsObjectNameEXT(
+                vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eFence},
+                    .objectHandle {std::bit_cast<u64>(*this->frame_in_flight)},
+                    .pObjectName {frameInFlightName.c_str()},
+                });
+        }
     }
 
     Frame::~Frame() noexcept
@@ -194,7 +243,7 @@ namespace gfx::vulkan
         const Device& device_, vk::SwapchainKHR swapchain)
         : device {device_.getDevice()}
         , previous_frame_finished_fence {std::nullopt}
-        , flying_frames {Frame {device_, swapchain}, Frame {device_, swapchain}, Frame {device_, swapchain}}
+        , flying_frames {Frame {device_, swapchain, 0}, Frame {device_, swapchain, 1}, Frame {device_, swapchain, 2}}
         , flying_frame_index {0}
     {}
 

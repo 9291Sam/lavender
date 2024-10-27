@@ -75,6 +75,18 @@ namespace gfx::vulkan
 
         this->descriptor_pool =
             this->device.createDescriptorPoolUnique(descriptorPoolCreateInfo);
+
+        if constexpr (util::isDebugBuild())
+        {
+            this->device.setDebugUtilsObjectNameEXT(
+                vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eDescriptorPool},
+                    .objectHandle {std::bit_cast<u64>(*this->descriptor_pool)},
+                    .pObjectName {"Global Descriptor Pool"},
+                });
+        }
     }
 
     Allocator::~Allocator()
@@ -226,19 +238,34 @@ namespace gfx::vulkan
             });
     }
 
-    vk::DescriptorSet
-    Allocator::allocateDescriptorSet(vk::DescriptorSetLayout layout) const
+    vk::DescriptorSet Allocator::allocateDescriptorSet(
+        vk::DescriptorSetLayout layout, const std::string& debugName) const
     {
         const vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo {
-
             .sType {vk::StructureType::eDescriptorSetAllocateInfo},
             .pNext {nullptr},
             .descriptorPool {*this->descriptor_pool},
             .descriptorSetCount {1},
             .pSetLayouts {&layout},
         };
-        return this->device.allocateDescriptorSets(descriptorSetAllocateInfo)
-            .at(0);
+
+        vk::DescriptorSet set =
+            this->device.allocateDescriptorSets(descriptorSetAllocateInfo)
+                .at(0);
+
+        if constexpr (util::isDebugBuild())
+        {
+            this->device.setDebugUtilsObjectNameEXT(
+                vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eDescriptorSet},
+                    .objectHandle {std::bit_cast<u64>(set)},
+                    .pObjectName {debugName.c_str()},
+                });
+        }
+
+        return set;
     }
 
     void Allocator::earlyDeallocateDescriptorSet(vk::DescriptorSet set) const
@@ -275,6 +302,20 @@ namespace gfx::vulkan
                     vk::UniqueDescriptorSetLayout layout =
                         this->device.createDescriptorSetLayoutUnique(
                             descriptorSetLayoutCreateInfo);
+
+                    if constexpr (util::isDebugBuild())
+                    {
+                        this->device.setDebugUtilsObjectNameEXT(
+                            vk::DebugUtilsObjectNameInfoEXT {
+                                .sType {vk::StructureType::
+                                            eDebugUtilsObjectNameInfoEXT},
+                                .pNext {nullptr},
+                                .objectType {
+                                    vk::ObjectType::eDescriptorSetLayout},
+                                .objectHandle {std::bit_cast<u64>(*layout)},
+                                .pObjectName {info.name.c_str()},
+                            });
+                    }
 
                     std::shared_ptr<vk::UniqueDescriptorSetLayout> // NOLINT
                         sharedLayout {new vk::UniqueDescriptorSetLayout {
@@ -328,6 +369,19 @@ namespace gfx::vulkan
                         this->device.createPipelineLayoutUnique(
                             pipelineLayoutCreateInfo);
 
+                    if constexpr (util::isDebugBuild())
+                    {
+                        this->device.setDebugUtilsObjectNameEXT(
+                            vk::DebugUtilsObjectNameInfoEXT {
+                                .sType {vk::StructureType::
+                                            eDebugUtilsObjectNameInfoEXT},
+                                .pNext {nullptr},
+                                .objectType {vk::ObjectType::ePipelineLayout},
+                                .objectHandle {std::bit_cast<u64>(*layout)},
+                                .pObjectName {info.name.c_str()},
+                            });
+                    }
+
                     std::shared_ptr<vk::UniquePipelineLayout> // NOLINT
                         sharedLayout {
                             new vk::UniquePipelineLayout {std::move(layout)}};
@@ -380,8 +434,21 @@ namespace gfx::vulkan
 
                     util::assertFatal(
                         result == vk::Result::eSuccess,
-                        "Graphics Pipeline Construction Failed! | {}",
+                        "Compute Pipeline Construction Failed! | {}",
                         vk::to_string(result));
+
+                    if constexpr (util::isDebugBuild())
+                    {
+                        this->device.setDebugUtilsObjectNameEXT(
+                            vk::DebugUtilsObjectNameInfoEXT {
+                                .sType {vk::StructureType::
+                                            eDebugUtilsObjectNameInfoEXT},
+                                .pNext {nullptr},
+                                .objectType {vk::ObjectType::ePipeline},
+                                .objectHandle {std::bit_cast<u64>(*pipeline)},
+                                .pObjectName {info.name.c_str()},
+                            });
+                    }
 
                     std::shared_ptr<vk::UniquePipeline> // NOLINT
                         sharedPipeline {
@@ -627,6 +694,19 @@ namespace gfx::vulkan
                         "Graphics Pipeline Construction Failed! | {}",
                         vk::to_string(result));
 
+                    if constexpr (util::isDebugBuild())
+                    {
+                        this->device.setDebugUtilsObjectNameEXT(
+                            vk::DebugUtilsObjectNameInfoEXT {
+                                .sType {vk::StructureType::
+                                            eDebugUtilsObjectNameInfoEXT},
+                                .pNext {nullptr},
+                                .objectType {vk::ObjectType::ePipeline},
+                                .objectHandle {std::bit_cast<u64>(*pipeline)},
+                                .pObjectName {info.name.c_str()},
+                            });
+                    }
+
                     std::shared_ptr<vk::UniquePipeline> // NOLINT
                         sharedPipeline {
                             new vk::UniquePipeline {std::move(pipeline)}};
@@ -649,8 +729,8 @@ namespace gfx::vulkan
             });
     }
 
-    std::shared_ptr<vk::UniqueShaderModule>
-    Allocator::cacheShaderModule(std::span<const std::byte> shaderCode) const
+    std::shared_ptr<vk::UniqueShaderModule> Allocator::cacheShaderModule(
+        std::span<const std::byte> shaderCode, std::string debugName) const
     {
         std::string shaderString {
             // this is fine NOLINTNEXTLINE
@@ -686,17 +766,30 @@ namespace gfx::vulkan
                         .pCode {reinterpret_cast<u32*>(shaderString.data())},
                     };
 
-                    vk::UniqueShaderModule layout =
+                    vk::UniqueShaderModule module =
                         this->device.createShaderModuleUnique(
                             shaderModuleCreateInfo);
 
+                    if constexpr (util::isDebugBuild())
+                    {
+                        this->device.setDebugUtilsObjectNameEXT(
+                            vk::DebugUtilsObjectNameInfoEXT {
+                                .sType {vk::StructureType::
+                                            eDebugUtilsObjectNameInfoEXT},
+                                .pNext {nullptr},
+                                .objectType {vk::ObjectType::eShaderModule},
+                                .objectHandle {std::bit_cast<u64>(*module)},
+                                .pObjectName {debugName.c_str()},
+                            });
+                    }
+
                     std::shared_ptr<vk::UniqueShaderModule> // NOLINT
-                        sharedLayout {
-                            new vk::UniqueShaderModule {std::move(layout)}};
+                        sharedModule {
+                            new vk::UniqueShaderModule {std::move(module)}};
 
-                    cache[std::move(shaderString)] = sharedLayout;
+                    cache[std::move(shaderString)] = sharedModule;
 
-                    return sharedLayout;
+                    return sharedModule;
                 }
             });
     }
@@ -734,6 +827,11 @@ namespace gfx::vulkan
             {
                 return cache.at(pipeline).second;
             });
+    }
+
+    vk::Device Allocator::getDevice() const
+    {
+        return this->device;
     }
 
 } // namespace gfx::vulkan

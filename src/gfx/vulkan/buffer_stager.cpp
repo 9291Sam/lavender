@@ -19,6 +19,7 @@ namespace gfx::vulkan
               this->allocator,
               vk::BufferUsageFlagBits::eTransferSrc,
               vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,  StagingBufferSize,
+              "Staging Buffer"
           }
         , transfer_allocator {util::RangeAllocator {StagingBufferSize, 1024 * 64}}
         , transfers {std::vector<BufferTransfer> {}}
@@ -43,7 +44,7 @@ namespace gfx::vulkan
         std::span<std::byte> stagingBufferData =
             this->staging_buffer.getDataNonCoherent();
 
-        static_assert(std::is_trivially_copyable_v<std::byte>);
+        // static_assert(std::is_trivially_copyable_v<std::byte>);
         std::memcpy(
             stagingBufferData.data() + thisAllocation.offset,
             dataToWrite.data(),

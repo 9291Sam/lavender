@@ -25,7 +25,8 @@ namespace gfx::vulkan
             vk::ImageUsageFlags,
             vk::ImageAspectFlags,
             vk::ImageTiling,
-            vk::MemoryPropertyFlags);
+            vk::MemoryPropertyFlags,
+            std::string name);
         ~Image2D();
 
         Image2D(const Image2D&) = delete;

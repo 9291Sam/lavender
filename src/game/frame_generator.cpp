@@ -30,7 +30,8 @@ namespace game
                 | vk::ImageUsageFlagBits::eSampled,
             vk::ImageAspectFlagBits::eDepth,
             vk::ImageTiling::eOptimal,
-            vk::MemoryPropertyFlagBits::eDeviceLocal};
+            vk::MemoryPropertyFlagBits::eDeviceLocal,
+            "Global Depth Buffer"};
 
         gfx::vulkan::Buffer<glm::mat4> mvpMatrices {
             renderer->getAllocator(),
@@ -38,7 +39,8 @@ namespace game
                 | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
                 | vk::MemoryPropertyFlagBits::eHostVisible,
-            1024};
+            1024,
+            "Global MVP Matrices"};
 
         gfx::vulkan::Buffer<GlobalFrameInfo> globalFrameInfo {
             renderer->getAllocator(),
@@ -46,7 +48,8 @@ namespace game
                 | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal
                 | vk::MemoryPropertyFlagBits::eHostVisible,
-            1};
+            1,
+            "Global Frame Info"};
 
         const vk::DescriptorBufferInfo mvpMatricesBufferInfo {
             .buffer {*mvpMatrices}, .offset {0}, .range {vk::WholeSize}};
@@ -64,7 +67,8 @@ namespace game
                 | vk::ImageUsageFlagBits::eStorage,
             vk::ImageAspectFlagBits::eColor,
             vk::ImageTiling::eOptimal,
-            vk::MemoryPropertyFlagBits::eDeviceLocal};
+            vk::MemoryPropertyFlagBits::eDeviceLocal,
+            "Visible Voxel Image"};
 
         vk::UniqueSampler doNothingSampler =
             renderer->getDevice()->getDevice().createSamplerUnique(
@@ -88,6 +92,18 @@ namespace game
                     .borderColor {vk::BorderColor::eFloatTransparentBlack},
                     .unnormalizedCoordinates {},
                 });
+
+        if constexpr (util::isDebugBuild())
+        {
+            renderer->getDevice()->getDevice().setDebugUtilsObjectNameEXT(
+                vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eSampler},
+                    .objectHandle {std::bit_cast<u64>(*doNothingSampler)},
+                    .pObjectName {"Do Nothing Sampler"},
+                });
+        }
 
         const vk::DescriptorImageInfo depthBufferInfo {
             .sampler {nullptr},
@@ -292,11 +308,13 @@ namespace game
                                                       eCompute},
                                               .pImmutableSamplers {nullptr},
                                           },
-                                      }})}
+                                      },
+                                      .name {"Global Descriptor Set Layout"}})}
         , global_info_descriptor_set {this->game->getRenderer()
                                           ->getAllocator()
                                           ->allocateDescriptorSet(
-                                              **this->set_layout)}
+                                              **this->set_layout,
+                                              "Global Descriptor Set")}
         , global_descriptors {makeGlobalDescriptors(
               this->game->getRenderer(), this->global_info_descriptor_set)}
     {}

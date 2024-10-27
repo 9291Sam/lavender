@@ -58,15 +58,11 @@ namespace gfx::vulkan
         const std::vector<vk::LayerProperties> availableLayers =
             vk::enumerateInstanceLayerProperties();
 
-        // for (const vk::LayerProperties& l : availableLayers)
-        // {
-        //     util::logTrace("Layer {} is available", l.layerName.data());
-        // }
-
         std::vector<const char*> layers {};
-#ifndef NDEBUG
-        layers.push_back("VK_LAYER_KHRONOS_validation");
-#endif
+        if constexpr (util::isDebugBuild())
+        {
+            layers.push_back("VK_LAYER_KHRONOS_validation");
+        }
 
         for (const char* requestedLayer : layers)
         {
@@ -82,7 +78,6 @@ namespace gfx::vulkan
             util::assertFatal(
                 false, "Required layer {} was not available!", requestedLayer);
         next_layer: {}
-            // util::logTrace("Requesting layer {}", requestedLayer);
         }
 
         std::vector<const char*> extensions {};
@@ -99,14 +94,6 @@ namespace gfx::vulkan
 
         const std::vector<vk::ExtensionProperties> availableExtensions =
             vk::enumerateInstanceExtensionProperties();
-
-        // for (const vk::ExtensionProperties& availableExtension :
-        //      availableExtensions)
-        // {
-        //     util::logTrace(
-        //         "Instance extension {} is available",
-        //         availableExtension.extensionName.data());
-        // }
 
         for (const char* requestedExtension : extensions)
         {
@@ -156,13 +143,13 @@ namespace gfx::vulkan
             default:
                 break;
             }
-            // static int count = 0;
-            // count++;
-            // if (count == 7)
-            // {
-            //     util::panic("kill");
-            // }
 
+            std::string msg = pCallbackData->pMessage;
+
+            if (msg.contains("ObjectName"))
+            {
+                util::debugBreak();
+            }
             return vk::False;
         };
 

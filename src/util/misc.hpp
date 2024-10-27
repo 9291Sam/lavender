@@ -33,10 +33,10 @@ namespace util
 
     consteval bool isDebugBuild()
     {
-#ifdef NDEBUG
-        return false;
-#else
+#ifdef LAVENDER_DEBUG_BUILD
         return true;
+#else
+        return false;
 #endif
     }
 

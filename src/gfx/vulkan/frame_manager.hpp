@@ -24,7 +24,7 @@ namespace gfx::vulkan
         struct ResizeNeeded
         {};
     public:
-        Frame(const Device&, vk::SwapchainKHR);
+        Frame(const Device&, vk::SwapchainKHR, std::size_t number);
         ~Frame() noexcept;
 
         Frame(const Frame&)             = delete;

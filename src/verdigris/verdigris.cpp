@@ -37,7 +37,8 @@ namespace verdigris
                             .shader {this->game->getRenderer()
                                          ->getAllocator()
                                          ->cacheShaderModule(
-                                             shaders::load("triangle.vert"))},
+                                             shaders::load("triangle.vert"),
+                                             "Triangle Vertex Shader")},
                             .entry_point {"main"},
                         },
                         gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
@@ -45,7 +46,8 @@ namespace verdigris
                             .shader {this->game->getRenderer()
                                          ->getAllocator()
                                          ->cacheShaderModule(
-                                             shaders::load("triangle.frag"))},
+                                             shaders::load("triangle.frag"),
+                                             "Triangle Fragment Shader")},
                             .entry_point {"main"},
                         },
                     }},
@@ -71,13 +73,12 @@ namespace verdigris
                                         {this->game
                                              ->getGlobalInfoDescriptorSetLayout()}},
                                     .push_constants {vk::PushConstantRange {
-
                                         .stageFlags {
                                             vk::ShaderStageFlagBits::eVertex},
                                         .offset {0},
                                         .size {64}}},
-                                })},
-                });
+                                    .name {"Triangle Pipeline Layout"}})},
+                    .name {"Triangle Pipeline"}});
 
         this->ec_manager->addComponent(entity, TriangleComponent {});
         // this->ec_manager->addComponent(entity, render::TriangleComponent

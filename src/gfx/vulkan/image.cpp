@@ -15,7 +15,8 @@ namespace gfx::vulkan
         vk::ImageUsageFlags     usage,
         vk::ImageAspectFlags    aspect_,
         vk::ImageTiling         tiling,
-        vk::MemoryPropertyFlags memoryPropertyFlags)
+        vk::MemoryPropertyFlags memoryPropertyFlags,
+        std::string             name)
         : allocator {**allocator_}
         , extent {extent_}
         , format {format_}
@@ -75,6 +76,17 @@ namespace gfx::vulkan
 
         this->image = vk::Image {outputImage};
 
+        if constexpr (util::isDebugBuild())
+        {
+            device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                .pNext {nullptr},
+                .objectType {vk::ObjectType::eImage},
+                .objectHandle {std::bit_cast<u64>(this->image)},
+                .pObjectName {name.c_str()},
+            });
+        }
+
         vk::ImageViewCreateInfo imageViewCreateInfo {
             .sType {vk::StructureType::eImageViewCreateInfo},
             .pNext {nullptr},
@@ -94,35 +106,18 @@ namespace gfx::vulkan
 
         this->view = device.createImageViewUnique(imageViewCreateInfo);
 
-        // if (engine::getSettings()
-        //         .lookupSetting<engine::Setting::EnableGFXValidation>())
-        // {
-        //     {
-        //         vk::DebugUtilsObjectNameInfoEXT nameSetInfo {
-        //             .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-        //             .pNext {nullptr},
-        //             .objectType {vk::ObjectType::eImage},
-        //             .objectHandle
-        //             {std::bit_cast<std::uint64_t>(this->image)}, .pObjectName
-        //             {name.c_str()},
-        //         };
+        if constexpr (util::isDebugBuild())
+        {
+            std::string viewName = std::format("{} View", name);
 
-        //         device.setDebugUtilsObjectNameEXT(nameSetInfo);
-        //     }
-
-        //     {
-        //         vk::DebugUtilsObjectNameInfoEXT nameSetInfo {
-        //             .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-        //             .pNext {nullptr},
-        //             .objectType {vk::ObjectType::eImageView},
-        //             .objectHandle
-        //             {std::bit_cast<std::uint64_t>(*this->view)}, .pObjectName
-        //             {name.c_str()},
-        //         };
-
-        //         device.setDebugUtilsObjectNameEXT(nameSetInfo);
-        //     }
-        // }
+            device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                .pNext {nullptr},
+                .objectType {vk::ObjectType::eImageView},
+                .objectHandle {std::bit_cast<u64>(*this->view)},
+                .pObjectName {viewName.c_str()},
+            });
+        }
     }
 
     Image2D::~Image2D()

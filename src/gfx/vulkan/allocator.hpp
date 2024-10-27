@@ -19,6 +19,7 @@ namespace gfx::vulkan
     struct CacheableDescriptorSetLayoutCreateInfo
     {
         std::vector<vk::DescriptorSetLayoutBinding> bindings;
+        std::string                                 name;
 
         bool operator== (const CacheableDescriptorSetLayoutCreateInfo&) const =
             default;
@@ -28,6 +29,7 @@ namespace gfx::vulkan
     {
         std::vector<std::shared_ptr<vk::UniqueDescriptorSetLayout>> descriptors;
         std::optional<vk::PushConstantRange> push_constants;
+        std::string                          name;
 
         bool
         operator== (const CacheablePipelineLayoutCreateInfo&) const = default;
@@ -60,6 +62,7 @@ namespace gfx::vulkan
         vk::Format                                          depth_format;
         bool                                                blend_enable;
         std::shared_ptr<vk::UniquePipelineLayout>           layout;
+        std::string                                         name;
 
         bool
         operator== (const CacheableGraphicsPipelineCreateInfo&) const = default;
@@ -70,6 +73,7 @@ namespace gfx::vulkan
         std::string                               entry_point;
         std::shared_ptr<vk::UniqueShaderModule>   shader;
         std::shared_ptr<vk::UniquePipelineLayout> layout;
+        std::string                               name;
 
         bool
         operator== (const CacheableComputePipelineCreateInfo&) const = default;
@@ -90,6 +94,8 @@ struct std::hash<gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo>
             util::hashCombine(
                 result, std::hash<vk::DescriptorSetLayoutBinding> {}(b));
         }
+
+        util::hashCombine(result, std::hash<std::string> {}(i.name));
 
         return result;
     }
@@ -114,6 +120,8 @@ struct std::hash<gfx::vulkan::CacheablePipelineLayoutCreateInfo>
             result,
             std::hash<std::optional<vk::PushConstantRange>> {}(
                 i.push_constants));
+
+        util::hashCombine(result, std::hash<std::string> {}(i.name));
 
         return result;
     }
@@ -187,6 +195,8 @@ struct std::hash<gfx::vulkan::CacheableGraphicsPipelineCreateInfo>
         util::hashCombine(
             result, static_cast<std::size_t>(std::bit_cast<u64>(**i.layout)));
 
+        util::hashCombine(result, std::hash<std::string> {}(i.name));
+
         return result;
     }
 };
@@ -206,6 +216,8 @@ struct std::hash<gfx::vulkan::CacheableComputePipelineCreateInfo>
 
         util::hashCombine(
             result, static_cast<std::size_t>(std::bit_cast<u64>(**i.shader)));
+
+        util::hashCombine(result, std::hash<std::string> {}(i.name));
 
         return result;
     }
@@ -234,8 +246,8 @@ namespace gfx::vulkan
 
         void trimCaches() const;
 
-        [[nodiscard]] vk::DescriptorSet
-             allocateDescriptorSet(vk::DescriptorSetLayout) const;
+        [[nodiscard]] vk::DescriptorSet allocateDescriptorSet(
+            vk::DescriptorSetLayout, const std::string& debugName) const;
         void earlyDeallocateDescriptorSet(vk::DescriptorSet) const;
 
         [[nodiscard]] std::shared_ptr<vk::UniqueDescriptorSetLayout>
@@ -247,13 +259,15 @@ namespace gfx::vulkan
             cachePipeline(CacheableGraphicsPipelineCreateInfo) const;
         [[nodiscard]] std::shared_ptr<vk::UniquePipeline>
             cachePipeline(CacheableComputePipelineCreateInfo) const;
-        [[nodiscard]] std::shared_ptr<vk::UniqueShaderModule>
-            cacheShaderModule(std::span<const std::byte>) const;
+        [[nodiscard]] std::shared_ptr<vk::UniqueShaderModule> cacheShaderModule(
+            std::span<const std::byte>, std::string debugName) const;
 
         [[nodiscard]] std::shared_ptr<vk::UniquePipelineLayout>
             lookupPipelineLayout(vk::Pipeline) const;
         [[nodiscard]] vk::PipelineBindPoint
             lookupPipelineBindPoint(vk::Pipeline) const;
+
+        vk::Device getDevice() const;
 
     private:
         vk::Device               device;

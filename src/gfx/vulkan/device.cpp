@@ -1,5 +1,6 @@
 #include "device.hpp"
 #include "util/log.hpp"
+#include "util/misc.hpp"
 #include "util/threads.hpp"
 #include <algorithm>
 #include <optional>
@@ -14,7 +15,7 @@ namespace gfx::vulkan
 {
     Device::Device(vk::Instance instance, vk::SurfaceKHR surface) // NOLINT
     {
-        const std::vector<vk::PhysicalDevice> availablePhysicalDevice =
+        const std::vector<vk::PhysicalDevice> availablePhysicalDevices =
             instance.enumeratePhysicalDevices();
 
         const auto getRatingOfDevice = [](vk::PhysicalDevice d) -> std::size_t
@@ -30,8 +31,8 @@ namespace gfx::vulkan
         };
 
         this->physical_device = *std::max_element(
-            availablePhysicalDevice.cbegin(),
-            availablePhysicalDevice.cend(),
+            availablePhysicalDevices.cbegin(),
+            availablePhysicalDevices.cend(),
             [&](vk::PhysicalDevice l, vk::PhysicalDevice r)
             {
                 return getRatingOfDevice(l) < getRatingOfDevice(r);
@@ -236,27 +237,86 @@ namespace gfx::vulkan
             this->physical_device.createDeviceUnique(deviceCreateInfo);
         VULKAN_HPP_DEFAULT_DISPATCHER.init(instance, *this->device);
 
+        if constexpr (util::isDebugBuild())
+        {
+            this->device->setDebugUtilsObjectNameEXT(
+                vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eDevice},
+                    .objectHandle {std::bit_cast<u64>(*this->device)},
+                    .pObjectName {"Device"},
+                });
+        }
+
         std::vector<util::Mutex<vk::Queue>> graphicsQueues {};
         std::vector<util::Mutex<vk::Queue>> asyncComputeQueues {};
         std::vector<util::Mutex<vk::Queue>> asyncTransferQueues {};
 
         for (u32 idx = 0; idx < numberOfGraphicsQueues; ++idx)
         {
-            graphicsQueues.push_back( // NOLINTNEXTLINE
-                util::Mutex {this->device->getQueue(*graphicsFamily, idx)});
+            vk::Queue q = this->device->getQueue(*graphicsFamily, idx);
+
+            if constexpr (util::isDebugBuild())
+            {
+                std::string name = std::format("Graphics Queue #{}", idx);
+
+                device->setDebugUtilsObjectNameEXT(
+                    vk::DebugUtilsObjectNameInfoEXT {
+                        .sType {
+                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                        .pNext {nullptr},
+                        .objectType {vk::ObjectType::eQueue},
+                        .objectHandle {std::bit_cast<u64>(q)},
+                        .pObjectName {name.c_str()},
+                    });
+            }
+
+            graphicsQueues.push_back(util::Mutex {std::move(q)}); // NOLINT
         }
 
         for (u32 idx = 0; idx < numberOfAsyncComputeQueues; ++idx)
         {
-            asyncComputeQueues.push_back( // NOLINTNEXTLINE
-                util::Mutex {this->device->getQueue(*asyncComputeFamily, idx)});
+            vk::Queue q = this->device->getQueue(*asyncComputeFamily, idx);
+
+            if constexpr (util::isDebugBuild())
+            {
+                std::string name = std::format("Async Compute Queue #{}", idx);
+
+                device->setDebugUtilsObjectNameEXT(
+                    vk::DebugUtilsObjectNameInfoEXT {
+                        .sType {
+                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                        .pNext {nullptr},
+                        .objectType {vk::ObjectType::eQueue},
+                        .objectHandle {std::bit_cast<u64>(q)},
+                        .pObjectName {name.c_str()},
+                    });
+            }
+
+            asyncComputeQueues.push_back(util::Mutex {std::move(q)}); // NOLINT
         }
 
         for (u32 idx = 0; idx < numberOfAsyncTransferQueues; ++idx)
         {
-            asyncTransferQueues.push_back(util::Mutex {
-                // NOLINTNEXTLINE
-                this->device->getQueue(*asyncTransferFamily, idx)});
+            vk::Queue q = this->device->getQueue(*asyncTransferFamily, idx);
+
+            if constexpr (util::isDebugBuild())
+            {
+                std::string name = std::format("Async Transfer Queue #{}", idx);
+
+                device->setDebugUtilsObjectNameEXT(
+                    vk::DebugUtilsObjectNameInfoEXT {
+                        .sType {
+                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                        .pNext {nullptr},
+                        .objectType {vk::ObjectType::eQueue},
+                        .objectHandle {std::bit_cast<u64>(q)},
+                        .pObjectName {name.c_str()},
+                    });
+            }
+
+            asyncTransferQueues.push_back(util::Mutex {std::move(q)}); // NOLINT
         }
 
         this->queues[static_cast<std::size_t>(QueueType::Graphics)] =

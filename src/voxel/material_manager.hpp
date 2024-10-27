@@ -41,7 +41,8 @@ namespace voxel
             vk::BufferUsageFlagBits::eStorageBuffer,
             vk::MemoryPropertyFlagBits::eDeviceLocal
                 | vk::MemoryPropertyFlagBits::eHostVisible,
-            materials.size()};
+            materials.size(),
+            "Voxel Material Buffer"};
 
         std::span<VoxelMaterial> gpuMaterials = buffer.getDataNonCoherent();
 

@@ -59,65 +59,75 @@ namespace voxel
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              MaxChunks)
+              MaxChunks,
+              "Gpu Chunk Data Buffer")
         , brick_maps(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              MaxChunks)
+              MaxChunks,
+              "Brick Maps")
         , indirect_payload(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eVertexBuffer
                   | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              static_cast<std::size_t>(MaxChunks * DirectionsPerChunk))
+              static_cast<std::size_t>(MaxChunks * DirectionsPerChunk),
+              "Indirect Payload")
         , indirect_commands(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eIndirectBuffer
                   | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              static_cast<std::size_t>(MaxChunks * DirectionsPerChunk))
+              static_cast<std::size_t>(MaxChunks * DirectionsPerChunk),
+              "Indirect Commands")
         , brick_allocator(MaxBricks)
         , brick_parent_info(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              static_cast<std::size_t>(MaxBricks))
+              static_cast<std::size_t>(MaxBricks),
+              "Brick Parent Info")
         , material_bricks(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              static_cast<std::size_t>(MaxBricks))
+              static_cast<std::size_t>(MaxBricks),
+              "Material Bricks")
         , opacity_bricks(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              static_cast<std::size_t>(MaxBricks))
+              static_cast<std::size_t>(MaxBricks),
+              "Opacity Bricks")
         , visibility_bricks(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer
                   | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
-              static_cast<std::size_t>(MaxBricks))
+              static_cast<std::size_t>(MaxBricks),
+              "Visibility Bricks")
         , face_id_bricks(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer
                   | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
-              static_cast<std::size_t>(MaxBricks))
+              static_cast<std::size_t>(MaxBricks),
+              "Face Id Bricks")
         , voxel_face_allocator {MaxFaces, MaxChunks * 6}
         , voxel_faces(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal
                   | vk::MemoryPropertyFlagBits::eHostVisible,
-              static_cast<std::size_t>(MaxFaces))
+              static_cast<std::size_t>(MaxFaces),
+              "Voxel Faces")
         , material_buffer {voxel::generateVoxelMaterialBuffer(this->renderer)}
         , global_voxel_data(
               this->renderer->getAllocator(),
@@ -125,157 +135,163 @@ namespace voxel
                   | vk::BufferUsageFlagBits::eTransferDst
                   | vk::BufferUsageFlagBits::eIndirectBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
-              1)
+              1,
+              "Global Voxel Data")
         , visible_face_data(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer
                   | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
-              static_cast<std::size_t>(MaxFaces))
+              static_cast<std::size_t>(MaxFaces),
+              "Visible Face Data")
         , light_allocator {MaxLights}
         , lights_buffer(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer
                   | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
-              static_cast<std::size_t>(MaxLights))
+              static_cast<std::size_t>(MaxLights),
+              "Lights Buffer")
         , global_chunks_buffer(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
-              1)
+              1,
+              "Global Chunks Buffer")
         , descriptor_set_layout {this->renderer->getAllocator()->cacheDescriptorSetLayout(
-              gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo {.bindings {{
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {0},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {1},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {2},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {3},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {4},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {5},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {6},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
+              gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo {
+                  .bindings {{
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {0},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {1},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {2},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {3},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {4},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {5},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {6},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
 
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {7},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {8},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {7},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {8},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
 
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {9},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {10},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {11},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {
-                          vk::ShaderStageFlagBits::eVertex
-                          | vk::ShaderStageFlagBits::eFragment
-                          | vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
-                  vk::DescriptorSetLayoutBinding {
-                      .binding {12},
-                      .descriptorType {vk::DescriptorType::eStorageBuffer},
-                      .descriptorCount {1},
-                      .stageFlags {vk::ShaderStageFlagBits::eCompute},
-                      .pImmutableSamplers {nullptr},
-                  },
-              }}})}
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {9},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {10},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {11},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex
+                              | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {12},
+                          .descriptorType {vk::DescriptorType::eStorageBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                  }},
+                  .name {"Voxel Descriptor Set Layout"}})}
         , voxel_render_pipeline {this->renderer->getAllocator()->cachePipeline(
               gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
                   .stages {{
@@ -283,13 +299,15 @@ namespace voxel
                           .stage {vk::ShaderStageFlagBits::eVertex},
                           .shader {
                               this->renderer->getAllocator()->cacheShaderModule(
-                                  shaders::load("voxel_render.vert"))},
+                                  shaders::load("voxel_render.vert"),
+                                  "Voxel Render Vertex Shader")},
                           .entry_point {"main"}},
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eFragment},
                           .shader {
                               this->renderer->getAllocator()->cacheShaderModule(
-                                  shaders::load("voxel_render.frag"))},
+                                  shaders::load("voxel_render.frag"),
+                                  "Voxel Render Fragment Shader")},
                           .entry_point {"main"}},
                   }},
                   .vertex_attributes {{
@@ -336,32 +354,40 @@ namespace voxel
                               .stageFlags {vk::ShaderStageFlagBits::eVertex},
                               .offset {0},
                               .size {sizeof(u32)},
-                          }}})},
-              })}
+
+                          }},
+                          .name {"Voxel Render Pipeline Layout"}})},
+                  .name {"Voxel Render Pipeline"}})}
         , voxel_visibility_pipeline {this->renderer->getAllocator()->cachePipeline(
               gfx::vulkan::CacheableComputePipelineCreateInfo {
                   .entry_point {"main"},
                   .shader {this->renderer->getAllocator()->cacheShaderModule(
                       shaders::load(
-                          "voxel_visibility_detection.comp"))},
+                          "voxel_visibility_detection.comp"),
+                      "Voxel Visibility Detection Compute Shader")},
                   .layout {this->renderer->getAllocator()->cachePipelineLayout(
                       gfx::vulkan::CacheablePipelineLayoutCreateInfo {
                           .descriptors {
                               {game->getGlobalInfoDescriptorSetLayout(),
                                this->descriptor_set_layout}},
-                          .push_constants {}})},
-              })}
+                          .push_constants {},
+                          .name {
+                              "Voxel Visibility Detection Pipeline Layout"}})},
+                  .name {"Voxel Visibility Detection Pipeline"}})}
         , voxel_color_calculation_pipeline {this->renderer->getAllocator()->cachePipeline(
               gfx::vulkan::CacheableComputePipelineCreateInfo {
                   .entry_point {"main"},
                   .shader {this->renderer->getAllocator()->cacheShaderModule(
-                      shaders::load("voxel_color_calculation.comp"))},
+                      shaders::load("voxel_color_calculation.comp"),
+                      "Voxel Color Calculation Compute Shader")},
                   .layout {this->renderer->getAllocator()->cachePipelineLayout(
                       gfx::vulkan::CacheablePipelineLayoutCreateInfo {
                           .descriptors {
                               {game->getGlobalInfoDescriptorSetLayout(),
                                this->descriptor_set_layout}},
-                          .push_constants {}})},
+                          .push_constants {},
+                          .name {"Voxel Color Calculation Pipeline Layout"}})},
+                  .name {"Voxel Color Calculation Pipeline"},
               })}
         , voxel_color_transfer_pipeline {this->renderer->getAllocator()->cachePipeline(
               gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
@@ -370,15 +396,19 @@ namespace voxel
                           .stage {vk::ShaderStageFlagBits::eVertex},
                           .shader {
                               this->renderer->getAllocator()->cacheShaderModule(
-                                  shaders::load("voxel_color_transfer."
-                                                "vert"))},
+                                  shaders::load(
+                                      "voxel_color_transfer.vert"),
+                                  "Voxel Color Transfer Vertex "
+                                  "Shader")},
                           .entry_point {"main"}},
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eFragment},
                           .shader {
                               this->renderer->getAllocator()->cacheShaderModule(
                                   shaders::load("voxel_color_transfer."
-                                                "frag"))},
+                                                "frag"),
+                                  "Voxel Color Transfer Fragment "
+                                  "Shader")},
                           .entry_point {"main"}},
                   }},
                   .vertex_attributes {},
@@ -399,11 +429,13 @@ namespace voxel
                           .descriptors {
                               {game->getGlobalInfoDescriptorSetLayout(),
                                this->descriptor_set_layout}},
-                          .push_constants {}})},
-              })}
+                          .push_constants {},
+                          .name {"Voxel Color Transfer Pipeline Layout"}})},
+                  .name {"Voxel Color Transfer Pipeline"}})}
         , chunk_descriptor_set {this->renderer->getAllocator()
                                     ->allocateDescriptorSet(
-                                        **this->descriptor_set_layout)}
+                                        **this->descriptor_set_layout,
+                                        "Voxel Descriptor Set")}
         , global_descriptor_set {game->getGlobalInfoDescriptorSet()}
     {
         const auto bufferInfo = {
@@ -894,8 +926,6 @@ namespace voxel
             util::divideEuclidean(position.y, 64),
             util::divideEuclidean(position.z, 64),
         }};
-
-        util::logTrace("allocating chunk");
 
         this->global_chunks_buffer.modify(
             0)[coord.x + 128][coord.y + 128][coord.z + 128] = *maybeThisChunkId;

@@ -3,6 +3,7 @@
 #include "frame_manager.hpp"
 #include "gfx/renderer.hpp"
 #include "util/log.hpp"
+#include "util/misc.hpp"
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
@@ -83,9 +84,21 @@ namespace gfx::vulkan
         this->swapchain = device->createSwapchainKHRUnique(swapchainCreateInfo);
         this->images    = device->getSwapchainImagesKHR(*this->swapchain);
 
+        if constexpr (util::isDebugBuild())
+        {
+            device->setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                .pNext {nullptr},
+                .objectType {vk::ObjectType::eSwapchainKHR},
+                .objectHandle {std::bit_cast<u64>(*this->swapchain)},
+                .pObjectName {"Swapchain"},
+            });
+        }
+
         this->image_views.reserve(this->images.size());
         this->dense_image_views.reserve(this->images.size());
 
+        std::size_t idx = 0;
         for (vk::Image i : this->images)
         {
             const vk::ImageViewCreateInfo swapchainImageViewCreateInfo {
@@ -112,8 +125,36 @@ namespace gfx::vulkan
             vk::UniqueImageView imageView =
                 device->createImageViewUnique(swapchainImageViewCreateInfo);
 
+            if constexpr (util::isDebugBuild())
+            {
+                std::string imageName = std::format("Swapchain Image #{}", idx);
+                std::string viewName  = std::format("View #{}", idx);
+
+                device->setDebugUtilsObjectNameEXT(
+                    vk::DebugUtilsObjectNameInfoEXT {
+                        .sType {
+                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                        .pNext {nullptr},
+                        .objectType {vk::ObjectType::eImage},
+                        .objectHandle {std::bit_cast<u64>(i)},
+                        .pObjectName {imageName.c_str()},
+                    });
+
+                device->setDebugUtilsObjectNameEXT(
+                    vk::DebugUtilsObjectNameInfoEXT {
+                        .sType {
+                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                        .pNext {nullptr},
+                        .objectType {vk::ObjectType::eImageView},
+                        .objectHandle {std::bit_cast<u64>(*imageView)},
+                        .pObjectName {viewName.c_str()},
+                    });
+            }
+
             this->dense_image_views.push_back(*imageView);
             this->image_views.push_back(std::move(imageView));
+
+            idx += 1;
         }
     }
 
