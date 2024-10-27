@@ -46,52 +46,15 @@ const u32 DrivingAxis_X = 0;
 const u32 DrivingAxis_Y = 1;
 const u32 DrivingAxis_Z = 2;
 
-u32 divideEuclideanu32(u32 lhs, u32 rhs)
-{
-    const u32 quotient = lhs / rhs;
-
-    if (lhs % rhs < 0)
-    {
-        return rhs > 0 ? quotient - 1 : quotient + 1;
-    }
-
-    return quotient;
-}
-
-u32 moduloEuclideanu32(u32 lhs, u32 rhs)
-{
-    const u32 remainder = lhs % rhs;
-
-    if (remainder < 0)
-    {
-        return rhs > 0 ? remainder + rhs : remainder - rhs;
-    }
-
-    return remainder;
-}
-
+// TODO: FIX THIS THIS IS TERRIBLE
 i32 divideEuclideani32(i32 lhs, i32 rhs)
 {
-    const i32 quotient = lhs / rhs;
-
-    if (lhs % rhs < 0)
-    {
-        return rhs > 0 ? quotient - 1 : quotient + 1;
-    }
-
-    return quotient;
+    return i32(floor(float(lhs) /float(rhs)));
 }
 
 i32 moduloEuclideani32(i32 lhs, i32 rhs)
 {
-    const i32 remainder = lhs % rhs;
-
-    if (remainder < 0)
-    {
-        return rhs > 0 ? remainder + rhs : remainder - rhs;
-    }
-
-    return remainder;
+    return i32(floor(mod(float(lhs), float(rhs))));
 }
 
 struct GetIdxAndBitResult
@@ -119,9 +82,9 @@ bool isGlobalPositionOccupied(ivec3 pos)
     );
 
     ivec3 positionWithinChunk = ivec3(
-        moduloEuclideanu32(pos.x, 64),
-        moduloEuclideanu32(pos.y, 64),
-        moduloEuclideanu32(pos.z, 64)
+        moduloEuclideani32(pos.x, 64),
+        moduloEuclideani32(pos.y, 64),
+        moduloEuclideani32(pos.z, 64)
     );
 
     u16 chunk = in_global_chunks.chunk[globalChunkCoordinate.x + 128][globalChunkCoordinate.y + 128][globalChunkCoordinate.z + 128];
