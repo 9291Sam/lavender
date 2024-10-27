@@ -867,6 +867,8 @@ namespace voxel
         this->light_allocator.free(toFree.id);
 
         this->lights_buffer.modify(toFree.id) = InternalPointLight {};
+
+        toFree.id = PointLight::NullId;
     }
 
     void ChunkManager::writeVoxel(glm::i32vec3 p, Voxel v)
@@ -976,19 +978,8 @@ namespace voxel
                 static_cast<i32>(cpuChunkData.position.z), 64),
         }};
 
-        auto it = this->global_chunks.find(coord);
-
-        if (it == this->global_chunks.cend())
-        {
-            util::panic(":eyes:");
-        }
-        else
-        {
-            this->global_chunks.erase(it);
-
-            this->global_chunks_buffer.modify(
-                0)[coord.x + 128][coord.y + 128][coord.z + 128] = ~UINT16_C(0);
-        }
+        this->global_chunks_buffer.modify(
+            0)[coord.x + 128][coord.y + 128][coord.z + 128] = ~UINT16_C(0);
 
         toFree.id = Chunk::NullChunk;
     }
