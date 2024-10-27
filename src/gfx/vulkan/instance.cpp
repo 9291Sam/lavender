@@ -63,10 +63,10 @@ namespace gfx::vulkan
         //     util::logTrace("Layer {} is available", l.layerName.data());
         // }
 
-        const std::array layers {
-            "VK_LAYER_KHRONOS_validation",
-            "VK_LAYER_KHRONOS_synchronization2",
-            "VK_LAYER_KHRONOS_shader_object"};
+        std::vector<const char*> layers {};
+#ifndef NDEBUG
+        layers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
 
         for (const char* requestedLayer : layers)
         {
@@ -191,7 +191,7 @@ namespace gfx::vulkan
 #endif // __APPLE__
             },
             .pApplicationInfo {&applicationInfo},
-            .enabledLayerCount {layers.size()},
+            .enabledLayerCount {static_cast<u32>(layers.size())},
             .ppEnabledLayerNames {layers.data()},
             .enabledExtensionCount {static_cast<uint32_t>(extensions.size())},
             .ppEnabledExtensionNames {extensions.data()}};
