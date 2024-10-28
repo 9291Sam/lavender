@@ -320,6 +320,7 @@ namespace verdigris
             {
                 insertVoxelAt({x, y, -64}, voxel::Voxel::Brass);
                 insertVoxelAt({x, y, 64}, voxel::Voxel::Brass);
+                insertVoxelAt({-64, y, x}, voxel::Voxel::Brass);
             }
         }
         // voxel::PointLight light = this->chunk_manager.createPointLight();
