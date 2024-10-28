@@ -33,11 +33,7 @@ namespace util
 
     consteval bool isDebugBuild()
     {
-#ifdef LAVENDER_DEBUG_BUILD
-        return true;
-#else
-        return false;
-#endif
+        return LAVENDER_DEBUG_BUILD;
     }
 
     template<class T>

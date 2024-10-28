@@ -47,11 +47,6 @@ namespace gfx::vulkan
             , elements {elements_}
             , mapped_memory {nullptr}
         {
-            if constexpr (!util::isDebugBuild())
-            {
-                this->name = {};
-            }
-
             util::assertFatal(
                 !(memoryPropertyFlags
                   & vk::MemoryPropertyFlagBits::eHostCoherent),

@@ -406,17 +406,17 @@ namespace verdigris
         auto thisPos = genSpiralPos(frameNumber);
         auto prevPos = genSpiralPos(frameNumber - 1);
 
-        if (thisPos != prevPos)
-        {
-            for (i32 i = 0; i < 32; ++i)
-            {
-                this->chunk_manager.writeVoxel(
-                    thisPos + glm::i32vec3 {0, i, 0}, voxel::Voxel::Pearl);
-                this->chunk_manager.writeVoxel(
-                    prevPos + glm::i32vec3 {0, i, 0},
-                    voxel::Voxel::NullAirEmpty);
-            }
-        }
+        // if (thisPos != prevPos)
+        // {
+        //     for (i32 i = 0; i < 32; ++i)
+        //     {
+        //         this->chunk_manager.writeVoxel(
+        //             thisPos + glm::i32vec3 {0, i, 0}, voxel::Voxel::Pearl);
+        //         this->chunk_manager.writeVoxel(
+        //             prevPos + glm::i32vec3 {0, i, 0},
+        //             voxel::Voxel::NullAirEmpty);
+        //     }
+        // }
 
         // TODO: moving diagonally is faster
         const float moveScale =
