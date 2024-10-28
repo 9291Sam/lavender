@@ -140,7 +140,7 @@ bool isGlobalPositionOccupied(ivec3 pos)
 //http://lodev.org/cgtutor/raycasting.html
 
 const bool USE_BRANCHLESS_DDA = false;
-const int MAX_RAY_STEPS = 196;
+const int MAX_RAY_STEPS = 512;
 
 // float sdSphere(vec3 p, float d) { return length(p) - d; } 
 
@@ -170,7 +170,7 @@ bool traceRealDDARay(vec3 rayPos, vec3 rayDir, float max_dist) {
     vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
     bvec3 mask;
 
-    for (int i = 0; i < MAX_RAY_STEPS && length(sideDist) < max_dist; i++) {
+    for (int i = 0; i < MAX_RAY_STEPS && length(sideDist) / 1.7320508075 < max_dist; i++) {
         if (isGlobalPositionOccupied(mapPos)) return true;
         
         if (USE_BRANCHLESS_DDA) {
@@ -258,7 +258,8 @@ bool traceDDARay(vec3 start, vec3 end)
     {
         return false;
     }
-    return traceRealDDARay(start, normalize(end - start), 1.414 * length(end - start));
+
+    return traceRealDDARay(start, normalize(end - start), length(end - start));
 
 }
   
