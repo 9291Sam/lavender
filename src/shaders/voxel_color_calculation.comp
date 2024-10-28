@@ -165,7 +165,7 @@ vec2 rotate2d(vec2 v, float a) {
 // Function signature for ray tracing   
 bool traceRealDDARay(vec3 rayPos, vec3 rayDir, float max_dist) {
     ivec3 mapPos = ivec3(floor(rayPos));
-    vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir) + 1e-4;
+    vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir);
     ivec3 rayStep = ivec3(sign(rayDir));
     vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
     bvec3 mask;
@@ -254,11 +254,6 @@ bool trace_ray_shitty_perfect(const vec3 origin, const vec3 dir, const float max
 
 bool traceDDARay(vec3 start, vec3 end)
 {
-    if (length(end - start) > 256.0)
-    {
-        return false;
-    }
-
     return traceRealDDARay(start, normalize(end - start), length(end - start));
 
 }
