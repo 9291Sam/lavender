@@ -140,7 +140,7 @@ bool isGlobalPositionOccupied(ivec3 pos)
 //http://lodev.org/cgtutor/raycasting.html
 
 const bool USE_BRANCHLESS_DDA = false;
-const int MAX_RAY_STEPS = 96;
+const int MAX_RAY_STEPS = 196;
 
 // float sdSphere(vec3 p, float d) { return length(p) - d; } 
 
@@ -162,12 +162,12 @@ vec2 rotate2d(vec2 v, float a) {
 	float cosA = cos(a);
 	return vec2(v.x * cosA - v.y * sinA, v.y * cosA + v.x * sinA);	
 }
-// Function signature for ray tracing
+// Function signature for ray tracing   
 bool traceRealDDARay(vec3 rayPos, vec3 rayDir, float max_dist) {
     ivec3 mapPos = ivec3(floor(rayPos));
     vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir) + 1e-4;
     ivec3 rayStep = ivec3(sign(rayDir));
-    vec3 sideDist = vec3(0.0);// (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
+    vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
     bvec3 mask;
 
     for (int i = 0; i < MAX_RAY_STEPS && length(sideDist) < max_dist; i++) {
