@@ -4,6 +4,7 @@
 #include "gfx/vulkan/buffer_stager.hpp"
 #include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
+#include <deque>
 #include <set>
 
 namespace verdigris
@@ -18,6 +19,7 @@ namespace verdigris
         mutable voxel::ChunkManager             chunk_manager;
         mutable std::vector<voxel::PointLight>  lights;
         mutable float                           time_alive;
+        mutable std::deque<float>               frame_times;
 
         explicit Verdigris(game::Game* game_);
 

@@ -14,6 +14,7 @@
 #include <boost/container_hash/hash_fwd.hpp>
 #include <glm/fwd.hpp>
 #include <numbers>
+#include <numeric>
 #include <random>
 #include <utility>
 
@@ -368,6 +369,18 @@ namespace verdigris
     std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
     Verdigris::onFrame(float deltaTime) const
     {
+        this->frame_times.push_back(deltaTime);
+
+        if (this->frame_times.size() > 128)
+        {
+            this->frame_times.pop_front();
+        }
+
+        const float averageFrameTime =
+            std::accumulate(
+                this->frame_times.cbegin(), this->frame_times.cend(), 0.0)
+            / this->frame_times.size();
+
         this->time_alive += deltaTime;
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {-1.0, 1.0};
@@ -437,9 +450,10 @@ namespace verdigris
                 gfx::Window::Action::ToggleConsole))
         {
             util::logTrace(
-                "Frame: {} | {} | {}",
+                "Frame: {} | {} | {} | {}",
                 deltaTime,
                 1.0f / deltaTime,
+                1.0f / averageFrameTime,
                 static_cast<std::string>(this->camera));
         }
 
