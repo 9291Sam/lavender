@@ -46,16 +46,57 @@ const u32 DrivingAxis_X = 0;
 const u32 DrivingAxis_Y = 1;
 const u32 DrivingAxis_Z = 2;
 
-// TODO: FIX THIS THIS IS TERRIBLE
-i32 divideEuclideani32(i32 lhs, i32 rhs)
-{
-    return i32(floor(float(lhs) /float(rhs)));
-}
+// i32 divideEuclideani32(i32 lhs, i32 rhs)
+// {
+//     const i32 quotient = lhs / rhs;
+//     if (lhs % rhs < 0)
+//     {
+//         return rhs > 0 ? quotient - 1 : quotient + 1;
+//     }
+//     return quotient;
+//     return i32(floor(float(lhs) /float(rhs)));
+// }
+
 
 i32 moduloEuclideani32(i32 lhs, i32 rhs)
 {
-    return i32(floor(mod(float(lhs), float(rhs))));
+    if (lhs < 0)
+    {
+        // Offset lhs to ensure positive remainder
+        lhs += (-lhs / rhs + 1) * rhs; 
+    }
+
+    const i32 remainder = lhs % rhs;
+    if (remainder < 0)
+    {
+        return rhs > 0 ? remainder + rhs : remainder - rhs;
+    }
+    return remainder;
 }
+
+// TODO: FIX THIS THIS IS TERRIBLE
+// i32 divideEuclideani32(i32 lhs, i32 rhs)
+// {
+//     return i32(floor(float(lhs) /float(rhs)));
+// }
+
+i32 divideEuclideani32(i32 lhs, i32 rhs)
+{
+    int quotient = lhs / rhs;
+    int remainder = lhs % rhs;
+
+    // Adjust quotient for Euclidean behavior
+    if (remainder != 0 && ((rhs < 0) != (lhs < 0))) {
+        quotient -= 1;
+    }
+
+    return quotient;
+}
+
+// i32 moduloEuclideani32(i32 lhs, i32 rhs)
+// {
+//     return i32(floor(mod(float(lhs), float(rhs))));
+// }
 
 struct GetIdxAndBitResult
 {
