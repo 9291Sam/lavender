@@ -46,18 +46,6 @@ const u32 DrivingAxis_X = 0;
 const u32 DrivingAxis_Y = 1;
 const u32 DrivingAxis_Z = 2;
 
-// i32 divideEuclideani32(i32 lhs, i32 rhs)
-// {
-//     const i32 quotient = lhs / rhs;
-//     if (lhs % rhs < 0)
-//     {
-//         return rhs > 0 ? quotient - 1 : quotient + 1;
-//     }
-//     return quotient;
-//     return i32(floor(float(lhs) /float(rhs)));
-// }
-
-
 i32 moduloEuclideani32(i32 lhs, i32 rhs)
 {
     if (lhs < 0)
@@ -74,12 +62,6 @@ i32 moduloEuclideani32(i32 lhs, i32 rhs)
     return remainder;
 }
 
-// TODO: FIX THIS THIS IS TERRIBLE
-// i32 divideEuclideani32(i32 lhs, i32 rhs)
-// {
-//     return i32(floor(float(lhs) /float(rhs)));
-// }
-
 i32 divideEuclideani32(i32 lhs, i32 rhs)
 {
     int quotient = lhs / rhs;
@@ -92,11 +74,6 @@ i32 divideEuclideani32(i32 lhs, i32 rhs)
 
     return quotient;
 }
-
-// i32 moduloEuclideani32(i32 lhs, i32 rhs)
-// {
-//     return i32(floor(mod(float(lhs), float(rhs))));
-// }
 
 struct GetIdxAndBitResult
 {
@@ -159,41 +136,13 @@ bool isGlobalPositionOccupied(ivec3 pos)
     
 }
 
-bool traceShittyShadowRay(vec3 start, vec3 end)
-{
-    const float step = 0.35;
-    const vec3 orig = start;
-    const vec3 dest = end;
-    const float dist = length(dest - orig);
-
-    
-    if (dist > 128.0)
-    {
-        return true;
-    }
-
-    const vec3 dir = normalize(dest - orig);
-
-    for (float t = 0; t < dist; t += step)
-    {
-        const vec3 s = orig + t * dir;
-
-        if (isGlobalPositionOccupied(ivec3(floor(s))))
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool trace_ray(vec3 origin, vec3 dir, float max_dist)
+bool trace_ray(const vec3 origin, const vec3 dir, const float max_dist)
 {    
-    vec3 origional = origin;
-
     if (isGlobalPositionOccupied(ivec3(floor(origin)))) return true;
 
-    for(int i = 0; i<512; i++)
+    float t = 0.0;
+
+    for(int i = 0; i<256; i++)
     {
         //Axis distance to nearest cell (with a small bias).
         vec3 dist = fract(-origin * sign(dir)) + 1e-4;
@@ -204,16 +153,14 @@ bool trace_ray(vec3 origin, vec3 dir, float max_dist)
         //Nearest axis' raytrace distance (as a vec3).
         float closestAxis = min(leng.x, min(leng.y, leng.z));
         
-        //Step to the nearest voxel cell.
-        origin += dir * closestAxis;
+        t += closestAxis;
 
-        if (length(origional - origin) > max_dist)
+        if (t > max_dist)
         {
             return false;
         }
         
-        //Stop if we hit a voxel.
-        if (isGlobalPositionOccupied(ivec3(floor(origin)))) return true;
+        if (isGlobalPositionOccupied(ivec3(floor(origin + dir * t)))) return true;
     } 
     
     return false;
@@ -228,77 +175,7 @@ bool traceDDARay(vec3 start, vec3 end)
     return trace_ray(start, normalize(end - start), length(end - start));
 
 }
-
-bool traceShadowRay(const ivec3 start, const ivec3 end)
-{
-    if (length(vec3(end) - vec3(start)) > 256.0)
-    {
-        return true;
-    }
-
-    const ivec3 dir = abs(end - start);
-    const ivec3 step = ivec3(
-        end.x > start.x ? 1 : -1,
-        end.y > start.y ? 1 : -1,
-        end.z > start.z ? 1 : -1
-    );
-
-    DrivingAxis drivingAxis = 0;
-    DrivingAxis errorAxis0 = 0;
-    DrivingAxis errorAxis1 = 0;
-
-    if (dir.x >= dir.y && dir.x >= dir.z)
-    {
-        drivingAxis = DrivingAxis_X;
-        errorAxis0  = DrivingAxis_Y;
-        errorAxis1  = DrivingAxis_Z;
-    }
-    else if (dir.y >= dir.x && dir.y >= dir.z)
-    {
-        drivingAxis = DrivingAxis_Y;
-        errorAxis0  = DrivingAxis_X;
-        errorAxis1  = DrivingAxis_Z;
-    }
-    else
-    {
-        drivingAxis = DrivingAxis_Z;
-        errorAxis0  = DrivingAxis_Y;
-        errorAxis1  = DrivingAxis_X;
-    }
-
-    ivec3 traverse = start;
-
-    int err0 = 2 * dir[errorAxis0] - dir[drivingAxis];
-    int err1 = 2 * dir[errorAxis1] - dir[drivingAxis];
-
-    while (traverse[drivingAxis] != end[drivingAxis])
-    {
-        traverse[drivingAxis] += step[drivingAxis];
-
-        if (err0 >= 0)
-        {
-            traverse[errorAxis0] += step[errorAxis0];
-            err0 -= 2 * dir[drivingAxis];
-        }
-
-        if (err1 >= 0)
-        {
-            traverse[errorAxis1] += step[errorAxis0];
-            err1 -= 2 * dir[drivingAxis];
-        }
-
-        err0 += 2 * dir[errorAxis0];
-        err1 += 2 * dir[errorAxis1];
-
-        if (isGlobalPositionOccupied(traverse))
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
+  
 
 vec3 exp_strength_falloff(vec3 strengths)
 {
