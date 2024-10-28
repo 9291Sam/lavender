@@ -139,7 +139,7 @@ bool isGlobalPositionOccupied(ivec3 pos)
 //The raycasting code is somewhat based around a 2D raycasting toutorial found here: 
 //http://lodev.org/cgtutor/raycasting.html
 
-const bool USE_BRANCHLESS_DDA = true;
+const bool USE_BRANCHLESS_DDA = false;
 const int MAX_RAY_STEPS = 96;
 
 // float sdSphere(vec3 p, float d) { return length(p) - d; } 

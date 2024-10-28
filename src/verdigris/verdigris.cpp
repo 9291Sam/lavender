@@ -397,9 +397,9 @@ namespace verdigris
             this->chunk_manager.modifyPointLight(
                 this->lights[i],
                 glm::vec3 {
-                    32.0f * std::cos(this->time_alive * 2 + offset),
+                    28.0f * std::cos(this->time_alive * 2 + offset),
                     4.0f,
-                    32.0f * std::sin(this->time_alive * 2 + offset)},
+                    28.0f * std::sin(this->time_alive * 2 + offset)},
                 {1.0, 1.0, 1.0, 256.0},
                 {0.0, 0.0, 0.25, 0.0});
         }
