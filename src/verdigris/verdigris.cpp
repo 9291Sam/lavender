@@ -337,7 +337,7 @@ namespace verdigris
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 
-        for (int i = 0; i < 16; ++i)
+        for (int i = 0; i < 48; ++i)
         {
             this->lights.push_back(this->chunk_manager.createPointLight());
         }
@@ -350,7 +350,7 @@ namespace verdigris
                     genVec3() * glm::vec3 {256.0, 42.0, 256.0}
                         + glm::vec3 {0.0, 41.0, 0.0},
                     0.0},
-                glm::vec4 {genVec3() / 2.0f + 0.5f, 10.0},
+                glm::vec4 {genVec3() / 2.0f + 0.5f, 512.0},
                 // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
                 glm::vec4 {0.0, 0.0, 0.025, 0.0});
         }
