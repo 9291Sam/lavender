@@ -187,6 +187,48 @@ bool traceShittyShadowRay(vec3 start, vec3 end)
     return false;
 }
 
+bool trace_ray(vec3 origin, vec3 dir, float max_dist)
+{    
+    vec3 origional = origin;
+
+    if (isGlobalPositionOccupied(ivec3(floor(origin)))) return true;
+
+    for(int i = 0; i<512; i++)
+    {
+        //Axis distance to nearest cell (with a small bias).
+        vec3 dist = fract(-origin * sign(dir)) + 1e-4;
+        
+        //Raytraced distance to each axis.
+        vec3 leng = dist / abs(dir);
+        
+        //Nearest axis' raytrace distance (as a vec3).
+        float closestAxis = min(leng.x, min(leng.y, leng.z));
+        
+        //Step to the nearest voxel cell.
+        origin += dir * closestAxis;
+
+        if (length(origional - origin) > max_dist)
+        {
+            return false;
+        }
+        
+        //Stop if we hit a voxel.
+        if (isGlobalPositionOccupied(ivec3(floor(origin)))) return true;
+    } 
+    
+    return false;
+}
+
+bool traceDDARay(vec3 start, vec3 end)
+{
+    if (length(end - start) > 256.0)
+    {
+        return false;
+    }
+    return trace_ray(start, normalize(end - start), length(end - start));
+
+}
+
 bool traceShadowRay(const ivec3 start, const ivec3 end)
 {
     if (length(vec3(end) - vec3(start)) > 256.0)
@@ -308,7 +350,7 @@ void main()
 
         for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
         {
-            const bool isFaceInShadow = traceShittyShadowRay(
+            const bool isFaceInShadow = traceDDARay(
                 sample_positon_world, 
                 in_point_lights.lights[i].position.xyz
             );

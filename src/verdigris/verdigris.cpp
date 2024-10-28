@@ -337,7 +337,7 @@ namespace verdigris
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 
-        for (int i = 0; i < 48; ++i)
+        for (int i = 0; i < 8; ++i)
         {
             this->lights.push_back(this->chunk_manager.createPointLight());
         }
