@@ -88,6 +88,11 @@ struct PointLight {
     vec4 falloffs;         // x = constant, y = linear, z = quadratic, w = cubic
 };
 
+float estimateLightEffectiveDistance(PointLight light)
+{
+    return light.color_and_power.w / 256.0 * (sqrt(light.falloffs.z));
+}
+
 struct GpuChunkData
 {
     ivec4 position;

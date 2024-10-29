@@ -46,7 +46,7 @@ void main()
             vec3(0.0)
         );
 
-        if (this_visible_face % 32 == 0)
+        if (this_visible_face % 128 == 0)
         {
             atomicAdd(in_global_voxel_data.number_of_indirect_dispatches_x, 1);
 

@@ -19,10 +19,19 @@ void main()
 
     if (in_face_brick_data == ~0u)
     {
-        // ok, we are a gap, there's a chance that this is a false gap
-        if (horz != ~0u) in_face_brick_data = horz;
-        else if (vert != ~0u) in_face_brick_data = vert;
-        else if (diag != ~0u) in_face_brick_data = diag;
+        int sum = 0;
+
+        sum += int(horz != ~0u);
+        sum += int(vert != ~0u);
+        sum += int(diag != ~0u);
+
+        if (sum > 2)
+        {
+            // ok, we are a gap, there's a chance that this is a false gap
+            if (horz != ~0u) in_face_brick_data = horz;
+            else if (vert != ~0u) in_face_brick_data = vert;
+            else if (diag != ~0u) in_face_brick_data = diag;
+        }
     }
 
     if (in_face_brick_data == ~0u)

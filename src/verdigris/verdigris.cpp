@@ -147,9 +147,9 @@ namespace verdigris
         //     }
         // }
 
-        for (i32 x = -256; x < 255; ++x)
+        for (i32 x = -512; x < 512; ++x)
         {
-            for (i32 z = -256; z < 255; ++z)
+            for (i32 z = -512; z < 512; ++z)
             {
                 for (i32 y = 0; y < 128; ++y)
                 {
@@ -161,13 +161,13 @@ namespace verdigris
             }
         }
 
-        for (i32 x = -64; x < 64; ++x)
-        {
-            for (i32 z = -64; z < 64; ++z)
-            {
-                insertVoxelAt({x, 64, z}, voxel::Voxel::Emerald);
-            }
-        }
+        // for (i32 x = -64; x < 64; ++x)
+        // {
+        //     for (i32 z = -64; z < 64; ++z)
+        //     {
+        //         insertVoxelAt({x, 64, z}, voxel::Voxel::Emerald);
+        //     }
+        // }
 
         glm::f32vec3 center = {0, 0, 0}; // Center of the structure
 
@@ -262,68 +262,69 @@ namespace verdigris
             }
         }
 
-        // Build doughnut ceiling with a hole in the center
-        float innerRadius = 128; // Inner radius (hole size)
-        float outerRadius = 240; // Outer radius (doughnut size)
+        // // Build doughnut ceiling with a hole in the center
+        // float innerRadius = 128; // Inner radius (hole size)
+        // float outerRadius = 240; // Outer radius (doughnut size)
 
-        for (int h = 0; h < 24; ++h)
-        {
-            int currentHeight =
-                h + 52; // Start the doughnut at a base height of 20
-            for (float x = -outerRadius; x <= outerRadius; ++x)
-            {
-                for (float z = -outerRadius; z <= outerRadius; ++z)
-                {
-                    float dist = glm::length(glm::vec2(x, z));
+        // for (int h = 0; h < 24; ++h)
+        // {
+        //     int currentHeight =
+        //         h + 52; // Start the doughnut at a base height of 20
+        //     for (float x = -outerRadius; x <= outerRadius; ++x)
+        //     {
+        //         for (float z = -outerRadius; z <= outerRadius; ++z)
+        //         {
+        //             float dist = glm::length(glm::vec2(x, z));
 
-                    // Check if the point is within the doughnut's ring shape
-                    // (between inner and outer radius)
-                    if (dist >= innerRadius && dist <= outerRadius)
-                    {
-                        // Add a voxel for this (x, z) position at the current
-                        // height layer
-                        insertVoxelAt(
-                            center + glm::f32vec3(x, currentHeight, z),
-                            voxel::Voxel::Ruby);
-                    }
-                }
-            }
-        }
+        //             // Check if the point is within the doughnut's ring shape
+        //             // (between inner and outer radius)
+        //             if (dist >= innerRadius && dist <= outerRadius)
+        //             {
+        //                 // Add a voxel for this (x, z) position at the
+        //                 current
+        //                 // height layer
+        //                 insertVoxelAt(
+        //                     center + glm::f32vec3(x, currentHeight, z),
+        //                     voxel::Voxel::Ruby);
+        //             }
+        //         }
+        //     }
+        // }
 
-        for (int x = -3; x < 4; ++x)
-        {
-            for (int z = -3; z < 4; ++z)
-            {
-                for (int y = 0; y < 12; ++y)
-                {
-                    insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
-                }
-            }
-        }
+        // for (int x = -3; x < 4; ++x)
+        // {
+        //     for (int z = -3; z < 4; ++z)
+        //     {
+        //         for (int y = 0; y < 12; ++y)
+        //         {
+        //             insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+        //         }
+        //     }
+        // }
 
-        for (int x = 32; x < 36; ++x)
-        {
-            for (int z = 32; z < 36; ++z)
-            {
-                for (int y = 0; y < 32; ++y)
-                {
-                    insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
-                    insertVoxelAt({-x, y, z}, voxel::Voxel::Ruby);
-                    insertVoxelAt({x, y, -z}, voxel::Voxel::Ruby);
-                    insertVoxelAt({-x, y, -z}, voxel::Voxel::Ruby);
-                }
-            }
-        }
+        // for (int x = 32; x < 36; ++x)
+        // {
+        //     for (int z = 32; z < 36; ++z)
+        //     {
+        //         for (int y = 0; y < 32; ++y)
+        //         {
+        //             insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+        //             insertVoxelAt({-x, y, z}, voxel::Voxel::Ruby);
+        //             insertVoxelAt({x, y, -z}, voxel::Voxel::Ruby);
+        //             insertVoxelAt({-x, y, -z}, voxel::Voxel::Ruby);
+        //         }
+        //     }
+        // }
 
-        for (int x = -64; x < 64; ++x)
-        {
-            for (int y = 0; y < 64; ++y)
-            {
-                insertVoxelAt({x, y, -64}, voxel::Voxel::Brass);
-                insertVoxelAt({x, y, 64}, voxel::Voxel::Brass);
-                insertVoxelAt({-64, y, x}, voxel::Voxel::Brass);
-            }
-        }
+        // for (int x = -64; x < 64; ++x)
+        // {
+        //     for (int y = 0; y < 64; ++y)
+        //     {
+        //         insertVoxelAt({x, y, -64}, voxel::Voxel::Brass);
+        //         insertVoxelAt({x, y, 64}, voxel::Voxel::Brass);
+        //         insertVoxelAt({-64, y, x}, voxel::Voxel::Brass);
+        //     }
+        // }
         // voxel::PointLight light = this->chunk_manager.createPointLight();
         // this->lights.push_back(std::move(light));
 
@@ -339,7 +340,7 @@ namespace verdigris
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 
-        for (int i = 0; i < 32; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             this->lights.push_back(this->chunk_manager.createPointLight());
         }
@@ -404,7 +405,7 @@ namespace verdigris
         const i32 frameNumber =
             static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < 1; i++)
         {
             const float offset =
                 this->time_alive * 2 + i * 2 * std::numbers::pi_v<float> / 8.0;
@@ -413,7 +414,7 @@ namespace verdigris
                 glm::vec3 {
                     28.0f * std::cos(offset), 4.0f, 28.0f * std::sin(offset)},
                 {1.0, 1.0, 1.0, 256.0},
-                {0.0, 0.0, 0.25, 0.0});
+                {0.0, 0.0, 0.025, 0.0});
         }
 
         auto thisPos = genSpiralPos(frameNumber);

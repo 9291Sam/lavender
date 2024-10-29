@@ -379,7 +379,7 @@ vec3 exp_strength_falloff(vec3 strengths)
     return 1.0 - exp2(-0.25 * strengths);
 }
 
-layout(local_size_x = 32, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 128, local_size_y = 1, local_size_z = 1) in;
 
 void main()
 {
@@ -428,6 +428,7 @@ void main()
                 sample_positon_world, 
                 in_point_lights.lights[i].position.xyz
             );
+
 
             if (!isFaceInShadow)
             {
