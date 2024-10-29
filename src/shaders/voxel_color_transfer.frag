@@ -1,5 +1,7 @@
 #version 460
 
+#extension GL_KHR_shader_subgroup_quad : require
+
 #include "global_descriptor_set.glsl"
 #include "types.glsl"
 #include "voxel_descriptors.glsl"
@@ -9,7 +11,19 @@ layout(location = 0) out vec4 out_color;
 void main()
 {
     
-    const u32 in_face_brick_data = imageLoad(visible_voxel_image, ivec2(floor(gl_FragCoord.xy))).x;
+    u32 in_face_brick_data = imageLoad(visible_voxel_image, ivec2(floor(gl_FragCoord.xy))).x;
+
+    const u32 horz = subgroupQuadSwapHorizontal(in_face_brick_data);
+    const u32 vert = subgroupQuadSwapVertical(in_face_brick_data);
+    const u32 diag = subgroupQuadSwapDiagonal(in_face_brick_data);
+
+    if (in_face_brick_data == ~0u)
+    {
+        // ok, we are a gap, there's a chance that this is a false gap
+        if (horz != ~0u) in_face_brick_data = horz;
+        else if (vert != ~0u) in_face_brick_data = vert;
+        else if (diag != ~0u) in_face_brick_data = diag;
+    }
 
     if (in_face_brick_data == ~0u)
     {

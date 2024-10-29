@@ -354,7 +354,7 @@ namespace verdigris
                     0.0},
                 glm::vec4 {genVec3() / 2.0f + 0.5f, 64.0},
                 // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
-                glm::vec4 {0.0, 0.0, 0.025, 0.0});
+                glm::vec4 {0.0, 0.0, 0.25, 0.0});
         }
     }
 
