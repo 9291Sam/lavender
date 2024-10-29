@@ -90,6 +90,50 @@ GetIdxAndBitResult getIdxAndBit(ivec3 p)
     return GetIdxAndBitResult(linearIndex / 32, linearIndex % 32);
 }
 
+bool OpactityBrick_read(u32 ptr, ivec3 pos)
+{
+    GetIdxAndBitResult r = getIdxAndBit(pos);
+
+    if ((in_opacity_bricks.brick[ptr].data[r.idx] & (1u << r.bit)) == 0)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+u32 getBrickOfWorldPosition(ivec3 pos)
+{
+    // TODO: this isnt the right coordinate
+    ivec3 globalChunkCoordinate = ivec3(
+        divideEuclideani32(pos.x, 64),
+        divideEuclideani32(pos.y, 64),
+        divideEuclideani32(pos.z, 64)
+    );
+
+    ivec3 positionWithinChunk = ivec3(
+        moduloEuclideani32(pos.x, 64),
+        moduloEuclideani32(pos.y, 64),
+        moduloEuclideani32(pos.z, 64)
+    );
+
+    u16 chunk = in_global_chunks.chunk[globalChunkCoordinate.x + 128][globalChunkCoordinate.y + 128][globalChunkCoordinate.z + 128];
+
+    if (chunk == u16(-1))
+    {
+        return ~0u;
+    }
+
+    ivec3 brickCoordinate = positionWithinChunk / 8;
+    ivec3 brickPosition = positionWithinChunk % 8;
+
+    MaybeBrickPointer maybePtr = in_brick_maps.map[chunk].data[brickCoordinate.x][brickCoordinate.y][brickCoordinate.z];
+
+    return maybePtr.pointer;
+}
+
 bool isGlobalPositionOccupied(ivec3 pos)
 {
     // TODO: this isnt the right coordinate
@@ -135,6 +179,74 @@ bool isGlobalPositionOccupied(ivec3 pos)
 
     
 }
+
+
+vec3 stepMask(vec3 sideDist) {
+    bvec3 mask;
+    bvec3 b1 = lessThan(sideDist.xyz, sideDist.yzx);
+    bvec3 b2 = lessThanEqual(sideDist.xyz, sideDist.zxy);
+    mask.z = b1.z && b2.z;
+    mask.x = b1.x && b2.x;
+    mask.y = b1.y && b2.y;
+    if(!any(mask)) // Thank you Spalmer
+        mask.z = true;
+        
+    return vec3(mask);
+}
+
+bool traceBlock(u32 brick, vec3 rayPos, vec3 rayDir, vec3 iMask, float max_dist) {
+    rayPos = clamp(rayPos, vec3(0.0001), vec3(7.9999));
+    vec3 mapPos = floor(rayPos);
+    vec3 raySign = sign(rayDir);
+    vec3 deltaDist = 1.0/rayDir;
+    vec3 sideDist = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
+    vec3 mask = iMask;
+    
+    while (mapPos.x <= 7.0 && mapPos.x >= 0.0 && mapPos.y <= 7.0 && mapPos.y >= 0.0 && mapPos.z <= 7.0 && mapPos.z >= 0.0
+            && length(mapPos - rayPos) < max_dist) {
+        if (OpactityBrick_read(brick, ivec3(mapPos)))
+            return true;
+            
+       mask      = stepMask(sideDist);
+       mapPos   += mask * raySign;
+       sideDist += mask * raySign * deltaDist;
+    }
+    
+    return false;
+}
+
+bool traceWorld(vec3 rayPos, vec3 rayDir, float max_dist) {    
+    vec3 mapPos = floor(rayPos);
+    vec3 raySign = sign(rayDir);
+    vec3 deltaDist = 1.0/rayDir;
+    vec3 sideDist = ((mapPos-rayPos) + 0.5 + raySign * 0.5) * deltaDist;
+    vec3 mask = stepMask(sideDist);
+    
+    for (int i = 0; i < 256 && length(mapPos - rayPos) < max_dist; i++) {
+        u32 brick = getBrickOfWorldPosition(ivec3(mapPos * 8.0));
+        if (brick != ~0u) {
+           vec3 mini = ((mapPos-rayPos) + 0.5 - 0.5*vec3(raySign))*deltaDist;
+           float d = max (mini.x, max (mini.y, mini.z));
+           vec3 intersect = rayPos + rayDir*d;
+           vec3 uv3d = intersect - mapPos;
+
+           if (mapPos == floor(rayPos)) // Handle edge case where camera origin is inside of block
+               uv3d = rayPos - mapPos;
+
+           bool hit = traceBlock(brick, uv3d * 8.0, rayDir, mask, (max_dist - length(mapPos - rayPos)) * 8.0 );
+
+           if (hit) 
+                return true;
+       }
+       
+       mask      = stepMask(sideDist);
+       mapPos   += mask * raySign;
+       sideDist += mask * raySign * deltaDist;
+    }
+    
+    return false;
+}
+
 
 //The raycasting code is somewhat based around a 2D raycasting toutorial found here: 
 //http://lodev.org/cgtutor/raycasting.html
@@ -254,8 +366,8 @@ bool trace_ray_shitty_perfect(const vec3 origin, const vec3 dir, const float max
 
 bool traceDDARay(vec3 start, vec3 end)
 {
-    return traceRealDDARay(start, normalize(end - start), length(end - start));
-
+    // return traceRealDDARay(start, normalize(end - start), length(end - start));
+    return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
 }
   
 

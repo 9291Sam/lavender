@@ -339,7 +339,7 @@ namespace verdigris
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 
-        for (int i = 0; i < 16; ++i)
+        for (int i = 0; i < 8; ++i)
         {
             this->lights.push_back(this->chunk_manager.createPointLight());
         }
@@ -406,13 +406,12 @@ namespace verdigris
 
         for (int i = 0; i < 8; i++)
         {
-            const float offset = i * 2 * std::numbers::pi_v<float> / 8.0;
+            const float offset =
+                this->time_alive * 2 + i * 2 * std::numbers::pi_v<float> / 8.0;
             this->chunk_manager.modifyPointLight(
                 this->lights[i],
                 glm::vec3 {
-                    28.0f * std::cos(this->time_alive * 2 + offset),
-                    4.0f,
-                    28.0f * std::sin(this->time_alive * 2 + offset)},
+                    28.0f * std::cos(offset), 4.0f, 28.0f * std::sin(offset)},
                 {1.0, 1.0, 1.0, 256.0},
                 {0.0, 0.0, 0.25, 0.0});
         }
