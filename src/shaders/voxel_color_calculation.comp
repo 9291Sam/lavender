@@ -366,7 +366,10 @@ bool trace_ray_shitty_perfect(const vec3 origin, const vec3 dir, const float max
 
 bool traceDDARay(vec3 start, vec3 end)
 {
-    // return traceRealDDARay(start, normalize(end - start), length(end - start));
+    if (length(end - start) > 256)
+    {
+        return true;
+    }
     return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
 }
   
