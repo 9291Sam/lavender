@@ -21,11 +21,6 @@ CalculatedLightPower calculate_light_power(
     float to_light_distance = length(to_light_vector);
     to_light_vector /= to_light_distance;
 
-    if (to_light_distance > 256.0 || light.color_and_power.w < 0.25)
-    {
-        return CalculatedLightPower(vec3(0.0), vec3(0.0));
-    }
-
     vec3 view_vector = normalize(camera_position - voxel_position);
     vec3 reflect_vector = 2.0 * dot(to_light_vector, voxel_normal) * voxel_normal - to_light_vector;
 
@@ -202,8 +197,11 @@ bool traceBlock(u32 brick, vec3 rayPos, vec3 rayDir, vec3 iMask, float max_dist)
     vec3 sideDist = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
     vec3 mask = iMask;
     
-    while (mapPos.x <= 7.0 && mapPos.x >= 0.0 && mapPos.y <= 7.0 && mapPos.y >= 0.0 && mapPos.z <= 7.0 && mapPos.z >= 0.0
-            && length(mapPos - rayPos) < max_dist) {
+    while (
+        all(lessThanEqual(mapPos, vec3(7.0))) &&
+        all(greaterThanEqual(mapPos, vec3(0.0))) &&
+        length(mapPos - rayPos) < max_dist)
+    {
         if (OpactityBrick_read(brick, ivec3(mapPos)))
             return true;
             
@@ -366,10 +364,10 @@ bool trace_ray_shitty_perfect(const vec3 origin, const vec3 dir, const float max
 
 bool traceDDARay(vec3 start, vec3 end)
 {
-    if (length(end - start) > 256)
-    {
-        return true;
-    }
+    // if (length(end - start) > 256)
+    // {
+    //     return true;
+    // }
     return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
 }
   

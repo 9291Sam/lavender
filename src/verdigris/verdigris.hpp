@@ -1,5 +1,6 @@
 #pragma once
 
+#include "game/ec/entity.hpp"
 #include "game/game.hpp"
 #include "gfx/vulkan/buffer_stager.hpp"
 #include "voxel/chunk.hpp"
@@ -20,6 +21,7 @@ namespace verdigris
         mutable std::vector<voxel::PointLight>  lights;
         mutable float                           time_alive;
         mutable std::deque<float>               frame_times;
+        game::ec::Entity                        triangle;
 
         explicit Verdigris(game::Game* game_);
 

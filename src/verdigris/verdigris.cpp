@@ -26,7 +26,7 @@ namespace verdigris
         , stager {this->game->getRenderer()->getAllocator()}
         , chunk_manager(this->game)
     {
-        const game::ec::Entity entity =
+        this->triangle =
             this->game->getEntityComponentManager()->createEntity();
 
         this->triangle_pipeline =
@@ -81,7 +81,7 @@ namespace verdigris
                                     .name {"Triangle Pipeline Layout"}})},
                     .name {"Triangle Pipeline"}});
 
-        this->ec_manager->addComponent(entity, TriangleComponent {});
+        this->ec_manager->addComponent(this->triangle, TriangleComponent {});
         // this->ec_manager->addComponent(entity, render::TriangleComponent
         // {});
 
@@ -340,23 +340,23 @@ namespace verdigris
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < 2; ++i)
         {
             this->lights.push_back(this->chunk_manager.createPointLight());
         }
 
-        for (const voxel::PointLight& l : this->lights)
-        {
-            this->chunk_manager.modifyPointLight(
-                l,
-                glm::vec4 {
-                    genVec3() * glm::vec3 {256.0, 42.0, 256.0}
-                        + glm::vec3 {0.0, 61.0, 0.0},
-                    0.0},
-                glm::vec4 {genVec3() / 2.0f + 0.5f, 64.0},
-                // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
-                glm::vec4 {0.0, 0.0, 0.25, 0.0});
-        }
+        // for (const voxel::PointLight& l : this->lights)
+        // {
+        //     this->chunk_manager.modifyPointLight(
+        //         l,
+        //         glm::vec4 {
+        //             genVec3() * glm::vec3 {256.0, 42.0, 256.0}
+        //                 + glm::vec3 {0.0, 61.0, 0.0},
+        //             0.0},
+        //         glm::vec4 {genVec3() / 2.0f + 0.5f, 64.0},
+        //         // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
+        //         glm::vec4 {0.0, 0.0, 0.25, 0.0});
+        // }
     }
 
     Verdigris::~Verdigris()
@@ -405,16 +405,45 @@ namespace verdigris
         const i32 frameNumber =
             static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 2; i++)
         {
             const float offset =
                 this->time_alive * 2 + i * 2 * std::numbers::pi_v<float> / 8.0;
-            this->chunk_manager.modifyPointLight(
-                this->lights[i],
-                glm::vec3 {
-                    28.0f * std::cos(offset), 4.0f, 28.0f * std::sin(offset)},
-                {1.0, 1.0, 1.0, 256.0},
-                {0.0, 0.0, 0.025, 0.0});
+
+            if (i == 0)
+            {
+                const glm::vec3 pos = glm::vec3 {
+                    28.0f * std::cos(offset),
+                    4.0f * std::sin(offset) + 48.0f,
+                    28.0f * std::sin(offset)};
+
+                this->chunk_manager.modifyPointLight(
+                    this->lights[i],
+                    pos,
+                    {1.0, 1.0, 1.0, 512.0},
+                    {0.0, 0.0, 0.025, 0.0});
+
+                this->ec_manager->modifyComponent<TriangleComponent>(
+                    this->triangle,
+                    [&](TriangleComponent& t)
+                    {
+                        t.transform.translation = pos;
+                        t.transform.scale       = glm::vec3 {4.0f};
+                    });
+            }
+            else
+            {
+                const glm::vec3 pos = glm::vec3 {
+                    256.0f * std::cos(offset * 1.384 + 93.4),
+                    4.0f * std::sin(offset * 1.384 + 93.4) + 8.0f,
+                    256.0f * std::sin(offset * 1.384 + 93.4)};
+
+                this->chunk_manager.modifyPointLight(
+                    this->lights[i],
+                    pos,
+                    {1.0, 1.0, 1.0, 2048.0},
+                    {0.0, 0.0, 0.025, 0.0});
+            }
         }
 
         auto thisPos = genSpiralPos(frameNumber);

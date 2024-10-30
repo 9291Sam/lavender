@@ -217,9 +217,9 @@ namespace game::ec
         }
         template<Component C>
         void modifyComponent(
-            Entity                 e,
-            std::invocable<C> auto func,
-            std::source_location   location =
+            Entity                  e,
+            std::invocable<C&> auto func,
+            std::source_location    location =
                 std::source_location::current()) const
         {
             std::expected<void, ComponentModificationError> modifyError =
