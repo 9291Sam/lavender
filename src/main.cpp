@@ -2,11 +2,21 @@
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "verdigris/verdigris.hpp"
+#include "voxel2/world.hpp"
 #include <ctti/type_id.hpp>
 #include <glm/gtx/hash.hpp>
 
-std::vector<std::vector<int>>
-Bresenham3D(int x1, int y1, int z1, int x2, int y2, int z2)
+// Inherent entity system
+// template<class... Entities>
+// struct UniqueEntityWithComponents
+// {
+
+// };
+
+// struct Triangle
+// {};
+
+std::vector<std::vector<int>> Bresenham3D(int x1, int y1, int z1, int x2, int y2, int z2)
 {
     std::vector<std::vector<int>> ListOfPoints;
     ListOfPoints.push_back({x1, y1, z1});
@@ -115,13 +125,8 @@ Bresenham3D(int x1, int y1, int z1, int x2, int y2, int z2)
     return ListOfPoints;
 }
 
-std::vector<std::vector<int>> Bresenham3D2(
-    const int x1,
-    const int y1,
-    const int z1,
-    const int x2,
-    const int y2,
-    const int z2)
+std::vector<std::vector<int>>
+Bresenham3D2(const int x1, const int y1, const int z1, const int x2, const int y2, const int z2)
 {
     std::vector<std::vector<int>> ListOfPoints;
     ListOfPoints.push_back({x1, y1, z1});

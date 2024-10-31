@@ -146,6 +146,7 @@ target_link_libraries(
     glm
     Boost::container
     Boost::unordered
+    # boost_dynamic_bitset
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
