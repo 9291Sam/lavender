@@ -1,5 +1,6 @@
 #pragma once
 
+#include "util/log.hpp"
 #include "util/misc.hpp"
 #include <glm/fwd.hpp>
 #include <glm/gtx/hash.hpp>
@@ -13,11 +14,64 @@ namespace voxel
     static constexpr u8 ChunkEdgeLengthBricks = 8;
     static constexpr u8 BrickEdgeLengthVoxels = 8;
 
-    struct BrickLocalPosition : public glm::u8vec3
+    struct WorldPosition : public glm::i32vec3
     {};
 
+    // Represents a position within a Brick
+    struct BrickLocalPosition : public glm::u8vec3
+    {
+        explicit BrickLocalPosition(glm::u8vec3 p)
+            : glm::u8vec3 {p}
+        {
+            if (util::isDebugBuild())
+            {
+                util::assertFatal(p.x < BrickEdgeLengthVoxels, "BrickLocalPosition X {}", p.x);
+                util::assertFatal(p.y < BrickEdgeLengthVoxels, "BrickLocalPosition Y {}", p.y);
+                util::assertFatal(p.z < BrickEdgeLengthVoxels, "BrickLocalPosition Z {}", p.z);
+            }
+        }
+
+        static std::optional<BrickLocalPosition> tryCreate(glm::u8vec3 p)
+        {
+            if (p.x >= BrickEdgeLengthVoxels || p.y >= BrickEdgeLengthVoxels
+                || p.z >= BrickEdgeLengthVoxels)
+            {
+                return std::nullopt;
+            }
+            else
+            {
+                return BrickLocalPosition {p};
+            }
+        }
+    };
+
+    // Represents a Brick's position within a Chunk
     struct BrickCoordinate : public glm::u8vec3
     {
+        explicit BrickCoordinate(glm::u8vec3 p)
+            : glm::u8vec3 {p}
+        {
+            if (util::isDebugBuild())
+            {
+                util::assertFatal(p.x < ChunkEdgeLengthBricks, "BrickCoordinate X {}", p.x);
+                util::assertFatal(p.y < ChunkEdgeLengthBricks, "BrickCoordinate Y {}", p.y);
+                util::assertFatal(p.z < ChunkEdgeLengthBricks, "BrickCoordinate Z {}", p.z);
+            }
+        }
+
+        static std::optional<BrickCoordinate> tryCreate(glm::u8vec3 p)
+        {
+            if (p.x >= ChunkEdgeLengthBricks || p.y >= ChunkEdgeLengthBricks
+                || p.z >= ChunkEdgeLengthBricks)
+            {
+                return std::nullopt;
+            }
+            else
+            {
+                return BrickCoordinate {p};
+            }
+        }
+
         [[nodiscard]] u32 getLinearPositionInChunk() const
         {
             return this->x + BrickEdgeLengthVoxels * this->y
@@ -26,10 +80,9 @@ namespace voxel
 
         static BrickCoordinate fromLinearPositionInChunk(u32 linearIndex)
         {
-            const u8 z = static_cast<u8>(
-                linearIndex / (BrickEdgeLengthVoxels * BrickEdgeLengthVoxels));
-            const u8 y =
-                (linearIndex / BrickEdgeLengthVoxels) % BrickEdgeLengthVoxels;
+            const u8 z =
+                static_cast<u8>(linearIndex / (BrickEdgeLengthVoxels * BrickEdgeLengthVoxels));
+            const u8 y = (linearIndex / BrickEdgeLengthVoxels) % BrickEdgeLengthVoxels;
             const u8 x = linearIndex % BrickEdgeLengthVoxels;
 
             return BrickCoordinate {{x, y, z}};
@@ -38,6 +91,30 @@ namespace voxel
 
     struct ChunkLocalPosition : public glm::u8vec3
     {
+        explicit ChunkLocalPosition(glm::u8vec3 p)
+            : glm::u8vec3 {p}
+        {
+            if (util::isDebugBuild())
+            {
+                util::assertFatal(p.x < ChunkEdgeLengthVoxels, "ChunkLocalPosition X {}", p.x);
+                util::assertFatal(p.y < ChunkEdgeLengthVoxels, "ChunkLocalPosition Y {}", p.y);
+                util::assertFatal(p.z < ChunkEdgeLengthVoxels, "ChunkLocalPosition Z {}", p.z);
+            }
+        }
+
+        static std::optional<ChunkLocalPosition> tryCreate(glm::u8vec3 p)
+        {
+            if (p.x >= ChunkEdgeLengthVoxels || p.y >= ChunkEdgeLengthVoxels
+                || p.z >= ChunkEdgeLengthVoxels)
+            {
+                return std::nullopt;
+            }
+            else
+            {
+                return ChunkLocalPosition {p};
+            }
+        }
+
         explicit operator glm::i8vec3 () const
         {
             return glm::i8vec3 {
@@ -48,6 +125,7 @@ namespace voxel
         }
     };
 
+    // Chunk Coordinate in world space ()
     struct ChunkCoordinate : public glm::i32vec3
     {};
 
@@ -59,25 +137,11 @@ namespace voxel
             BrickLocalPosition {p % ChunkEdgeLengthBricks}};
     }
 
-    inline ChunkLocalPosition
-    assembleChunkLocalPosition(BrickCoordinate c, BrickLocalPosition p)
+    inline ChunkLocalPosition assembleChunkLocalPosition(BrickCoordinate c, BrickLocalPosition p)
     {
         return ChunkLocalPosition {glm::u8vec3 {c.x * 8, c.y * 8, c.z * 8} + p};
     }
 
-    inline std::optional<ChunkLocalPosition>
-    tryMakeChunkLocalPosition(glm::i8vec3 p)
-    {
-        if (p.x < 0 || p.y < 0 || p.z < 0 || p.x >= ChunkEdgeLengthVoxels
-            || p.y >= ChunkEdgeLengthVoxels || p.z >= ChunkEdgeLengthVoxels)
-        {
-            return std::nullopt;
-        }
-        else
-        {
-            return ChunkLocalPosition {p};
-        }
-    }
 } // namespace voxel
 
 namespace std

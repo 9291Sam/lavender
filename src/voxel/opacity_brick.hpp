@@ -15,8 +15,7 @@ namespace voxel
             std::fill(this->data.begin(), this->data.end(), filled ? ~0u : 0u);
         }
 
-        void iterateOverVoxels(
-            std::invocable<BrickLocalPosition, bool> auto func) const
+        void iterateOverVoxels(std::invocable<BrickLocalPosition, bool> auto func) const
         {
             for (int x = 0; x < 8; ++x)
             {
@@ -68,9 +67,8 @@ namespace voxel
                 util::assertFatal(p.z >= 0, "{}", p.z);
             }
 
-            const std::size_t linearIndex =
-                p.x + p.z * BrickEdgeLengthVoxels
-                + p.y * BrickEdgeLengthVoxels * BrickEdgeLengthVoxels;
+            const std::size_t linearIndex = p.x + p.z * BrickEdgeLengthVoxels
+                                          + p.y * BrickEdgeLengthVoxels * BrickEdgeLengthVoxels;
 
             return {
                 linearIndex / std::numeric_limits<u32>::digits,

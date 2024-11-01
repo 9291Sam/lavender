@@ -33,11 +33,10 @@ namespace game::ec
         explicit EntityComponentManager();
         ~EntityComponentManager() noexcept = default;
 
-        EntityComponentManager(const EntityComponentManager&) = delete;
-        EntityComponentManager(EntityComponentManager&&)      = delete;
-        EntityComponentManager&
-        operator= (const EntityComponentManager&)                    = delete;
-        EntityComponentManager& operator= (EntityComponentManager&&) = delete;
+        EntityComponentManager(const EntityComponentManager&)             = delete;
+        EntityComponentManager(EntityComponentManager&&)                  = delete;
+        EntityComponentManager& operator= (const EntityComponentManager&) = delete;
+        EntityComponentManager& operator= (EntityComponentManager&&)      = delete;
 
         /// Creates a new entity without any components attached
         [[nodiscard]] Entity createEntity() const;
@@ -49,9 +48,7 @@ namespace game::ec
         [[nodiscard]] bool tryDestroyEntity(Entity) const;
 
         /// Destroys the given entity, warns on failure
-        void destroyEntity(
-            Entity,
-            std::source_location = std::source_location::current()) const;
+        void destroyEntity(Entity, std::source_location = std::source_location::current()) const;
 
         // /// Returns whether or not this entity is alive
         bool isEntityAlive(Entity) const;
@@ -63,19 +60,17 @@ namespace game::ec
             return this->component_storage[C::Id].lock(
                 [&](TypeErasedComponentStorage& componentStorage)
                 {
-                    const u32 storedOffset =
-                        componentStorage.addComponent(e, std::forward<C>(c));
+                    const u32 storedOffset = componentStorage.addComponent(e, std::forward<C>(c));
 
-                    std::expected<void, ComponentModificationError>
-                        wasComponentAddedToEntity = this->entity_storage.lock(
+                    std::expected<void, ComponentModificationError> wasComponentAddedToEntity =
+                        this->entity_storage.lock(
                             [&](EntityStorage& entityStorage)
                             {
                                 return entityStorage.addComponent(
                                     e,
                                     EntityStorage::EntityComponentStorage {
                                         .component_type_id {C::Id},
-                                        .component_storage_offset {
-                                            storedOffset}});
+                                        .component_storage_offset {storedOffset}});
                             });
 
                     // if we failed to add the component to the entity for some
@@ -91,10 +86,7 @@ namespace game::ec
 
         template<Component C>
         void addComponent(
-            Entity               e,
-            C&&                  c,
-            std::source_location location =
-                std::source_location::current()) const
+            Entity e, C&& c, std::source_location location = std::source_location::current()) const
         {
             std::expected<void, ComponentModificationError> tryAddResult =
                 this->tryAddComponent(e, std::forward<C>(c));
@@ -124,15 +116,12 @@ namespace game::ec
         }
 
         template<Component C>
-        [[nodiscard]] std::expected<std::optional<C>, EntityDead>
-        tryRemoveComponent(Entity e) const
+        [[nodiscard]] std::expected<std::optional<C>, EntityDead> tryRemoveComponent(Entity e) const
         {
             return this->entity_storage.lock(
                 [&](EntityStorage& entityStorage)
                 {
-                    std::expected<
-                        EntityStorage::EntityComponentStorage,
-                        ComponentModificationError>
+                    std::expected<EntityStorage::EntityComponentStorage, ComponentModificationError>
                         result = entityStorage.removeComponent(e, C::Id);
 
                     if (result.has_value())
@@ -149,8 +138,7 @@ namespace game::ec
                         switch (result.error())
                         {
                         case ComponentModificationError::ComponentConflict:
-                            return std::expected<std::optional<C>, EntityDead> {
-                                std::nullopt};
+                            return std::expected<std::optional<C>, EntityDead> {std::nullopt};
                         case ComponentModificationError::EntityDead:
                             return std::unexpected(EntityDead {});
                         default:
@@ -175,8 +163,7 @@ namespace game::ec
             if (!tryRemoveResult->has_value())
             {
                 util::panic(
-                    "tried to remove component {} which didn't exist",
-                    getComponentName<C::Id>());
+                    "tried to remove component {} which didn't exist", getComponentName<C::Id>());
             }
 
             return std::move(**tryRemoveResult);
@@ -187,12 +174,9 @@ namespace game::ec
         tryModifyComponent(Entity e, std::invocable<C&> auto func) const
         {
             return this->entity_storage.lock(
-                [&](EntityStorage& entityStorage)
-                    -> std::expected<void, ComponentModificationError>
+                [&](EntityStorage& entityStorage) -> std::expected<void, ComponentModificationError>
                 {
-                    std::expected<
-                        EntityStorage::EntityComponentStorage,
-                        ComponentModificationError>
+                    std::expected<EntityStorage::EntityComponentStorage, ComponentModificationError>
                         readResult = entityStorage.readComponent(e, C::Id);
 
                     if (!readResult.has_value())
@@ -204,9 +188,8 @@ namespace game::ec
                         this->component_storage[C::Id].lock(
                             [&](TypeErasedComponentStorage& componentStorage)
                             {
-                                C& component =
-                                    componentStorage.modifyComponent<C>(
-                                        readResult->component_storage_offset);
+                                C& component = componentStorage.modifyComponent<C>(
+                                    readResult->component_storage_offset);
 
                                 func(component);
                             });
@@ -219,8 +202,7 @@ namespace game::ec
         void modifyComponent(
             Entity                  e,
             std::invocable<C&> auto func,
-            std::source_location    location =
-                std::source_location::current()) const
+            std::source_location    location = std::source_location::current()) const
         {
             std::expected<void, ComponentModificationError> modifyError =
                 this->tryModifyComponent<C>(e, func);
@@ -230,13 +212,10 @@ namespace game::ec
                 switch (modifyError.error())
                 {
                 case ComponentModificationError::ComponentConflict:
-                    util::logWarn<>(
-                        "Tried to modify component which doesn't exist",
-                        location);
+                    util::logWarn<>("Tried to modify component which doesn't exist", location);
                     break;
                 case ComponentModificationError::EntityDead:
-                    util::logWarn<>(
-                        "Tried to modify component on dead entity", location);
+                    util::logWarn<>("Tried to modify component on dead entity", location);
                     break;
                 default:
                     util::panic<int>(
@@ -248,8 +227,7 @@ namespace game::ec
         }
 
         template<Component C>
-        [[nodiscard]] std::expected<bool, EntityDead>
-        tryHasComponent(Entity e) const
+        [[nodiscard]] std::expected<bool, EntityDead> tryHasComponent(Entity e) const
         {
             return this->entity_storage.lock(
                 [&](EntityStorage& storage)
@@ -260,17 +238,13 @@ namespace game::ec
 
         template<Component C>
         [[nodiscard]] bool hasComponent(
-            Entity               e,
-            std::source_location location =
-                std::source_location::current()) const
+            Entity e, std::source_location location = std::source_location::current()) const
         {
-            std::expected<bool, EntityDead> lookup =
-                this->tryHasComponent<C>(e);
+            std::expected<bool, EntityDead> lookup = this->tryHasComponent<C>(e);
 
             if (!lookup.has_value())
             {
-                util::logWarn<>(
-                    "Called hasComponent on a dead entity!", location);
+                util::logWarn<>("Called hasComponent on a dead entity!", location);
                 return false;
             }
             else
@@ -291,9 +265,7 @@ namespace game::ec
 
     private:
 
-        std::array<
-            util::RecursiveMutex<TypeErasedComponentStorage>,
-            NumberOfGameComponents>
+        std::array<util::RecursiveMutex<TypeErasedComponentStorage>, NumberOfGameComponents>
                                             component_storage;
         util::RecursiveMutex<EntityStorage> entity_storage;
     };

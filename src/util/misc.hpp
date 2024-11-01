@@ -28,8 +28,7 @@ namespace util
     template<class T>
     using Fn = T;
 
-    [[noreturn]] void
-        debugBreak(std::source_location = std::source_location::current());
+    [[noreturn]] void debugBreak(std::source_location = std::source_location::current());
 
     consteval bool isDebugBuild()
     {
@@ -42,12 +41,10 @@ namespace util
         return static_cast<std::underlying_type_t<T>>(t);
     }
 
-    constexpr inline std::string
-    formCallingLocation(std::source_location location)
+    constexpr inline std::string formCallingLocation(std::source_location location)
     {
-        constexpr std::array<std::string_view, 2> FolderIdentifiers {
-            "/src/", "/inc/"};
-        const std::string rawFileName {location.file_name()};
+        constexpr std::array<std::string_view, 2> FolderIdentifiers {"/src/", "/inc/"};
+        const std::string                         rawFileName {location.file_name()};
 
         std::size_t index = std::string::npos; // NOLINT
 
@@ -62,14 +59,10 @@ namespace util
         }
 
         return std::format(
-            "{}:{}:{}",
-            rawFileName.substr(index + 1),
-            location.line(),
-            location.column());
+            "{}:{}:{}", rawFileName.substr(index + 1), location.line(), location.column());
     }
 
-    constexpr inline void
-    hashCombine(std::size_t& seed_, std::size_t hash_) noexcept
+    constexpr inline void hashCombine(std::size_t& seed_, std::size_t hash_) noexcept
     {
         hash_ += 0x9e3779b9 + (seed_ << 6) + (seed_ >> 2);
         seed_ ^= hash_;

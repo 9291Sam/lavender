@@ -10,16 +10,14 @@
 namespace util
 {
     RangeAllocator::RangeAllocator(u32 size, u32 maxAllocations)
-        : internal_allocator {std::make_unique<OffsetAllocator::Allocator>(
-              size, maxAllocations)}
+        : internal_allocator {std::make_unique<OffsetAllocator::Allocator>(size, maxAllocations)}
     {}
 
     RangeAllocator::~RangeAllocator() = default;
 
     RangeAllocation RangeAllocator::allocate(u32 size, std::source_location l)
     {
-        std::expected<RangeAllocation, OutOfBlocks> result =
-            this->tryAllocate(size);
+        std::expected<RangeAllocation, OutOfBlocks> result = this->tryAllocate(size);
 
         if (!result.has_value())
         {
@@ -34,8 +32,7 @@ namespace util
     std::expected<RangeAllocation, RangeAllocator::OutOfBlocks>
     RangeAllocator::tryAllocate(u32 size)
     {
-        OffsetAllocator::Allocation workingAllocation =
-            this->internal_allocator->allocate(size);
+        OffsetAllocator::Allocation workingAllocation = this->internal_allocator->allocate(size);
 
         if (workingAllocation.offset == OffsetAllocator::Allocation::NO_SPACE)
         {
@@ -44,17 +41,14 @@ namespace util
         else
         {
             return RangeAllocation {
-                .offset {workingAllocation.offset},
-                .metadata {workingAllocation.metadata}};
+                .offset {workingAllocation.offset}, .metadata {workingAllocation.metadata}};
         }
     }
 
-    [[nodiscard]] u32
-    RangeAllocator::getSizeOfAllocation(RangeAllocation allocation) const
+    [[nodiscard]] u32 RangeAllocator::getSizeOfAllocation(RangeAllocation allocation) const
     {
-        return this->internal_allocator->allocationSize(
-            OffsetAllocator::Allocation {
-                .offset {allocation.offset}, .metadata {allocation.metadata}});
+        return this->internal_allocator->allocationSize(OffsetAllocator::Allocation {
+            .offset {allocation.offset}, .metadata {allocation.metadata}});
     }
 
     void RangeAllocator::free(RangeAllocation allocation)

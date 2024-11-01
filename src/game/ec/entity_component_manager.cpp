@@ -35,20 +35,15 @@ namespace game::ec
 
                 if (willEntityBeDestroyed)
                 {
-                    for (const EntityStorage::EntityComponentStorage&
-                             storedComponent :
+                    for (const EntityStorage::EntityComponentStorage& storedComponent :
                          entityStorage.getAllComponents(e))
                     {
-                        this->component_storage[storedComponent
-                                                    .component_type_id]
-                            .lock(
-                                [&](TypeErasedComponentStorage&
-                                        componentStorage)
-                                {
-                                    componentStorage.deleteComponent(
-                                        storedComponent
-                                            .component_storage_offset);
-                                });
+                        this->component_storage[storedComponent.component_type_id].lock(
+                            [&](TypeErasedComponentStorage& componentStorage)
+                            {
+                                componentStorage.deleteComponent(
+                                    storedComponent.component_storage_offset);
+                            });
                     }
                 }
 
@@ -61,13 +56,10 @@ namespace game::ec
             });
     }
 
-    void EntityComponentManager::destroyEntity(
-        Entity e, std::source_location location) const
+    void EntityComponentManager::destroyEntity(Entity e, std::source_location location) const
     {
         util::assertWarn<>(
-            this->tryDestroyEntity(e),
-            "Tried to destroy already destroyed entity!",
-            location);
+            this->tryDestroyEntity(e), "Tried to destroy already destroyed entity!", location);
     }
 
     bool EntityComponentManager::isEntityAlive(Entity e) const

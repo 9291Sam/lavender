@@ -22,10 +22,8 @@ namespace gfx
     class Renderer
     {
     public:
-        static constexpr vk::SurfaceFormatKHR ColorFormat =
-            vk::SurfaceFormatKHR {
-                .format {vk::Format::eB8G8R8A8Srgb},
-                .colorSpace {vk::ColorSpaceKHR::eSrgbNonlinear}};
+        static constexpr vk::SurfaceFormatKHR ColorFormat = vk::SurfaceFormatKHR {
+            .format {vk::Format::eB8G8R8A8Srgb}, .colorSpace {vk::ColorSpaceKHR::eSrgbNonlinear}};
         static constexpr vk::Format DepthFormat = vk::Format::eD32Sfloat;
     public:
         Renderer();
@@ -39,9 +37,7 @@ namespace gfx
         // Returns true if a resize occurred
         // Command buffer, swapchain idx, swapchain, frame idx
         bool recordOnThread(
-            std::function<
-                void(vk::CommandBuffer, u32, vulkan::Swapchain&, std::size_t)>)
-            const;
+            std::function<void(vk::CommandBuffer, u32, vulkan::Swapchain&, std::size_t)>) const;
         [[nodiscard]] bool shouldWindowClose() const noexcept;
 
         [[nodiscard]] const vulkan::Device*    getDevice() const noexcept;
@@ -57,8 +53,8 @@ namespace gfx
             std::unique_ptr<vulkan::Swapchain>    swapchain;
         };
 
-        static std::unique_ptr<RenderingCriticalSection> makeCriticalSection(
-            const vulkan::Device&, vk::SurfaceKHR, const Window&);
+        static std::unique_ptr<RenderingCriticalSection>
+        makeCriticalSection(const vulkan::Device&, vk::SurfaceKHR, const Window&);
 
         std::unique_ptr<Window> window;
 

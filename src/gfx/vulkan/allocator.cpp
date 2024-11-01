@@ -18,10 +18,8 @@ namespace gfx::vulkan
         , allocator {nullptr}
     {
         VmaVulkanFunctions vulkanFunctions {};
-        vulkanFunctions.vkGetInstanceProcAddr =
-            VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr;
-        vulkanFunctions.vkGetDeviceProcAddr =
-            VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr;
+        vulkanFunctions.vkGetInstanceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr;
+        vulkanFunctions.vkGetDeviceProcAddr   = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr;
 
         const VmaAllocatorCreateInfo allocatorCreateInfo {
             .flags {},
@@ -37,8 +35,7 @@ namespace gfx::vulkan
             .pTypeExternalMemoryHandleTypes {nullptr},
         };
 
-        const vk::Result result {
-            ::vmaCreateAllocator(&allocatorCreateInfo, &this->allocator)};
+        const vk::Result result {::vmaCreateAllocator(&allocatorCreateInfo, &this->allocator)};
 
         util::assertFatal(
             result == vk::Result::eSuccess,
@@ -46,23 +43,17 @@ namespace gfx::vulkan
             vk::to_string(result));
 
         const std::array availableDescriptors {
+            vk::DescriptorPoolSize {.type {vk::DescriptorType::eSampler}, .descriptorCount {1024}},
             vk::DescriptorPoolSize {
-                .type {vk::DescriptorType::eSampler}, .descriptorCount {1024}},
+                .type {vk::DescriptorType::eCombinedImageSampler}, .descriptorCount {1024}},
             vk::DescriptorPoolSize {
-                .type {vk::DescriptorType::eCombinedImageSampler},
-                .descriptorCount {1024}},
+                .type {vk::DescriptorType::eSampledImage}, .descriptorCount {1024}},
             vk::DescriptorPoolSize {
-                .type {vk::DescriptorType::eSampledImage},
-                .descriptorCount {1024}},
+                .type {vk::DescriptorType::eStorageImage}, .descriptorCount {1024}},
             vk::DescriptorPoolSize {
-                .type {vk::DescriptorType::eStorageImage},
-                .descriptorCount {1024}},
+                .type {vk::DescriptorType::eUniformBuffer}, .descriptorCount {1024}},
             vk::DescriptorPoolSize {
-                .type {vk::DescriptorType::eUniformBuffer},
-                .descriptorCount {1024}},
-            vk::DescriptorPoolSize {
-                .type {vk::DescriptorType::eStorageBuffer},
-                .descriptorCount {1024}}};
+                .type {vk::DescriptorType::eStorageBuffer}, .descriptorCount {1024}}};
 
         const vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo {
             .sType {vk::StructureType::eDescriptorPoolCreateInfo},
@@ -73,19 +64,17 @@ namespace gfx::vulkan
             .pPoolSizes {availableDescriptors.data()},
         };
 
-        this->descriptor_pool =
-            this->device.createDescriptorPoolUnique(descriptorPoolCreateInfo);
+        this->descriptor_pool = this->device.createDescriptorPoolUnique(descriptorPoolCreateInfo);
 
         if constexpr (util::isDebugBuild())
         {
-            this->device.setDebugUtilsObjectNameEXT(
-                vk::DebugUtilsObjectNameInfoEXT {
-                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                    .pNext {nullptr},
-                    .objectType {vk::ObjectType::eDescriptorPool},
-                    .objectHandle {std::bit_cast<u64>(*this->descriptor_pool)},
-                    .pObjectName {"Global Descriptor Pool"},
-                });
+            this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                .pNext {nullptr},
+                .objectType {vk::ObjectType::eDescriptorPool},
+                .objectHandle {std::bit_cast<u64>(*this->descriptor_pool)},
+                .pObjectName {"Global Descriptor Pool"},
+            });
         }
     }
 
@@ -117,8 +106,8 @@ namespace gfx::vulkan
                     }
                 }
 
-                for (const gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo&
-                         i : createInfosToRemove)
+                for (const gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo& i :
+                     createInfosToRemove)
                 {
                     cache.erase(i);
                 }
@@ -129,8 +118,7 @@ namespace gfx::vulkan
                 gfx::vulkan::CacheablePipelineLayoutCreateInfo,
                 std::shared_ptr<vk::UniquePipelineLayout>>& cache)
             {
-                std::vector<gfx::vulkan::CacheablePipelineLayoutCreateInfo>
-                    createInfosToRemove {};
+                std::vector<gfx::vulkan::CacheablePipelineLayoutCreateInfo> createInfosToRemove {};
 
                 for (const auto& [info, ptr] : cache)
                 {
@@ -140,8 +128,7 @@ namespace gfx::vulkan
                     }
                 }
 
-                for (const gfx::vulkan::CacheablePipelineLayoutCreateInfo& i :
-                     createInfosToRemove)
+                for (const gfx::vulkan::CacheablePipelineLayoutCreateInfo& i : createInfosToRemove)
                 {
                     cache.erase(i);
                 }
@@ -150,9 +137,7 @@ namespace gfx::vulkan
         this->pipeline_layout_and_bind_lookup.lock(
             [](std::unordered_map<
                 vk::Pipeline,
-                std::pair<
-                    std::weak_ptr<vk::UniquePipelineLayout>,
-                    vk::PipelineBindPoint>>& cache)
+                std::pair<std::weak_ptr<vk::UniquePipelineLayout>, vk::PipelineBindPoint>>& cache)
             {
                 std::vector<vk::Pipeline> pipelinesToRemove {};
 
@@ -198,8 +183,7 @@ namespace gfx::vulkan
                 gfx::vulkan::CacheableComputePipelineCreateInfo,
                 std::shared_ptr<vk::UniquePipeline>>& cache)
             {
-                std::vector<gfx::vulkan::CacheableComputePipelineCreateInfo>
-                    createInfosToRemove {};
+                std::vector<gfx::vulkan::CacheableComputePipelineCreateInfo> createInfosToRemove {};
 
                 for (const auto& [info, ptr] : cache)
                 {
@@ -209,17 +193,14 @@ namespace gfx::vulkan
                     }
                 }
 
-                for (const gfx::vulkan::CacheableComputePipelineCreateInfo& i :
-                     createInfosToRemove)
+                for (const gfx::vulkan::CacheableComputePipelineCreateInfo& i : createInfosToRemove)
                 {
                     cache.erase(i);
                 }
             });
 
         this->shader_module_cache.lock(
-            [](std::unordered_map<
-                std::string,
-                std::shared_ptr<vk::UniqueShaderModule>>& cache)
+            [](std::unordered_map<std::string, std::shared_ptr<vk::UniqueShaderModule>>& cache)
             {
                 std::vector<std::string> createInfosToRemove {};
 
@@ -250,19 +231,17 @@ namespace gfx::vulkan
         };
 
         vk::DescriptorSet set =
-            this->device.allocateDescriptorSets(descriptorSetAllocateInfo)
-                .at(0);
+            this->device.allocateDescriptorSets(descriptorSetAllocateInfo).at(0);
 
         if constexpr (util::isDebugBuild())
         {
-            this->device.setDebugUtilsObjectNameEXT(
-                vk::DebugUtilsObjectNameInfoEXT {
-                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                    .pNext {nullptr},
-                    .objectType {vk::ObjectType::eDescriptorSet},
-                    .objectHandle {std::bit_cast<u64>(set)},
-                    .pObjectName {debugName.c_str()},
-                });
+            this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                .pNext {nullptr},
+                .objectType {vk::ObjectType::eDescriptorSet},
+                .objectHandle {std::bit_cast<u64>(set)},
+                .pObjectName {debugName.c_str()},
+            });
         }
 
         return set;
@@ -274,8 +253,7 @@ namespace gfx::vulkan
     }
 
     std::shared_ptr<vk::UniqueDescriptorSetLayout>
-    Allocator::cacheDescriptorSetLayout(
-        CacheableDescriptorSetLayoutCreateInfo info) const
+    Allocator::cacheDescriptorSetLayout(CacheableDescriptorSetLayoutCreateInfo info) const
     {
         return this->descriptor_set_layout_cache.lock(
             [&](auto& cache)
@@ -286,40 +264,32 @@ namespace gfx::vulkan
                 }
                 else
                 {
-                    const vk::DescriptorSetLayoutCreateInfo
-                        descriptorSetLayoutCreateInfo {
+                    const vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo {
 
-                            .sType {vk::StructureType::
-                                        eDescriptorSetLayoutCreateInfo},
-                            .pNext {nullptr},
-                            .flags {},
-                            .bindingCount {
-                                static_cast<u32>(info.bindings.size())},
-                            .pBindings {info.bindings.data()},
+                        .sType {vk::StructureType::eDescriptorSetLayoutCreateInfo},
+                        .pNext {nullptr},
+                        .flags {},
+                        .bindingCount {static_cast<u32>(info.bindings.size())},
+                        .pBindings {info.bindings.data()},
 
-                        };
+                    };
 
                     vk::UniqueDescriptorSetLayout layout =
-                        this->device.createDescriptorSetLayoutUnique(
-                            descriptorSetLayoutCreateInfo);
+                        this->device.createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
 
                     if constexpr (util::isDebugBuild())
                     {
-                        this->device.setDebugUtilsObjectNameEXT(
-                            vk::DebugUtilsObjectNameInfoEXT {
-                                .sType {vk::StructureType::
-                                            eDebugUtilsObjectNameInfoEXT},
-                                .pNext {nullptr},
-                                .objectType {
-                                    vk::ObjectType::eDescriptorSetLayout},
-                                .objectHandle {std::bit_cast<u64>(*layout)},
-                                .pObjectName {info.name.c_str()},
-                            });
+                        this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                            .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                            .pNext {nullptr},
+                            .objectType {vk::ObjectType::eDescriptorSetLayout},
+                            .objectHandle {std::bit_cast<u64>(*layout)},
+                            .pObjectName {info.name.c_str()},
+                        });
                     }
 
                     std::shared_ptr<vk::UniqueDescriptorSetLayout> // NOLINT
-                        sharedLayout {new vk::UniqueDescriptorSetLayout {
-                            std::move(layout)}};
+                        sharedLayout {new vk::UniqueDescriptorSetLayout {std::move(layout)}};
 
                     cache[info] = sharedLayout;
 
@@ -348,43 +318,33 @@ namespace gfx::vulkan
                         denseLayouts.push_back(**l);
                     }
 
-                    const vk::PipelineLayoutCreateInfo
-                        pipelineLayoutCreateInfo {
-                            .sType {
-                                vk::StructureType::ePipelineLayoutCreateInfo},
-                            .pNext {nullptr},
-                            .flags {},
-                            .setLayoutCount {
-                                static_cast<u32>(denseLayouts.size())},
-                            .pSetLayouts {denseLayouts.data()},
-                            .pushConstantRangeCount {
-                                info.push_constants.has_value() ? 1U : 0U},
-                            .pPushConstantRanges {
-                                info.push_constants.has_value()
-                                    ? &*info.push_constants
-                                    : nullptr},
-                        };
+                    const vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo {
+                        .sType {vk::StructureType::ePipelineLayoutCreateInfo},
+                        .pNext {nullptr},
+                        .flags {},
+                        .setLayoutCount {static_cast<u32>(denseLayouts.size())},
+                        .pSetLayouts {denseLayouts.data()},
+                        .pushConstantRangeCount {info.push_constants.has_value() ? 1U : 0U},
+                        .pPushConstantRanges {
+                            info.push_constants.has_value() ? &*info.push_constants : nullptr},
+                    };
 
                     vk::UniquePipelineLayout layout =
-                        this->device.createPipelineLayoutUnique(
-                            pipelineLayoutCreateInfo);
+                        this->device.createPipelineLayoutUnique(pipelineLayoutCreateInfo);
 
                     if constexpr (util::isDebugBuild())
                     {
-                        this->device.setDebugUtilsObjectNameEXT(
-                            vk::DebugUtilsObjectNameInfoEXT {
-                                .sType {vk::StructureType::
-                                            eDebugUtilsObjectNameInfoEXT},
-                                .pNext {nullptr},
-                                .objectType {vk::ObjectType::ePipelineLayout},
-                                .objectHandle {std::bit_cast<u64>(*layout)},
-                                .pObjectName {info.name.c_str()},
-                            });
+                        this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                            .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                            .pNext {nullptr},
+                            .objectType {vk::ObjectType::ePipelineLayout},
+                            .objectHandle {std::bit_cast<u64>(*layout)},
+                            .pObjectName {info.name.c_str()},
+                        });
                     }
 
                     std::shared_ptr<vk::UniquePipelineLayout> // NOLINT
-                        sharedLayout {
-                            new vk::UniquePipelineLayout {std::move(layout)}};
+                        sharedLayout {new vk::UniquePipelineLayout {std::move(layout)}};
 
                     cache[info] = sharedLayout;
 
@@ -406,8 +366,7 @@ namespace gfx::vulkan
                 else
                 {
                     const vk::PipelineShaderStageCreateInfo shaderCreateInfo {
-                        .sType {
-                            vk::StructureType::ePipelineShaderStageCreateInfo},
+                        .sType {vk::StructureType::ePipelineShaderStageCreateInfo},
                         .pNext {nullptr},
                         .flags {},
                         .stage {vk::ShaderStageFlagBits::eCompute},
@@ -416,21 +375,18 @@ namespace gfx::vulkan
                         .pSpecializationInfo {},
                     };
 
-                    const vk::ComputePipelineCreateInfo
-                        computePipelineCreateInfo {
-                            .sType {
-                                vk::StructureType::eComputePipelineCreateInfo},
-                            .pNext {nullptr},
-                            .flags {},
-                            .stage {shaderCreateInfo},
-                            .layout {**info.layout},
-                            .basePipelineHandle {},
-                            .basePipelineIndex {},
-                        };
+                    const vk::ComputePipelineCreateInfo computePipelineCreateInfo {
+                        .sType {vk::StructureType::eComputePipelineCreateInfo},
+                        .pNext {nullptr},
+                        .flags {},
+                        .stage {shaderCreateInfo},
+                        .layout {**info.layout},
+                        .basePipelineHandle {},
+                        .basePipelineIndex {},
+                    };
 
-                    auto [result, pipeline] =
-                        this->device.createComputePipelineUnique(
-                            nullptr, computePipelineCreateInfo);
+                    auto [result, pipeline] = this->device.createComputePipelineUnique(
+                        nullptr, computePipelineCreateInfo);
 
                     util::assertFatal(
                         result == vk::Result::eSuccess,
@@ -439,20 +395,17 @@ namespace gfx::vulkan
 
                     if constexpr (util::isDebugBuild())
                     {
-                        this->device.setDebugUtilsObjectNameEXT(
-                            vk::DebugUtilsObjectNameInfoEXT {
-                                .sType {vk::StructureType::
-                                            eDebugUtilsObjectNameInfoEXT},
-                                .pNext {nullptr},
-                                .objectType {vk::ObjectType::ePipeline},
-                                .objectHandle {std::bit_cast<u64>(*pipeline)},
-                                .pObjectName {info.name.c_str()},
-                            });
+                        this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                            .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                            .pNext {nullptr},
+                            .objectType {vk::ObjectType::ePipeline},
+                            .objectHandle {std::bit_cast<u64>(*pipeline)},
+                            .pObjectName {info.name.c_str()},
+                        });
                     }
 
                     std::shared_ptr<vk::UniquePipeline> // NOLINT
-                        sharedPipeline {
-                            new vk::UniquePipeline {std::move(pipeline)}};
+                        sharedPipeline {new vk::UniquePipeline {std::move(pipeline)}};
 
                     this->pipeline_layout_and_bind_lookup.lock(
                         [&](std::unordered_map<
@@ -484,51 +437,42 @@ namespace gfx::vulkan
                 }
                 else
                 {
-                    std::vector<vk::PipelineShaderStageCreateInfo>
-                        denseStages {};
+                    std::vector<vk::PipelineShaderStageCreateInfo> denseStages {};
                     denseStages.reserve(info.stages.size());
 
-                    for (const CacheablePipelineShaderStageCreateInfo& s :
-                         info.stages)
+                    for (const CacheablePipelineShaderStageCreateInfo& s : info.stages)
                     {
-                        denseStages.push_back(
-                            vk::PipelineShaderStageCreateInfo {
+                        denseStages.push_back(vk::PipelineShaderStageCreateInfo {
 
-                                .sType {vk::StructureType::
-                                            ePipelineShaderStageCreateInfo},
-                                .pNext {nullptr},
-                                .flags {},
-                                .stage {s.stage},
-                                .module {**s.shader},
-                                .pName {s.entry_point.c_str()},
-                                .pSpecializationInfo {},
-                            });
+                            .sType {vk::StructureType::ePipelineShaderStageCreateInfo},
+                            .pNext {nullptr},
+                            .flags {},
+                            .stage {s.stage},
+                            .module {**s.shader},
+                            .pName {s.entry_point.c_str()},
+                            .pSpecializationInfo {},
+                        });
                     }
 
                     util::assertFatal(
-                        !denseStages.empty(),
-                        "All pipelines must have at least one shader!");
+                        !denseStages.empty(), "All pipelines must have at least one shader!");
 
                     const vk::PipelineVertexInputStateCreateInfo
                         pipelineVertexInputStateCreateInfo {
-                            .sType {vk::StructureType::
-                                        ePipelineVertexInputStateCreateInfo},
+                            .sType {vk::StructureType::ePipelineVertexInputStateCreateInfo},
                             .pNext {nullptr},
                             .flags {},
                             .vertexBindingDescriptionCount {
                                 static_cast<u32>(info.vertex_bindings.size())},
-                            .pVertexBindingDescriptions {
-                                info.vertex_bindings.data()},
-                            .vertexAttributeDescriptionCount {static_cast<u32>(
-                                info.vertex_attributes.size())},
-                            .pVertexAttributeDescriptions {
-                                info.vertex_attributes.data()},
+                            .pVertexBindingDescriptions {info.vertex_bindings.data()},
+                            .vertexAttributeDescriptionCount {
+                                static_cast<u32>(info.vertex_attributes.size())},
+                            .pVertexAttributeDescriptions {info.vertex_attributes.data()},
                         };
 
                     const vk::PipelineInputAssemblyStateCreateInfo
                         pipelineInputAssemblyStateCreateInfo {
-                            .sType {vk::StructureType::
-                                        ePipelineInputAssemblyStateCreateInfo},
+                            .sType {vk::StructureType::ePipelineInputAssemblyStateCreateInfo},
                             .pNext {nullptr},
                             .flags {},
                             .topology {info.topology},
@@ -538,22 +482,19 @@ namespace gfx::vulkan
                     const vk::Viewport nullDynamicViewport {};
                     const vk::Rect2D   nullDynamicScissor {};
 
-                    const vk::PipelineViewportStateCreateInfo
-                        pipelineViewportStateCreateInfo {
-                            .sType {vk::StructureType::
-                                        ePipelineViewportStateCreateInfo},
-                            .pNext {nullptr},
-                            .flags {},
-                            .viewportCount {1},
-                            .pViewports {&nullDynamicViewport},
-                            .scissorCount {1},
-                            .pScissors {&nullDynamicScissor},
-                        };
+                    const vk::PipelineViewportStateCreateInfo pipelineViewportStateCreateInfo {
+                        .sType {vk::StructureType::ePipelineViewportStateCreateInfo},
+                        .pNext {nullptr},
+                        .flags {},
+                        .viewportCount {1},
+                        .pViewports {&nullDynamicViewport},
+                        .scissorCount {1},
+                        .pScissors {&nullDynamicScissor},
+                    };
 
                     const vk::PipelineRasterizationStateCreateInfo
                         pipelineRasterizationStateCreateInfo {
-                            .sType {vk::StructureType::
-                                        ePipelineRasterizationStateCreateInfo},
+                            .sType {vk::StructureType::ePipelineRasterizationStateCreateInfo},
                             .pNext {nullptr},
                             .flags {},
                             .depthClampEnable {vk::False},
@@ -570,8 +511,7 @@ namespace gfx::vulkan
 
                     const vk::PipelineMultisampleStateCreateInfo
                         pipelineMultisampleStateCreateInfo {
-                            .sType {vk::StructureType::
-                                        ePipelineMultisampleStateCreateInfo},
+                            .sType {vk::StructureType::ePipelineMultisampleStateCreateInfo},
                             .pNext {nullptr},
                             .flags {},
                             .rasterizationSamples {vk::SampleCountFlagBits::e1},
@@ -584,8 +524,7 @@ namespace gfx::vulkan
 
                     const vk::PipelineDepthStencilStateCreateInfo
                         pipelineDepthStencilStateCreateInfo {
-                            .sType {vk::StructureType::
-                                        ePipelineDepthStencilStateCreateInfo},
+                            .sType {vk::StructureType::ePipelineDepthStencilStateCreateInfo},
                             .pNext {nullptr},
                             .flags {},
                             .depthTestEnable {info.depth_test_enable},
@@ -599,60 +538,49 @@ namespace gfx::vulkan
                             .maxDepthBounds {1.0}, // TODO: expose?
                         };
 
-                    const vk::PipelineColorBlendAttachmentState
-                        pipelineColorBlendAttachmentState {
-                            .blendEnable {info.blend_enable},
-                            .srcColorBlendFactor {vk::BlendFactor::eSrcAlpha},
-                            .dstColorBlendFactor {
-                                vk::BlendFactor::eOneMinusSrcAlpha},
-                            .colorBlendOp {vk::BlendOp::eAdd},
-                            .srcAlphaBlendFactor {vk::BlendFactor::eOne},
-                            .dstAlphaBlendFactor {vk::BlendFactor::eZero},
-                            .alphaBlendOp {vk::BlendOp::eAdd},
-                            .colorWriteMask {
-                                vk::ColorComponentFlagBits::eR
-                                | vk::ColorComponentFlagBits::eG
-                                | vk::ColorComponentFlagBits::eB
-                                | vk::ColorComponentFlagBits::eA},
-                        };
+                    const vk::PipelineColorBlendAttachmentState pipelineColorBlendAttachmentState {
+                        .blendEnable {info.blend_enable},
+                        .srcColorBlendFactor {vk::BlendFactor::eSrcAlpha},
+                        .dstColorBlendFactor {vk::BlendFactor::eOneMinusSrcAlpha},
+                        .colorBlendOp {vk::BlendOp::eAdd},
+                        .srcAlphaBlendFactor {vk::BlendFactor::eOne},
+                        .dstAlphaBlendFactor {vk::BlendFactor::eZero},
+                        .alphaBlendOp {vk::BlendOp::eAdd},
+                        .colorWriteMask {
+                            vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG
+                            | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA},
+                    };
 
-                    const vk::PipelineColorBlendStateCreateInfo
-                        pipelineColorBlendStateCreateInfo {
-                            .sType {vk::StructureType::
-                                        ePipelineColorBlendStateCreateInfo},
-                            .pNext {nullptr},
-                            .flags {},
-                            .logicOpEnable {vk::False},
-                            .logicOp {vk::LogicOp::eCopy},
-                            .attachmentCount {1},
-                            .pAttachments {&pipelineColorBlendAttachmentState},
-                            .blendConstants {{0.0, 0.0, 0.0, 0.0}},
-                        };
+                    const vk::PipelineColorBlendStateCreateInfo pipelineColorBlendStateCreateInfo {
+                        .sType {vk::StructureType::ePipelineColorBlendStateCreateInfo},
+                        .pNext {nullptr},
+                        .flags {},
+                        .logicOpEnable {vk::False},
+                        .logicOp {vk::LogicOp::eCopy},
+                        .attachmentCount {1},
+                        .pAttachments {&pipelineColorBlendAttachmentState},
+                        .blendConstants {{0.0, 0.0, 0.0, 0.0}},
+                    };
 
                     const std::array pipelineDynamicStates {
                         vk::DynamicState::eScissor,
                         vk::DynamicState::eViewport,
                     };
 
-                    const vk::PipelineDynamicStateCreateInfo
-                        pipelineDynamicStateCreateInfo {
-                            .sType {vk::StructureType::
-                                        ePipelineDynamicStateCreateInfo},
-                            .pNext {nullptr},
-                            .flags {},
-                            .dynamicStateCount {
-                                static_cast<u32>(pipelineDynamicStates.size())},
-                            .pDynamicStates {pipelineDynamicStates.data()},
-                        };
+                    const vk::PipelineDynamicStateCreateInfo pipelineDynamicStateCreateInfo {
+                        .sType {vk::StructureType::ePipelineDynamicStateCreateInfo},
+                        .pNext {nullptr},
+                        .flags {},
+                        .dynamicStateCount {static_cast<u32>(pipelineDynamicStates.size())},
+                        .pDynamicStates {pipelineDynamicStates.data()},
+                    };
 
                     const vk::PipelineRenderingCreateInfo renderingInfo {
-                        .sType {
-                            vk::StructureType::ePipelineRenderingCreateInfo},
+                        .sType {vk::StructureType::ePipelineRenderingCreateInfo},
                         .pNext {nullptr},
                         .viewMask {0},
                         .colorAttachmentCount {
-                            info.color_format == vk::Format::eUndefined ? 0u
-                                                                        : 1u},
+                            info.color_format == vk::Format::eUndefined ? 0u : 1u},
                         .pColorAttachmentFormats {&info.color_format},
                         .depthAttachmentFormat {info.depth_format},
                         .stencilAttachmentFormat {},
@@ -664,18 +592,13 @@ namespace gfx::vulkan
                         .flags {},
                         .stageCount {static_cast<u32>(denseStages.size())},
                         .pStages {denseStages.data()},
-                        .pVertexInputState {
-                            &pipelineVertexInputStateCreateInfo},
-                        .pInputAssemblyState {
-                            &pipelineInputAssemblyStateCreateInfo},
+                        .pVertexInputState {&pipelineVertexInputStateCreateInfo},
+                        .pInputAssemblyState {&pipelineInputAssemblyStateCreateInfo},
                         .pTessellationState {nullptr},
                         .pViewportState {&pipelineViewportStateCreateInfo},
-                        .pRasterizationState {
-                            &pipelineRasterizationStateCreateInfo},
-                        .pMultisampleState {
-                            &pipelineMultisampleStateCreateInfo},
-                        .pDepthStencilState {
-                            &pipelineDepthStencilStateCreateInfo},
+                        .pRasterizationState {&pipelineRasterizationStateCreateInfo},
+                        .pMultisampleState {&pipelineMultisampleStateCreateInfo},
+                        .pDepthStencilState {&pipelineDepthStencilStateCreateInfo},
                         .pColorBlendState {&pipelineColorBlendStateCreateInfo},
                         .pDynamicState {&pipelineDynamicStateCreateInfo},
                         .layout {**info.layout},
@@ -686,8 +609,7 @@ namespace gfx::vulkan
                     };
 
                     auto [result, pipeline] =
-                        this->device.createGraphicsPipelineUnique(
-                            nullptr, pipelineCreateInfo);
+                        this->device.createGraphicsPipelineUnique(nullptr, pipelineCreateInfo);
 
                     util::assertFatal(
                         result == vk::Result::eSuccess,
@@ -696,20 +618,17 @@ namespace gfx::vulkan
 
                     if constexpr (util::isDebugBuild())
                     {
-                        this->device.setDebugUtilsObjectNameEXT(
-                            vk::DebugUtilsObjectNameInfoEXT {
-                                .sType {vk::StructureType::
-                                            eDebugUtilsObjectNameInfoEXT},
-                                .pNext {nullptr},
-                                .objectType {vk::ObjectType::ePipeline},
-                                .objectHandle {std::bit_cast<u64>(*pipeline)},
-                                .pObjectName {info.name.c_str()},
-                            });
+                        this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                            .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                            .pNext {nullptr},
+                            .objectType {vk::ObjectType::ePipeline},
+                            .objectHandle {std::bit_cast<u64>(*pipeline)},
+                            .pObjectName {info.name.c_str()},
+                        });
                     }
 
                     std::shared_ptr<vk::UniquePipeline> // NOLINT
-                        sharedPipeline {
-                            new vk::UniquePipeline {std::move(pipeline)}};
+                        sharedPipeline {new vk::UniquePipeline {std::move(pipeline)}};
 
                     this->pipeline_layout_and_bind_lookup.lock(
                         [&](std::unordered_map<
@@ -729,13 +648,12 @@ namespace gfx::vulkan
             });
     }
 
-    std::shared_ptr<vk::UniqueShaderModule> Allocator::cacheShaderModule(
-        std::span<const std::byte> shaderCode, std::string debugName) const
+    std::shared_ptr<vk::UniqueShaderModule>
+    Allocator::cacheShaderModule(std::span<const std::byte> shaderCode, std::string debugName) const
     {
-        std::string shaderString {
-            // this is fine NOLINTNEXTLINE
-            reinterpret_cast<const char*>(shaderCode.data()),
-            shaderCode.size_bytes()};
+        std::string shaderString {// this is fine NOLINTNEXTLINE
+                                  reinterpret_cast<const char*>(shaderCode.data()),
+                                  shaderCode.size_bytes()};
 
         return this->shader_module_cache.lock(
             [&](auto& cache)
@@ -747,8 +665,7 @@ namespace gfx::vulkan
                 else
                 {
                     util::assertWarn( // this is also fine NOLINTNEXTLINE
-                        reinterpret_cast<std::uintptr_t>(shaderCode.data()) % 4
-                            == 0,
+                        reinterpret_cast<std::uintptr_t>(shaderCode.data()) % 4 == 0,
                         "shaderCode is underaligned!");
 
                     const vk::ShaderModuleCreateInfo shaderModuleCreateInfo {
@@ -767,25 +684,21 @@ namespace gfx::vulkan
                     };
 
                     vk::UniqueShaderModule module =
-                        this->device.createShaderModuleUnique(
-                            shaderModuleCreateInfo);
+                        this->device.createShaderModuleUnique(shaderModuleCreateInfo);
 
                     if constexpr (util::isDebugBuild())
                     {
-                        this->device.setDebugUtilsObjectNameEXT(
-                            vk::DebugUtilsObjectNameInfoEXT {
-                                .sType {vk::StructureType::
-                                            eDebugUtilsObjectNameInfoEXT},
-                                .pNext {nullptr},
-                                .objectType {vk::ObjectType::eShaderModule},
-                                .objectHandle {std::bit_cast<u64>(*module)},
-                                .pObjectName {debugName.c_str()},
-                            });
+                        this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                            .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                            .pNext {nullptr},
+                            .objectType {vk::ObjectType::eShaderModule},
+                            .objectHandle {std::bit_cast<u64>(*module)},
+                            .pObjectName {debugName.c_str()},
+                        });
                     }
 
                     std::shared_ptr<vk::UniqueShaderModule> // NOLINT
-                        sharedModule {
-                            new vk::UniqueShaderModule {std::move(module)}};
+                        sharedModule {new vk::UniqueShaderModule {std::move(module)}};
 
                     cache[std::move(shaderString)] = sharedModule;
 
@@ -800,12 +713,9 @@ namespace gfx::vulkan
         return this->pipeline_layout_and_bind_lookup.lock(
             [&](std::unordered_map<
                 vk::Pipeline,
-                std::pair<
-                    std::weak_ptr<vk::UniquePipelineLayout>,
-                    vk::PipelineBindPoint>>& cache)
+                std::pair<std::weak_ptr<vk::UniquePipelineLayout>, vk::PipelineBindPoint>>& cache)
             {
-                std::shared_ptr shouldBeLayout =
-                    cache.at(pipeline).first.lock();
+                std::shared_ptr shouldBeLayout = cache.at(pipeline).first.lock();
 
                 util::assertFatal(
                     shouldBeLayout != nullptr,
@@ -815,15 +725,12 @@ namespace gfx::vulkan
             });
     }
 
-    vk::PipelineBindPoint
-    Allocator::lookupPipelineBindPoint(vk::Pipeline pipeline) const
+    vk::PipelineBindPoint Allocator::lookupPipelineBindPoint(vk::Pipeline pipeline) const
     {
         return this->pipeline_layout_and_bind_lookup.lock(
             [&](std::unordered_map<
                 vk::Pipeline,
-                std::pair<
-                    std::weak_ptr<vk::UniquePipelineLayout>,
-                    vk::PipelineBindPoint>>& cache)
+                std::pair<std::weak_ptr<vk::UniquePipelineLayout>, vk::PipelineBindPoint>>& cache)
             {
                 return cache.at(pipeline).second;
             });

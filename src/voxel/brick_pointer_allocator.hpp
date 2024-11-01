@@ -12,11 +12,10 @@ namespace voxel
         explicit BrickPointerAllocator(u32 maxBricks);
         ~BrickPointerAllocator();
 
-        BrickPointerAllocator(const BrickPointerAllocator&) = delete;
-        BrickPointerAllocator(BrickPointerAllocator&&)      = delete;
-        BrickPointerAllocator&
-        operator= (const BrickPointerAllocator&)                   = delete;
-        BrickPointerAllocator& operator= (BrickPointerAllocator&&) = delete;
+        BrickPointerAllocator(const BrickPointerAllocator&)             = delete;
+        BrickPointerAllocator(BrickPointerAllocator&&)                  = delete;
+        BrickPointerAllocator& operator= (const BrickPointerAllocator&) = delete;
+        BrickPointerAllocator& operator= (BrickPointerAllocator&&)      = delete;
 
         BrickPointer        allocate();
         void                free(BrickPointer);

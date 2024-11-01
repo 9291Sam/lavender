@@ -12,11 +12,10 @@ namespace shaders
 
         try
         {
-            const cmrc::file resourceFile =
-                cmrc::lav::get_filesystem().open(realResource);
+            const cmrc::file resourceFile = cmrc::lav::get_filesystem().open(realResource);
 
-            const std::byte* ptr = reinterpret_cast<const std::byte*>(
-                resourceFile.begin()); // NOLINT
+            const std::byte* ptr =
+                reinterpret_cast<const std::byte*>(resourceFile.begin()); // NOLINT
             const std::size_t len = resourceFile.size();
 
             return {ptr, len};

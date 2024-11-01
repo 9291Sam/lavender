@@ -26,60 +26,46 @@ namespace verdigris
         , stager {this->game->getRenderer()->getAllocator()}
         , chunk_manager(this->game)
     {
-        this->triangle =
-            this->game->getEntityComponentManager()->createEntity();
+        this->triangle = this->game->getEntityComponentManager()->createEntity();
 
-        this->triangle_pipeline =
-            this->game->getRenderer()->getAllocator()->cachePipeline(
-                gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
-                    .stages {{
-                        gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-                            .stage {vk::ShaderStageFlagBits::eVertex},
-                            .shader {this->game->getRenderer()
-                                         ->getAllocator()
-                                         ->cacheShaderModule(
-                                             shaders::load("triangle.vert"),
-                                             "Triangle Vertex Shader")},
-                            .entry_point {"main"},
-                        },
-                        gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-                            .stage {vk::ShaderStageFlagBits::eFragment},
-                            .shader {this->game->getRenderer()
-                                         ->getAllocator()
-                                         ->cacheShaderModule(
-                                             shaders::load("triangle.frag"),
-                                             "Triangle Fragment Shader")},
-                            .entry_point {"main"},
-                        },
-                    }},
-                    .vertex_attributes {},
-                    .vertex_bindings {},
-                    .topology {vk::PrimitiveTopology::eTriangleList},
-                    .discard_enable {false},
-                    .polygon_mode {vk::PolygonMode::eFill},
-                    .cull_mode {vk::CullModeFlagBits::eNone},
-                    .front_face {vk::FrontFace::eClockwise},
-                    .depth_test_enable {true},
-                    .depth_write_enable {true},
-                    .depth_compare_op {vk::CompareOp::eLess},
-                    .color_format {gfx::Renderer::ColorFormat.format},
-                    .depth_format {gfx::Renderer::DepthFormat},
-                    .blend_enable {true},
-                    .layout {
-                        this->game->getRenderer()
-                            ->getAllocator()
-                            ->cachePipelineLayout(
-                                gfx::vulkan::CacheablePipelineLayoutCreateInfo {
-                                    .descriptors {
-                                        {this->game
-                                             ->getGlobalInfoDescriptorSetLayout()}},
-                                    .push_constants {vk::PushConstantRange {
-                                        .stageFlags {
-                                            vk::ShaderStageFlagBits::eVertex},
-                                        .offset {0},
-                                        .size {64}}},
-                                    .name {"Triangle Pipeline Layout"}})},
-                    .name {"Triangle Pipeline"}});
+        this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
+            gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
+                .stages {{
+                    gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                        .stage {vk::ShaderStageFlagBits::eVertex},
+                        .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
+                            shaders::load("triangle.vert"), "Triangle Vertex Shader")},
+                        .entry_point {"main"},
+                    },
+                    gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                        .stage {vk::ShaderStageFlagBits::eFragment},
+                        .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
+                            shaders::load("triangle.frag"), "Triangle Fragment Shader")},
+                        .entry_point {"main"},
+                    },
+                }},
+                .vertex_attributes {},
+                .vertex_bindings {},
+                .topology {vk::PrimitiveTopology::eTriangleList},
+                .discard_enable {false},
+                .polygon_mode {vk::PolygonMode::eFill},
+                .cull_mode {vk::CullModeFlagBits::eNone},
+                .front_face {vk::FrontFace::eClockwise},
+                .depth_test_enable {true},
+                .depth_write_enable {true},
+                .depth_compare_op {vk::CompareOp::eLess},
+                .color_format {gfx::Renderer::ColorFormat.format},
+                .depth_format {gfx::Renderer::DepthFormat},
+                .blend_enable {true},
+                .layout {this->game->getRenderer()->getAllocator()->cachePipelineLayout(
+                    gfx::vulkan::CacheablePipelineLayoutCreateInfo {
+                        .descriptors {{this->game->getGlobalInfoDescriptorSetLayout()}},
+                        .push_constants {vk::PushConstantRange {
+                            .stageFlags {vk::ShaderStageFlagBits::eVertex},
+                            .offset {0},
+                            .size {64}}},
+                        .name {"Triangle Pipeline Layout"}})},
+                .name {"Triangle Pipeline"}});
 
         this->ec_manager->addComponent(this->triangle, TriangleComponent {});
         // this->ec_manager->addComponent(entity, render::TriangleComponent
@@ -106,9 +92,7 @@ namespace verdigris
 
         auto genFunc = [](i32 x, i32 z) -> i32
         {
-            return static_cast<i32>(
-                       8 * std::sin(x / 24.0) + 8 * std::cos(z / 24.0) + 32.0)
-                 - 128;
+            return static_cast<i32>(8 * std::sin(x / 24.0) + 8 * std::cos(z / 24.0) + 32.0) - 128;
         };
 
         auto genVoxel = [&] -> voxel::Voxel
@@ -201,8 +185,8 @@ namespace verdigris
                                      0,
                                      branch.height,
                                      0); // Start from trunk at specified height
-            glm::f32vec3 direction = glm::normalize(
-                branch.direction); // Direction vector for the branch
+            glm::f32vec3 direction =
+                glm::normalize(branch.direction); // Direction vector for the branch
 
             // Draw the branch (wood voxels)
             for (float i = 0; i < branch.length; ++i)
@@ -220,8 +204,7 @@ namespace verdigris
                 {
                     for (float z = -leafRadius; z <= leafRadius; ++z)
                     {
-                        glm::f32vec3 leafPos =
-                            leafCenter + glm::f32vec3(x, y, z);
+                        glm::f32vec3 leafPos = leafCenter + glm::f32vec3(x, y, z);
                         if (glm::length(glm::vec3(x, y, z))
                             <= leafRadius) // Check to make it spherical
                         {
@@ -239,12 +222,11 @@ namespace verdigris
         {
             float angle = i * (2.0f * glm::pi<float>() / numPillars);
 
-            glm::i32vec3 pillarBase =
-                center
-                + glm::f32vec3(
-                    static_cast<int>(radius * cos(angle)),
-                    0,
-                    static_cast<int>(radius * sin(angle)));
+            glm::i32vec3 pillarBase = center
+                                    + glm::f32vec3(
+                                          static_cast<int>(radius * cos(angle)),
+                                          0,
+                                          static_cast<int>(radius * sin(angle)));
 
             for (float theta = 0; theta < 2 * glm::pi<float>(); theta += 0.06f)
             {
@@ -253,9 +235,7 @@ namespace verdigris
                     for (float y = 0; y < 64; ++y)
                     {
                         insertVoxelAt(
-                            pillarBase
-                                + glm::i32vec3(
-                                    r * cos(theta), y, r * sin(theta)),
+                            pillarBase + glm::i32vec3(r * cos(theta), y, r * sin(theta)),
                             voxel::Voxel::Pearl);
                     }
                 }
@@ -378,8 +358,7 @@ namespace verdigris
         }
 
         const float averageFrameTime =
-            std::accumulate(
-                this->frame_times.cbegin(), this->frame_times.cend(), 0.0)
+            std::accumulate(this->frame_times.cbegin(), this->frame_times.cend(), 0.0)
             / this->frame_times.size();
 
         this->time_alive += deltaTime;
@@ -398,17 +377,14 @@ namespace verdigris
             const float x = 32.0f * std::sin(t);
             const float z = 32.0f * std::cos(t);
 
-            return glm::i32vec3 {
-                static_cast<i32>(x), 66.0, static_cast<i32>(z)};
+            return glm::i32vec3 {static_cast<i32>(x), 66.0, static_cast<i32>(z)};
         };
 
-        const i32 frameNumber =
-            static_cast<i32>(this->game->getRenderer()->getFrameNumber());
+        const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
         for (int i = 0; i < 2; i++)
         {
-            const float offset =
-                this->time_alive * 2 + i * 2 * std::numbers::pi_v<float> / 8.0;
+            const float offset = this->time_alive * 2 + i * 2 * std::numbers::pi_v<float> / 8.0;
 
             if (i == 0)
             {
@@ -418,10 +394,7 @@ namespace verdigris
                     28.0f * std::sin(offset)};
 
                 this->chunk_manager.modifyPointLight(
-                    this->lights[i],
-                    pos,
-                    {1.0, 1.0, 1.0, 512.0},
-                    {0.0, 0.0, 0.025, 0.0});
+                    this->lights[i], pos, {1.0, 1.0, 1.0, 512.0}, {0.0, 0.0, 0.025, 0.0});
 
                 this->ec_manager->modifyComponent<TriangleComponent>(
                     this->triangle,
@@ -439,10 +412,7 @@ namespace verdigris
                     256.0f * std::sin(offset * 1.384 + 93.4)};
 
                 this->chunk_manager.modifyPointLight(
-                    this->lights[i],
-                    pos,
-                    {1.0, 1.0, 1.0, 2048.0},
-                    {0.0, 0.0, 0.025, 0.0});
+                    this->lights[i], pos, {1.0, 1.0, 1.0, 2048.0}, {0.0, 0.0, 0.025, 0.0});
             }
         }
 
@@ -462,11 +432,10 @@ namespace verdigris
         // }
 
         // TODO: moving diagonally is faster
-        const float moveScale =
-            this->game->getRenderer()->getWindow()->isActionActive(
-                gfx::Window::Action::PlayerSprint)
-                ? 64.0f
-                : 16.0f;
+        const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
+                                    gfx::Window::Action::PlayerSprint)
+                                         ? 64.0f
+                                         : 16.0f;
         const float rotateSpeedScale = 6.0f;
 
         if (this->game->getRenderer()->getWindow()->isActionActive(
@@ -538,14 +507,11 @@ namespace verdigris
         {
             // each value from -1.0 -> 1.0 representing how much it moved
             // on the screen
-            const auto [nDeltaX, nDeltaY] = this->game->getRenderer()
-                                                ->getWindow()
-                                                ->getScreenSpaceMouseDelta();
+            const auto [nDeltaX, nDeltaY] =
+                this->game->getRenderer()->getWindow()->getScreenSpaceMouseDelta();
 
-            const auto deltaRadiansX =
-                (nDeltaX / 2) * this->game->getFovXRadians();
-            const auto deltaRadiansY =
-                (nDeltaY / 2) * this->game->getFovYRadians();
+            const auto deltaRadiansX = (nDeltaX / 2) * this->game->getFovXRadians();
+            const auto deltaRadiansY = (nDeltaY / 2) * this->game->getFovYRadians();
 
             return gfx::Window::Delta {.x {deltaRadiansX}, .y {deltaRadiansY}};
         };
@@ -557,51 +523,39 @@ namespace verdigris
 
         std::vector<game::FrameGenerator::RecordObject> draws {};
 
-        this->game->getEntityComponentManager()
-            ->iterateComponents<TriangleComponent>(
-                [&](game::ec::Entity, const TriangleComponent& c)
-                {
-                    draws.push_back(game::FrameGenerator::RecordObject {
-                        .transform {c.transform},
-                        .render_pass {game::FrameGenerator::
-                                          DynamicRenderingPass::SimpleColor},
-                        .pipeline {this->triangle_pipeline},
-                        .descriptors {
-                            {this->game->getGlobalInfoDescriptorSet(),
-                             nullptr,
-                             nullptr,
-                             nullptr}},
-                        .record_func {[](vk::CommandBuffer  commandBuffer,
-                                         vk::PipelineLayout layout,
-                                         u32                id)
-                                      {
-                                          commandBuffer.pushConstants(
-                                              layout,
-                                              vk::ShaderStageFlagBits::eVertex,
-                                              0,
-                                              sizeof(u32),
-                                              &id);
+        this->game->getEntityComponentManager()->iterateComponents<TriangleComponent>(
+            [&](game::ec::Entity, const TriangleComponent& c)
+            {
+                draws.push_back(game::FrameGenerator::RecordObject {
+                    .transform {c.transform},
+                    .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},
+                    .pipeline {this->triangle_pipeline},
+                    .descriptors {
+                        {this->game->getGlobalInfoDescriptorSet(), nullptr, nullptr, nullptr}},
+                    .record_func {
+                        [](vk::CommandBuffer commandBuffer, vk::PipelineLayout layout, u32 id)
+                        {
+                            commandBuffer.pushConstants(
+                                layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(u32), &id);
 
-                                          commandBuffer.draw(3, 1, 0, 0);
-                                      }},
-                    });
+                            commandBuffer.draw(3, 1, 0, 0);
+                        }},
                 });
+            });
 
         draws.push_back(game::FrameGenerator::RecordObject {
             .transform {},
-            .render_pass {
-                game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
+            .render_pass {game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
             .pipeline {},
             .descriptors {},
-            .record_func {
-                [this](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
-                {
-                    this->stager.flushTransfers(commandBuffer);
-                }},
+            .record_func {[this](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                          {
+                              this->stager.flushTransfers(commandBuffer);
+                          }},
         });
 
-        draws.append_range(this->chunk_manager.makeRecordObject(
-            this->game, this->stager, this->camera));
+        draws.append_range(
+            this->chunk_manager.makeRecordObject(this->game, this->stager, this->camera));
 
         return {this->camera, std::move(draws)};
     }

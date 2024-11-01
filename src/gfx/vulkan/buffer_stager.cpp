@@ -26,9 +26,7 @@ namespace gfx::vulkan
     {}
 
     void BufferStager::enqueueByteTransfer(
-        vk::Buffer                 buffer,
-        u32                        offset,
-        std::span<const std::byte> dataToWrite) const
+        vk::Buffer buffer, u32 offset, std::span<const std::byte> dataToWrite) const
     {
         util::assertFatal(
             dataToWrite.size_bytes() < std::numeric_limits<u32>::max(),
@@ -41,8 +39,7 @@ namespace gfx::vulkan
                 return a.allocate(static_cast<u32>(dataToWrite.size_bytes()));
             });
 
-        std::span<std::byte> stagingBufferData =
-            this->staging_buffer.getDataNonCoherent();
+        std::span<std::byte> stagingBufferData = this->staging_buffer.getDataNonCoherent();
 
         // static_assert(std::is_trivially_copyable_v<std::byte>);
         std::memcpy(
@@ -88,10 +85,7 @@ namespace gfx::vulkan
                         };
 
                         commandBuffer.copyBuffer(
-                            *this->staging_buffer,
-                            t.output_buffer,
-                            1,
-                            &bufferCopy);
+                            *this->staging_buffer, t.output_buffer, 1, &bufferCopy);
                     }
 
                     if (t.frames_alive > FramesInFlight)

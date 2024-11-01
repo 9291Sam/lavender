@@ -71,31 +71,21 @@ namespace stdext
             maybe<long double> h;
         };
 
-        template<
-            size_t Cap,
-            size_t Align = alignof(aligned_storage_helper<Cap>)>
+        template<size_t Cap, size_t Align = alignof(aligned_storage_helper<Cap>)>
         struct aligned_storage
         {
             using type = std::aligned_storage_t<Cap, Align>;
         };
 
-        template<
-            size_t Cap,
-            size_t Align = alignof(aligned_storage_helper<Cap>)>
+        template<size_t Cap, size_t Align = alignof(aligned_storage_helper<Cap>)>
         using aligned_storage_t = typename aligned_storage<Cap, Align>::type;
-        static_assert(
-            sizeof(aligned_storage_t<sizeof(void*)>) == sizeof(void*), "A");
-        static_assert(
-            alignof(aligned_storage_t<sizeof(void*)>) == alignof(void*), "B");
+        static_assert(sizeof(aligned_storage_t<sizeof(void*)>) == sizeof(void*), "A");
+        static_assert(alignof(aligned_storage_t<sizeof(void*)>) == alignof(void*), "B");
 #else
         using std::aligned_storage;
         using std::aligned_storage_t;
-        static_assert(
-            sizeof(std::aligned_storage_t<sizeof(void*)>) == sizeof(void*),
-            "C");
-        static_assert(
-            alignof(std::aligned_storage_t<sizeof(void*)>) == alignof(void*),
-            "D");
+        static_assert(sizeof(std::aligned_storage_t<sizeof(void*)>) == sizeof(void*), "C");
+        static_assert(alignof(std::aligned_storage_t<sizeof(void*)>) == alignof(void*), "D");
 #endif
 
         template<class T>
@@ -131,8 +121,7 @@ namespace stdext
             template<class C> explicit constexpr vtable(wrapper<C>) noexcept :
         invoke_ptr{ [](storage_ptr_t storage_ptr, Args&&... args) -> R
             {
-                          return (*static_cast<C*>(storage_ptr))(
-                              static_cast<Args&&>(args)...); }
+                          return (*static_cast<C*>(storage_ptr))(static_cast<Args&&>(args)...); }
         },
         copy_ptr{ [](storage_ptr_t dst_ptr, storage_ptr_t src_ptr) -> void
             {
@@ -140,8 +129,7 @@ namespace stdext
         },
         relocate_ptr{ [](storage_ptr_t dst_ptr, storage_ptr_t src_ptr) -> void
             {
-                          ::new (dst_ptr)
-                              C {std::move(*static_cast<C*>(src_ptr))};
+                          ::new (dst_ptr) C {std::move(*static_cast<C*>(src_ptr))};
                           static_cast<C*>(src_ptr)->~C();
             }
         },
@@ -171,12 +159,9 @@ namespace stdext
         struct is_valid_inplace_dst : std::true_type
         {
             static_assert(
-                DstCap >= SrcCap,
-                "Can't squeeze larger inplace_function into a smaller one");
+                DstCap >= SrcCap, "Can't squeeze larger inplace_function into a smaller one");
 
-            static_assert(
-                DstAlign % SrcAlign == 0,
-                "Incompatible inplace_function alignments");
+            static_assert(DstAlign % SrcAlign == 0, "Incompatible inplace_function alignments");
         };
 
         // C++11 MSVC compatible implementation of std::is_invocable_r.
@@ -218,10 +203,8 @@ namespace stdext
 
     template<
         class Signature,
-        size_t Capacity =
-            inplace_function_detail::InplaceFunctionDefaultCapacity,
-        size_t Alignment =
-            alignof(inplace_function_detail::aligned_storage_t<Capacity>)>
+        size_t Capacity  = inplace_function_detail::InplaceFunctionDefaultCapacity,
+        size_t Alignment = alignof(inplace_function_detail::aligned_storage_t<Capacity>)>
     class inplace_function; // unspecified
 
     namespace inplace_function_detail
@@ -230,16 +213,14 @@ namespace stdext
         struct is_inplace_function : std::false_type
         {};
         template<class Sig, size_t Cap, size_t Align>
-        struct is_inplace_function<inplace_function<Sig, Cap, Align>>
-            : std::true_type
+        struct is_inplace_function<inplace_function<Sig, Cap, Align>> : std::true_type
         {};
     } // namespace inplace_function_detail
 
     template<class R, class... Args, size_t Capacity, size_t Alignment>
     class inplace_function<R(Args...), Capacity, Alignment>
     {
-        using storage_t =
-            inplace_function_detail::aligned_storage_t<Capacity, Alignment>;
+        using storage_t    = inplace_function_detail::aligned_storage_t<Capacity, Alignment>;
         using vtable_t     = inplace_function_detail::vtable<R, Args...>;
         using vtable_ptr_t = const vtable_t*;
 
@@ -251,8 +232,7 @@ namespace stdext
         using alignment = std::integral_constant<size_t, Alignment>;
 
         inplace_function() noexcept
-            : vtable_ptr_ {std::addressof(
-                  inplace_function_detail::empty_vtable<R, Args...>)}
+            : vtable_ptr_ {std::addressof(inplace_function_detail::empty_vtable<R, Args...>)}
         {}
 
         template<
@@ -260,8 +240,7 @@ namespace stdext
             class C = std::decay_t<T>,
             class   = std::enable_if_t<
                   !inplace_function_detail::is_inplace_function<C>::value
-                  && inplace_function_detail::is_invocable_r<R, C&, Args...>::
-                      value>>
+                  && inplace_function_detail::is_invocable_r<R, C&, Args...>::value>>
         inplace_function(T&& closure)
         {
             static_assert(
@@ -288,62 +267,51 @@ namespace stdext
         template<size_t Cap, size_t Align>
         inplace_function(const inplace_function<R(Args...), Cap, Align>& other)
             : inplace_function(
-                  other.vtable_ptr_,
-                  other.vtable_ptr_->copy_ptr,
-                  std::addressof(other.storage_))
+                  other.vtable_ptr_, other.vtable_ptr_->copy_ptr, std::addressof(other.storage_))
         {
             static_assert(
-                inplace_function_detail::
-                    is_valid_inplace_dst<Capacity, Alignment, Cap, Align>::
-                        value,
+                inplace_function_detail::is_valid_inplace_dst<Capacity, Alignment, Cap, Align>::
+                    value,
                 "conversion not allowed");
         }
 
         template<size_t Cap, size_t Align>
-        inplace_function(
-            inplace_function<R(Args...), Cap, Align>&& other) noexcept
+        inplace_function(inplace_function<R(Args...), Cap, Align>&& other) noexcept
             : inplace_function(
                   other.vtable_ptr_,
                   other.vtable_ptr_->relocate_ptr,
                   std::addressof(other.storage_))
         {
             static_assert(
-                inplace_function_detail::
-                    is_valid_inplace_dst<Capacity, Alignment, Cap, Align>::
-                        value,
+                inplace_function_detail::is_valid_inplace_dst<Capacity, Alignment, Cap, Align>::
+                    value,
                 "conversion not allowed");
 
-            other.vtable_ptr_ = std::addressof(
-                inplace_function_detail::empty_vtable<R, Args...>);
+            other.vtable_ptr_ = std::addressof(inplace_function_detail::empty_vtable<R, Args...>);
         }
 
         inplace_function(std::nullptr_t) noexcept
-            : vtable_ptr_ {std::addressof(
-                  inplace_function_detail::empty_vtable<R, Args...>)}
+            : vtable_ptr_ {std::addressof(inplace_function_detail::empty_vtable<R, Args...>)}
         {}
 
         inplace_function(const inplace_function& other)
             : vtable_ptr_ {other.vtable_ptr_}
         {
-            vtable_ptr_->copy_ptr(
-                std::addressof(storage_), std::addressof(other.storage_));
+            vtable_ptr_->copy_ptr(std::addressof(storage_), std::addressof(other.storage_));
         }
 
         inplace_function(inplace_function&& other) noexcept
             : vtable_ptr_ {std::exchange(
                   other.vtable_ptr_,
-                  std::addressof(
-                      inplace_function_detail::empty_vtable<R, Args...>))}
+                  std::addressof(inplace_function_detail::empty_vtable<R, Args...>))}
         {
-            vtable_ptr_->relocate_ptr(
-                std::addressof(storage_), std::addressof(other.storage_));
+            vtable_ptr_->relocate_ptr(std::addressof(storage_), std::addressof(other.storage_));
         }
 
         inplace_function& operator= (std::nullptr_t) noexcept
         {
             vtable_ptr_->destructor_ptr(std::addressof(storage_));
-            vtable_ptr_ = std::addressof(
-                inplace_function_detail::empty_vtable<R, Args...>);
+            vtable_ptr_ = std::addressof(inplace_function_detail::empty_vtable<R, Args...>);
             return *this;
         }
 
@@ -353,10 +321,8 @@ namespace stdext
 
             vtable_ptr_ = std::exchange(
                 other.vtable_ptr_,
-                std::addressof(
-                    inplace_function_detail::empty_vtable<R, Args...>));
-            vtable_ptr_->relocate_ptr(
-                std::addressof(storage_), std::addressof(other.storage_));
+                std::addressof(inplace_function_detail::empty_vtable<R, Args...>));
+            vtable_ptr_->relocate_ptr(std::addressof(storage_), std::addressof(other.storage_));
             return *this;
         }
 
@@ -367,8 +333,7 @@ namespace stdext
 
         R operator() (Args... args) const
         {
-            return vtable_ptr_->invoke_ptr(
-                std::addressof(storage_), std::forward<Args>(args)...);
+            return vtable_ptr_->invoke_ptr(std::addressof(storage_), std::forward<Args>(args)...);
         }
 
         constexpr bool operator== (std::nullptr_t) const noexcept
@@ -383,9 +348,7 @@ namespace stdext
 
         explicit constexpr operator bool () const noexcept
         {
-            return vtable_ptr_
-                != std::addressof(
-                       inplace_function_detail::empty_vtable<R, Args...>);
+            return vtable_ptr_ != std::addressof(inplace_function_detail::empty_vtable<R, Args...>);
         }
 
         void swap(inplace_function& other) noexcept
@@ -396,14 +359,12 @@ namespace stdext
             }
 
             storage_t tmp;
-            vtable_ptr_->relocate_ptr(
-                std::addressof(tmp), std::addressof(storage_));
+            vtable_ptr_->relocate_ptr(std::addressof(tmp), std::addressof(storage_));
 
             other.vtable_ptr_->relocate_ptr(
                 std::addressof(storage_), std::addressof(other.storage_));
 
-            vtable_ptr_->relocate_ptr(
-                std::addressof(other.storage_), std::addressof(tmp));
+            vtable_ptr_->relocate_ptr(std::addressof(other.storage_), std::addressof(tmp));
 
             std::swap(vtable_ptr_, other.vtable_ptr_);
         }

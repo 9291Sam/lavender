@@ -33,29 +33,27 @@ namespace util
         std::source_location                  location,
         std::chrono::system_clock::time_point time);
 
-#define MAKE_LOGGER(LEVEL) /* NOLINT */                                        \
-    template<class... Ts>                                                      \
-    struct log##LEVEL /* NOLINT */                                             \
-    {                                                                          \
-        log##LEVEL(/* NOLINT*/                                                 \
-                   std::format_string<Ts...> fmt,                              \
-                   Ts&&... args,                                               \
-                   const std::source_location& location =                      \
-                       std::source_location::current())                        \
-        {                                                                      \
-            using enum LoggingLevel;                                           \
-            if (util::toUnderlying(getCurrentLevel())                          \
-                <= util::toUnderlying(LEVEL))                                  \
-            {                                                                  \
-                asynchronouslyLog(                                             \
-                    std::format(fmt, std::forward<Ts>(args)...),               \
-                    LEVEL,                                                     \
-                    location,                                                  \
-                    std::chrono::system_clock::now());                         \
-            }                                                                  \
-        }                                                                      \
-    };                                                                         \
-    template<class... Ts>                                                      \
+#define MAKE_LOGGER(LEVEL) /* NOLINT */                                                            \
+    template<class... Ts>                                                                          \
+    struct log##LEVEL /* NOLINT */                                                                 \
+    {                                                                                              \
+        log##LEVEL(/* NOLINT*/                                                                     \
+                   std::format_string<Ts...> fmt,                                                  \
+                   Ts&&... args,                                                                   \
+                   const std::source_location& location = std::source_location::current())         \
+        {                                                                                          \
+            using enum LoggingLevel;                                                               \
+            if (util::toUnderlying(getCurrentLevel()) <= util::toUnderlying(LEVEL))                \
+            {                                                                                      \
+                asynchronouslyLog(                                                                 \
+                    std::format(fmt, std::forward<Ts>(args)...),                                   \
+                    LEVEL,                                                                         \
+                    location,                                                                      \
+                    std::chrono::system_clock::now());                                             \
+            }                                                                                      \
+        }                                                                                          \
+    };                                                                                             \
+    template<class... Ts>                                                                          \
     log##LEVEL(std::format_string<Ts...>, Ts&&...)->log##LEVEL<Ts...>;
 
     MAKE_LOGGER(Trace)
@@ -66,51 +64,43 @@ namespace util
 
 #undef MAKE_LOGGER
 
-#define MAKE_ASSERT(LEVEL, THROW_ON_FAIL) /* NOLINT */                         \
-    template<class... Ts>                                                      \
-    struct assert##LEVEL                                                       \
-    {                                                                          \
-        assert##LEVEL(                                                         \
-            bool                      condition,                               \
-            std::format_string<Ts...> fmt,                                     \
-            Ts&&... args,                                                      \
-            const std::source_location& location =                             \
-                std::source_location::current())                               \
-        {                                                                      \
-            using enum LoggingLevel;                                           \
-            if (!condition                                                     \
-                && util::toUnderlying(getCurrentLevel())                       \
-                       <= util::toUnderlying(LEVEL)) [[unlikely]]              \
-            {                                                                  \
-                if constexpr (THROW_ON_FAIL)                                   \
-                {                                                              \
-                    std::string message =                                      \
-                        std::format(fmt, std::forward<Ts>(args)...);           \
-                                                                               \
-                    asynchronouslyLog(                                         \
-                        message,                                               \
-                        LEVEL,                                                 \
-                        location,                                              \
-                        std::chrono::system_clock::now());                     \
-                                                                               \
-                    util::debugBreak(location);                                \
-                                                                               \
-                    throw std::runtime_error {std::move(message)};             \
-                }                                                              \
-                else                                                           \
-                {                                                              \
-                    asynchronouslyLog(                                         \
-                        std::format(fmt, std::forward<Ts>(args)...),           \
-                        LEVEL,                                                 \
-                        location,                                              \
-                        std::chrono::system_clock::now());                     \
-                }                                                              \
-            }                                                                  \
-        }                                                                      \
-    };                                                                         \
-    template<class... J>                                                       \
-    assert##LEVEL(bool, std::format_string<J...>, J&&...)                      \
-        ->assert##LEVEL<J...>;
+#define MAKE_ASSERT(LEVEL, THROW_ON_FAIL) /* NOLINT */                                             \
+    template<class... Ts>                                                                          \
+    struct assert##LEVEL                                                                           \
+    {                                                                                              \
+        assert##LEVEL(                                                                             \
+            bool                      condition,                                                   \
+            std::format_string<Ts...> fmt,                                                         \
+            Ts&&... args,                                                                          \
+            const std::source_location& location = std::source_location::current())                \
+        {                                                                                          \
+            using enum LoggingLevel;                                                               \
+            if (!condition && util::toUnderlying(getCurrentLevel()) <= util::toUnderlying(LEVEL))  \
+                [[unlikely]]                                                                       \
+            {                                                                                      \
+                if constexpr (THROW_ON_FAIL)                                                       \
+                {                                                                                  \
+                    std::string message = std::format(fmt, std::forward<Ts>(args)...);             \
+                                                                                                   \
+                    asynchronouslyLog(message, LEVEL, location, std::chrono::system_clock::now()); \
+                                                                                                   \
+                    util::debugBreak(location);                                                    \
+                                                                                                   \
+                    throw std::runtime_error {std::move(message)};                                 \
+                }                                                                                  \
+                else                                                                               \
+                {                                                                                  \
+                    asynchronouslyLog(                                                             \
+                        std::format(fmt, std::forward<Ts>(args)...),                               \
+                        LEVEL,                                                                     \
+                        location,                                                                  \
+                        std::chrono::system_clock::now());                                         \
+                }                                                                                  \
+            }                                                                                      \
+        }                                                                                          \
+    };                                                                                             \
+    template<class... J>                                                                           \
+    assert##LEVEL(bool, std::format_string<J...>, J&&...)->assert##LEVEL<J...>;
 
     MAKE_ASSERT(Trace, false) // NOLINT: We want implicit conversions
     MAKE_ASSERT(Debug, false) // NOLINT: We want implicit conversions
@@ -126,18 +116,14 @@ namespace util
         panic( // NOLINT
             std::format_string<Ts...> fmt,
             Ts&&... args,
-            const std::source_location& location =
-                std::source_location::current())
+            const std::source_location& location = std::source_location::current())
         {
             using enum LoggingLevel;
             using namespace std::chrono_literals;
             std::string message = std::format(fmt, std::forward<Ts>(args)...);
 
             asynchronouslyLog(
-                message,
-                LoggingLevel::Panic,
-                location,
-                std::chrono::system_clock::now());
+                message, LoggingLevel::Panic, location, std::chrono::system_clock::now());
 
             util::debugBreak(location);
 

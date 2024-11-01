@@ -18,8 +18,7 @@ namespace voxel
 
         constexpr bool operator== (const InternalPointLight& l) const
         {
-            return this->position == l.position
-                && this->color_and_power == l.color_and_power
+            return this->position == l.position && this->color_and_power == l.color_and_power
                 && this->falloffs == l.falloffs;
         }
     };
@@ -31,8 +30,7 @@ namespace voxel
             std::size_t res = 0;
 
             boost::hash_combine(res, std::hash<glm::vec4> {}(l.position));
-            boost::hash_combine(
-                res, std::hash<glm::vec4> {}(l.color_and_power));
+            boost::hash_combine(res, std::hash<glm::vec4> {}(l.color_and_power));
             boost::hash_combine(res, std::hash<glm::vec4> {}(l.falloffs));
 
             return res;

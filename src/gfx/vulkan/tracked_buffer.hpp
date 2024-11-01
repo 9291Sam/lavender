@@ -19,12 +19,7 @@ namespace gfx::vulkan
             vk::MemoryPropertyFlags memoryPropertyFlags,
             std::size_t             elements,
             std::string             name)
-            : gpu_buffer {
-                  allocator,
-                  usage,
-                  memoryPropertyFlags,
-                  elements,
-                  std::move(name)}
+            : gpu_buffer {allocator, usage, memoryPropertyFlags, elements, std::move(name)}
         {
             this->cpu_buffer.resize(elements);
         }
@@ -48,8 +43,7 @@ namespace gfx::vulkan
 
         T& modify(std::size_t offset)
         {
-            this->flushes.push_back(
-                FlushData {.offset_elements {offset}, .size_elements {1}});
+            this->flushes.push_back(FlushData {.offset_elements {offset}, .size_elements {1}});
 
             return this->cpu_buffer[offset];
         }
@@ -61,13 +55,10 @@ namespace gfx::vulkan
 
         void write(std::size_t offset_, std::span<const T> data)
         {
-            this->flushes.push_back(FlushData {
-                .offset_elements {offset_}, .size_elements {data.size()}});
+            this->flushes.push_back(
+                FlushData {.offset_elements {offset_}, .size_elements {data.size()}});
 
-            std::memcpy(
-                this->cpu_buffer.data() + offset_,
-                data.data(),
-                data.size_bytes());
+            std::memcpy(this->cpu_buffer.data() + offset_, data.data(), data.size_bytes());
         }
 
         // void flushViaStager(const gfx::vulkan::BufferStager& stager)
@@ -108,11 +99,10 @@ namespace gfx::vulkan
         {
             if (!this->flushes.empty())
             {
-                std::span<T> gpuData = this->gpu_buffer.getDataNonCoherent();
+                std::span<T>       gpuData = this->gpu_buffer.getDataNonCoherent();
                 std::span<const T> cpuData = this->cpu_buffer;
 
-                std::memcpy(
-                    gpuData.data(), cpuData.data(), cpuData.size_bytes());
+                std::memcpy(gpuData.data(), cpuData.data(), cpuData.size_bytes());
 
                 this->flushes.clear();
             }

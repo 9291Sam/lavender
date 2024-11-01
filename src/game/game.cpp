@@ -33,8 +33,7 @@ namespace game
         , should_game_keep_ticking {true}
         , should_game_close {false}
     {
-        util::assertFatal(
-            globalGame == nullptr, "Don't create multiple Game s");
+        util::assertFatal(globalGame == nullptr, "Don't create multiple Game s");
 
         globalGame = this;
     }
@@ -48,24 +47,19 @@ namespace game
     {
         this->renderer->getWindow()->attachCursor();
 
-        while (!this->renderer->shouldWindowClose()
-               && !this->should_game_close.load())
+        while (!this->renderer->shouldWindowClose() && !this->should_game_close.load())
         {
-            while (!this->renderer->shouldWindowClose()
-                   && this->should_game_keep_ticking.load()
+            while (!this->renderer->shouldWindowClose() && this->should_game_keep_ticking.load()
                    && !this->should_game_close.load())
             {
-                const float deltaTime =
-                    this->renderer->getWindow()->getDeltaTimeSeconds();
+                const float deltaTime = this->renderer->getWindow()->getDeltaTimeSeconds();
 
                 this->active_game_state.lock(
                     [&](std::unique_ptr<GameState>& state)
                     {
-                        const auto [camera, recordObjects] =
-                            state->onFrame(deltaTime);
+                        const auto [camera, recordObjects] = state->onFrame(deltaTime);
 
-                        this->frame_generator->generateFrame(
-                            camera, recordObjects);
+                        this->frame_generator->generateFrame(camera, recordObjects);
                     });
             }
         }
@@ -83,8 +77,7 @@ namespace game
 
     float Game::getAspectRatio() const noexcept
     {
-        const vk::Extent2D frameBufferSize =
-            this->renderer->getWindow()->getFramebufferSize();
+        const vk::Extent2D frameBufferSize = this->renderer->getWindow()->getFramebufferSize();
 
         return static_cast<float>(frameBufferSize.width)
              / static_cast<float>(frameBufferSize.height);
@@ -95,8 +88,7 @@ namespace game
         return this->renderer.get();
     }
 
-    const ec::EntityComponentManager*
-    Game::getEntityComponentManager() const noexcept
+    const ec::EntityComponentManager* Game::getEntityComponentManager() const noexcept
     {
         return this->ec_manager.get();
     }

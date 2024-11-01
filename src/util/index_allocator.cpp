@@ -32,8 +32,7 @@ namespace util
         this->max_number_of_blocks = newAmount;
     }
 
-    std::expected<IndexAllocator::IndexType, IndexAllocator::OutOfBlocks>
-    IndexAllocator::allocate()
+    std::expected<IndexAllocator::IndexType, IndexAllocator::OutOfBlocks> IndexAllocator::allocate()
     {
         if (this->free_block_list.empty())
         {
@@ -74,8 +73,7 @@ namespace util
             throw FreeOfUntrackedValue {};
         }
 
-        const auto& [maybeIterator, valid] =
-            this->free_block_list.insert_unique(blockToFree);
+        const auto& [maybeIterator, valid] = this->free_block_list.insert_unique(blockToFree);
 
         while (this->free_block_list.contains(this->next_available_block - 1))
         {

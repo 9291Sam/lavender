@@ -39,8 +39,7 @@ namespace voxel
         gfx::vulkan::Buffer<VoxelMaterial> buffer {
             renderer->getAllocator(),
             vk::BufferUsageFlagBits::eStorageBuffer,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-                | vk::MemoryPropertyFlagBits::eHostVisible,
+            vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
             materials.size(),
             "Voxel Material Buffer"};
 

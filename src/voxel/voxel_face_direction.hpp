@@ -42,8 +42,7 @@ namespace voxel
     }
 
     // Width, height, and ascension axes
-    inline std::tuple<glm::i8vec3, glm::i8vec3, glm::i8vec3>
-    getDrivingAxes(VoxelFaceDirection dir)
+    inline std::tuple<glm::i8vec3, glm::i8vec3, glm::i8vec3> getDrivingAxes(VoxelFaceDirection dir)
     {
         switch (dir)
         {

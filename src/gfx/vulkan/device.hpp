@@ -46,9 +46,8 @@ namespace gfx::vulkan
         Device& operator= (const Device&) = delete;
         Device& operator= (Device&&)      = delete;
 
-        [[nodiscard]] std::optional<u32>
-                          getFamilyOfQueueType(QueueType) const noexcept;
-        [[nodiscard]] u32 getNumberOfQueues(QueueType) const noexcept;
+        [[nodiscard]] std::optional<u32> getFamilyOfQueueType(QueueType) const noexcept;
+        [[nodiscard]] u32                getNumberOfQueues(QueueType) const noexcept;
         [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const noexcept;
         [[nodiscard]] vk::Device         getDevice() const noexcept;
         [[nodiscard]] const vk::Device*  operator->() const noexcept
@@ -56,12 +55,10 @@ namespace gfx::vulkan
             return &*this->device;
         }
 
-        void acquireQueue(
-            QueueType                      queueType,
-            std::invocable<vk::Queue> auto accessFunc) const noexcept
+        void
+        acquireQueue(QueueType queueType, std::invocable<vk::Queue> auto accessFunc) const noexcept
         {
-            const std::size_t idx =
-                static_cast<std::size_t>(util::toUnderlying(queueType));
+            const std::size_t idx = static_cast<std::size_t>(util::toUnderlying(queueType));
 
             util::assertFatal(
                 idx < static_cast<std::size_t>(QueueType::NumberOfQueueTypes),
@@ -101,9 +98,7 @@ namespace gfx::vulkan
             static_cast<std::size_t>(QueueType::NumberOfQueueTypes)>
             queues;
 
-        std::array<
-            std::optional<u32>,
-            static_cast<std::size_t>(QueueType::NumberOfQueueTypes)>
+        std::array<std::optional<u32>, static_cast<std::size_t>(QueueType::NumberOfQueueTypes)>
             queue_family_indexes;
 
         std::array<u32, static_cast<std::size_t>(QueueType::NumberOfQueueTypes)>

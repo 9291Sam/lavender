@@ -10,15 +10,12 @@
 
 namespace gfx::vulkan
 {
-    Frame::Frame(
-        const Device& device_, vk::SwapchainKHR swapchain_, std::size_t number)
+    Frame::Frame(const Device& device_, vk::SwapchainKHR swapchain_, std::size_t number)
         : device {&device_}
         , swapchain {swapchain_}
     {
         const vk::SemaphoreCreateInfo semaphoreCreateInfo {
-            .sType {vk::StructureType::eSemaphoreCreateInfo},
-            .pNext {nullptr},
-            .flags {}};
+            .sType {vk::StructureType::eSemaphoreCreateInfo}, .pNext {nullptr}, .flags {}};
 
         const vk::FenceCreateInfo fenceCreateInfo {
             .sType {vk::StructureType::eFenceCreateInfo},
@@ -32,14 +29,12 @@ namespace gfx::vulkan
             .flags {
                 vk::CommandPoolCreateFlagBits::eTransient
                 | vk::CommandPoolCreateFlagBits::eResetCommandBuffer},
-            .queueFamilyIndex {
-                device_ // NOLINT
-                    .getFamilyOfQueueType(Device::QueueType::Graphics)
-                    .value()},
+            .queueFamilyIndex {device_ // NOLINT
+                                   .getFamilyOfQueueType(Device::QueueType::Graphics)
+                                   .value()},
         };
 
-        const std::string commandPoolName =
-            std::format("Frame #{} Command Pool", number);
+        const std::string commandPoolName = std::format("Frame #{} Command Pool", number);
         const std::string imageAvailableName =
             std::format("Frame #{} Image Available Semaphore", number);
         const std::string renderFinishedName =
@@ -47,53 +42,48 @@ namespace gfx::vulkan
         const std::string frameInFlightName =
             std::format("Frame #{} Frame In Flight Fence", number);
 
-        this->command_pool = this->device->getDevice().createCommandPoolUnique(
-            commandPoolCreateInfo);
+        this->command_pool =
+            this->device->getDevice().createCommandPoolUnique(commandPoolCreateInfo);
 
-        this->image_available = this->device->getDevice().createSemaphoreUnique(
-            semaphoreCreateInfo);
-        this->render_finished = this->device->getDevice().createSemaphoreUnique(
-            semaphoreCreateInfo);
-        this->frame_in_flight =
-            this->device->getDevice().createFenceUnique(fenceCreateInfo);
+        this->image_available =
+            this->device->getDevice().createSemaphoreUnique(semaphoreCreateInfo);
+        this->render_finished =
+            this->device->getDevice().createSemaphoreUnique(semaphoreCreateInfo);
+        this->frame_in_flight = this->device->getDevice().createFenceUnique(fenceCreateInfo);
 
         if constexpr (util::isDebugBuild())
         {
-            device->getDevice().setDebugUtilsObjectNameEXT(
-                vk::DebugUtilsObjectNameInfoEXT {
-                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                    .pNext {nullptr},
-                    .objectType {vk::ObjectType::eCommandPool},
-                    .objectHandle {std::bit_cast<u64>(*this->command_pool)},
-                    .pObjectName {commandPoolName.c_str()},
-                });
+            device->getDevice().setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                .pNext {nullptr},
+                .objectType {vk::ObjectType::eCommandPool},
+                .objectHandle {std::bit_cast<u64>(*this->command_pool)},
+                .pObjectName {commandPoolName.c_str()},
+            });
 
-            device->getDevice().setDebugUtilsObjectNameEXT(
-                vk::DebugUtilsObjectNameInfoEXT {
-                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                    .pNext {nullptr},
-                    .objectType {vk::ObjectType::eSemaphore},
-                    .objectHandle {std::bit_cast<u64>(*this->image_available)},
-                    .pObjectName {imageAvailableName.c_str()},
-                });
+            device->getDevice().setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                .pNext {nullptr},
+                .objectType {vk::ObjectType::eSemaphore},
+                .objectHandle {std::bit_cast<u64>(*this->image_available)},
+                .pObjectName {imageAvailableName.c_str()},
+            });
 
-            device->getDevice().setDebugUtilsObjectNameEXT(
-                vk::DebugUtilsObjectNameInfoEXT {
-                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                    .pNext {nullptr},
-                    .objectType {vk::ObjectType::eSemaphore},
-                    .objectHandle {std::bit_cast<u64>(*this->render_finished)},
-                    .pObjectName {renderFinishedName.c_str()},
-                });
+            device->getDevice().setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                .pNext {nullptr},
+                .objectType {vk::ObjectType::eSemaphore},
+                .objectHandle {std::bit_cast<u64>(*this->render_finished)},
+                .pObjectName {renderFinishedName.c_str()},
+            });
 
-            device->getDevice().setDebugUtilsObjectNameEXT(
-                vk::DebugUtilsObjectNameInfoEXT {
-                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                    .pNext {nullptr},
-                    .objectType {vk::ObjectType::eFence},
-                    .objectHandle {std::bit_cast<u64>(*this->frame_in_flight)},
-                    .pObjectName {frameInFlightName.c_str()},
-                });
+            device->getDevice().setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                .pNext {nullptr},
+                .objectType {vk::ObjectType::eFence},
+                .objectHandle {std::bit_cast<u64>(*this->frame_in_flight)},
+                .pObjectName {frameInFlightName.c_str()},
+            });
         }
     }
 
@@ -119,9 +109,7 @@ namespace gfx::vulkan
         case vk::Result::eErrorOutOfDateKHR:
             return std::unexpected(Frame::ResizeNeeded {});
         default:
-            util::panic(
-                "acquireNextImage returned {}",
-                vk::to_string(acquireImageResult));
+            util::panic("acquireNextImage returned {}", vk::to_string(acquireImageResult));
         }
 
         bool shouldResize = false;
@@ -148,10 +136,10 @@ namespace gfx::vulkan
                     .commandBufferCount {1},
                 };
 
-                this->command_buffer = std::move(
-                    this->device->getDevice()
-                        .allocateCommandBuffersUnique(commandBufferAllocateInfo)
-                        .at(0));
+                this->command_buffer =
+                    std::move(this->device->getDevice()
+                                  .allocateCommandBuffersUnique(commandBufferAllocateInfo)
+                                  .at(0));
 
                 const vk::CommandBufferBeginInfo commandBufferBeginInfo {
                     .sType {vk::StructureType::eCommandBufferBeginInfo},
@@ -201,12 +189,11 @@ namespace gfx::vulkan
                     .pResults {nullptr},
                 };
 
-                const vk::Result presentResult = vk::Result {
-                    vk::defaultDispatchLoaderDynamic.vkQueuePresentKHR(
+                const vk::Result presentResult =
+                    vk::Result {vk::defaultDispatchLoaderDynamic.vkQueuePresentKHR(
                         queue,
                         // NOLINTNEXTLINE
-                        reinterpret_cast<const VkPresentInfoKHR*>(
-                            &presentInfo))};
+                        reinterpret_cast<const VkPresentInfoKHR*>(&presentInfo))};
 
                 switch (presentResult) // NOLINT
                 {
@@ -218,9 +205,7 @@ namespace gfx::vulkan
                     shouldResize = true;
                     break;
                 default:
-                    util::panic(
-                        "acquireNextImage returned {}",
-                        vk::to_string(presentResult));
+                    util::panic("acquireNextImage returned {}", vk::to_string(presentResult));
                 }
             });
 
@@ -239,8 +224,7 @@ namespace gfx::vulkan
         return *this->frame_in_flight;
     }
 
-    FrameManager::FrameManager(
-        const Device& device_, vk::SwapchainKHR swapchain)
+    FrameManager::FrameManager(const Device& device_, vk::SwapchainKHR swapchain)
         : device {device_.getDevice()}
         , previous_frame_finished_fence {std::nullopt}
         , flying_frames {Frame {device_, swapchain, 0}, Frame {device_, swapchain, 1}, Frame {device_, swapchain, 2}}
@@ -261,15 +245,11 @@ namespace gfx::vulkan
                     this->previous_frame_finished_fence,
                     [&](vk::CommandBuffer commandBuffer, u32 swapchainIndex)
                     {
-                        recordFunc(
-                            this->flying_frame_index,
-                            commandBuffer,
-                            swapchainIndex);
+                        recordFunc(this->flying_frame_index, commandBuffer, swapchainIndex);
                     });
 
         this->previous_frame_finished_fence =
-            this->flying_frames.at(this->flying_frame_index)
-                .getFrameInFlightFence();
+            this->flying_frames.at(this->flying_frame_index).getFrameInFlightFence();
 
         return result;
     }

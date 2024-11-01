@@ -20,9 +20,8 @@ namespace game::ec
             return (*this) == Entity {};
         }
 
-        constexpr bool operator== (const Entity&) const = default;
-        constexpr std::strong_ordering
-        operator<=> (const Entity&) const = default;
+        constexpr bool                 operator== (const Entity&) const  = default;
+        constexpr std::strong_ordering operator<=> (const Entity&) const = default;
     private:
         friend class EntityStorage;
         friend class EntityComponentManager;

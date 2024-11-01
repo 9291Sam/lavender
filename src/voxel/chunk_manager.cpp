@@ -1,8 +1,9 @@
-#include "chunk_manager.hpp"
+#include "voxel/chunk_manager.hpp"
 #include "brick_map.hpp"
 #include "brick_pointer.hpp"
 #include "brick_pointer_allocator.hpp"
 #include "chunk.hpp"
+#include "chunk_manager.hpp"
 #include "constants.hpp"
 #include "game/camera.hpp"
 #include "game/frame_generator.hpp"
@@ -34,6 +35,7 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <source_location>
 #include <unordered_map>
 #include <vulkan/vulkan.hpp>
@@ -57,66 +59,55 @@ namespace voxel
         , gpu_chunk_data(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
-              vk::MemoryPropertyFlagBits::eDeviceLocal
-                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
               MaxChunks,
               "Gpu Chunk Data Buffer")
         , brick_maps(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
-              vk::MemoryPropertyFlagBits::eDeviceLocal
-                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
               MaxChunks,
               "Brick Maps")
         , indirect_payload(
               this->renderer->getAllocator(),
-              vk::BufferUsageFlagBits::eVertexBuffer
-                  | vk::BufferUsageFlagBits::eTransferDst,
-              vk::MemoryPropertyFlagBits::eDeviceLocal
-                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxChunks * DirectionsPerChunk),
               "Indirect Payload")
         , indirect_commands(
               this->renderer->getAllocator(),
-              vk::BufferUsageFlagBits::eIndirectBuffer
-                  | vk::BufferUsageFlagBits::eTransferDst,
-              vk::MemoryPropertyFlagBits::eDeviceLocal
-                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxChunks * DirectionsPerChunk),
               "Indirect Commands")
         , brick_allocator(MaxBricks)
         , brick_parent_info(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
-              vk::MemoryPropertyFlagBits::eDeviceLocal
-                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxBricks),
               "Brick Parent Info")
         , material_bricks(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
-              vk::MemoryPropertyFlagBits::eDeviceLocal
-                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxBricks),
               "Material Bricks")
         , opacity_bricks(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
-              vk::MemoryPropertyFlagBits::eDeviceLocal
-                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxBricks),
               "Opacity Bricks")
         , visibility_bricks(
               this->renderer->getAllocator(),
-              vk::BufferUsageFlagBits::eStorageBuffer
-                  | vk::BufferUsageFlagBits::eTransferDst,
+              vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxBricks),
               "Visibility Bricks")
         , face_id_bricks(
               this->renderer->getAllocator(),
-              vk::BufferUsageFlagBits::eStorageBuffer
-                  | vk::BufferUsageFlagBits::eTransferDst,
+              vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxBricks),
               "Face Id Bricks")
@@ -124,31 +115,27 @@ namespace voxel
         , voxel_faces(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer,
-              vk::MemoryPropertyFlagBits::eDeviceLocal
-                  | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxFaces),
               "Voxel Faces")
         , material_buffer {voxel::generateVoxelMaterialBuffer(this->renderer)}
         , global_voxel_data(
               this->renderer->getAllocator(),
-              vk::BufferUsageFlagBits::eStorageBuffer
-                  | vk::BufferUsageFlagBits::eTransferDst
+              vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst
                   | vk::BufferUsageFlagBits::eIndirectBuffer,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               1,
               "Global Voxel Data")
         , visible_face_data(
               this->renderer->getAllocator(),
-              vk::BufferUsageFlagBits::eStorageBuffer
-                  | vk::BufferUsageFlagBits::eTransferDst,
+              vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxFaces),
               "Visible Face Data")
         , light_allocator {MaxLights}
         , lights_buffer(
               this->renderer->getAllocator(),
-              vk::BufferUsageFlagBits::eStorageBuffer
-                  | vk::BufferUsageFlagBits::eTransferDst,
+              vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxLights),
               "Lights Buffer")
@@ -166,8 +153,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -176,8 +162,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -186,8 +171,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -196,8 +180,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -206,8 +189,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -216,8 +198,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -226,8 +207,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -237,8 +217,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -247,8 +226,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -258,8 +236,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -268,8 +245,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -278,8 +254,7 @@ namespace voxel
                           .descriptorType {vk::DescriptorType::eStorageBuffer},
                           .descriptorCount {1},
                           .stageFlags {
-                              vk::ShaderStageFlagBits::eVertex
-                              | vk::ShaderStageFlagBits::eFragment
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
                               | vk::ShaderStageFlagBits::eCompute},
                           .pImmutableSamplers {nullptr},
                       },
@@ -297,17 +272,13 @@ namespace voxel
                   .stages {{
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eVertex},
-                          .shader {
-                              this->renderer->getAllocator()->cacheShaderModule(
-                                  shaders::load("voxel_render.vert"),
-                                  "Voxel Render Vertex Shader")},
+                          .shader {this->renderer->getAllocator()->cacheShaderModule(
+                              shaders::load("voxel_render.vert"), "Voxel Render Vertex Shader")},
                           .entry_point {"main"}},
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eFragment},
-                          .shader {
-                              this->renderer->getAllocator()->cacheShaderModule(
-                                  shaders::load("voxel_render.frag"),
-                                  "Voxel Render Fragment Shader")},
+                          .shader {this->renderer->getAllocator()->cacheShaderModule(
+                              shaders::load("voxel_render.frag"), "Voxel Render Fragment Shader")},
                           .entry_point {"main"}},
                   }},
                   .vertex_attributes {{
@@ -315,20 +286,17 @@ namespace voxel
                           .location {0},
                           .binding {0},
                           .format {vk::Format::eR32G32B32A32Sfloat},
-                          .offset {offsetof(
-                              ChunkDrawIndirectInstancePayload, position)}},
+                          .offset {offsetof(ChunkDrawIndirectInstancePayload, position)}},
                       vk::VertexInputAttributeDescription {
                           .location {1},
                           .binding {0},
                           .format {vk::Format::eR32Uint},
-                          .offset {offsetof(
-                              ChunkDrawIndirectInstancePayload, normal)}},
+                          .offset {offsetof(ChunkDrawIndirectInstancePayload, normal)}},
                       vk::VertexInputAttributeDescription {
                           .location {2},
                           .binding {0},
                           .format {vk::Format::eR32Uint},
-                          .offset {offsetof(
-                              ChunkDrawIndirectInstancePayload, chunk_id)}},
+                          .offset {offsetof(ChunkDrawIndirectInstancePayload, chunk_id)}},
                   }},
                   .vertex_bindings {{vk::VertexInputBindingDescription {
                       .binding {0},
@@ -362,8 +330,7 @@ namespace voxel
               gfx::vulkan::CacheableComputePipelineCreateInfo {
                   .entry_point {"main"},
                   .shader {this->renderer->getAllocator()->cacheShaderModule(
-                      shaders::load(
-                          "voxel_visibility_detection.comp"),
+                      shaders::load("voxel_visibility_detection.comp"),
                       "Voxel Visibility Detection Compute Shader")},
                   .layout {this->renderer->getAllocator()->cachePipelineLayout(
                       gfx::vulkan::CacheablePipelineLayoutCreateInfo {
@@ -371,8 +338,7 @@ namespace voxel
                               {game->getGlobalInfoDescriptorSetLayout(),
                                this->descriptor_set_layout}},
                           .push_constants {},
-                          .name {
-                              "Voxel Visibility Detection Pipeline Layout"}})},
+                          .name {"Voxel Visibility Detection Pipeline Layout"}})},
                   .name {"Voxel Visibility Detection Pipeline"}})}
         , voxel_color_calculation_pipeline {this->renderer->getAllocator()->cachePipeline(
               gfx::vulkan::CacheableComputePipelineCreateInfo {
@@ -394,21 +360,18 @@ namespace voxel
                   .stages {{
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eVertex},
-                          .shader {
-                              this->renderer->getAllocator()->cacheShaderModule(
-                                  shaders::load(
-                                      "voxel_color_transfer.vert"),
-                                  "Voxel Color Transfer Vertex "
-                                  "Shader")},
+                          .shader {this->renderer->getAllocator()->cacheShaderModule(
+                              shaders::load("voxel_color_transfer.vert"),
+                              "Voxel Color Transfer Vertex "
+                              "Shader")},
                           .entry_point {"main"}},
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eFragment},
-                          .shader {
-                              this->renderer->getAllocator()->cacheShaderModule(
-                                  shaders::load("voxel_color_transfer."
-                                                "frag"),
-                                  "Voxel Color Transfer Fragment "
-                                  "Shader")},
+                          .shader {this->renderer->getAllocator()->cacheShaderModule(
+                              shaders::load("voxel_color_transfer."
+                                            "frag"),
+                              "Voxel Color Transfer Fragment "
+                              "Shader")},
                           .entry_point {"main"}},
                   }},
                   .vertex_attributes {},
@@ -432,10 +395,8 @@ namespace voxel
                           .push_constants {},
                           .name {"Voxel Color Transfer Pipeline Layout"}})},
                   .name {"Voxel Color Transfer Pipeline"}})}
-        , chunk_descriptor_set {this->renderer->getAllocator()
-                                    ->allocateDescriptorSet(
-                                        **this->descriptor_set_layout,
-                                        "Voxel Descriptor Set")}
+        , chunk_descriptor_set {this->renderer->getAllocator()->allocateDescriptorSet(
+              **this->descriptor_set_layout, "Voxel Descriptor Set")}
         , global_descriptor_set {game->getGlobalInfoDescriptorSet()}
     {
         const auto bufferInfo = {
@@ -527,8 +488,8 @@ namespace voxel
             idx += 1;
         }
 
-        std::array<std::array<std::array<u16, 256>, 256>, 256>*
-            gpuChunksBufferPtr = &this->global_chunks_buffer.modify(0);
+        std::array<std::array<std::array<u16, 256>, 256>, 256>* gpuChunksBufferPtr =
+            &this->global_chunks_buffer.modify(0);
 
         const std::size_t len = sizeof(*gpuChunksBufferPtr);
         std::memset(gpuChunksBufferPtr, -1, len);
@@ -536,10 +497,8 @@ namespace voxel
         this->renderer->getDevice()->getDevice().updateDescriptorSets(
             static_cast<u32>(writes.size()), writes.data(), 0, nullptr);
 
-        const std::size_t bytesAllocated =
-            gfx::vulkan::bufferBytesAllocated.load();
-        const double gibAllocated =
-            static_cast<double>(bytesAllocated) / (1024 * 1024 * 1024);
+        const std::size_t bytesAllocated = gfx::vulkan::bufferBytesAllocated.load();
+        const double      gibAllocated = static_cast<double>(bytesAllocated) / (1024 * 1024 * 1024);
 
         util::logTrace("allocated {:.3} GiB", gibAllocated);
     }
@@ -548,8 +507,7 @@ namespace voxel
     {
         while (!this->global_chunks.empty())
         {
-            auto node =
-                this->global_chunks.extract(this->global_chunks.begin());
+            auto node = this->global_chunks.extract(this->global_chunks.begin());
 
             this->deallocateChunk(std::move(node.mapped()));
         }
@@ -558,9 +516,7 @@ namespace voxel
     std::vector<game::FrameGenerator::RecordObject>
     // NOLINTNEXTLINE
     ChunkManager::makeRecordObject(
-        const game::Game*                game,
-        const gfx::vulkan::BufferStager& stager,
-        game::Camera                     c)
+        const game::Game* game, const gfx::vulkan::BufferStager& stager, game::Camera c)
     {
         // util::Timer t {"end make record object"};
         // util::logTrace("starting make record obhject");
@@ -583,7 +539,30 @@ namespace voxel
                             this->voxel_face_allocator.free(a);
                         }
                     }
-                    thisChunkData.face_data    = this->meshChunkGreedy(chunkId);
+                    std::array<std::vector<GreedyVoxelFace>, 6> greedyFaces =
+                        this->meshChunkGreedy(chunkId);
+                    std::array<util::RangeAllocation, 6> allocations {};
+
+                    for (auto [thisAllocation, faces] : std::views::zip(allocations, greedyFaces))
+                    {
+                        thisAllocation =
+                            this->voxel_face_allocator.allocate(static_cast<u32>(faces.size()));
+
+                        std::copy(
+                            faces.cbegin(),
+                            faces.cend(),
+                            this->voxel_faces.getDataNonCoherent().data() + thisAllocation.offset);
+
+                        const gfx::vulkan::FlushData flush {
+                            .offset_elements {thisAllocation.offset},
+                            .size_elements {faces.size()},
+                        };
+
+                        this->voxel_faces.flush({&flush, 1});
+                    }
+
+                    thisChunkData.face_data = allocations;
+
                     thisChunkData.needs_remesh = false;
                 }
 
@@ -591,8 +570,7 @@ namespace voxel
                 bool isChunkInFrustum = false;
 
                 isChunkInFrustum |=
-                    (glm::distance(
-                         c.getPosition(), thisChunkData.position.xyz())
+                    (glm::distance(c.getPosition(), thisChunkData.position.xyz())
                      < ChunkEdgeLengthVoxels * 2);
 
                 isChunkInFrustum |=
@@ -600,49 +578,37 @@ namespace voxel
                          c.getPosition() - thisChunkData.position.xyz(),
                          glm::vec3 {ChunkEdgeLengthVoxels}))
                      && glm::all(glm::greaterThan(
-                         c.getPosition() - thisChunkData.position.xyz(),
-                         glm::vec3 {0})));
+                         c.getPosition() - thisChunkData.position.xyz(), glm::vec3 {0})));
 
                 for (auto x :
                      {thisChunkData.position.x,
                       thisChunkData.position.x + ChunkEdgeLengthVoxels / 4.0f,
                       thisChunkData.position.x + ChunkEdgeLengthVoxels / 2.0f,
-                      thisChunkData.position.x
-                          + ChunkEdgeLengthVoxels / 1.3333f,
+                      thisChunkData.position.x + ChunkEdgeLengthVoxels / 1.3333f,
                       thisChunkData.position.x + ChunkEdgeLengthVoxels})
                 {
                     for (auto y :
                          {thisChunkData.position.y,
-                          thisChunkData.position.y
-                              + ChunkEdgeLengthVoxels / 4.0f,
-                          thisChunkData.position.y
-                              + ChunkEdgeLengthVoxels / 2.0f,
-                          thisChunkData.position.y
-                              + ChunkEdgeLengthVoxels / 1.3333f,
+                          thisChunkData.position.y + ChunkEdgeLengthVoxels / 4.0f,
+                          thisChunkData.position.y + ChunkEdgeLengthVoxels / 2.0f,
+                          thisChunkData.position.y + ChunkEdgeLengthVoxels / 1.3333f,
                           thisChunkData.position.y + ChunkEdgeLengthVoxels})
                     {
                         for (auto z :
                              {thisChunkData.position.z,
-                              thisChunkData.position.z
-                                  + ChunkEdgeLengthVoxels / 4.0f,
-                              thisChunkData.position.z
-                                  + ChunkEdgeLengthVoxels / 2.0f,
-                              thisChunkData.position.z
-                                  + ChunkEdgeLengthVoxels / 1.3333f,
+                              thisChunkData.position.z + ChunkEdgeLengthVoxels / 4.0f,
+                              thisChunkData.position.z + ChunkEdgeLengthVoxels / 2.0f,
+                              thisChunkData.position.z + ChunkEdgeLengthVoxels / 1.3333f,
                               thisChunkData.position.z + ChunkEdgeLengthVoxels})
                         {
                             glm::vec4 cornerPos {x, y, z, 1.0};
 
-                            auto res =
-                                c.getPerspectiveMatrix(
-                                    *game,
-                                    game::Transform {.translation {cornerPos}})
-                                * glm::vec4 {0.0, 0.0, 0.0, 1.0};
+                            auto res = c.getPerspectiveMatrix(
+                                           *game, game::Transform {.translation {cornerPos}})
+                                     * glm::vec4 {0.0, 0.0, 0.0, 1.0};
 
-                            if (glm::all(glm::lessThan(
-                                    res.xyz() / res.w, glm::vec3 {1.0}))
-                                && glm::all(glm::greaterThan(
-                                    res.xyz() / res.w, glm::vec3 {-1.0})))
+                            if (glm::all(glm::lessThan(res.xyz() / res.w, glm::vec3 {1.0}))
+                                && glm::all(glm::greaterThan(res.xyz() / res.w, glm::vec3 {-1.0})))
                             {
                                 isChunkInFrustum = true;
                             }
@@ -657,20 +623,16 @@ namespace voxel
                     for (util::RangeAllocation a : *thisChunkData.face_data)
                     {
                         indirectCommands.push_back(vk::DrawIndirectCommand {
-                            .vertexCount {
-                                this->voxel_face_allocator.getSizeOfAllocation(
-                                    a)
-                                * 6},
+                            .vertexCount {this->voxel_face_allocator.getSizeOfAllocation(a) * 6},
                             .instanceCount {1},
                             .firstVertex {a.offset * 6},
                             .firstInstance {callNumber},
                         });
 
-                        indirectPayload.push_back(
-                            ChunkDrawIndirectInstancePayload {
-                                .position {thisChunkData.position},
-                                .normal {normal},
-                                .chunk_id {chunkId}});
+                        indirectPayload.push_back(ChunkDrawIndirectInstancePayload {
+                            .position {thisChunkData.position},
+                            .normal {normal},
+                            .chunk_id {chunkId}});
 
                         callNumber += 1;
                         normal += 1;
@@ -688,178 +650,118 @@ namespace voxel
 
         if (!indirectCommands.empty())
         {
-            stager.enqueueTransfer(
-                this->indirect_commands, 0, std::span {indirectCommands});
+            stager.enqueueTransfer(this->indirect_commands, 0, std::span {indirectCommands});
         }
 
         if (!indirectPayload.empty())
         {
-            stager.enqueueTransfer(
-                this->indirect_payload, 0, std::span {indirectPayload});
+            stager.enqueueTransfer(this->indirect_payload, 0, std::span {indirectPayload});
         }
 
-        game::FrameGenerator::RecordObject update =
-            game::FrameGenerator::RecordObject {
-                .transform {},
-                .render_pass {
-                    game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
-                .pipeline {nullptr},
-                .descriptors {},
-                .record_func {
-                    [this, indirectCommands, indirectPayload](
-                        vk::CommandBuffer commandBuffer,
-                        vk::PipelineLayout,
-                        u32)
-                    {
-                        commandBuffer.fillBuffer(
-                            *this->visibility_bricks,
-                            0,
-                            this->visibility_bricks.getDataNonCoherent()
-                                .size_bytes(),
-                            0);
+        game::FrameGenerator::RecordObject update = game::FrameGenerator::RecordObject {
+            .transform {},
+            .render_pass {game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
+            .pipeline {nullptr},
+            .descriptors {},
+            .record_func {[this, indirectCommands, indirectPayload](
+                              vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                          {
+                              commandBuffer.fillBuffer(
+                                  *this->visibility_bricks,
+                                  0,
+                                  this->visibility_bricks.getDataNonCoherent().size_bytes(),
+                                  0);
 
-                        GlobalVoxelData data {
-                            .number_of_visible_faces {},
-                            .number_of_calculating_draws_x {},
-                            .number_of_calculating_draws_y {},
-                            .number_of_calculating_draws_z {},
-                            .number_of_lights {
-                                this->light_allocator
-                                    .getUpperBoundOnAllocatedElements()},
-                        };
+                              GlobalVoxelData data {
+                                  .number_of_visible_faces {},
+                                  .number_of_calculating_draws_x {},
+                                  .number_of_calculating_draws_y {},
+                                  .number_of_calculating_draws_z {},
+                                  .number_of_lights {
+                                      this->light_allocator.getUpperBoundOnAllocatedElements()},
+                              };
 
-                        commandBuffer.updateBuffer(
-                            *this->global_voxel_data,
-                            0,
-                            sizeof(GlobalVoxelData),
-                            &data);
-                    }}};
+                              commandBuffer.updateBuffer(
+                                  *this->global_voxel_data, 0, sizeof(GlobalVoxelData), &data);
+                          }}};
 
-        game::FrameGenerator::RecordObject chunkDraw =
-            game::FrameGenerator::RecordObject {
-                .transform {game::Transform {}},
-                .render_pass {
-                    game::FrameGenerator::DynamicRenderingPass::VoxelRenderer},
-                .pipeline {this->voxel_render_pipeline},
-                .descriptors {
-                    {this->global_descriptor_set,
-                     this->chunk_descriptor_set,
-                     nullptr,
-                     nullptr}},
-                .record_func {[this, size = indirectCommands.size()](
-                                  vk::CommandBuffer  commandBuffer,
-                                  vk::PipelineLayout layout,
-                                  u32                id)
-                              {
-                                  commandBuffer.bindVertexBuffers(
-                                      0, {*this->indirect_payload}, {0});
+        game::FrameGenerator::RecordObject chunkDraw = game::FrameGenerator::RecordObject {
+            .transform {game::Transform {}},
+            .render_pass {game::FrameGenerator::DynamicRenderingPass::VoxelRenderer},
+            .pipeline {this->voxel_render_pipeline},
+            .descriptors {
+                {this->global_descriptor_set, this->chunk_descriptor_set, nullptr, nullptr}},
+            .record_func {[this, size = indirectCommands.size()](
+                              vk::CommandBuffer commandBuffer, vk::PipelineLayout layout, u32 id)
+                          {
+                              commandBuffer.bindVertexBuffers(0, {*this->indirect_payload}, {0});
 
-                                  commandBuffer.pushConstants(
-                                      layout,
-                                      vk::ShaderStageFlagBits::eVertex,
-                                      0,
-                                      sizeof(u32),
-                                      &id);
+                              commandBuffer.pushConstants(
+                                  layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(u32), &id);
 
-                                  commandBuffer.drawIndirect(
-                                      *this->indirect_commands,
-                                      0,
-                                      static_cast<u32>(size),
-                                      16);
-                              }}};
+                              commandBuffer.drawIndirect(
+                                  *this->indirect_commands, 0, static_cast<u32>(size), 16);
+                          }}};
 
-        game::FrameGenerator::RecordObject visibilityDraw =
-            game::FrameGenerator::RecordObject {
-                .transform {game::Transform {}},
-                .render_pass {game::FrameGenerator::DynamicRenderingPass::
-                                  VoxelVisibilityDetection},
-                .pipeline {this->voxel_visibility_pipeline},
-                .descriptors {
-                    {this->global_descriptor_set,
-                     this->chunk_descriptor_set,
-                     nullptr,
-                     nullptr}},
-                .record_func {
-                    [this](
-                        vk::CommandBuffer commandBuffer,
-                        vk::PipelineLayout,
-                        u32)
-                    {
-                        vk::Extent2D fbSize =
-                            this->renderer->getWindow()->getFramebufferSize();
+        game::FrameGenerator::RecordObject visibilityDraw = game::FrameGenerator::RecordObject {
+            .transform {game::Transform {}},
+            .render_pass {game::FrameGenerator::DynamicRenderingPass::VoxelVisibilityDetection},
+            .pipeline {this->voxel_visibility_pipeline},
+            .descriptors {
+                {this->global_descriptor_set, this->chunk_descriptor_set, nullptr, nullptr}},
+            .record_func {[this](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                          {
+                              vk::Extent2D fbSize =
+                                  this->renderer->getWindow()->getFramebufferSize();
 
-                        commandBuffer.dispatch(
-                            util::divideEuclidean(fbSize.width, 32u) + 1,
-                            util::divideEuclidean(fbSize.height, 32u) + 1,
-                            1);
-                    }}};
+                              commandBuffer.dispatch(
+                                  util::divideEuclidean(fbSize.width, 32u) + 1,
+                                  util::divideEuclidean(fbSize.height, 32u) + 1,
+                                  1);
+                          }}};
 
-        game::FrameGenerator::RecordObject colorCalculation =
-            game::FrameGenerator::RecordObject {
-                .transform {},
-                .render_pass {game::FrameGenerator::DynamicRenderingPass::
-                                  VoxelColorCalculation},
-                .pipeline {this->voxel_color_calculation_pipeline},
-                .descriptors {
-                    {this->global_descriptor_set,
-                     this->chunk_descriptor_set,
-                     nullptr,
-                     nullptr}},
-                .record_func {[this](
-                                  vk::CommandBuffer commandBuffer,
-                                  vk::PipelineLayout,
-                                  u32)
-                              {
-                                  commandBuffer.dispatchIndirect(
-                                      *this->global_voxel_data, 4);
-                              }}};
+        game::FrameGenerator::RecordObject colorCalculation = game::FrameGenerator::RecordObject {
+            .transform {},
+            .render_pass {game::FrameGenerator::DynamicRenderingPass::VoxelColorCalculation},
+            .pipeline {this->voxel_color_calculation_pipeline},
+            .descriptors {
+                {this->global_descriptor_set, this->chunk_descriptor_set, nullptr, nullptr}},
+            .record_func {[this](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                          {
+                              commandBuffer.dispatchIndirect(*this->global_voxel_data, 4);
+                          }}};
 
-        game::FrameGenerator::RecordObject colorTransfer =
-            game::FrameGenerator::RecordObject {
-                .transform {},
-                .render_pass {game::FrameGenerator::DynamicRenderingPass::
-                                  VoxelColorTransfer},
-                .pipeline {this->voxel_color_transfer_pipeline},
-                .descriptors {
-                    {this->global_descriptor_set,
-                     this->chunk_descriptor_set,
-                     nullptr,
-                     nullptr}},
-                .record_func {
-                    [](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
-                    {
-                        commandBuffer.draw(3, 1, 0, 0);
-                    }}};
+        game::FrameGenerator::RecordObject colorTransfer = game::FrameGenerator::RecordObject {
+            .transform {},
+            .render_pass {game::FrameGenerator::DynamicRenderingPass::VoxelColorTransfer},
+            .pipeline {this->voxel_color_transfer_pipeline},
+            .descriptors {
+                {this->global_descriptor_set, this->chunk_descriptor_set, nullptr, nullptr}},
+            .record_func {[](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                          {
+                              commandBuffer.draw(3, 1, 0, 0);
+                          }}};
 
-        return {
-            update, chunkDraw, visibilityDraw, colorCalculation, colorTransfer};
+        return {update, chunkDraw, visibilityDraw, colorCalculation, colorTransfer};
     }
 
     PointLight ChunkManager::createPointLight()
     {
-        std::expected<u32, util::IndexAllocator::OutOfBlocks>
-            maybeNewPointLightId = this->light_allocator.allocate();
+        std::expected<u32, util::IndexAllocator::OutOfBlocks> maybeNewPointLightId =
+            this->light_allocator.allocate();
 
-        util::assertFatal(
-            maybeNewPointLightId.has_value(),
-            "Failed to allocate new point light!");
+        util::assertFatal(maybeNewPointLightId.has_value(), "Failed to allocate new point light!");
 
-        this->lights_buffer.modify(*maybeNewPointLightId) =
-            InternalPointLight {};
+        this->lights_buffer.modify(*maybeNewPointLightId) = InternalPointLight {};
 
         return PointLight {*maybeNewPointLightId};
     }
 
     void ChunkManager::modifyPointLight(
-        const PointLight& l,
-        glm::vec3         position,
-        glm::vec4         colorAndPower,
-        glm::vec4         falloffs)
+        const PointLight& l, glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs)
     {
         this->lights_buffer.modify(l.id) = InternalPointLight {
-            .position {position.xyzz()},
-            .color_and_power {colorAndPower},
-            .falloffs {falloffs}};
+            .position {position.xyzz()}, .color_and_power {colorAndPower}, .falloffs {falloffs}};
     }
 
     void ChunkManager::destroyPointLight(PointLight toFree)
@@ -889,9 +791,7 @@ namespace voxel
 
         if (it == this->global_chunks.end())
         {
-            it = this->global_chunks
-                     .insert({coord, this->allocateChunk(coord * 64)})
-                     .first;
+            it = this->global_chunks.insert({coord, this->allocateChunk(coord * 64)}).first;
         }
 
         this->writeVoxelToChunk(it->second, pos, v);
@@ -904,8 +804,8 @@ namespace voxel
             "Tried to create a chunk at {}",
             glm::to_string(position));
 
-        const std::expected<u32, util::IndexAllocator::OutOfBlocks>
-            maybeThisChunkId = this->chunk_id_allocator.allocate();
+        const std::expected<u32, util::IndexAllocator::OutOfBlocks> maybeThisChunkId =
+            this->chunk_id_allocator.allocate();
 
         if (!maybeThisChunkId.has_value())
         {
@@ -920,8 +820,7 @@ namespace voxel
             .needs_remesh {true}};
 
         this->brick_maps.write(thisChunkId, BrickMap {});
-        this->gpu_chunk_data.write(
-            thisChunkId, GpuChunkData {.position {position.xyzz()}});
+        this->gpu_chunk_data.write(thisChunkId, GpuChunkData {.position {position.xyzz()}});
 
         ChunkCoordinate coord {glm::i32vec3 {
             util::divideEuclidean(position.x, 64),
@@ -929,8 +828,8 @@ namespace voxel
             util::divideEuclidean(position.z, 64),
         }};
 
-        this->global_chunks_buffer.modify(
-            0)[coord.x + 128][coord.y + 128][coord.z + 128] = *maybeThisChunkId;
+        this->global_chunks_buffer.modify(0)[coord.x + 128][coord.y + 128][coord.z + 128] =
+            *maybeThisChunkId;
 
         return Chunk {thisChunkId};
     }
@@ -970,16 +869,13 @@ namespace voxel
         }
 
         ChunkCoordinate coord {glm::i32vec3 {
-            util::divideEuclidean(
-                static_cast<i32>(cpuChunkData.position.x), 64),
-            util::divideEuclidean(
-                static_cast<i32>(cpuChunkData.position.y), 64),
-            util::divideEuclidean(
-                static_cast<i32>(cpuChunkData.position.z), 64),
+            util::divideEuclidean(static_cast<i32>(cpuChunkData.position.x), 64),
+            util::divideEuclidean(static_cast<i32>(cpuChunkData.position.y), 64),
+            util::divideEuclidean(static_cast<i32>(cpuChunkData.position.z), 64),
         }};
 
-        this->global_chunks_buffer.modify(
-            0)[coord.x + 128][coord.y + 128][coord.z + 128] = ~UINT16_C(0);
+        this->global_chunks_buffer.modify(0)[coord.x + 128][coord.y + 128][coord.z + 128] =
+            ~UINT16_C(0);
 
         toFree.id = Chunk::NullChunk;
     }
@@ -1006,165 +902,35 @@ namespace voxel
 
         if (maybeBrickPointer.isNull())
         {
-            const BrickPointer newBrickPointer =
-                this->brick_allocator.allocate();
+            const BrickPointer newBrickPointer = this->brick_allocator.allocate();
 
             maybeBrickPointer = newBrickPointer;
 
-            this->brick_parent_info.modify(maybeBrickPointer.pointer) =
-                BrickParentInformation {
-                    .parent_chunk {c.id},
-                    .position_in_parent_chunk {bC.getLinearPositionInChunk()}};
-            this->material_bricks.modify(maybeBrickPointer.pointer)
-                .fill(Voxel::NullAirEmpty);
+            this->brick_parent_info.modify(maybeBrickPointer.pointer) = BrickParentInformation {
+                .parent_chunk {c.id}, .position_in_parent_chunk {bC.getLinearPositionInChunk()}};
+            this->material_bricks.modify(maybeBrickPointer.pointer).fill(Voxel::NullAirEmpty);
             this->opacity_bricks.modify(maybeBrickPointer.pointer).fill(false);
 
             // NOLINTNEXTLINE
-            this->brick_maps.modify(c.id).data[bC.x][bC.y][bC.z] =
-                maybeBrickPointer;
+            this->brick_maps.modify(c.id).data[bC.x][bC.y][bC.z] = maybeBrickPointer;
         }
 
         // NOLINTNEXTLINE
-        this->material_bricks.modify(maybeBrickPointer.pointer)
-            .data[bP.x][bP.y][bP.z] = v;
+        this->material_bricks.modify(maybeBrickPointer.pointer).data[bP.x][bP.y][bP.z] = v;
 
         if (v == Voxel::NullAirEmpty)
         {
-            this->opacity_bricks.modify(maybeBrickPointer.pointer)
-                .write(bP, false);
+            this->opacity_bricks.modify(maybeBrickPointer.pointer).write(bP, false);
         }
         else
         {
-            this->opacity_bricks.modify(maybeBrickPointer.pointer)
-                .write(bP, true);
+            this->opacity_bricks.modify(maybeBrickPointer.pointer).write(bP, true);
         }
     }
 
-    // std::array<util::RangeAllocation, 6>
-    // ChunkManager::meshChunkNormal(u32 chunkId) // NOLINT
-    // {
-    //     std::array<util::RangeAllocation, 6> outAllocations {};
-
-    //     u32 normalDirection = 0;
-    //     for (util::RangeAllocation& a : outAllocations)
-    //     {
-    //         std::vector<GreedyVoxelFace> faces {};
-
-    //         const BrickMap& thisBrickMap = this->brick_maps.read(chunkId,
-    //         1)[0];
-
-    //         thisBrickMap.iterateOverPointers(
-    //             // NOLINTNEXTLINE
-    //             [&](BrickCoordinate bC, MaybeBrickPointer ptr)
-    //             {
-    //                 if (!ptr.isNull())
-    //                 {
-    //                     const VisibilityBrick& thisBrick =
-    //                         this->opacity_bricks.read(ptr.pointer, 1)[0];
-
-    //                     thisBrick.iterateOverVoxels(
-    //                         [&](BrickLocalPosition bP, bool isFilled)
-    //                         {
-    //                             VoxelFaceDirection dir =
-    //                                 static_cast<VoxelFaceDirection>(
-    //                                     normalDirection);
-
-    //                             ChunkLocalPosition pos =
-    //                                 assembleChunkLocalPosition(bC, bP);
-
-    //                             std::optional<ChunkLocalPosition> adjPos
-    //                             =
-    //                                 tryMakeChunkLocalPosition(
-    //                                     getDirFromDirection(dir)
-    //                                     + static_cast<glm::i8vec3>(pos));
-
-    //                             auto emit = [&]
-    //                             {
-    //                                 faces.push_back(GreedyVoxelFace {
-    //                                     .x {pos.x},
-    //                                     .y {pos.y},
-    //                                     .z {pos.z},
-    //                                     .width {1},
-    //                                     .height {1},
-    //                                     .pad {0}});
-    //                             };
-
-    //                             if (isFilled)
-    //                             {
-    //                                 if (!adjPos.has_value())
-    //                                 {
-    //                                     emit();
-    //                                 }
-    //                                 else
-    //                                 {
-    //                                     const auto [adjBC, adjBP] =
-    //                                         splitChunkLocalPosition(*adjPos);
-
-    //                                     if (adjBC == bC)
-    //                                     {
-    //                                         if (!thisBrick.read(adjBP))
-    //                                         {
-    //                                             emit();
-    //                                         }
-    //                                     }
-    //                                     else
-    //                                     {
-    //                                         MaybeBrickPointer
-    //                                         adjBrickPointer
-    //                                         =
-    //                                             thisBrickMap
-    //                                                 .data[adjBC.x][adjBC.y]
-    //                                                      [adjBC.z];
-
-    //                                         if
-    //                                         (!adjBrickPointer.isNull())
-    //                                         {
-    //                                             if (!this->opacity_bricks
-    //                                                      .read(
-    //                                                          adjBrickPointer
-    //                                                              .pointer,
-    //                                                          1)[0]
-    //                                                      .read(adjBP))
-    //                                             {
-    //                                                 emit();
-    //                                             }
-    //                                         }
-    //                                         else
-    //                                         {
-    //                                             emit();
-    //                                         }
-    //                                     }
-    //                                 }
-    //                             }
-    //                         });
-    //                 }
-    //             });
-
-    //         a = this->voxel_face_allocator.allocate(
-    //             static_cast<u32>(faces.size()));
-
-    //         std::copy(
-    //             faces.cbegin(),
-    //             faces.cend(),
-    //             this->voxel_faces.getDataNonCoherent().data() +
-    //             a.offset);
-    //         const gfx::vulkan::FlushData flush {
-    //             .offset_elements {a.offset},
-    //             .size_elements {faces.size()},
-    //         };
-    //         this->voxel_faces.flush({&flush, 1});
-
-    //         normalDirection += 1;
-    //     }
-
-    //     return outAllocations;
-    // }
-
-    std::unique_ptr<ChunkManager::DenseBitChunk>
-    ChunkManager::makeDenseBitChunk(u32 chunkId)
+    std::unique_ptr<ChunkManager::DenseBitChunk> ChunkManager::makeDenseBitChunk(u32 chunkId)
     {
-        std::unique_ptr<ChunkManager::DenseBitChunk> out =
-            std::make_unique<DenseBitChunk>();
+        std::unique_ptr<ChunkManager::DenseBitChunk> out = std::make_unique<DenseBitChunk>();
 
         const BrickMap& thisBrickMap = this->brick_maps.read(chunkId, 1)[0];
 
@@ -1174,14 +940,12 @@ namespace voxel
             {
                 if (!ptr.isNull())
                 {
-                    const OpacityBrick& thisBrick =
-                        this->opacity_bricks.read(ptr.pointer, 1)[0];
+                    const OpacityBrick& thisBrick = this->opacity_bricks.read(ptr.pointer, 1)[0];
 
                     thisBrick.iterateOverVoxels(
                         [&](BrickLocalPosition bP, bool isFilled)
                         {
-                            ChunkLocalPosition pos =
-                                assembleChunkLocalPosition(bC, bP);
+                            ChunkLocalPosition pos = assembleChunkLocalPosition(bC, bP);
 
                             if (isFilled)
                             {
@@ -1195,20 +959,17 @@ namespace voxel
         return out;
     }
 
-    std::array<util::RangeAllocation, 6>
-    ChunkManager::meshChunkGreedy(u32 chunkId) // NOLINT
+    std::array<std::vector<GreedyVoxelFace>, 6> ChunkManager::meshChunkGreedy(u32 chunkId) // NOLINT
     {
-        std::unique_ptr<DenseBitChunk> thisChunkData =
-            this->makeDenseBitChunk(chunkId);
+        std::unique_ptr<DenseBitChunk> thisChunkData = this->makeDenseBitChunk(chunkId);
 
-        std::array<util::RangeAllocation, 6> outAllocations {};
+        std::array<std::vector<GreedyVoxelFace>, 6> outFaces {};
 
         auto makeChunkSlice = [&](u32 normalId, u64 offset) -> ChunkSlice
         {
             VoxelFaceDirection dir = static_cast<VoxelFaceDirection>(normalId);
-            const auto [widthAxis, heightAxis, ascensionAxis] =
-                getDrivingAxes(dir);
-            glm::i8vec3 normal = getDirFromDirection(dir);
+            const auto [widthAxis, heightAxis, ascensionAxis] = getDrivingAxes(dir);
+            glm::i8vec3 normal                                = getDirFromDirection(dir);
 
             ChunkSlice res {}; // NOLINT
 
@@ -1222,12 +983,10 @@ namespace voxel
                     {
                         if (DenseBitChunk::isPositionInBounds(
                                 w * widthAxis + h * heightAxis
-                                + static_cast<i8>(offset) * ascensionAxis
-                                + normal)
+                                + static_cast<i8>(offset) * ascensionAxis + normal)
                             && thisChunkData->isOccupied(
                                 w * widthAxis + h * heightAxis
-                                + static_cast<i8>(offset) * ascensionAxis
-                                + normal))
+                                + static_cast<i8>(offset) * ascensionAxis + normal))
                         {
                             continue;
                         }
@@ -1245,10 +1004,8 @@ namespace voxel
         };
 
         u32 normalId = 0;
-        for (util::RangeAllocation& thisAllocation : outAllocations)
+        for (std::vector<GreedyVoxelFace>& faces : outFaces)
         {
-            std::vector<GreedyVoxelFace> faces {};
-
             for (u64 ascend = 0; ascend < 64; ++ascend)
             {
                 ChunkSlice thisSlice = makeChunkSlice(normalId, ascend);
@@ -1256,28 +1013,21 @@ namespace voxel
                 for (u64 height = 0; height < 64; ++height)
                 {
                     // NOLINTNEXTLINE
-                    for (u64 width = std::countr_zero(thisSlice.data[height]);
-                         width < 64;
-                         ++width)
+                    for (u64 width = std::countr_zero(thisSlice.data[height]); width < 64; ++width)
                     {
                         // NOLINTNEXTLINE
-                        if ((thisSlice.data[height] & (UINT64_C(1) << width))
-                            != 0ULL)
+                        if ((thisSlice.data[height] & (UINT64_C(1) << width)) != 0ULL)
                         {
-                            const u64 faceWidth =
-                                static_cast<u64>(std::countr_one(
-                                    // NOLINTNEXTLINE
-                                    thisSlice.data[height] >> width));
+                            const u64 faceWidth = static_cast<u64>(std::countr_one(
+                                // NOLINTNEXTLINE
+                                thisSlice.data[height] >> width));
 
-                            VoxelFaceDirection dir =
-                                static_cast<VoxelFaceDirection>(normalId);
-                            const auto [widthAxis, heightAxis, ascensionAxis] =
-                                getDrivingAxes(dir);
+                            VoxelFaceDirection dir = static_cast<VoxelFaceDirection>(normalId);
+                            const auto [widthAxis, heightAxis, ascensionAxis] = getDrivingAxes(dir);
 
-                            glm::i8vec3 thisRoot =
-                                ascensionAxis * static_cast<i8>(ascend)
-                                + heightAxis * static_cast<i8>(height)
-                                + widthAxis * static_cast<i8>(width);
+                            glm::i8vec3 thisRoot = ascensionAxis * static_cast<i8>(ascend)
+                                                 + heightAxis * static_cast<i8>(height)
+                                                 + widthAxis * static_cast<i8>(width);
 
                             u64 mask = 0;
 
@@ -1304,8 +1054,6 @@ namespace voxel
                                 }
                             }
 
-                            util::assertFatal(faceHeight != 0, "hmmm");
-
                             for (u64 h = height; h < (height + faceHeight); ++h)
                             {
                                 // NOLINTNEXTLINE
@@ -1321,8 +1069,6 @@ namespace voxel
                                 .pad {0}});
 
                             width += faceWidth;
-
-                            // goto next_layer;
                         }
                         else
                         {
@@ -1337,125 +1083,10 @@ namespace voxel
                 }
             }
 
-            thisAllocation = this->voxel_face_allocator.allocate(
-                static_cast<u32>(faces.size()));
-            // util::logTrace("allocating {}", thisAllocation.offset);
-
-            std::copy(
-                faces.cbegin(),
-                faces.cend(),
-                this->voxel_faces.getDataNonCoherent().data()
-                    + thisAllocation.offset);
-            const gfx::vulkan::FlushData flush {
-                .offset_elements {thisAllocation.offset},
-                .size_elements {faces.size()},
-            };
-            this->voxel_faces.flush({&flush, 1});
-
             normalId += 1;
         }
 
-        return outAllocations;
-    }
-
-    std::array<util::RangeAllocation, 6>
-    ChunkManager::meshChunkLinear(u32 chunkId) // NOLINT
-    {
-        std::unique_ptr<DenseBitChunk> trueDenseChunk =
-            this->makeDenseBitChunk(chunkId);
-
-        std::array<util::RangeAllocation, 6> outAllocations {};
-
-        u32 normalId = 0;
-        for (util::RangeAllocation& a : outAllocations)
-        {
-            std::unique_ptr<DenseBitChunk> workingChunk =
-                std::make_unique<DenseBitChunk>(*trueDenseChunk);
-
-            VoxelFaceDirection dir = static_cast<VoxelFaceDirection>(normalId);
-            const auto [widthAxis, heightAxis, ascensionAxis] =
-                getDrivingAxes(dir);
-            glm::i8vec3 normal = getDirFromDirection(dir);
-
-            std::vector<GreedyVoxelFace> faces {};
-
-            for (i8 ascend = 0; ascend < 64; ++ascend)
-            {
-                for (i8 height = 0; height < 64; ++height)
-                {
-                    for (i8 width = 0; width < 64; ++width)
-                    {
-                        glm::i8vec3 thisRoot = ascensionAxis * ascend
-                                             + heightAxis * height
-                                             + widthAxis * width;
-
-                        if (!(workingChunk->isOccupied(thisRoot)))
-                        {
-                            continue;
-                        }
-
-                        if (workingChunk->isOccupied(thisRoot + normal))
-                        {
-                            continue;
-                        }
-
-                        i8 widthFaces = 0;
-
-                        while (DenseBitChunk::isPositionInBounds(
-                                   thisRoot + (widthFaces * widthAxis))
-                               && workingChunk->isOccupied(
-                                   thisRoot + (widthFaces * widthAxis)))
-                        {
-                            if (DenseBitChunk::isPositionInBounds(
-                                    normal + thisRoot
-                                    + (widthFaces * widthAxis))
-                                && workingChunk->isOccupied(
-                                    normal + thisRoot
-                                    + (widthFaces * widthAxis)))
-                            {
-                                break;
-                            }
-                            else
-                            {
-                                widthFaces += 1;
-                            }
-                        }
-
-                        util::assertFatal(
-                            widthFaces > 0 && widthFaces <= 64,
-                            " {} ",
-                            widthFaces);
-
-                        faces.push_back(GreedyVoxelFace {
-                            .x {static_cast<u32>(thisRoot.x)},
-                            .y {static_cast<u32>(thisRoot.y)},
-                            .z {static_cast<u32>(thisRoot.z)},
-                            .width {static_cast<u32>(widthFaces - 1)},
-                            .height {0},
-                            .pad {0}});
-
-                        width += widthFaces - 1; // NOLINT
-                    }
-                }
-            }
-
-            a = this->voxel_face_allocator.allocate(
-                static_cast<u32>(faces.size()));
-
-            std::copy(
-                faces.cbegin(),
-                faces.cend(),
-                this->voxel_faces.getDataNonCoherent().data() + a.offset);
-            const gfx::vulkan::FlushData flush {
-                .offset_elements {a.offset},
-                .size_elements {faces.size()},
-            };
-            this->voxel_faces.flush({&flush, 1});
-
-            normalId += 1;
-        }
-
-        return outAllocations;
+        return outFaces;
     }
 
 } // namespace voxel

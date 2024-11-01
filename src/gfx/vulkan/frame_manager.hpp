@@ -14,8 +14,7 @@ namespace gfx::vulkan
 
     constexpr std::size_t FramesInFlight = 3;
     constexpr std::size_t TimeoutNs =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(
-            std::chrono::duration<std::size_t> {5})
+        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<std::size_t> {5})
             .count();
 
     class Frame
@@ -65,8 +64,8 @@ namespace gfx::vulkan
 
         // std::size_t is the flying frame index
         // u32 is the swapchain image's index
-        [[nodiscard]] std::expected<void, Frame::ResizeNeeded> recordAndDisplay(
-            std::function<void(std::size_t, vk::CommandBuffer, u32)>);
+        [[nodiscard]] std::expected<void, Frame::ResizeNeeded>
+            recordAndDisplay(std::function<void(std::size_t, vk::CommandBuffer, u32)>);
     private:
         vk::Device                        device;
         std::optional<vk::Fence>          previous_frame_finished_fence;

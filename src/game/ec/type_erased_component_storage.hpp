@@ -20,24 +20,21 @@ namespace game::ec
         TypeErasedComponentStorage() noexcept  = default;
         ~TypeErasedComponentStorage() noexcept = default;
 
-        TypeErasedComponentStorage(const TypeErasedComponentStorage&) = delete;
-        TypeErasedComponentStorage(TypeErasedComponentStorage&&)      = default;
-        TypeErasedComponentStorage&
-        operator= (const TypeErasedComponentStorage&) = delete;
-        TypeErasedComponentStorage&
-        operator= (TypeErasedComponentStorage&&) = default;
+        TypeErasedComponentStorage(const TypeErasedComponentStorage&)             = delete;
+        TypeErasedComponentStorage(TypeErasedComponentStorage&&)                  = default;
+        TypeErasedComponentStorage& operator= (const TypeErasedComponentStorage&) = delete;
+        TypeErasedComponentStorage& operator= (TypeErasedComponentStorage&&)      = default;
 
         template<Component C>
         [[nodiscard]] u32 addComponent(Entity parent, C&& c)
         {
             if (this->initalized_data == nullptr)
             {
-                this->initalized_data = std::make_unique<InitalizedData>(
-                    util::ZSTTypeWrapper<C> {});
+                this->initalized_data =
+                    std::make_unique<InitalizedData>(util::ZSTTypeWrapper<C> {});
             }
 
-            return this->initalized_data->addComponent<C>(
-                parent, std::forward<C>(c));
+            return this->initalized_data->addComponent<C>(parent, std::forward<C>(c));
         }
 
         template<Component C>
@@ -75,8 +72,7 @@ namespace game::ec
                 , allocator {DefaultComponentsAmount}
                 , parent_entities {DefaultComponentsAmount, Entity {}}
                 , owned_storage {reinterpret_cast<std::byte*>(operator new (
-                      sizeof(T) * DefaultComponentsAmount,
-                      std::align_val_t {alignof(T)}))}
+                      sizeof(T) * DefaultComponentsAmount, std::align_val_t {alignof(T)}))}
             {}
 
             ~InitalizedData()
@@ -85,13 +81,10 @@ namespace game::ec
                     [&](std::size_t idxToDestroy)
                     {
                         this->type_info.destructor(
-                            this->owned_storage
-                            + this->type_info.size * idxToDestroy);
+                            this->owned_storage + this->type_info.size * idxToDestroy);
                     });
 
-                operator delete (
-                    this->owned_storage,
-                    std::align_val_t {this->type_info.align});
+                operator delete (this->owned_storage, std::align_val_t {this->type_info.align});
             }
 
             InitalizedData(const InitalizedData&)             = delete;
@@ -101,32 +94,24 @@ namespace game::ec
 
             void realloc(std::size_t newLength)
             {
-                std::byte* newOwnedStorage =
-                    reinterpret_cast<std::byte*>(operator new (
-                        this->type_info.size * newLength,
-                        std::align_val_t {this->type_info.align}));
+                std::byte* newOwnedStorage = reinterpret_cast<std::byte*>(operator new (
+                    this->type_info.size * newLength, std::align_val_t {this->type_info.align}));
 
                 this->allocator.iterateThroughAllocatedElements(
                     [&](std::size_t idxToMoveToNewArray)
                     {
                         this->type_info.uninitialized_move_constructor(
-                            newOwnedStorage
-                                + this->type_info.size * idxToMoveToNewArray,
-                            this->owned_storage
-                                + this->type_info.size * idxToMoveToNewArray);
+                            newOwnedStorage + this->type_info.size * idxToMoveToNewArray,
+                            this->owned_storage + this->type_info.size * idxToMoveToNewArray);
 
                         this->type_info.destructor(
-                            this->owned_storage
-                            + this->type_info.size * idxToMoveToNewArray);
+                            this->owned_storage + this->type_info.size * idxToMoveToNewArray);
                     });
 
-                operator delete (
-                    this->owned_storage,
-                    std::align_val_t {this->type_info.align});
+                operator delete (this->owned_storage, std::align_val_t {this->type_info.align});
                 this->owned_storage = newOwnedStorage;
 
-                this->allocator.updateAvailableBlockAmount(
-                    static_cast<u32>(newLength));
+                this->allocator.updateAvailableBlockAmount(static_cast<u32>(newLength));
                 this->parent_entities.resize(newLength, Entity {});
             }
 
@@ -135,8 +120,8 @@ namespace game::ec
                       && std::is_nothrow_move_constructible_v<C>
             u32 addComponent(Entity parent, C&& c)
             {
-                std::expected<u32, util::IndexAllocator::OutOfBlocks>
-                    allocationResult = this->allocator.allocate();
+                std::expected<u32, util::IndexAllocator::OutOfBlocks> allocationResult =
+                    this->allocator.allocate();
 
                 if (!allocationResult.has_value())
                 {
@@ -149,8 +134,7 @@ namespace game::ec
 
                 this->parent_entities[indexToInsert] = parent;
 
-                new (this->owned_storage + sizeof(C) * indexToInsert)
-                    C {std::forward<C>(c)};
+                new (this->owned_storage + sizeof(C) * indexToInsert) C {std::forward<C>(c)};
 
                 return indexToInsert;
             }
@@ -158,8 +142,7 @@ namespace game::ec
             template<class C>
             C& modifyComponent(u32 idx)
             {
-                return *reinterpret_cast<C*>(
-                    this->owned_storage + sizeof(C) * idx);
+                return *reinterpret_cast<C*>(this->owned_storage + sizeof(C) * idx);
             }
 
             template<class C>
@@ -168,11 +151,10 @@ namespace game::ec
                 this->allocator.free(idx);
                 this->parent_entities[idx] = Entity {};
 
-                C out {std::move(*reinterpret_cast<C*>(
-                    this->owned_storage + this->type_info.size * idx))};
+                C out {std::move(
+                    *reinterpret_cast<C*>(this->owned_storage + this->type_info.size * idx))};
 
-                this->type_info.destructor(
-                    this->owned_storage + this->type_info.size * idx);
+                this->type_info.destructor(this->owned_storage + this->type_info.size * idx);
 
                 return out;
             }
@@ -181,8 +163,7 @@ namespace game::ec
             {
                 this->allocator.free(idx);
                 this->parent_entities[idx] = Entity {};
-                this->type_info.destructor(
-                    this->owned_storage + this->type_info.size * idx);
+                this->type_info.destructor(this->owned_storage + this->type_info.size * idx);
             }
 
             template<Component C>
@@ -193,8 +174,7 @@ namespace game::ec
                     {
                         func(
                             this->parent_entities[idx],
-                            *reinterpret_cast<C*>(
-                                this->owned_storage + sizeof(C) * idx));
+                            *reinterpret_cast<C*>(this->owned_storage + sizeof(C) * idx));
                     });
             }
 

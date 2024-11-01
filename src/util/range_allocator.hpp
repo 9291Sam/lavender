@@ -41,10 +41,9 @@ namespace util
         RangeAllocator& operator= (const RangeAllocator&)     = delete;
         RangeAllocator& operator= (RangeAllocator&&) noexcept = default;
 
-        [[nodiscard]] RangeAllocation allocate(
-            u32 size, std::source_location = std::source_location::current());
-        [[nodiscard]] std::expected<RangeAllocation, OutOfBlocks>
-        tryAllocate(u32 size);
+        [[nodiscard]] RangeAllocation
+        allocate(u32 size, std::source_location = std::source_location::current());
+        [[nodiscard]] std::expected<RangeAllocation, OutOfBlocks> tryAllocate(u32 size);
 
         [[nodiscard]] u32 getSizeOfAllocation(RangeAllocation) const;
 

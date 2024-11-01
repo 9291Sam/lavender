@@ -68,15 +68,13 @@ namespace gfx::vulkan
         {
             for (const vk::LayerProperties& availableLayer : availableLayers)
             {
-                if (std::strcmp(availableLayer.layerName.data(), requestedLayer)
-                    == 0)
+                if (std::strcmp(availableLayer.layerName.data(), requestedLayer) == 0)
                 {
                     goto next_layer;
                 }
             }
 
-            util::assertFatal(
-                false, "Required layer {} was not available!", requestedLayer);
+            util::assertFatal(false, "Required layer {} was not available!", requestedLayer);
         next_layer: {}
         }
 
@@ -97,22 +95,16 @@ namespace gfx::vulkan
 
         for (const char* requestedExtension : extensions)
         {
-            for (const vk::ExtensionProperties& availableExtension :
-                 availableExtensions)
+            for (const vk::ExtensionProperties& availableExtension : availableExtensions)
             {
-                if (std::strcmp(
-                        availableExtension.extensionName.data(),
-                        requestedExtension)
-                    == 0)
+                if (std::strcmp(availableExtension.extensionName.data(), requestedExtension) == 0)
                 {
                     goto next_extension;
                 }
             }
 
             util::assertFatal(
-                false,
-                "Required extension {} was not available!",
-                requestedExtension);
+                false, "Required extension {} was not available!", requestedExtension);
         next_extension: {}
 
             // util::logTrace(
@@ -123,10 +115,9 @@ namespace gfx::vulkan
             [](VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                VkDebugUtilsMessageTypeFlagsEXT /*messageType*/,
                const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-               [[maybe_unused]] void* pUserData) -> vk::Bool32
+               [[maybe_unused]] void*                      pUserData) -> vk::Bool32
         {
-            switch (static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(
-                messageSeverity))
+            switch (static_cast<vk::DebugUtilsMessageSeverityFlagBitsEXT>(messageSeverity))
             {
             case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
                 util::logTrace("{}", pCallbackData->pMessage);
@@ -190,8 +181,7 @@ namespace gfx::vulkan
         if constexpr (util::isDebugBuild())
         {
             this->debug_messenger =
-                this->instance->createDebugUtilsMessengerEXTUnique(
-                    debugMessengerCreateInfo);
+                this->instance->createDebugUtilsMessengerEXTUnique(debugMessengerCreateInfo);
         }
     }
 

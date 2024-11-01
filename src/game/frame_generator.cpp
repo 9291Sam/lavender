@@ -26,8 +26,7 @@ namespace game
             renderer->getWindow()->getFramebufferSize(),
             vk::Format::eD32Sfloat,
             vk::ImageLayout::eUndefined,
-            vk::ImageUsageFlagBits::eDepthStencilAttachment
-                | vk::ImageUsageFlagBits::eSampled,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled,
             vk::ImageAspectFlagBits::eDepth,
             vk::ImageTiling::eOptimal,
             vk::MemoryPropertyFlagBits::eDeviceLocal,
@@ -35,19 +34,15 @@ namespace game
 
         gfx::vulkan::Buffer<glm::mat4> mvpMatrices {
             renderer->getAllocator(),
-            vk::BufferUsageFlagBits::eUniformBuffer
-                | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-                | vk::MemoryPropertyFlagBits::eHostVisible,
+            vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
             1024,
             "Global MVP Matrices"};
 
         gfx::vulkan::Buffer<GlobalFrameInfo> globalFrameInfo {
             renderer->getAllocator(),
-            vk::BufferUsageFlagBits::eUniformBuffer
-                | vk::BufferUsageFlagBits::eTransferDst,
-            vk::MemoryPropertyFlagBits::eDeviceLocal
-                | vk::MemoryPropertyFlagBits::eHostVisible,
+            vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
+            vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
             1,
             "Global Frame Info"};
 
@@ -63,35 +58,33 @@ namespace game
             renderer->getWindow()->getFramebufferSize(),
             vk::Format::eR32Uint,
             vk::ImageLayout::eUndefined,
-            vk::ImageUsageFlagBits::eColorAttachment
-                | vk::ImageUsageFlagBits::eStorage,
+            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
             vk::ImageAspectFlagBits::eColor,
             vk::ImageTiling::eOptimal,
             vk::MemoryPropertyFlagBits::eDeviceLocal,
             "Visible Voxel Image"};
 
         vk::UniqueSampler doNothingSampler =
-            renderer->getDevice()->getDevice().createSamplerUnique(
-                vk::SamplerCreateInfo {
-                    .sType {vk::StructureType::eSamplerCreateInfo},
-                    .pNext {nullptr},
-                    .flags {},
-                    .magFilter {vk::Filter::eLinear},
-                    .minFilter {vk::Filter::eLinear},
-                    .mipmapMode {vk::SamplerMipmapMode::eLinear},
-                    .addressModeU {vk::SamplerAddressMode::eRepeat},
-                    .addressModeV {vk::SamplerAddressMode::eRepeat},
-                    .addressModeW {vk::SamplerAddressMode::eRepeat},
-                    .mipLodBias {},
-                    .anisotropyEnable {vk::False},
-                    .maxAnisotropy {1.0f},
-                    .compareEnable {vk::False},
-                    .compareOp {vk::CompareOp::eNever},
-                    .minLod {0},
-                    .maxLod {1},
-                    .borderColor {vk::BorderColor::eFloatTransparentBlack},
-                    .unnormalizedCoordinates {},
-                });
+            renderer->getDevice()->getDevice().createSamplerUnique(vk::SamplerCreateInfo {
+                .sType {vk::StructureType::eSamplerCreateInfo},
+                .pNext {nullptr},
+                .flags {},
+                .magFilter {vk::Filter::eLinear},
+                .minFilter {vk::Filter::eLinear},
+                .mipmapMode {vk::SamplerMipmapMode::eLinear},
+                .addressModeU {vk::SamplerAddressMode::eRepeat},
+                .addressModeV {vk::SamplerAddressMode::eRepeat},
+                .addressModeW {vk::SamplerAddressMode::eRepeat},
+                .mipLodBias {},
+                .anisotropyEnable {vk::False},
+                .maxAnisotropy {1.0f},
+                .compareEnable {vk::False},
+                .compareOp {vk::CompareOp::eNever},
+                .minLod {0},
+                .maxLod {1},
+                .borderColor {vk::BorderColor::eFloatTransparentBlack},
+                .unnormalizedCoordinates {},
+            });
 
         if constexpr (util::isDebugBuild())
         {
@@ -195,15 +188,12 @@ namespace game
         };
     }
 
-    std::strong_ordering
-    FrameGenerator::RecordObject::RecordObject::operator<=> (
+    std::strong_ordering FrameGenerator::RecordObject::RecordObject::operator<=> (
         const RecordObject& other) const noexcept
     {
-        if (util::toUnderlying(this->render_pass)
-            != util::toUnderlying(other.render_pass))
+        if (util::toUnderlying(this->render_pass) != util::toUnderlying(other.render_pass))
         {
-            return util::toUnderlying(this->render_pass)
-               <=> util::toUnderlying(other.render_pass);
+            return util::toUnderlying(this->render_pass) <=> util::toUnderlying(other.render_pass);
         }
 
         if (this->pipeline != other.pipeline)
@@ -211,8 +201,7 @@ namespace game
             return this->pipeline <=> other.pipeline;
         }
 
-        if (this->pipeline && other.pipeline
-            && this->pipeline->get() != other.pipeline->get())
+        if (this->pipeline && other.pipeline && this->pipeline->get() != other.pipeline->get())
         {
             return this->pipeline->get() <=> other.pipeline->get();
         }
@@ -228,95 +217,62 @@ namespace game
     FrameGenerator::FrameGenerator(const game::Game* game_)
         : game {game_}
         , has_resize_ocurred {true}
-        , set_layout {this->game->getRenderer()
-                          ->getAllocator()
-                          ->cacheDescriptorSetLayout(
-                              gfx::vulkan::
-                                  CacheableDescriptorSetLayoutCreateInfo {
-                                      .bindings {
-                                          vk::DescriptorSetLayoutBinding {
-                                              .binding {0},
-                                              .descriptorType {
-                                                  vk::DescriptorType::
-                                                      eUniformBuffer},
-                                              .descriptorCount {1},
-                                              .stageFlags {
-                                                  vk::ShaderStageFlagBits::
-                                                      eVertex
-                                                  | vk::ShaderStageFlagBits::
-                                                      eFragment
-                                                  | vk::ShaderStageFlagBits::
-                                                      eCompute},
-                                              .pImmutableSamplers {nullptr},
-                                          },
-                                          vk::DescriptorSetLayoutBinding {
-                                              .binding {1},
-                                              .descriptorType {
-                                                  vk::DescriptorType::
-                                                      eUniformBuffer},
-                                              .descriptorCount {1},
-                                              .stageFlags {
-                                                  vk::ShaderStageFlagBits::
-                                                      eVertex
-                                                  | vk::ShaderStageFlagBits::
-                                                      eFragment
-                                                  | vk::ShaderStageFlagBits::
-                                                      eCompute},
-                                              .pImmutableSamplers {nullptr},
-                                          },
-                                          vk::DescriptorSetLayoutBinding {
-                                              .binding {2},
-                                              .descriptorType {
-                                                  vk::DescriptorType::
-                                                      eSampledImage},
-                                              .descriptorCount {1},
-                                              .stageFlags {
-                                                  vk::ShaderStageFlagBits::
-                                                      eVertex
-                                                  | vk::ShaderStageFlagBits::
-                                                      eFragment
-                                                  | vk::ShaderStageFlagBits::
-                                                      eCompute},
-                                              .pImmutableSamplers {nullptr},
-                                          },
-                                          vk::DescriptorSetLayoutBinding {
-                                              .binding {3},
-                                              .descriptorType {
-                                                  vk::DescriptorType::
-                                                      eStorageImage},
-                                              .descriptorCount {1},
-                                              .stageFlags {
-                                                  vk::ShaderStageFlagBits::
-                                                      eVertex
-                                                  | vk::ShaderStageFlagBits::
-                                                      eFragment
-                                                  | vk::ShaderStageFlagBits::
-                                                      eCompute},
-                                              .pImmutableSamplers {nullptr},
-                                          },
-                                          vk::DescriptorSetLayoutBinding {
-                                              .binding {4},
-                                              .descriptorType {
-                                                  vk::DescriptorType::eSampler},
-                                              .descriptorCount {1},
-                                              .stageFlags {
-                                                  vk::ShaderStageFlagBits::
-                                                      eVertex
-                                                  | vk::ShaderStageFlagBits::
-                                                      eFragment
-                                                  | vk::ShaderStageFlagBits::
-                                                      eCompute},
-                                              .pImmutableSamplers {nullptr},
-                                          },
-                                      },
-                                      .name {"Global Descriptor Set Layout"}})}
+        , set_layout {this->game->getRenderer()->getAllocator()->cacheDescriptorSetLayout(
+              gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo {
+                  .bindings {
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {0},
+                          .descriptorType {vk::DescriptorType::eUniformBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {1},
+                          .descriptorType {vk::DescriptorType::eUniformBuffer},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {2},
+                          .descriptorType {vk::DescriptorType::eSampledImage},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {3},
+                          .descriptorType {vk::DescriptorType::eStorageImage},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {4},
+                          .descriptorType {vk::DescriptorType::eSampler},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                  },
+                  .name {"Global Descriptor Set Layout"}})}
         , global_info_descriptor_set {this->game->getRenderer()
                                           ->getAllocator()
                                           ->allocateDescriptorSet(
-                                              **this->set_layout,
-                                              "Global Descriptor Set")}
-        , global_descriptors {makeGlobalDescriptors(
-              this->game->getRenderer(), this->global_info_descriptor_set)}
+                                              **this->set_layout, "Global Descriptor Set")}
+        , global_descriptors {
+              makeGlobalDescriptors(this->game->getRenderer(), this->global_info_descriptor_set)}
     {}
 
     void FrameGenerator::internalGenerateFrame(
@@ -328,8 +284,8 @@ namespace game
     {
         std::array<
             std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>,
-            static_cast<std::size_t>(FrameGenerator::DynamicRenderingPass::
-                                         DynamicRenderingPassMaxValue)>
+            static_cast<std::size_t>(
+                FrameGenerator::DynamicRenderingPass::DynamicRenderingPassMaxValue)>
             recordablesByPass;
 
         std::vector<glm::mat4> localMvpMatrices {};
@@ -346,8 +302,8 @@ namespace game
 
             if (o.transform.has_value())
             {
-                localMvpMatrices.push_back(this->camera.getPerspectiveMatrix(
-                    *this->game, *o.transform));
+                localMvpMatrices.push_back(
+                    this->camera.getPerspectiveMatrix(*this->game, *o.transform));
 
                 thisMatrixId = nextFreeMvpMatrix;
 
@@ -356,8 +312,7 @@ namespace game
                 util::assertFatal(thisMatrixId < 1024, "too many matriices");
             }
 
-            recordablesByPass
-                .at(static_cast<std::size_t>(util::toUnderlying(o.render_pass)))
+            recordablesByPass.at(static_cast<std::size_t>(util::toUnderlying(o.render_pass)))
                 .push_back({&o, thisMatrixId});
         }
 
@@ -378,8 +333,8 @@ namespace game
             sizeof(GlobalFrameInfo),
             &thisFrameInfo);
 
-        for (std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>&
-                 recordVec : recordablesByPass)
+        for (std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>& recordVec :
+             recordablesByPass)
         {
             std::sort(
                 recordVec.begin(),
@@ -392,8 +347,7 @@ namespace game
 
         const vk::Extent2D renderExtent = swapchain.getExtent();
 
-        const vk::Rect2D scissor {
-            .offset {vk::Offset2D {.x {0}, .y {0}}}, .extent {renderExtent}};
+        const vk::Rect2D scissor {.offset {vk::Offset2D {.x {0}, .y {0}}}, .extent {renderExtent}};
 
         const vk::Viewport renderViewport {
             .x {0.0},
@@ -404,14 +358,11 @@ namespace game
             .maxDepth {1.0},
         };
 
-        const gfx::vulkan::Device& device =
-            *this->game->getRenderer()->getDevice();
+        const gfx::vulkan::Device& device = *this->game->getRenderer()->getDevice();
 
-        const vk::Image thisSwapchainImage =
-            swapchain.getImages()[swapchainImageIdx];
-        const vk::ImageView thisSwapchainImageView =
-            swapchain.getViews()[swapchainImageIdx];
-        const u32 graphicsQueueIndex =
+        const vk::Image     thisSwapchainImage     = swapchain.getImages()[swapchainImageIdx];
+        const vk::ImageView thisSwapchainImageView = swapchain.getViews()[swapchainImageIdx];
+        const u32           graphicsQueueIndex =
             device // NOLINT
                 .getFamilyOfQueueType(gfx::vulkan::Device::QueueType::Graphics)
                 .value();
@@ -428,9 +379,8 @@ namespace game
             if (currentlyBoundPipeline != **o.pipeline)
             {
                 commandBuffer.bindPipeline(
-                    this->game->getRenderer()
-                        ->getAllocator()
-                        ->lookupPipelineBindPoint(**o.pipeline),
+                    this->game->getRenderer()->getAllocator()->lookupPipelineBindPoint(
+                        **o.pipeline),
                     **o.pipeline);
             }
 
@@ -446,12 +396,10 @@ namespace game
                     }
 
                     commandBuffer.bindDescriptorSets(
-                        this->game->getRenderer()
-                            ->getAllocator()
-                            ->lookupPipelineBindPoint(**o.pipeline),
-                        **this->game->getRenderer()
-                              ->getAllocator()
-                              ->lookupPipelineLayout(**o.pipeline),
+                        this->game->getRenderer()->getAllocator()->lookupPipelineBindPoint(
+                            **o.pipeline),
+                        **this->game->getRenderer()->getAllocator()->lookupPipelineLayout(
+                            **o.pipeline),
                         i,
                         {o.descriptors[i]}, // NOLINT
                         {});
@@ -471,16 +419,14 @@ namespace game
 
             commandBuffer.beginRendering(info);
 
-            for (const auto [o, matrixId] :
-                 recordablesByPass.at(static_cast<std::size_t>(p)))
+            for (const auto [o, matrixId] : recordablesByPass.at(static_cast<std::size_t>(p)))
             {
                 updateBindings(*o);
 
                 o->record_func(
                     commandBuffer,
-                    **this->game->getRenderer()
-                          ->getAllocator()
-                          ->lookupPipelineLayout(**o->pipeline),
+                    **this->game->getRenderer()->getAllocator()->lookupPipelineLayout(
+                        **o->pipeline),
                     matrixId);
             }
 
@@ -491,8 +437,7 @@ namespace game
         {
             clearBindings();
 
-            for (const auto [o, matrixId] :
-                 recordablesByPass[static_cast<std::size_t>(p)])
+            for (const auto [o, matrixId] : recordablesByPass[static_cast<std::size_t>(p)])
             {
                 updateBindings(*o);
 
@@ -502,8 +447,7 @@ namespace game
 
         auto doTransferPass = [&](DynamicRenderingPass p)
         {
-            for (const auto [o, matrixId] :
-                 recordablesByPass[static_cast<std::size_t>(p)])
+            for (const auto [o, matrixId] : recordablesByPass[static_cast<std::size_t>(p)])
             {
                 o->record_func(commandBuffer, nullptr, 0);
             }
@@ -526,8 +470,7 @@ namespace game
 
         if (this->has_resize_ocurred)
         {
-            const std::span<const vk::Image> swapchainImages =
-                swapchain.getImages();
+            const std::span<const vk::Image> swapchainImages = swapchain.getImages();
 
             std::vector<vk::ImageMemoryBarrier> swapchainMemoryBarriers {};
             swapchainMemoryBarriers.reserve(swapchainImages.size());
@@ -571,8 +514,7 @@ namespace game
                     .sType {vk::StructureType::eImageMemoryBarrier},
                     .pNext {nullptr},
                     .srcAccessMask {vk::AccessFlagBits::eNone},
-                    .dstAccessMask {
-                        vk::AccessFlagBits::eDepthStencilAttachmentRead},
+                    .dstAccessMask {vk::AccessFlagBits::eDepthStencilAttachmentRead},
                     .oldLayout {vk::ImageLayout::eUndefined},
                     .newLayout {vk::ImageLayout::eDepthAttachmentOptimal},
                     .srcQueueFamilyIndex {graphicsQueueIndex},
@@ -644,10 +586,8 @@ namespace game
             {vk::ImageMemoryBarrier {
                 .sType {vk::StructureType::eImageMemoryBarrier},
                 .pNext {nullptr},
-                .srcAccessMask {
-                    vk::AccessFlagBits::eDepthStencilAttachmentRead},
-                .dstAccessMask {
-                    vk::AccessFlagBits::eDepthStencilAttachmentWrite},
+                .srcAccessMask {vk::AccessFlagBits::eDepthStencilAttachmentRead},
+                .dstAccessMask {vk::AccessFlagBits::eDepthStencilAttachmentWrite},
                 .oldLayout {vk::ImageLayout::eDepthAttachmentOptimal},
                 .newLayout {vk::ImageLayout::eDepthAttachmentOptimal},
                 .srcQueueFamilyIndex {graphicsQueueIndex},
@@ -693,8 +633,7 @@ namespace game
             const vk::RenderingAttachmentInfo colorAttachmentInfo {
                 .sType {vk::StructureType::eRenderingAttachmentInfo},
                 .pNext {nullptr},
-                .imageView {
-                    this->global_descriptors.visible_voxel_image.getView()},
+                .imageView {this->global_descriptors.visible_voxel_image.getView()},
                 .imageLayout {vk::ImageLayout::eColorAttachmentOptimal},
                 .resolveMode {vk::ResolveModeFlagBits::eNone},
                 .resolveImageView {nullptr},
@@ -702,8 +641,7 @@ namespace game
                 .loadOp {vk::AttachmentLoadOp::eClear},
                 .storeOp {vk::AttachmentStoreOp::eStore},
                 .clearValue {
-                    vk::ClearColorValue {
-                        .uint32 {{~u32 {0}, ~u32 {0}, ~u32 {0}, ~u32 {0}}}},
+                    vk::ClearColorValue {.uint32 {{~u32 {0}, ~u32 {0}, ~u32 {0}, ~u32 {0}}}},
                 },
             };
 
@@ -718,8 +656,7 @@ namespace game
                 .loadOp {vk::AttachmentLoadOp::eClear},
                 .storeOp {vk::AttachmentStoreOp::eStore},
                 .clearValue {
-                    .depthStencil {vk::ClearDepthStencilValue {
-                        .depth {1.0}, .stencil {0}}},
+                    .depthStencil {vk::ClearDepthStencilValue {.depth {1.0}, .stencil {0}}},
                 }};
 
             const vk::RenderingInfo voxelRenderPassInfo {
@@ -735,8 +672,7 @@ namespace game
                 .pStencilAttachment {nullptr},
             };
 
-            doRenderPass(
-                DynamicRenderingPass::VoxelRenderer, voxelRenderPassInfo);
+            doRenderPass(DynamicRenderingPass::VoxelRenderer, voxelRenderPassInfo);
         }
 
         // barrier on visible voxel image to make it readable
@@ -814,8 +750,7 @@ namespace game
                 .loadOp {vk::AttachmentLoadOp::eClear},
                 .storeOp {vk::AttachmentStoreOp::eStore},
                 .clearValue {
-                    vk::ClearColorValue {
-                        .float32 {{0.709f, 0.494f, 0.862f, 1.0f}}},
+                    vk::ClearColorValue {.float32 {{0.709f, 0.494f, 0.862f, 1.0f}}},
                 },
             };
 
@@ -833,9 +768,7 @@ namespace game
             };
 
             // clear swapchain image
-            doRenderPass(
-                DynamicRenderingPass::VoxelColorTransfer,
-                voxelColorTransferRenderingInfo);
+            doRenderPass(DynamicRenderingPass::VoxelColorTransfer, voxelColorTransferRenderingInfo);
         }
 
         // Simple Color
@@ -878,8 +811,7 @@ namespace game
                 .pStencilAttachment {nullptr},
             };
 
-            doRenderPass(
-                DynamicRenderingPass::SimpleColor, simpleColorRenderingInfo);
+            doRenderPass(DynamicRenderingPass::SimpleColor, simpleColorRenderingInfo);
         }
 
         commandBuffer.pipelineBarrier(
@@ -915,10 +847,8 @@ namespace game
             {vk::ImageMemoryBarrier {
                 .sType {vk::StructureType::eImageMemoryBarrier},
                 .pNext {nullptr},
-                .srcAccessMask {
-                    vk::AccessFlagBits::eDepthStencilAttachmentWrite},
-                .dstAccessMask {
-                    vk::AccessFlagBits::eDepthStencilAttachmentRead},
+                .srcAccessMask {vk::AccessFlagBits::eDepthStencilAttachmentWrite},
+                .dstAccessMask {vk::AccessFlagBits::eDepthStencilAttachmentRead},
                 .oldLayout {vk::ImageLayout::eDepthAttachmentOptimal},
                 .newLayout {vk::ImageLayout::eDepthAttachmentOptimal},
                 .srcQueueFamilyIndex {graphicsQueueIndex},
@@ -933,8 +863,8 @@ namespace game
             }});
     }
 
-    void FrameGenerator::generateFrame(
-        Camera newCamera, std::span<const RecordObject> recordObjects)
+    void
+    FrameGenerator::generateFrame(Camera newCamera, std::span<const RecordObject> recordObjects)
     {
         const bool resizeOcurred = this->game->getRenderer()->recordOnThread(
             [&](vk::CommandBuffer       commandBuffer,
@@ -943,11 +873,7 @@ namespace game
                 std::size_t             flyingFrameIdx)
             {
                 this->internalGenerateFrame(
-                    commandBuffer,
-                    swapchainImageIdx,
-                    swapchain,
-                    flyingFrameIdx,
-                    recordObjects);
+                    commandBuffer, swapchainImageIdx, swapchain, flyingFrameIdx, recordObjects);
             });
 
         this->has_resize_ocurred = resizeOcurred;
@@ -955,8 +881,8 @@ namespace game
 
         if (resizeOcurred)
         {
-            this->global_descriptors = makeGlobalDescriptors(
-                this->game->getRenderer(), this->global_info_descriptor_set);
+            this->global_descriptors =
+                makeGlobalDescriptors(this->game->getRenderer(), this->global_info_descriptor_set);
         }
     }
 

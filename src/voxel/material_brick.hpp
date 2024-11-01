@@ -22,8 +22,7 @@ namespace voxel
             }
         }
 
-        void iterateOverVoxels(
-            std::invocable<BrickLocalPosition, Voxel> auto func) const
+        void iterateOverVoxels(std::invocable<BrickLocalPosition, Voxel> auto func) const
         {
             for (int x = 0; x < 8; ++x)
             {

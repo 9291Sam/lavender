@@ -50,16 +50,13 @@ namespace game::ec
             u32 component_type_id        : 8;
             u32 component_storage_offset : 24;
 
-            constexpr bool
-            operator== (const EntityComponentStorage&) const noexcept = default;
+            constexpr bool operator== (const EntityComponentStorage&) const noexcept = default;
         };
-        static_assert(
-            std::has_unique_object_representations_v<EntityComponentStorage>);
+        static_assert(std::has_unique_object_representations_v<EntityComponentStorage>);
         static constexpr u8 MaxComponentsPerEntity = 255;
         static constexpr u8 getStoragePoolId(u8 numberOfComponents)
         {
-            return static_cast<u8>(
-                std::max({1, std::bit_width(numberOfComponents)}) - 1);
+            return static_cast<u8>(std::max({1, std::bit_width(numberOfComponents)}) - 1);
         }
 
         template<std::size_t N>
@@ -99,8 +96,7 @@ namespace game::ec
                         static_cast<u32>(this->storage.size()) * 2);
                     this->storage.resize(this->storage.size() * 2);
 
-                    return this->internal_allocator.allocate()
-                        .value(); // NOLINT
+                    return this->internal_allocator.allocate().value(); // NOLINT
                 }
             }
             void free(u32 id)
@@ -133,19 +129,15 @@ namespace game::ec
 
         [[nodiscard]] std::expected<void, ComponentModificationError>
             addComponent(Entity, EntityComponentStorage);
-        [[nodiscard]] std::
-            expected<EntityComponentStorage, ComponentModificationError>
-                removeComponent(Entity, ComponentTypeId);
+        [[nodiscard]] std::expected<EntityComponentStorage, ComponentModificationError>
+            removeComponent(Entity, ComponentTypeId);
 
-        [[nodiscard]] std::expected<bool, EntityDead>
-            hasComponent(Entity, ComponentTypeId);
+        [[nodiscard]] std::expected<bool, EntityDead> hasComponent(Entity, ComponentTypeId);
 
-        [[nodiscard]] std::
-            expected<EntityComponentStorage, ComponentModificationError>
-                readComponent(Entity, ComponentTypeId);
+        [[nodiscard]] std::expected<EntityComponentStorage, ComponentModificationError>
+            readComponent(Entity, ComponentTypeId);
 
-        [[nodiscard]] std::span<const EntityComponentStorage>
-            getAllComponents(Entity);
+        [[nodiscard]] std::span<const EntityComponentStorage> getAllComponents(Entity);
 
     private:
 
@@ -154,7 +146,7 @@ namespace game::ec
         static constexpr std::size_t MaxEntities = 1048576;
 
         // TODO: make this auto resize instead
-        util::IndexAllocator entity_id_allocator;
+        util::IndexAllocator                                     entity_id_allocator;
         std::unique_ptr<std::array<EntityMetadata, MaxEntities>> metadata;
 
         StoredEntityComponentsList<1>   storage_0;

@@ -49,15 +49,13 @@ namespace game
 
         struct RecordObject
         {
-            std::optional<Transform>            transform;
-            DynamicRenderingPass                render_pass;
-            std::shared_ptr<vk::UniquePipeline> pipeline;
-            std::array<vk::DescriptorSet, 4>    descriptors;
-            std::function<void(vk::CommandBuffer, vk::PipelineLayout, u32)>
-                record_func;
+            std::optional<Transform>                                        transform;
+            DynamicRenderingPass                                            render_pass;
+            std::shared_ptr<vk::UniquePipeline>                             pipeline;
+            std::array<vk::DescriptorSet, 4>                                descriptors;
+            std::function<void(vk::CommandBuffer, vk::PipelineLayout, u32)> record_func;
 
-            std::strong_ordering
-            operator<=> (const RecordObject& other) const noexcept;
+            std::strong_ordering operator<=> (const RecordObject& other) const noexcept;
         };
     public:
 
@@ -104,14 +102,13 @@ namespace game
             std::size_t flyingFrameIdx,
             std::span<const RecordObject>);
 
-        static GlobalInfoDescriptors
-        makeGlobalDescriptors(const gfx::Renderer*, vk::DescriptorSet);
+        static GlobalInfoDescriptors makeGlobalDescriptors(const gfx::Renderer*, vk::DescriptorSet);
 
         const game::Game* game;
         bool              has_resize_ocurred;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> set_layout;
-        vk::DescriptorSet global_info_descriptor_set;
+        vk::DescriptorSet                              global_info_descriptor_set;
 
         Camera                camera;
         GlobalInfoDescriptors global_descriptors;

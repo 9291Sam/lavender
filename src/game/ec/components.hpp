@@ -37,27 +37,27 @@ namespace game
     };
 } // namespace game
 
-#define DECLARE_COMPONENT(NAMESPACE, DECLARATION, TYPE, SIZE) /* NOLINT */     \
-    namespace NAMESPACE                                                        \
-    {                                                                          \
-        DECLARATION TYPE;                                                      \
-    }                                                                          \
-    template<>                                                                 \
-    consteval u8 game::getComponentId<NAMESPACE::TYPE>() noexcept              \
-    {                                                                          \
-        return static_cast<u8>(__LINE__);                                      \
-    }                                                                          \
-    template<>                                                                 \
-    consteval std::size_t                                                      \
-    game::getComponentSize<game::getComponentId<NAMESPACE::TYPE>()>() noexcept \
-    {                                                                          \
-        return static_cast<std::size_t>(SIZE);                                 \
-    }                                                                          \
-    template<>                                                                 \
-    consteval std::string_view                                                 \
-    game::getComponentName<game::getComponentId<NAMESPACE::TYPE>()>() noexcept \
-    {                                                                          \
-        return #TYPE;                                                          \
+#define DECLARE_COMPONENT(NAMESPACE, DECLARATION, TYPE, SIZE) /* NOLINT */                         \
+    namespace NAMESPACE                                                                            \
+    {                                                                                              \
+        DECLARATION TYPE;                                                                          \
+    }                                                                                              \
+    template<>                                                                                     \
+    consteval u8 game::getComponentId<NAMESPACE::TYPE>() noexcept                                  \
+    {                                                                                              \
+        return static_cast<u8>(__LINE__);                                                          \
+    }                                                                                              \
+    template<>                                                                                     \
+    consteval std::size_t                                                                          \
+    game::getComponentSize<game::getComponentId<NAMESPACE::TYPE>()>() noexcept                     \
+    {                                                                                              \
+        return static_cast<std::size_t>(SIZE);                                                     \
+    }                                                                                              \
+    template<>                                                                                     \
+    consteval std::string_view                                                                     \
+    game::getComponentName<game::getComponentId<NAMESPACE::TYPE>()>() noexcept                     \
+    {                                                                                              \
+        return #TYPE;                                                                              \
     }
 
 #line 0

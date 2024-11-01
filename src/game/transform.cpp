@@ -6,8 +6,7 @@ namespace game
 {
     glm::mat4 Transform::asModelMatrix() const
     {
-        return this->asTranslationMatrix() * this->asRotationMatrix()
-             * this->asScaleMatrix();
+        return this->asTranslationMatrix() * this->asRotationMatrix() * this->asScaleMatrix();
     }
 
     glm::mat4 Transform::asTranslationMatrix() const
@@ -42,8 +41,7 @@ namespace game
 
     void Transform::pitchBy(float pitch)
     {
-        this->rotation =
-            glm::rotate(this->rotation, pitch, Transform::RightVector);
+        this->rotation = glm::rotate(this->rotation, pitch, Transform::RightVector);
     }
 
     void Transform::yawBy(float yaw)
@@ -53,8 +51,7 @@ namespace game
 
     void Transform::rollBy(float roll)
     {
-        this->rotation =
-            glm::rotate(this->rotation, roll, Transform::ForwardVector);
+        this->rotation = glm::rotate(this->rotation, roll, Transform::ForwardVector);
     }
 
     Transform::operator std::string () const

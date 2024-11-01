@@ -56,8 +56,7 @@ namespace gfx::vulkan
                 continue;
             }
 
-            if (flags & vk::QueueFlagBits::eGraphics
-                && graphicsFamily == std::nullopt)
+            if (flags & vk::QueueFlagBits::eGraphics && graphicsFamily == std::nullopt)
             {
                 graphicsFamily = i;
 
@@ -65,8 +64,7 @@ namespace gfx::vulkan
                     this->physical_device.getSurfaceSupportKHR(i, surface);
 
                 util::assertFatal(
-                    flags & vk::QueueFlagBits::eCompute
-                        && flags & vk::QueueFlagBits::eTransfer
+                    flags & vk::QueueFlagBits::eCompute && flags & vk::QueueFlagBits::eTransfer
                         && static_cast<bool>(isSurfaceSupported),
                     "Tried to instantiate a graphics queue with flags {}, {}",
                     vk::to_string(flags),
@@ -75,8 +73,7 @@ namespace gfx::vulkan
                 continue;
             }
 
-            if (flags & vk::QueueFlagBits::eCompute
-                && asyncComputeFamily == std::nullopt)
+            if (flags & vk::QueueFlagBits::eCompute && asyncComputeFamily == std::nullopt)
             {
                 asyncComputeFamily = i;
 
@@ -88,8 +85,7 @@ namespace gfx::vulkan
                 continue;
             }
 
-            if (flags & vk::QueueFlagBits::eTransfer
-                && asyncTransferFamily == std::nullopt)
+            if (flags & vk::QueueFlagBits::eTransfer && asyncTransferFamily == std::nullopt)
             {
                 asyncTransferFamily = i;
 
@@ -97,8 +93,8 @@ namespace gfx::vulkan
             }
         }
 
-        this->queue_family_indexes = std::array {
-            graphicsFamily, asyncComputeFamily, asyncTransferFamily};
+        this->queue_family_indexes =
+            std::array {graphicsFamily, asyncComputeFamily, asyncTransferFamily};
 
         auto getStringOfFamily = [](std::optional<u32> f) -> std::string
         {
@@ -130,8 +126,7 @@ namespace gfx::vulkan
 
         if (graphicsFamily.has_value())
         {
-            numberOfGraphicsQueues =
-                queueFamilyProperties.at(*graphicsFamily).queueCount;
+            numberOfGraphicsQueues = queueFamilyProperties.at(*graphicsFamily).queueCount;
 
             queuesToCreate.push_back(vk::DeviceQueueCreateInfo {
                 .sType {vk::StructureType::eDeviceQueueCreateInfo},
@@ -149,8 +144,7 @@ namespace gfx::vulkan
 
         if (asyncComputeFamily.has_value())
         {
-            numberOfAsyncComputeQueues =
-                queueFamilyProperties.at(*asyncComputeFamily).queueCount;
+            numberOfAsyncComputeQueues = queueFamilyProperties.at(*asyncComputeFamily).queueCount;
 
             queuesToCreate.push_back(vk::DeviceQueueCreateInfo {
                 .sType {vk::StructureType::eDeviceQueueCreateInfo},
@@ -164,8 +158,7 @@ namespace gfx::vulkan
 
         if (asyncTransferFamily.has_value())
         {
-            numberOfAsyncTransferQueues =
-                queueFamilyProperties.at(*asyncTransferFamily).queueCount;
+            numberOfAsyncTransferQueues = queueFamilyProperties.at(*asyncTransferFamily).queueCount;
 
             queuesToCreate.push_back(vk::DeviceQueueCreateInfo {
                 .sType {vk::StructureType::eDeviceQueueCreateInfo},
@@ -185,9 +178,7 @@ namespace gfx::vulkan
             numberOfAsyncTransferQueues);
 
         this->queue_family_numbers = std::array {
-            numberOfGraphicsQueues,
-            numberOfAsyncComputeQueues,
-            numberOfAsyncTransferQueues};
+            numberOfGraphicsQueues, numberOfAsyncComputeQueues, numberOfAsyncTransferQueues};
 
         std::array requiredExtensions {
             "VK_KHR_dynamic_rendering",
@@ -203,21 +194,19 @@ namespace gfx::vulkan
         features.fragmentStoresAndAtomics = vk::True;
 
         vk::PhysicalDeviceVulkan12Features features12 {};
-        features12.sType = vk::StructureType::ePhysicalDeviceVulkan12Features;
-        features12.pNext = nullptr;
+        features12.sType                  = vk::StructureType::ePhysicalDeviceVulkan12Features;
+        features12.pNext                  = nullptr;
         features12.runtimeDescriptorArray = vk::True;
 
         vk::PhysicalDeviceVulkan11Features features11 {};
-        features11.sType = vk::StructureType::ePhysicalDeviceVulkan11Features;
-        features11.pNext = &features12;
+        features11.sType                    = vk::StructureType::ePhysicalDeviceVulkan11Features;
+        features11.pNext                    = &features12;
         features11.storageBuffer16BitAccess = vk::True;
 
-        const vk::PhysicalDeviceDynamicRenderingFeatures
-            dynamicRenderingFeatures {
-                .sType {
-                    vk::StructureType::ePhysicalDeviceDynamicRenderingFeatures},
-                .pNext {&features11},
-                .dynamicRendering {vk::True}};
+        const vk::PhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures {
+            .sType {vk::StructureType::ePhysicalDeviceDynamicRenderingFeatures},
+            .pNext {&features11},
+            .dynamicRendering {vk::True}};
 
         const vk::DeviceCreateInfo deviceCreateInfo {
             .sType {vk::StructureType::eDeviceCreateInfo},
@@ -227,26 +216,23 @@ namespace gfx::vulkan
             .pQueueCreateInfos {queuesToCreate.data()},
             .enabledLayerCount {0},
             .ppEnabledLayerNames {nullptr},
-            .enabledExtensionCount {
-                static_cast<u32>(requiredExtensions.size())},
+            .enabledExtensionCount {static_cast<u32>(requiredExtensions.size())},
             .ppEnabledExtensionNames {requiredExtensions.data()},
             .pEnabledFeatures {&features},
         };
 
-        this->device =
-            this->physical_device.createDeviceUnique(deviceCreateInfo);
+        this->device = this->physical_device.createDeviceUnique(deviceCreateInfo);
         VULKAN_HPP_DEFAULT_DISPATCHER.init(instance, *this->device);
 
         if constexpr (util::isDebugBuild())
         {
-            this->device->setDebugUtilsObjectNameEXT(
-                vk::DebugUtilsObjectNameInfoEXT {
-                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                    .pNext {nullptr},
-                    .objectType {vk::ObjectType::eDevice},
-                    .objectHandle {std::bit_cast<u64>(*this->device)},
-                    .pObjectName {"Device"},
-                });
+            this->device->setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                .pNext {nullptr},
+                .objectType {vk::ObjectType::eDevice},
+                .objectHandle {std::bit_cast<u64>(*this->device)},
+                .pObjectName {"Device"},
+            });
         }
 
         std::vector<util::Mutex<vk::Queue>> graphicsQueues {};
@@ -261,15 +247,13 @@ namespace gfx::vulkan
             {
                 std::string name = std::format("Graphics Queue #{}", idx);
 
-                device->setDebugUtilsObjectNameEXT(
-                    vk::DebugUtilsObjectNameInfoEXT {
-                        .sType {
-                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                        .pNext {nullptr},
-                        .objectType {vk::ObjectType::eQueue},
-                        .objectHandle {std::bit_cast<u64>(q)},
-                        .pObjectName {name.c_str()},
-                    });
+                device->setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eQueue},
+                    .objectHandle {std::bit_cast<u64>(q)},
+                    .pObjectName {name.c_str()},
+                });
             }
 
             graphicsQueues.push_back(util::Mutex {std::move(q)}); // NOLINT
@@ -283,15 +267,13 @@ namespace gfx::vulkan
             {
                 std::string name = std::format("Async Compute Queue #{}", idx);
 
-                device->setDebugUtilsObjectNameEXT(
-                    vk::DebugUtilsObjectNameInfoEXT {
-                        .sType {
-                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                        .pNext {nullptr},
-                        .objectType {vk::ObjectType::eQueue},
-                        .objectHandle {std::bit_cast<u64>(q)},
-                        .pObjectName {name.c_str()},
-                    });
+                device->setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eQueue},
+                    .objectHandle {std::bit_cast<u64>(q)},
+                    .pObjectName {name.c_str()},
+                });
             }
 
             asyncComputeQueues.push_back(util::Mutex {std::move(q)}); // NOLINT
@@ -305,22 +287,19 @@ namespace gfx::vulkan
             {
                 std::string name = std::format("Async Transfer Queue #{}", idx);
 
-                device->setDebugUtilsObjectNameEXT(
-                    vk::DebugUtilsObjectNameInfoEXT {
-                        .sType {
-                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                        .pNext {nullptr},
-                        .objectType {vk::ObjectType::eQueue},
-                        .objectHandle {std::bit_cast<u64>(q)},
-                        .pObjectName {name.c_str()},
-                    });
+                device->setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eQueue},
+                    .objectHandle {std::bit_cast<u64>(q)},
+                    .pObjectName {name.c_str()},
+                });
             }
 
             asyncTransferQueues.push_back(util::Mutex {std::move(q)}); // NOLINT
         }
 
-        this->queues[static_cast<std::size_t>(QueueType::Graphics)] =
-            std::move(graphicsQueues);
+        this->queues[static_cast<std::size_t>(QueueType::Graphics)] = std::move(graphicsQueues);
         this->queues[static_cast<std::size_t>(QueueType::AsyncCompute)] =
             std::move(asyncComputeQueues);
         this->queues[static_cast<std::size_t>(QueueType::AsyncTransfer)] =
@@ -329,14 +308,12 @@ namespace gfx::vulkan
 
     std::optional<u32> Device::getFamilyOfQueueType(QueueType t) const noexcept
     {
-        return this->queue_family_indexes.at(
-            static_cast<std::size_t>(util::toUnderlying(t)));
+        return this->queue_family_indexes.at(static_cast<std::size_t>(util::toUnderlying(t)));
     }
 
     u32 Device::getNumberOfQueues(QueueType t) const noexcept
     {
-        return this->queue_family_numbers.at(
-            static_cast<std::size_t>(util::toUnderlying(t)));
+        return this->queue_family_numbers.at(static_cast<std::size_t>(util::toUnderlying(t)));
     }
 
     vk::PhysicalDevice Device::getPhysicalDevice() const noexcept

@@ -10,8 +10,7 @@ namespace voxel
     {
         std::array<std::array<std::array<MaybeBrickPointer, 8>, 8>, 8> data;
 
-        void iterateOverPointers(
-            std::invocable<BrickCoordinate, MaybeBrickPointer> auto func) const
+        void iterateOverPointers(std::invocable<BrickCoordinate, MaybeBrickPointer> auto func) const
         {
             for (std::size_t x = 0; x < 8; ++x)
             {

@@ -11,8 +11,7 @@ namespace util
     {
     public:
         explicit Timer(
-            std::string          name_,
-            std::source_location loc = std::source_location::current())
+            std::string name_, std::source_location loc = std::source_location::current())
             : name {std::move(name_)}
             , start {std::chrono::steady_clock::now()}
             , location {loc}

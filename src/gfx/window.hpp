@@ -65,9 +65,7 @@ namespace gfx
     public:
 
         Window(
-            const std::map<Action, ActionInformation>&,
-            vk::Extent2D windowSize,
-            const char*  name);
+            const std::map<Action, ActionInformation>&, vk::Extent2D windowSize, const char* name);
         ~Window();
 
         Window(const Window&)             = delete;
@@ -75,8 +73,7 @@ namespace gfx
         Window& operator= (const Window&) = delete;
         Window& operator= (Window&&)      = delete;
 
-        [[nodiscard]] bool
-        isActionActive(Action, bool ignoreCursorAttached = false) const;
+        [[nodiscard]] bool         isActionActive(Action, bool ignoreCursorAttached = false) const;
         [[nodiscard]] Delta        getScreenSpaceMouseDelta() const;
         [[nodiscard]] float        getDeltaTimeSeconds() const;
         [[nodiscard]] vk::Extent2D getFramebufferSize() const;

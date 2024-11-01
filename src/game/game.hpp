@@ -41,8 +41,7 @@ namespace game
             GameState& operator= (const GameState&) = delete;
             GameState& operator= (GameState&&)      = delete;
 
-            [[nodiscard]] virtual std::
-                pair<Camera, std::vector<FrameGenerator::RecordObject>>
+            [[nodiscard]] virtual std::pair<Camera, std::vector<FrameGenerator::RecordObject>>
                          onFrame(float) const = 0;
             virtual void onTick() const       = 0;
         };
@@ -60,9 +59,8 @@ namespace game
         [[nodiscard]] float getFovYRadians() const noexcept;
         [[nodiscard]] float getAspectRatio() const noexcept;
 
-        const gfx::Renderer* getRenderer() const noexcept;
-        const ec::EntityComponentManager*
-        getEntityComponentManager() const noexcept;
+        const gfx::Renderer*              getRenderer() const noexcept;
+        const ec::EntityComponentManager* getEntityComponentManager() const noexcept;
         std::shared_ptr<vk::UniqueDescriptorSetLayout>
                           getGlobalInfoDescriptorSetLayout() const noexcept;
         vk::DescriptorSet getGlobalInfoDescriptorSet() const noexcept;

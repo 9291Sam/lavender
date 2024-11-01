@@ -29,7 +29,8 @@ CalculatedLightPower calculate_light_power(
         light.falloffs.y * to_light_distance +
         light.falloffs.z * to_light_distance * to_light_distance +
         light.falloffs.w * to_light_distance * to_light_distance * to_light_distance);
-
+    
+    // dot(voxel_normal, to_light_vector) * 0.5 + 0.5 half lambert
     vec3 diffuse_strength = max(dot(voxel_normal, to_light_vector), 0.0) * light.color_and_power.rgb * light.color_and_power.w * attenuation;
     vec3 specular_strength = pow(max(dot(reflect_vector, view_vector), 0.0), specular_power) * light.color_and_power.rgb * light.color_and_power.w * attenuation;
 

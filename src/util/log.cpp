@@ -51,19 +51,18 @@ namespace util
         void sendBlocking(std::string);
 
     private:
-        std::unique_ptr<std::atomic<bool>> should_thread_close;
-        std::thread                        worker_thread;
+        std::unique_ptr<std::atomic<bool>>                        should_thread_close;
+        std::thread                                               worker_thread;
         std::unique_ptr<moodycamel::ConcurrentQueue<std::string>> message_queue;
-        std::unique_ptr<Mutex<std::ofstream>> log_file_handle;
+        std::unique_ptr<Mutex<std::ofstream>>                     log_file_handle;
     };
 
     Logger::Logger()
         : should_thread_close {std::make_unique<std::atomic<bool>>(false)}
         , worker_thread {} // NOLINT
-        , message_queue {std::make_unique<
-              moodycamel::ConcurrentQueue<std::string>>()}
-        , log_file_handle {std::make_unique<util::Mutex<std::ofstream>>(
-              std::ofstream {"lavender_log.txt"})}
+        , message_queue {std::make_unique<moodycamel::ConcurrentQueue<std::string>>()}
+        , log_file_handle {
+              std::make_unique<util::Mutex<std::ofstream>>(std::ofstream {"lavender_log.txt"})}
     {
         std::latch threadStartLatch {1};
 
@@ -73,11 +72,9 @@ namespace util
                 const std::ofstream logFileHandle {"lavender_log.txt"};
                 std::string         temporaryString {"INVALID MESSAGE"};
 
-                std::atomic<bool>* shouldThreadStop {
-                    this->should_thread_close.get()};
+                std::atomic<bool>* shouldThreadStop {this->should_thread_close.get()};
 
-                moodycamel::ConcurrentQueue<std::string>* messageQueue {
-                    this->message_queue.get()};
+                moodycamel::ConcurrentQueue<std::string>* messageQueue {this->message_queue.get()};
 
                 loggerConstructionLatch->count_down();
                 // after this latch:
@@ -90,18 +87,14 @@ namespace util
                     if (messageQueue->try_dequeue(temporaryString))
                     {
                         std::ignore = std::fwrite(
-                            temporaryString.data(),
-                            sizeof(char),
-                            temporaryString.size(),
-                            stdout);
+                            temporaryString.data(), sizeof(char), temporaryString.size(), stdout);
 
                         this->log_file_handle->lock(
                             [&](std::ofstream& stream)
                             {
                                 std::ignore = stream.write(
                                     temporaryString.c_str(),
-                                    static_cast<std::streamsize>(
-                                        temporaryString.size()));
+                                    static_cast<std::streamsize>(temporaryString.size()));
                             });
                     }
                 }
@@ -110,18 +103,14 @@ namespace util
                 while (messageQueue->try_dequeue(temporaryString))
                 {
                     std::ignore = std::fwrite(
-                        temporaryString.data(),
-                        sizeof(char),
-                        temporaryString.size(),
-                        stdout);
+                        temporaryString.data(), sizeof(char), temporaryString.size(), stdout);
 
                     this->log_file_handle->lock(
                         [&](std::ofstream& stream)
                         {
                             std::ignore = stream.write(
                                 temporaryString.c_str(),
-                                static_cast<std::streamsize>(
-                                    temporaryString.size()));
+                                static_cast<std::streamsize>(temporaryString.size()));
                         });
                 }
             }};
@@ -143,30 +132,26 @@ namespace util
         if (!this->message_queue->enqueue(std::move(string)))
         {
             std::puts("Unable to send message to worker thread!\n");
-            std::ignore =
-                std::fwrite(string.data(), sizeof(char), string.size(), stderr);
+            std::ignore = std::fwrite(string.data(), sizeof(char), string.size(), stderr);
 
             this->log_file_handle->lock(
                 [&](std::ofstream& stream)
                 {
-                    std::ignore = stream.write(
-                        string.c_str(),
-                        static_cast<std::streamsize>(string.size()));
+                    std::ignore =
+                        stream.write(string.c_str(), static_cast<std::streamsize>(string.size()));
                 });
         }
     }
 
     void Logger::sendBlocking(std::string string)
     {
-        std::ignore =
-            std::fwrite(string.data(), sizeof(char), string.size(), stderr);
+        std::ignore = std::fwrite(string.data(), sizeof(char), string.size(), stderr);
 
         this->log_file_handle->lock(
             [&](std::ofstream& stream)
             {
-                std::ignore = stream.write(
-                    string.c_str(),
-                    static_cast<std::streamsize>(string.size()));
+                std::ignore =
+                    stream.write(string.c_str(), static_cast<std::streamsize>(string.size()));
             });
     }
 
@@ -178,8 +163,7 @@ namespace util
 
     void installGlobalLoggerRacy()
     {
-        LOGGER.store(
-            new Logger {}, std::memory_order_seq_cst); // NOLINT: Owning pointer
+        LOGGER.store(new Logger {}, std::memory_order_seq_cst); // NOLINT: Owning pointer
 
         // Bro, I don't even remember anymore, I benchmarked it and it was
         // actually like a 10% improvement on reads from being able to use
@@ -189,8 +173,7 @@ namespace util
 
     void removeGlobalLoggerRacy()
     {
-        Logger* const currentLogger =
-            LOGGER.exchange(nullptr, std::memory_order_seq_cst);
+        Logger* const currentLogger = LOGGER.exchange(nullptr, std::memory_order_seq_cst);
 
         // doing very similar things with this fence here, we want relaxed
         // reading, but still to actually flush the change
@@ -231,8 +214,7 @@ namespace util
                 // I love not having proper string utilities :)
                 std::array<char, 32> buf {};
 
-                const std::time_t t =
-                    std::chrono::system_clock::to_time_t(time);
+                const std::time_t t = std::chrono::system_clock::to_time_t(time);
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -246,20 +228,13 @@ namespace util
                 std::array<char, 32> outBuffer {};
 
                 const int milis =
-                    std::chrono::duration_cast<std::chrono::milliseconds>(
-                        time.time_since_epoch())
+                    std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch())
                         .count()
                     % 1000;
                 const int micros = time.time_since_epoch().count() % 1000;
 
-                const std::size_t dateStringLength =
-                    static_cast<std::size_t>(std::snprintf(
-                        outBuffer.data(),
-                        outBuffer.size(),
-                        "%s:%03u:%03u",
-                        buf.data(),
-                        milis,
-                        micros));
+                const std::size_t dateStringLength = static_cast<std::size_t>(std::snprintf(
+                    outBuffer.data(), outBuffer.size(), "%s:%03u:%03u", buf.data(), milis, micros));
 
                 return std::string {outBuffer.data(), dateStringLength};
                 // NOLINTEND
@@ -274,8 +249,7 @@ namespace util
         if (level >= LoggingLevel::Warn || level == LoggingLevel::Debug
             || output.starts_with("BLOCK_ON"))
         {
-            LOGGER.load(std::memory_order_relaxed)
-                ->sendBlocking(std::move(output));
+            LOGGER.load(std::memory_order_relaxed)->sendBlocking(std::move(output));
         }
         else
         {

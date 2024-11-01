@@ -43,18 +43,14 @@ namespace util
 
         auto tryLock(std::invocable<T&...> auto&& func) const
             noexcept(noexcept(std::apply(func, this->tuple)))
-                -> std::optional<
-                    std::decay_t<std::invoke_result_t<decltype(func), T&...>>>
-            requires (!std::same_as<
-                      void,
-                      std::invoke_result_t<decltype(func), T&...>>)
+                -> std::optional<std::decay_t<std::invoke_result_t<decltype(func), T&...>>>
+            requires (!std::same_as<void, std::invoke_result_t<decltype(func), T&...>>)
         {
             std::unique_lock<std::mutex> lock {*this->mutex, std::defer_lock};
 
             if (lock.try_lock())
             {
-                return std::optional {std::apply(
-                    std::forward<decltype(func)>(func), this->tuple)};
+                return std::optional {std::apply(std::forward<decltype(func)>(func), this->tuple)};
             }
             else
             {
@@ -64,8 +60,7 @@ namespace util
 
         bool tryLock(std::invocable<T&...> auto&& func) const
             noexcept(noexcept(std::apply(func, this->tuple)))
-            requires std::
-                same_as<void, std::invoke_result_t<decltype(func), T&...>>
+            requires std::same_as<void, std::invoke_result_t<decltype(func), T&...>>
         {
             std::unique_lock<std::mutex> lock {*this->mutex, std::defer_lock};
 
@@ -130,19 +125,14 @@ namespace util
 
         auto tryLock(std::invocable<T&...> auto&& func) const
             noexcept(noexcept(std::apply(func, this->tuple)))
-                -> std::optional<
-                    std::decay_t<std::invoke_result_t<decltype(func), T&...>>>
-            requires (!std::same_as<
-                      void,
-                      std::invoke_result_t<decltype(func), T&...>>)
+                -> std::optional<std::decay_t<std::invoke_result_t<decltype(func), T&...>>>
+            requires (!std::same_as<void, std::invoke_result_t<decltype(func), T&...>>)
         {
-            std::unique_lock<std::recursive_mutex> lock {
-                *this->mutex, std::defer_lock};
+            std::unique_lock<std::recursive_mutex> lock {*this->mutex, std::defer_lock};
 
             if (lock.try_lock())
             {
-                return std::optional {std::apply(
-                    std::forward<decltype(func)>(func), this->tuple)};
+                return std::optional {std::apply(std::forward<decltype(func)>(func), this->tuple)};
             }
             else
             {
@@ -152,11 +142,9 @@ namespace util
 
         bool tryLock(std::invocable<T&...> auto&& func) const
             noexcept(noexcept(std::apply(func, this->tuple)))
-            requires std::
-                same_as<void, std::invoke_result_t<decltype(func), T&...>>
+            requires std::same_as<void, std::invoke_result_t<decltype(func), T&...>>
         {
-            std::unique_lock<std::recursive_mutex> lock {
-                *this->mutex, std::defer_lock};
+            std::unique_lock<std::recursive_mutex> lock {*this->mutex, std::defer_lock};
 
             if (lock.try_lock())
             {
@@ -216,18 +204,14 @@ namespace util
 
         auto tryWriteLock(std::invocable<T&...> auto&& func) const
             noexcept(noexcept(std::apply(func, this->tuple)))
-                -> std::optional<
-                    std::decay_t<std::invoke_result_t<decltype(func), T&...>>>
-            requires (!std::same_as<
-                      void,
-                      std::invoke_result_t<decltype(func), T&...>>)
+                -> std::optional<std::decay_t<std::invoke_result_t<decltype(func), T&...>>>
+            requires (!std::same_as<void, std::invoke_result_t<decltype(func), T&...>>)
         {
             std::unique_lock lock {*this->rwlock, std::defer_lock};
 
             if (lock.try_lock())
             {
-                return std::optional {std::apply(
-                    std::forward<decltype(func)>(func), this->tuple)};
+                return std::optional {std::apply(std::forward<decltype(func)>(func), this->tuple)};
             }
             else
             {
@@ -245,18 +229,14 @@ namespace util
 
         auto tryReadLock(std::invocable<T&...> auto&& func) const
             noexcept(noexcept(std::apply(func, this->tuple)))
-                -> std::optional<
-                    std::decay_t<std::invoke_result_t<decltype(func), T&...>>>
-            requires (!std::same_as<
-                      void,
-                      std::invoke_result_t<decltype(func), T&...>>)
+                -> std::optional<std::decay_t<std::invoke_result_t<decltype(func), T&...>>>
+            requires (!std::same_as<void, std::invoke_result_t<decltype(func), T&...>>)
         {
             std::shared_lock lock {*this->rwlock, std::defer_lock};
 
             if (lock.try_lock())
             {
-                return std::optional {std::apply(
-                    std::forward<decltype(func)>(func), this->tuple)};
+                return std::optional {std::apply(std::forward<decltype(func)>(func), this->tuple)};
             }
             else
             {
@@ -285,13 +265,10 @@ namespace util
         mutable std::tuple<T...>                   tuple;
     }; // class Mutex
 
-    inline std::byte*
-    threadedMemcpy(std::byte* dst, std::span<const std::byte> src)
+    inline std::byte* threadedMemcpy(std::byte* dst, std::span<const std::byte> src)
     {
-        const std::size_t numberOfThreads =
-            std::thread::hardware_concurrency() * 3 / 4;
-        const std::size_t threadDelegationSize =
-            src.size_bytes() / numberOfThreads;
+        const std::size_t numberOfThreads      = std::thread::hardware_concurrency() * 3 / 4;
+        const std::size_t threadDelegationSize = src.size_bytes() / numberOfThreads;
 
         std::vector<std::future<void>> futures {};
         futures.reserve(numberOfThreads);

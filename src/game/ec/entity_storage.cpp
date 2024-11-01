@@ -33,9 +33,8 @@ namespace game::ec
 
         const u32 thisGeneration = (*this->metadata)[thisEntityId].generation;
 
-        (*this->metadata)[thisEntityId].number_of_components = 0;
-        (*this->metadata)[thisEntityId].component_storage_offset =
-            this->storage_0.allocate();
+        (*this->metadata)[thisEntityId].number_of_components     = 0;
+        (*this->metadata)[thisEntityId].component_storage_offset = this->storage_0.allocate();
 
         Entity e;
         e.generation = thisGeneration;
@@ -44,8 +43,7 @@ namespace game::ec
         return e;
     }
 
-    std::span<const EntityStorage::EntityComponentStorage>
-    EntityStorage::getAllComponents(Entity e)
+    std::span<const EntityStorage::EntityComponentStorage> EntityStorage::getAllComponents(Entity e)
     {
         if (!this->isAlive(e))
         {
@@ -54,54 +52,44 @@ namespace game::ec
 
         EntityMetadata& entityMetadata = (*this->metadata)[e.id];
 
-        const u8 numberOfComponents =
-            static_cast<u8>(entityMetadata.number_of_components);
+        const u8 numberOfComponents = static_cast<u8>(entityMetadata.number_of_components);
 
         switch (getStoragePoolId(numberOfComponents))
         {
         case 0:
             return {
-                this->storage_0.lookup(entityMetadata.component_storage_offset)
-                    .storage.data(),
+                this->storage_0.lookup(entityMetadata.component_storage_offset).storage.data(),
                 numberOfComponents};
         case 1:
             return {
-                this->storage_1.lookup(entityMetadata.component_storage_offset)
-                    .storage.data(),
+                this->storage_1.lookup(entityMetadata.component_storage_offset).storage.data(),
                 numberOfComponents};
         case 2:
             return {
-                this->storage_2.lookup(entityMetadata.component_storage_offset)
-                    .storage.data(),
+                this->storage_2.lookup(entityMetadata.component_storage_offset).storage.data(),
                 numberOfComponents};
         case 3:
             return {
-                this->storage_3.lookup(entityMetadata.component_storage_offset)
-                    .storage.data(),
+                this->storage_3.lookup(entityMetadata.component_storage_offset).storage.data(),
                 numberOfComponents};
         case 4:
             return {
-                this->storage_4.lookup(entityMetadata.component_storage_offset)
-                    .storage.data(),
+                this->storage_4.lookup(entityMetadata.component_storage_offset).storage.data(),
                 numberOfComponents};
         case 5:
             return {
-                this->storage_5.lookup(entityMetadata.component_storage_offset)
-                    .storage.data(),
+                this->storage_5.lookup(entityMetadata.component_storage_offset).storage.data(),
                 numberOfComponents};
         case 6:
             return {
-                this->storage_6.lookup(entityMetadata.component_storage_offset)
-                    .storage.data(),
+                this->storage_6.lookup(entityMetadata.component_storage_offset).storage.data(),
                 numberOfComponents};
         case 7:
             return {
-                this->storage_7.lookup(entityMetadata.component_storage_offset)
-                    .storage.data(),
+                this->storage_7.lookup(entityMetadata.component_storage_offset).storage.data(),
                 numberOfComponents};
         default:
-            util::panic(
-                "EntityStorage::getAllComponents storage out of bounds");
+            util::panic("EntityStorage::getAllComponents storage out of bounds");
         }
 
         return {};
@@ -183,8 +171,7 @@ namespace game::ec
         }
         else if (*alreadyHasComponent)
         {
-            return std::unexpected(
-                ComponentModificationError::ComponentConflict);
+            return std::unexpected(ComponentModificationError::ComponentConflict);
         }
 
         EntityMetadata& entityMetadata = (*this->metadata)[e.id];
@@ -194,10 +181,8 @@ namespace game::ec
             util::panic("tried to add too many components");
         }
 
-        const u8 currentNumberOfComponents =
-            static_cast<u8>(entityMetadata.number_of_components);
-        const u8 newNumberOfComponents =
-            static_cast<u8>(currentNumberOfComponents + 1);
+        const u8 currentNumberOfComponents = static_cast<u8>(entityMetadata.number_of_components);
+        const u8 newNumberOfComponents     = static_cast<u8>(currentNumberOfComponents + 1);
 
         const u8 currentPoolId = getStoragePoolId(currentNumberOfComponents);
         const u8 newPoolId     = getStoragePoolId(newNumberOfComponents);
@@ -212,13 +197,11 @@ namespace game::ec
                     StoredEntityComponentsList<N>&                 oldPool,
                     StoredEntityComponentsList<((N + 1) * 2) - 1>& newPool)
             {
-                const u32 newOffset = entityMetadata.component_storage_offset =
-                    newPool.allocate();
+                const u32 newOffset = entityMetadata.component_storage_offset = newPool.allocate();
 
                 std::memcpy(
                     newPool.lookup(newOffset).storage.data(),
-                    oldPool.lookup(entityMetadata.component_storage_offset)
-                        .storage.data(),
+                    oldPool.lookup(entityMetadata.component_storage_offset).storage.data(),
                     currentNumberOfComponents * sizeof(EntityComponentStorage));
 
                 oldPool.free(entityMetadata.component_storage_offset);
@@ -251,8 +234,7 @@ namespace game::ec
                 break;
             default:
                 util::panic(
-                    "EntityStorage::addComponentToEntity new pool {} too high",
-                    currentPoolId);
+                    "EntityStorage::addComponentToEntity new pool {} too high", currentPoolId);
             }
         }
 
@@ -301,9 +283,7 @@ namespace game::ec
         return {};
     }
 
-    std::expected<
-        EntityStorage::EntityComponentStorage,
-        ComponentModificationError>
+    std::expected<EntityStorage::EntityComponentStorage, ComponentModificationError>
     EntityStorage::removeComponent(Entity e, ComponentTypeId componentTypeId)
     {
         if (!this->isAlive(e))
@@ -311,36 +291,31 @@ namespace game::ec
             return std::unexpected(ComponentModificationError::EntityDead);
         }
 
-        const std::optional<u8> idx =
-            this->getIndexOfComponentUnchecked(e, componentTypeId);
+        const std::optional<u8> idx = this->getIndexOfComponentUnchecked(e, componentTypeId);
 
         if (idx.has_value())
         {
-            return std::unexpected(
-                ComponentModificationError::ComponentConflict);
+            return std::unexpected(ComponentModificationError::ComponentConflict);
         }
 
         EntityMetadata& entityMetadata         = (*this->metadata)[e.id];
         const u8        idxOfComponentToRemove = *idx;
-        const u8 idxOfComponentToMove = entityMetadata.number_of_components - 1;
+        const u8        idxOfComponentToMove   = entityMetadata.number_of_components - 1;
 
-        const u8 originalPool =
-            getStoragePoolId(entityMetadata.number_of_components);
+        const u8 originalPool = getStoragePoolId(entityMetadata.number_of_components);
 
         std::optional<EntityStorage::EntityComponentStorage> out;
 
         // move top down and decrement size
 
-        auto moveDeleteOneComponent =
-            [&]<std::size_t N>(StoredEntityComponentsList<N>& storage)
+        auto moveDeleteOneComponent = [&]<std::size_t N>(StoredEntityComponentsList<N>& storage)
         {
             StoredEntityComponents<N>& components =
                 storage.lookup(entityMetadata.component_storage_offset);
 
             out = components.storage[idxOfComponentToRemove];
 
-            components.storage[idxOfComponentToRemove] =
-                components.storage[idxOfComponentToMove];
+            components.storage[idxOfComponentToRemove] = components.storage[idxOfComponentToMove];
         };
 
         switch (originalPool)
@@ -375,25 +350,20 @@ namespace game::ec
 
         entityMetadata.number_of_components -= 1;
 
-        const u8 poolAfterRemoval =
-            getStoragePoolId(entityMetadata.number_of_components);
+        const u8 poolAfterRemoval = getStoragePoolId(entityMetadata.number_of_components);
 
         if (originalPool != poolAfterRemoval)
         {
-            auto moveComponentsDown =
-                [&]<std::size_t N>(
-                    StoredEntityComponentsList<((N + 1) * 2) - 1>& oldPool,
-                    StoredEntityComponentsList<N>&                 newPool)
+            auto moveComponentsDown = [&]<std::size_t N>(
+                                          StoredEntityComponentsList<((N + 1) * 2) - 1>& oldPool,
+                                          StoredEntityComponentsList<N>&                 newPool)
             {
-                const u32 newOffset = entityMetadata.component_storage_offset =
-                    newPool.allocate();
+                const u32 newOffset = entityMetadata.component_storage_offset = newPool.allocate();
 
                 std::memcpy(
                     newPool.lookup(newOffset).storage.data(),
-                    oldPool.lookup(entityMetadata.component_storage_offset)
-                        .storage.data(),
-                    entityMetadata.number_of_components
-                        * sizeof(EntityComponentStorage));
+                    oldPool.lookup(entityMetadata.component_storage_offset).storage.data(),
+                    entityMetadata.number_of_components * sizeof(EntityComponentStorage));
 
                 oldPool.free(entityMetadata.component_storage_offset);
 
@@ -425,16 +395,14 @@ namespace game::ec
                 break;
             default:
                 util::panic(
-                    "EntityStorage::moveComponentsDown new pool {} too high",
-                    poolAfterRemoval);
+                    "EntityStorage::moveComponentsDown new pool {} too high", poolAfterRemoval);
             }
         }
 
         return out.value();
     }
 
-    std::expected<bool, EntityDead>
-    EntityStorage::hasComponent(Entity e, ComponentTypeId c)
+    std::expected<bool, EntityDead> EntityStorage::hasComponent(Entity e, ComponentTypeId c)
     {
         if (!this->isAlive(e))
         {
@@ -444,9 +412,7 @@ namespace game::ec
         return this->getIndexOfComponentUnchecked(e, c).has_value();
     }
 
-    std::expected<
-        EntityStorage::EntityComponentStorage,
-        ComponentModificationError>
+    std::expected<EntityStorage::EntityComponentStorage, ComponentModificationError>
     EntityStorage::readComponent(Entity e, ComponentTypeId componentTypeId)
     {
         if (!this->isAlive(e))
@@ -461,42 +427,33 @@ namespace game::ec
         {
             const EntityMetadata& entityMetadata = (*this->metadata)[e.id];
 
-            const u8 pool =
-                getStoragePoolId(entityMetadata.number_of_components);
+            const u8 pool = getStoragePoolId(entityMetadata.number_of_components);
 
             switch (pool)
             {
             case 0:
-                return this->storage_0
-                    .lookup(entityMetadata.component_storage_offset)
+                return this->storage_0.lookup(entityMetadata.component_storage_offset)
                     .storage[*maybeIdxOfComponent];
             case 1:
-                return this->storage_1
-                    .lookup(entityMetadata.component_storage_offset)
+                return this->storage_1.lookup(entityMetadata.component_storage_offset)
                     .storage[*maybeIdxOfComponent];
             case 2:
-                return this->storage_2
-                    .lookup(entityMetadata.component_storage_offset)
+                return this->storage_2.lookup(entityMetadata.component_storage_offset)
                     .storage[*maybeIdxOfComponent];
             case 3:
-                return this->storage_3
-                    .lookup(entityMetadata.component_storage_offset)
+                return this->storage_3.lookup(entityMetadata.component_storage_offset)
                     .storage[*maybeIdxOfComponent];
             case 4:
-                return this->storage_4
-                    .lookup(entityMetadata.component_storage_offset)
+                return this->storage_4.lookup(entityMetadata.component_storage_offset)
                     .storage[*maybeIdxOfComponent];
             case 5:
-                return this->storage_5
-                    .lookup(entityMetadata.component_storage_offset)
+                return this->storage_5.lookup(entityMetadata.component_storage_offset)
                     .storage[*maybeIdxOfComponent];
             case 6:
-                return this->storage_6
-                    .lookup(entityMetadata.component_storage_offset)
+                return this->storage_6.lookup(entityMetadata.component_storage_offset)
                     .storage[*maybeIdxOfComponent];
             case 7:
-                return this->storage_7
-                    .lookup(entityMetadata.component_storage_offset)
+                return this->storage_7.lookup(entityMetadata.component_storage_offset)
                     .storage[*maybeIdxOfComponent];
             default:
                 util::panic("ppool too high");
@@ -507,27 +464,23 @@ namespace game::ec
         }
         else
         {
-            return std::unexpected(
-                ComponentModificationError::ComponentConflict);
+            return std::unexpected(ComponentModificationError::ComponentConflict);
         }
     }
 
-    std::optional<u8>
-    EntityStorage::getIndexOfComponentUnchecked(Entity e, u8 componentTypeId)
+    std::optional<u8> EntityStorage::getIndexOfComponentUnchecked(Entity e, u8 componentTypeId)
     {
         const EntityMetadata& entityMetadata = (*this->metadata)[e.id];
 
         const u8 pool = getStoragePoolId(entityMetadata.number_of_components);
 
         auto doLookup =
-            [&]<std::size_t N>(
-                StoredEntityComponentsList<N>& storage) -> std::optional<u8>
+            [&]<std::size_t N>(StoredEntityComponentsList<N>& storage) -> std::optional<u8>
         {
             const std::array<EntityComponentStorage, N>& components =
                 storage.lookup(entityMetadata.component_storage_offset).storage;
 
-            for (std::size_t i = 0; i < entityMetadata.number_of_components;
-                 ++i)
+            for (std::size_t i = 0; i < entityMetadata.number_of_components; ++i)
             {
                 if (components[i].component_type_id == componentTypeId)
                 {

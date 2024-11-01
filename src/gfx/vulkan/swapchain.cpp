@@ -12,16 +12,14 @@
 
 namespace gfx::vulkan
 {
-    Swapchain::Swapchain(
-        const Device& device, vk::SurfaceKHR surface, vk::Extent2D extent_)
+    Swapchain::Swapchain(const Device& device, vk::SurfaceKHR surface, vk::Extent2D extent_)
         : extent {extent_}
     {
         const std::vector<vk::SurfaceFormatKHR> availableSurfaceFormats =
             device.getPhysicalDevice().getSurfaceFormatsKHR(surface);
 
         util::assertFatal(
-            std::ranges::find(
-                availableSurfaceFormats, ::gfx::Renderer::ColorFormat)
+            std::ranges::find(availableSurfaceFormats, ::gfx::Renderer::ColorFormat)
                 != availableSurfaceFormats.cend(),
             "Required surface format {} {} is not supported!",
             vk::to_string(::gfx::Renderer::ColorFormat.format),
@@ -57,8 +55,7 @@ namespace gfx::vulkan
         const vk::SurfaceCapabilitiesKHR surfaceCapabilities =
             device.getPhysicalDevice().getSurfaceCapabilitiesKHR(surface);
         const u32 numberOfSwapchainImages = std::min(
-            {std::max({4U, surfaceCapabilities.minImageCount}),
-             surfaceCapabilities.maxImageCount});
+            {std::max({4U, surfaceCapabilities.minImageCount}), surfaceCapabilities.maxImageCount});
 
         const vk::SwapchainCreateInfoKHR swapchainCreateInfo {
             .sType {vk::StructureType::eSwapchainCreateInfoKHR},
@@ -130,25 +127,21 @@ namespace gfx::vulkan
                 std::string imageName = std::format("Swapchain Image #{}", idx);
                 std::string viewName  = std::format("View #{}", idx);
 
-                device->setDebugUtilsObjectNameEXT(
-                    vk::DebugUtilsObjectNameInfoEXT {
-                        .sType {
-                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                        .pNext {nullptr},
-                        .objectType {vk::ObjectType::eImage},
-                        .objectHandle {std::bit_cast<u64>(i)},
-                        .pObjectName {imageName.c_str()},
-                    });
+                device->setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eImage},
+                    .objectHandle {std::bit_cast<u64>(i)},
+                    .pObjectName {imageName.c_str()},
+                });
 
-                device->setDebugUtilsObjectNameEXT(
-                    vk::DebugUtilsObjectNameInfoEXT {
-                        .sType {
-                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                        .pNext {nullptr},
-                        .objectType {vk::ObjectType::eImageView},
-                        .objectHandle {std::bit_cast<u64>(*imageView)},
-                        .pObjectName {viewName.c_str()},
-                    });
+                device->setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+                    .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                    .pNext {nullptr},
+                    .objectType {vk::ObjectType::eImageView},
+                    .objectHandle {std::bit_cast<u64>(*imageView)},
+                    .pObjectName {viewName.c_str()},
+                });
             }
 
             this->dense_image_views.push_back(*imageView);

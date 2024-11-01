@@ -22,7 +22,7 @@ namespace gfx::vulkan
         [[nodiscard]] std::span<const vk::ImageView> getViews() const noexcept;
         [[nodiscard]] std::span<const vk::Image>     getImages() const noexcept;
         [[nodiscard]] vk::Extent2D                   getExtent() const noexcept;
-        [[nodiscard]] vk::SwapchainKHR operator* () const noexcept;
+        [[nodiscard]] vk::SwapchainKHR               operator* () const noexcept;
 
     private:
         std::vector<vk::UniqueImageView> image_views;

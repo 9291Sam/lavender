@@ -47,17 +47,14 @@ namespace util
         void                updateAvailableBlockAmount(IndexType newAmount);
         [[nodiscard]] float getPercentAllocated() const
         {
-            return static_cast<float>(
-                       this->next_available_block
-                       - this->free_block_list.size())
+            return static_cast<float>(this->next_available_block - this->free_block_list.size())
                  / static_cast<float>(this->max_number_of_blocks);
         }
 
         std::expected<IndexType, OutOfBlocks> allocate();
         void                                  free(IndexType);
 
-        void
-        iterateThroughAllocatedElements(std::invocable<IndexType> auto func)
+        void iterateThroughAllocatedElements(std::invocable<IndexType> auto func)
         {
             for (u32 i = 0; i < this->next_available_block; ++i)
             {

@@ -48,8 +48,7 @@ namespace gfx::vulkan
             , mapped_memory {nullptr}
         {
             util::assertFatal(
-                !(memoryPropertyFlags
-                  & vk::MemoryPropertyFlagBits::eHostCoherent),
+                !(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eHostCoherent),
                 "Tried to create coherent buffer!");
 
             const VkBufferCreateInfo bufferCreateInfo {
@@ -66,8 +65,7 @@ namespace gfx::vulkan
             const VmaAllocationCreateInfo allocationCreateInfo {
                 .flags {VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT},
                 .usage {VMA_MEMORY_USAGE_AUTO},
-                .requiredFlags {
-                    static_cast<VkMemoryPropertyFlags>(memoryPropertyFlags)},
+                .requiredFlags {static_cast<VkMemoryPropertyFlags>(memoryPropertyFlags)},
                 .preferredFlags {},
                 .memoryTypeBits {},
                 .pool {nullptr},
@@ -97,8 +95,7 @@ namespace gfx::vulkan
             {
                 this->allocator->getDevice().setDebugUtilsObjectNameEXT(
                     vk::DebugUtilsObjectNameInfoEXT {
-                        .sType {
-                            vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                        .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
                         .pNext {nullptr},
                         .objectType {vk::ObjectType::eBuffer},
                         .objectHandle {std::bit_cast<u64>(this->buffer)},
@@ -133,8 +130,7 @@ namespace gfx::vulkan
             , buffer {other.buffer}
             , allocation {other.allocation}
             , elements {other.elements}
-            , mapped_memory {other.mapped_memory.exchange(
-                  nullptr, std::memory_order_seq_cst)}
+            , mapped_memory {other.mapped_memory.exchange(nullptr, std::memory_order_seq_cst)}
         {
             other.allocator  = nullptr;
             other.buffer     = nullptr;
@@ -220,8 +216,7 @@ namespace gfx::vulkan
                 this->mapped_memory = nullptr;
             }
 
-            ::vmaDestroyBuffer(
-                **this->allocator, this->buffer, this->allocation);
+            ::vmaDestroyBuffer(**this->allocator, this->buffer, this->allocation);
 
             bufferBytesAllocated -= (this->elements * sizeof(T));
         }
@@ -234,8 +229,8 @@ namespace gfx::vulkan
             {
                 void* outputMappedMemory = nullptr;
 
-                const VkResult result = ::vmaMapMemory(
-                    **this->allocator, this->allocation, &outputMappedMemory);
+                const VkResult result =
+                    ::vmaMapMemory(**this->allocator, this->allocation, &outputMappedMemory);
 
                 util::assertFatal(
                     result == VK_SUCCESS,
@@ -248,8 +243,7 @@ namespace gfx::vulkan
                     vk::to_string(vk::Result {result}));
 
                 this->mapped_memory.store(
-                    static_cast<T*>(outputMappedMemory),
-                    std::memory_order_seq_cst);
+                    static_cast<T*>(outputMappedMemory), std::memory_order_seq_cst);
             }
 
             return this->mapped_memory;

@@ -21,8 +21,7 @@ namespace game
     // clang-format on
     {}
 
-    glm::mat4 Camera::getPerspectiveMatrix(
-        const Game& game, const Transform& transform_) const
+    glm::mat4 Camera::getPerspectiveMatrix(const Game& game, const Transform& transform_) const
     {
         // TODO: replace
         // https://gist.github.com/pezcode/1609b61a1eedd207ec8c5acf6f94f53a
@@ -39,8 +38,7 @@ namespace game
     glm::mat4 Camera::getViewMatrix() const
     {
         return glm::inverse(
-            this->transform.asTranslationMatrix()
-            * this->transform.asRotationMatrix());
+            this->transform.asTranslationMatrix() * this->transform.asRotationMatrix());
     }
 
     glm::vec3 Camera::getForwardVector() const
@@ -105,9 +103,8 @@ namespace game
     {
         glm::quat q {1.0f, 0.0f, 0.0f, 0.0f};
 
-        this->pitch = std::clamp(
-            this->pitch, -glm::half_pi<float>(), glm::half_pi<float>());
-        this->yaw = glm::mod(this->yaw, glm::two_pi<float>());
+        this->pitch = std::clamp(this->pitch, -glm::half_pi<float>(), glm::half_pi<float>());
+        this->yaw   = glm::mod(this->yaw, glm::two_pi<float>());
 
         q *= glm::angleAxis(this->pitch, -Transform::RightVector);
 

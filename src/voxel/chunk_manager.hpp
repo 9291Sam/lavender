@@ -46,16 +46,12 @@ namespace voxel
         ChunkManager& operator= (ChunkManager&&)      = delete;
 
         [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
-        makeRecordObject(
-            const game::Game*, const gfx::vulkan::BufferStager&, game::Camera);
+        makeRecordObject(const game::Game*, const gfx::vulkan::BufferStager&, game::Camera);
 
         PointLight createPointLight();
 
         void modifyPointLight(
-            const PointLight&,
-            glm::vec3 position,
-            glm::vec4 colorAndPower,
-            glm::vec4 falloffs);
+            const PointLight&, glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs);
         void destroyPointLight(PointLight);
 
         void writeVoxel(glm::i32vec3, Voxel);
@@ -71,9 +67,7 @@ namespace voxel
             Voxel,
             std::source_location = std::source_location::current());
 
-        std::array<util::RangeAllocation, 6> meshChunkNormal(u32 chunkId);
-        std::array<util::RangeAllocation, 6> meshChunkLinear(u32 chunkId);
-        std::array<util::RangeAllocation, 6> meshChunkGreedy(u32 chunkId);
+        std::array<std::vector<GreedyVoxelFace>, 6> meshChunkGreedy(u32 chunkId);
 
         struct DenseBitChunk
         {
@@ -81,23 +75,13 @@ namespace voxel
 
             static bool isPositionInBounds(glm::i8vec3 p)
             {
-                return p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0
-                    && p.z < 64;
+                return p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0 && p.z < 64;
             }
 
             // returns false on out of bounds access
             [[nodiscard]] bool isOccupied(glm::i8vec3 p) const
             {
-                // util::assertFatal(
-                //     p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0
-                //         && p.z < 64,
-                //     "{} {} {}",
-                //     p.x,
-                //     p.y,
-                //     p.z);
-
-                if (p.x < 0 || p.x >= 64 || p.y < 0 || p.y >= 64 || p.z < 0
-                    || p.z >= 64)
+                if (p.x < 0 || p.x >= 64 || p.y < 0 || p.y >= 64 || p.z < 0 || p.z >= 64)
                 {
                     return false;
                 }
@@ -122,8 +106,8 @@ namespace voxel
                 return result;
             }
 
-            [[nodiscard]] bool isEntireRangeOccupied(
-                glm::i8vec3 base, glm::i8vec3 step, i8 range) const // NOLINT
+            [[nodiscard]] bool
+            isEntireRangeOccupied(glm::i8vec3 base, glm::i8vec3 step, i8 range) const // NOLINT
             {
                 bool isEntireRangeOccupied = true;
 
@@ -156,8 +140,7 @@ namespace voxel
                 // if constexpr (util::isDebugBuild())
                 // {
                 util::assertFatal(
-                    p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0
-                        && p.z < 64,
+                    p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0 && p.z < 64,
                     "{} {} {}",
                     p.x,
                     p.y,
@@ -167,15 +150,13 @@ namespace voxel
                 if (filled)
                 {
                     // NOLINTNEXTLINE
-                    this->data[static_cast<std::size_t>(p.x)]
-                              [static_cast<std::size_t>(p.y)] |=
+                    this->data[static_cast<std::size_t>(p.x)][static_cast<std::size_t>(p.y)] |=
                         (u64 {1} << static_cast<u64>(p.z));
                 }
                 else
                 {
                     // NOLINTNEXTLINE
-                    this->data[static_cast<std::size_t>(p.x)]
-                              [static_cast<std::size_t>(p.y)] &=
+                    this->data[static_cast<std::size_t>(p.x)][static_cast<std::size_t>(p.y)] &=
                         ~(u64 {1} << static_cast<u64>(p.z));
                 }
             }
@@ -256,8 +237,7 @@ namespace voxel
         util::IndexAllocator                           light_allocator;
         gfx::vulkan::TrackedBuffer<InternalPointLight> lights_buffer;
 
-        gfx::vulkan::TrackedBuffer<
-            std::array<std::array<std::array<u16, 256>, 256>, 256>>
+        gfx::vulkan::TrackedBuffer<std::array<std::array<std::array<u16, 256>, 256>, 256>>
             global_chunks_buffer;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> descriptor_set_layout;
