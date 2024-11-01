@@ -3,6 +3,7 @@
 #include "brick_map.hpp"
 #include "brick_pointer_allocator.hpp"
 #include "chunk.hpp"
+#include "dense_bit_chunk.hpp"
 #include "directional_face_id_brick.hpp"
 #include "game/camera.hpp"
 #include "game/frame_generator.hpp"
@@ -21,13 +22,11 @@
 #include "voxel/material_manager.hpp"
 #include "voxel/opacity_brick.hpp"
 #include <boost/container_hash/hash_fwd.hpp>
-#include <compare>
 #include <glm/fwd.hpp>
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <source_location>
 #include <unordered_map>
-#include <unordered_set>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
@@ -67,110 +66,9 @@ namespace voxel
             Voxel,
             std::source_location = std::source_location::current());
 
-        std::array<std::vector<GreedyVoxelFace>, 6> meshChunkGreedy(u32 chunkId);
-
-        struct DenseBitChunk
-        {
-            std::array<std::array<u64, 64>, 64> data;
-
-            static bool isPositionInBounds(glm::i8vec3 p)
-            {
-                return p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0 && p.z < 64;
-            }
-
-            // returns false on out of bounds access
-            [[nodiscard]] bool isOccupied(glm::i8vec3 p) const
-            {
-                if (p.x < 0 || p.x >= 64 || p.y < 0 || p.y >= 64 || p.z < 0 || p.z >= 64)
-                {
-                    return false;
-                }
-                else
-                {
-                    return static_cast<bool>(
-                        this->data[static_cast<std::size_t>(p.x)] // NOLINT
-                                  [static_cast<std::size_t>(p.y)] // NOLINT
-                        & (1ULL << static_cast<u64>(p.z)));
-                }
-            }
-            // if its occupied, it removes it from the data structure
-            [[nodiscard]] bool isOccupiedClearing(glm::i8vec3 p)
-            {
-                const bool result = this->isOccupied(p);
-
-                if (result)
-                {
-                    this->write(p, false);
-                }
-
-                return result;
-            }
-
-            [[nodiscard]] bool
-            isEntireRangeOccupied(glm::i8vec3 base, glm::i8vec3 step, i8 range) const // NOLINT
-            {
-                bool isEntireRangeOccupied = true;
-
-                for (i8 i = 0; i < range; ++i)
-                {
-                    glm::i8vec3 probe = base + step * i;
-
-                    if (!this->isOccupied(probe))
-                    {
-                        isEntireRangeOccupied = false;
-                        break;
-                    }
-                }
-
-                return isEntireRangeOccupied;
-            }
-
-            void clearEntireRange(glm::i8vec3 base, glm::i8vec3 step, i8 range)
-            {
-                for (i8 i = 0; i < range; ++i)
-                {
-                    glm::i8vec3 probe = base + step * i;
-
-                    this->write(probe, false);
-                }
-            }
-
-            void write(glm::i8vec3 p, bool filled)
-            {
-                // if constexpr (util::isDebugBuild())
-                // {
-                util::assertFatal(
-                    p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0 && p.z < 64,
-                    "{} {} {}",
-                    p.x,
-                    p.y,
-                    p.z);
-                // }
-
-                if (filled)
-                {
-                    // NOLINTNEXTLINE
-                    this->data[static_cast<std::size_t>(p.x)][static_cast<std::size_t>(p.y)] |=
-                        (u64 {1} << static_cast<u64>(p.z));
-                }
-                else
-                {
-                    // NOLINTNEXTLINE
-                    this->data[static_cast<std::size_t>(p.x)][static_cast<std::size_t>(p.y)] &=
-                        ~(u64 {1} << static_cast<u64>(p.z));
-                }
-            }
-        };
-
         std::unique_ptr<DenseBitChunk> makeDenseBitChunk(u32 chunkId);
 
         const gfx::Renderer* renderer;
-
-        struct ChunkSlice
-        {
-            // width is within each u64, height is the index
-            std::array<u64, 64> data;
-        };
 
         struct CpuChunkData
         {

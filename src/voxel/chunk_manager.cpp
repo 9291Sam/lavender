@@ -23,7 +23,9 @@
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
+#include "util/timer.hpp"
 #include "voxel/constants.hpp"
+#include "voxel/dense_bit_chunk.hpp"
 #include "voxel/material_manager.hpp"
 #include "voxel/opacity_brick.hpp"
 #include "voxel_face_direction.hpp"
@@ -32,7 +34,6 @@
 #include <glm/fwd.hpp>
 #include <glm/geometric.hpp>
 #include <glm/vector_relational.hpp>
-#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <ranges>
@@ -45,6 +46,9 @@
 
 namespace voxel
 {
+
+    std::array<std::vector<GreedyVoxelFace>, 6>
+    meshChunkGreedy(std::unique_ptr<DenseBitChunk> thisChunkData);
 
     static constexpr u32 MaxChunks          = 4096;
     static constexpr u32 DirectionsPerChunk = 6;
@@ -540,7 +544,7 @@ namespace voxel
                         }
                     }
                     std::array<std::vector<GreedyVoxelFace>, 6> greedyFaces =
-                        this->meshChunkGreedy(chunkId);
+                        meshChunkGreedy(this->makeDenseBitChunk(chunkId));
                     std::array<util::RangeAllocation, 6> allocations {};
 
                     for (auto [thisAllocation, faces] : std::views::zip(allocations, greedyFaces))
@@ -607,8 +611,8 @@ namespace voxel
                                            *game, game::Transform {.translation {cornerPos}})
                                      * glm::vec4 {0.0, 0.0, 0.0, 1.0};
 
-                            if (glm::all(glm::lessThan(res.xyz() / res.w, glm::vec3 {1.0}))
-                                && glm::all(glm::greaterThan(res.xyz() / res.w, glm::vec3 {-1.0})))
+                            if (glm::all(glm::lessThan(res.xyz() / res.w, glm::vec3 {1.25}))
+                                && glm::all(glm::greaterThan(res.xyz() / res.w, glm::vec3 {-1.25})))
                             {
                                 isChunkInFrustum = true;
                             }
@@ -928,9 +932,9 @@ namespace voxel
         }
     }
 
-    std::unique_ptr<ChunkManager::DenseBitChunk> ChunkManager::makeDenseBitChunk(u32 chunkId)
+    std::unique_ptr<DenseBitChunk> ChunkManager::makeDenseBitChunk(u32 chunkId)
     {
-        std::unique_ptr<ChunkManager::DenseBitChunk> out = std::make_unique<DenseBitChunk>();
+        std::unique_ptr<DenseBitChunk> out = std::make_unique<DenseBitChunk>();
 
         const BrickMap& thisBrickMap = this->brick_maps.read(chunkId, 1)[0];
 
@@ -959,11 +963,16 @@ namespace voxel
         return out;
     }
 
-    std::array<std::vector<GreedyVoxelFace>, 6> ChunkManager::meshChunkGreedy(u32 chunkId) // NOLINT
+    std::array<std::vector<GreedyVoxelFace>, 6>
+    meshChunkGreedy(std::unique_ptr<DenseBitChunk> thisChunkData) // NOLINT
     {
-        std::unique_ptr<DenseBitChunk> thisChunkData = this->makeDenseBitChunk(chunkId);
-
         std::array<std::vector<GreedyVoxelFace>, 6> outFaces {};
+
+        struct ChunkSlice
+        {
+            // width is within each u64, height is the index
+            std::array<u64, 64> data;
+        };
 
         auto makeChunkSlice = [&](u32 normalId, u64 offset) -> ChunkSlice
         {
@@ -1002,7 +1011,6 @@ namespace voxel
 
             return res;
         };
-
         u32 normalId = 0;
         for (std::vector<GreedyVoxelFace>& faces : outFaces)
         {

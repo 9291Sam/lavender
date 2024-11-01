@@ -131,9 +131,9 @@ namespace verdigris
         //     }
         // }
 
-        for (i32 x = -512; x < 512; ++x)
+        for (i32 x = -256; x < 256; ++x)
         {
-            for (i32 z = -512; z < 512; ++z)
+            for (i32 z = -256; z < 256; ++z)
             {
                 for (i32 y = 0; y < 128; ++y)
                 {
