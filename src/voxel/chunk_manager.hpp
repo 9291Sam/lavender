@@ -19,6 +19,7 @@
 #include "util/range_allocator.hpp"
 #include "visibility_brick.hpp"
 #include "voxel.hpp"
+#include "voxel/constants.hpp"
 #include "voxel/material_manager.hpp"
 #include "voxel/opacity_brick.hpp"
 #include <boost/container_hash/hash_fwd.hpp>
@@ -47,11 +48,18 @@ namespace voxel
         [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
         makeRecordObject(const game::Game*, const gfx::vulkan::BufferStager&, game::Camera);
 
-        PointLight createPointLight();
+        Chunk createChunk(ChunkCoordinate);
+        void  destroyChunk(Chunk);
 
-        void modifyPointLight(
-            const PointLight&, glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs);
+        PointLight createPointLight();
+        void       modifyPointLight(
+                  const PointLight&, glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs);
         void destroyPointLight(PointLight);
+
+        void  writeVoxelToChunk(const Chunk&, ...);
+        // TODO: many by default
+        bool  readVoxelFromChunkOpacity(const Chunk&, );
+        Voxel readVoxelFromChunkMaterial(const Chunk&, );
 
         void writeVoxel(glm::i32vec3, Voxel);
 
