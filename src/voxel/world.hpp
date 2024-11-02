@@ -1,19 +1,15 @@
 #pragma once
 
+#include "chunk.hpp"
 #include "game/frame_generator.hpp"
 #include "glm/gtx/hash.hpp"
+#include "point_light.hpp"
+#include "voxel/constants.hpp"
 #include "voxel/voxel.hpp"
 #include <span>
 
-namespace voxel2
+namespace voxel
 {
-    using voxel::Voxel;
-
-    struct PointLight
-    {
-        glm::vec3 position;
-        float     power;
-    };
 
     struct WorldGenerator
     {
@@ -28,9 +24,8 @@ namespace voxel2
     public:
         struct VoxelWrite
         {
-            glm::vec4 position;
-            glm::vec4 color_and_power;
-            glm::vec4 falloffs;
+            WorldPosition position;
+            Voxel         voxel;
         };
 
         enum class VoxelWriteOverlapBehavior
@@ -67,5 +62,8 @@ namespace voxel2
         void destroyPointLight(PointLight) const;
 
         [[nodiscard]] std::vector<game::FrameGenerator::RecordObject> getRecordObjects();
+
+    private:
+        std::unordered_map<ChunkCoordinate, Chunk> global_chunks;
     };
-} // namespace voxel2
+} // namespace voxel

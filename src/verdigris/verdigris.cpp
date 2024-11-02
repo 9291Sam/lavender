@@ -100,13 +100,16 @@ namespace verdigris
             return static_cast<voxel::Voxel>(pDist(gen));
         };
 
+        voxel::Chunk c =
+            this->chunk_manager.createChunk(voxel::ChunkCoordinate {glm::i32vec3 {0, 0, 0}});
+
         auto insertVoxelAt = [&](glm::i32vec3 p, voxel::Voxel v) mutable
         {
-            // glm::i32vec3 base = {
-            //     64 * ((p.x < 0 ? (p.x + 1) / 64 - 1 : p.x / 64)),
-            //     64 * ((p.y < 0 ? (p.y + 1) / 64 - 1 : p.y / 64)),
-            //     64 * ((p.z < 0 ? (p.z + 1) / 64 - 1 : p.z / 64)),
-            // };
+            glm::i32vec3 base = {
+                64 * ((p.x < 0 ? (p.x + 1) / 64 - 1 : p.x / 64)),
+                64 * ((p.y < 0 ? (p.y + 1) / 64 - 1 : p.y / 64)),
+                64 * ((p.z < 0 ? (p.z + 1) / 64 - 1 : p.z / 64)),
+            };
 
             // // util::logTrace("{} {}", glm::to_string(base),
             // glm::to_string(p));
@@ -120,7 +123,9 @@ namespace verdigris
             //     chunks[base], voxel::ChunkLocalPosition {p - base},
             //     genVoxel());
 
-            this->chunk_manager.writeVoxel(p, v);
+            voxel::ChunkManager::VoxelWrite w {.position {p - base}, .voxel {v}};
+
+            this->chunk_manager.writeVoxelToChunk(c, {&w, 1});
         };
 
         // for (i32 x = -1024; x < 1024; ++x)

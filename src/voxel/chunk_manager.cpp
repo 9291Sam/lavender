@@ -507,15 +507,7 @@ namespace voxel
         util::logTrace("allocated {:.3} GiB", gibAllocated);
     }
 
-    ChunkManager::~ChunkManager()
-    {
-        while (!this->global_chunks.empty())
-        {
-            auto node = this->global_chunks.extract(this->global_chunks.begin());
-
-            this->deallocateChunk(std::move(node.mapped()));
-        }
-    }
+    ChunkManager::~ChunkManager() = default;
 
     std::vector<game::FrameGenerator::RecordObject>
     // NOLINTNEXTLINE
@@ -777,37 +769,8 @@ namespace voxel
         toFree.id = PointLight::NullId;
     }
 
-    void ChunkManager::writeVoxel(glm::i32vec3 p, Voxel v)
+    Chunk ChunkManager::createChunk(ChunkCoordinate coordinate)
     {
-        ChunkCoordinate coord {glm::i32vec3 {
-            util::divideEuclidean(p.x, 64),
-            util::divideEuclidean(p.y, 64),
-            util::divideEuclidean(p.z, 64),
-        }};
-
-        ChunkLocalPosition pos {glm::u8vec3 {
-            static_cast<u8>(util::moduloEuclidean(p.x, 64)),
-            static_cast<u8>(util::moduloEuclidean(p.y, 64)),
-            static_cast<u8>(util::moduloEuclidean(p.z, 64)),
-        }};
-
-        auto it = this->global_chunks.find(coord);
-
-        if (it == this->global_chunks.end())
-        {
-            it = this->global_chunks.insert({coord, this->allocateChunk(coord * 64)}).first;
-        }
-
-        this->writeVoxelToChunk(it->second, pos, v);
-    }
-
-    Chunk ChunkManager::allocateChunk(glm::ivec3 position)
-    {
-        util::assertFatal(
-            position % glm::ivec3 {64, 64, 64} == glm::ivec3 {0, 0, 0},
-            "Tried to create a chunk at {}",
-            glm::to_string(position));
-
         const std::expected<u32, util::IndexAllocator::OutOfBlocks> maybeThisChunkId =
             this->chunk_id_allocator.allocate();
 
@@ -818,27 +781,36 @@ namespace voxel
 
         const u32 thisChunkId = *maybeThisChunkId;
 
+        // TODO: no overallocation protection...
         this->cpu_chunk_data[thisChunkId] = CpuChunkData {
-            .position {glm::vec4 {position.x, position.y, position.z, 0.0}},
+            .position {glm::vec4 {
+                coordinate.x * ChunkEdgeLengthVoxels,
+                coordinate.y * ChunkEdgeLengthVoxels,
+                coordinate.z * ChunkEdgeLengthVoxels,
+                0.0}},
             .face_data {std::nullopt},
             .needs_remesh {true}};
 
         this->brick_maps.write(thisChunkId, BrickMap {});
-        this->gpu_chunk_data.write(thisChunkId, GpuChunkData {.position {position.xyzz()}});
+        this->gpu_chunk_data.write(
+            thisChunkId,
+            GpuChunkData {.position {glm::vec4 {
+                coordinate.x * ChunkEdgeLengthVoxels,
+                coordinate.y * ChunkEdgeLengthVoxels,
+                coordinate.z * ChunkEdgeLengthVoxels,
+                0.0}}});
 
-        ChunkCoordinate coord {glm::i32vec3 {
-            util::divideEuclidean(position.x, 64),
-            util::divideEuclidean(position.y, 64),
-            util::divideEuclidean(position.z, 64),
-        }};
+        util::assertFatal(coordinate.x > -127 && coordinate.x < 127, "{}", coordinate.x);
+        util::assertFatal(coordinate.y > -127 && coordinate.y < 127, "{}", coordinate.y);
+        util::assertFatal(coordinate.z > -127 && coordinate.z < 127, "{}", coordinate.z);
 
-        this->global_chunks_buffer.modify(0)[coord.x + 128][coord.y + 128][coord.z + 128] =
-            *maybeThisChunkId;
+        this->global_chunks_buffer.modify(
+            0)[coordinate.x + 128][coordinate.y + 128][coordinate.z + 128] = *maybeThisChunkId;
 
         return Chunk {thisChunkId};
     }
 
-    void ChunkManager::deallocateChunk(Chunk toFree)
+    void ChunkManager::destroyChunk(Chunk toFree)
     {
         this->chunk_id_allocator.free(toFree.id);
 
@@ -878,57 +850,63 @@ namespace voxel
             util::divideEuclidean(static_cast<i32>(cpuChunkData.position.z), 64),
         }};
 
-        this->global_chunks_buffer.modify(0)[coord.x + 128][coord.y + 128][coord.z + 128] =
-            ~UINT16_C(0);
+        // NOLINTNEXTLINE
+        this->global_chunks_buffer.modify(
+            0)[static_cast<u64>(coord.x) + 128][static_cast<u64>(coord.y) + 128]
+              [static_cast<u64>(coord.z) + 128] = static_cast<u16>(-1);
 
         toFree.id = Chunk::NullChunk;
     }
 
-    void ChunkManager::writeVoxelToChunk(
-        const Chunk& c, ChunkLocalPosition p, Voxel v, std::source_location loc)
+    void ChunkManager::writeVoxelToChunk(const Chunk& c, std::span<const VoxelWrite> writes)
     {
         this->cpu_chunk_data[c.id].needs_remesh = true;
 
-        util::assertFatal<u8, u8, u8>(
-            p.x < ChunkEdgeLengthVoxels && p.y < ChunkEdgeLengthVoxels
-                && p.z < ChunkEdgeLengthVoxels,
-            "ChunkManager::writeVoxelToChunk position [{}, {}, {}] out of "
-            "bounds",
-            static_cast<u8>(p.x),
-            static_cast<u8>(p.y),
-            static_cast<u8>(p.z),
-            loc);
-
-        const auto [bC, bP] = splitChunkLocalPosition(p);
-
-        MaybeBrickPointer maybeBrickPointer =
-            this->brick_maps.read(c.id, 1)[0].data[bC.x][bC.y][bC.z]; // NOLINT
-
-        if (maybeBrickPointer.isNull())
+        for (const VoxelWrite& w : writes)
         {
-            const BrickPointer newBrickPointer = this->brick_allocator.allocate();
+            util::assertFatal(
+                w.position.x < ChunkEdgeLengthVoxels && w.position.y < ChunkEdgeLengthVoxels
+                    && w.position.z < ChunkEdgeLengthVoxels,
+                "ChunkManager::writeVoxelToChunk position [{}, {}, {}] out of "
+                "bounds",
+                static_cast<u8>(w.position.x),
+                static_cast<u8>(w.position.y),
+                static_cast<u8>(w.position.z));
 
-            maybeBrickPointer = newBrickPointer;
+            const auto [bC, bP] = splitChunkLocalPosition(w.position);
 
-            this->brick_parent_info.modify(maybeBrickPointer.pointer) = BrickParentInformation {
-                .parent_chunk {c.id}, .position_in_parent_chunk {bC.getLinearPositionInChunk()}};
-            this->material_bricks.modify(maybeBrickPointer.pointer).fill(Voxel::NullAirEmpty);
-            this->opacity_bricks.modify(maybeBrickPointer.pointer).fill(false);
+            MaybeBrickPointer maybeBrickPointer =
+                this->brick_maps.read(c.id, 1)[0].data[bC.x][bC.y][bC.z]; // NOLINT
+
+            // TODO: fix all of these modify calls, this isn't great...
+            if (maybeBrickPointer.isNull())
+            {
+                const BrickPointer newBrickPointer = this->brick_allocator.allocate();
+
+                maybeBrickPointer = newBrickPointer;
+
+                this->brick_parent_info.modify(maybeBrickPointer.pointer) = BrickParentInformation {
+                    .parent_chunk {c.id},
+                    .position_in_parent_chunk {bC.getLinearPositionInChunk()}};
+                this->material_bricks.modify(maybeBrickPointer.pointer).fill(Voxel::NullAirEmpty);
+                this->opacity_bricks.modify(maybeBrickPointer.pointer).fill(false);
+
+                // NOLINTNEXTLINE
+                this->brick_maps.modify(c.id).data[bC.x][bC.y][bC.z] = maybeBrickPointer;
+            }
 
             // NOLINTNEXTLINE
-            this->brick_maps.modify(c.id).data[bC.x][bC.y][bC.z] = maybeBrickPointer;
-        }
+            this->material_bricks.modify(maybeBrickPointer.pointer).data[bP.x][bP.y][bP.z] =
+                w.voxel;
 
-        // NOLINTNEXTLINE
-        this->material_bricks.modify(maybeBrickPointer.pointer).data[bP.x][bP.y][bP.z] = v;
-
-        if (v == Voxel::NullAirEmpty)
-        {
-            this->opacity_bricks.modify(maybeBrickPointer.pointer).write(bP, false);
-        }
-        else
-        {
-            this->opacity_bricks.modify(maybeBrickPointer.pointer).write(bP, true);
+            if (w.voxel == Voxel::NullAirEmpty)
+            {
+                this->opacity_bricks.modify(maybeBrickPointer.pointer).write(bP, false);
+            }
+            else
+            {
+                this->opacity_bricks.modify(maybeBrickPointer.pointer).write(bP, true);
+            }
         }
     }
 
@@ -1021,7 +999,9 @@ namespace voxel
                 for (u64 height = 0; height < 64; ++height)
                 {
                     // NOLINTNEXTLINE
-                    for (u64 width = std::countr_zero(thisSlice.data[height]); width < 64; ++width)
+                    for (u64 width = static_cast<u64>(std::countr_zero(thisSlice.data[height]));
+                         width < 64;
+                         ++width)
                     {
                         // NOLINTNEXTLINE
                         if ((thisSlice.data[height] & (UINT64_C(1) << width)) != 0ULL)

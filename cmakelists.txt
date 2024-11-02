@@ -68,7 +68,7 @@ set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME ON) 
 set(BOOST_ENABLE_CMAKE ON)
-set(BOOST_INCLUDE_LIBRARIES container unordered)
+set(BOOST_INCLUDE_LIBRARIES container unordered dynamic_bitset core type_traits)
 
 message("Downloading boost, this will take some time!")
 FetchContent_Declare(
@@ -146,7 +146,9 @@ target_link_libraries(
     glm
     Boost::container
     Boost::unordered
-    # boost_dynamic_bitset
+    Boost::dynamic_bitset
+    Boost::core
+    Boost::type_traits
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

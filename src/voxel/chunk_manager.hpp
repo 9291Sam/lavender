@@ -23,6 +23,7 @@
 #include "voxel/material_manager.hpp"
 #include "voxel/opacity_brick.hpp"
 #include <boost/container_hash/hash_fwd.hpp>
+#include <boost/dynamic_bitset.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -36,6 +37,13 @@ namespace voxel
 
     class ChunkManager
     {
+    public:
+        struct VoxelWrite
+        {
+            ChunkLocalPosition position;
+            Voxel              voxel;
+        };
+
     public:
         explicit ChunkManager(const game::Game*);
         ~ChunkManager();
@@ -56,23 +64,13 @@ namespace voxel
                   const PointLight&, glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs);
         void destroyPointLight(PointLight);
 
-        void  writeVoxelToChunk(const Chunk&, ...);
-        // TODO: many by default
-        bool  readVoxelFromChunkOpacity(const Chunk&, );
-        Voxel readVoxelFromChunkMaterial(const Chunk&, );
-
-        void writeVoxel(glm::i32vec3, Voxel);
+        void writeVoxelToChunk(const Chunk&, std::span<const VoxelWrite>);
+        // [[nodiscard]] boost::dynamic_bitset<u64>
+        // readVoxelFromChunkOpacity(const Chunk&, std::span<const ChunkLocalPosition>);
+        // std::vector<Voxel>
+        // readVoxelFromChunkMaterial(const Chunk&, std::span<const ChunkLocalPosition>);
 
     private:
-
-        Chunk allocateChunk(glm::ivec3 position);
-        void  deallocateChunk(Chunk);
-
-        void writeVoxelToChunk(
-            const Chunk&,
-            ChunkLocalPosition,
-            Voxel,
-            std::source_location = std::source_location::current());
 
         std::unique_ptr<DenseBitChunk> makeDenseBitChunk(u32 chunkId);
 
@@ -94,8 +92,6 @@ namespace voxel
         };
         gfx::vulkan::TrackedBuffer<GpuChunkData> gpu_chunk_data;
         gfx::vulkan::TrackedBuffer<BrickMap>     brick_maps;
-
-        std::unordered_map<ChunkCoordinate, Chunk> global_chunks;
 
         struct ChunkDrawIndirectInstancePayload
         {

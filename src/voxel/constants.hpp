@@ -31,16 +31,16 @@ namespace voxel
             }
         }
 
-        static std::optional<BrickLocalPosition> tryCreate(glm::u8vec3 p)
+        static std::optional<BrickLocalPosition> tryCreate(glm::u8vec3 pos)
         {
-            if (p.x >= BrickEdgeLengthVoxels || p.y >= BrickEdgeLengthVoxels
-                || p.z >= BrickEdgeLengthVoxels)
+            if (pos.x >= BrickEdgeLengthVoxels || pos.y >= BrickEdgeLengthVoxels
+                || pos.z >= BrickEdgeLengthVoxels)
             {
                 return std::nullopt;
             }
             else
             {
-                return BrickLocalPosition {p};
+                return BrickLocalPosition {pos};
             }
         }
     };
