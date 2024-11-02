@@ -129,6 +129,11 @@ namespace voxel
     struct ChunkCoordinate : public glm::i32vec3
     {};
 
+    inline WorldPosition getWorldPositionOfChunkCoordinate(ChunkCoordinate c)
+    {
+        return WorldPosition {c * 64};
+    }
+
     inline std::pair<ChunkCoordinate, ChunkLocalPosition> splitWorldPosition(WorldPosition p)
     {
         return {
@@ -148,6 +153,13 @@ namespace voxel
         return {
             BrickCoordinate {p / ChunkEdgeLengthBricks},
             BrickLocalPosition {p % ChunkEdgeLengthBricks}};
+    }
+
+    inline WorldPosition assembleWorldPosition(ChunkCoordinate c, ChunkLocalPosition p)
+    {
+        return WorldPosition {
+            static_cast<glm::i32vec3>(getWorldPositionOfChunkCoordinate(c))
+            + static_cast<glm::i32vec3>(p)};
     }
 
     inline ChunkLocalPosition assembleChunkLocalPosition(BrickCoordinate c, BrickLocalPosition p)

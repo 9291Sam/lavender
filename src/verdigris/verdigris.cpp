@@ -13,6 +13,7 @@
 #include "voxel/point_light.hpp"
 #include "voxel/voxel.hpp"
 #include "voxel/world.hpp"
+#include "world/world.hpp"
 #include <boost/container_hash/hash_fwd.hpp>
 #include <glm/fwd.hpp>
 #include <numbers>
@@ -295,26 +296,19 @@ namespace verdigris
         //     }
         // }
 
-        auto fnSimplex = FastNoise::New<FastNoise::Simplex>();
-        FastNoise::SmartNode<FastNoise::FractalFBm> fnFractal =
-            FastNoise::New<FastNoise::FractalFBm>();
+        world::WorldChunkGenerator            gener {894398345};
+        std::vector<voxel::World::VoxelWrite> writes {};
 
-        fnFractal->SetSource(fnSimplex);
-        fnFractal->SetOctaveCount(5);
-
-        std::vector<float> res {};
-        res.resize(16 * 16);
-
-        fnSimplex->GenUniformGrid2D(res.data(), 0, 0, 16, 16, 0.2f, 1337);
-        int index = 0;
-
-        for (int z = 0; z < 16; z++)
+        for (int i = -7; i < 8; ++i)
         {
-            for (int y = 0; y < 16; y++)
+            for (int j = -7; j < 8; ++j)
             {
-                insertVoxelAt({z, res[index++] * 23, y}, voxel::Voxel::Obsidian);
+                writes.append_range(gener.generateChunk({{i, 0, j}}));
             }
         }
+
+        std::ignore = this->voxel_world.writeVoxel(
+            voxel::World::VoxelWriteOverlapBehavior::OverwriteOnOverlap, writes);
 
         // std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> ddist {-1.0, 1.0};
@@ -333,8 +327,11 @@ namespace verdigris
             this->lights.push_back(this->voxel_world.createPointLight({}, {}, {}));
         }
 
+        this->lights.push_back(this->voxel_world.createPointLight(
+            {105, 115, 104}, {1.0, 1.0, 1.0, 384}, {0.0, 0.0, 0.025f, 0.0}));
+
         std::ignore = this->voxel_world.writeVoxel(
-            voxel::World::VoxelWriteOverlapBehavior::FailOnOverlap, writeList);
+            voxel::World::VoxelWriteOverlapBehavior::OverwriteOnOverlap, writeList);
     }
 
     Verdigris::~Verdigris()
@@ -388,9 +385,9 @@ namespace verdigris
             if (i == 0)
             {
                 const glm::vec3 pos = glm::vec3 {
-                    28.0f * std::cos(offset),
+                    78.0f * std::cos(offset),
                     4.0f * std::sin(offset) + 48.0f,
-                    28.0f * std::sin(offset)};
+                    78.0f * std::sin(offset)};
 
                 // util::logTrace("modify light2");
 
@@ -409,7 +406,7 @@ namespace verdigris
             {
                 const glm::vec3 pos = glm::vec3 {
                     256.0f * std::cos(offset * 1.384 + 93.4),
-                    4.0f * std::sin(offset * 1.384 + 93.4) + 8.0f,
+                    4.0f * std::sin(offset * 1.384 + 93.4) + 47.0f,
                     256.0f * std::sin(offset * 1.384 + 93.4)};
 
                 this->voxel_world.modifyPointLight(
