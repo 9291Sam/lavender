@@ -5,6 +5,7 @@
 #include "gfx/vulkan/buffer_stager.hpp"
 #include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
+#include "voxel/world.hpp"
 #include <deque>
 #include <set>
 
@@ -17,7 +18,7 @@ namespace verdigris
         const game::ec::EntityComponentManager* ec_manager;
         std::shared_ptr<vk::UniquePipeline>     triangle_pipeline;
         gfx::vulkan::BufferStager               stager;
-        mutable voxel::ChunkManager             chunk_manager;
+        mutable voxel::World                    voxel_world;
         mutable std::vector<voxel::PointLight>  lights;
         mutable float                           time_alive;
         mutable std::deque<float>               frame_times;

@@ -804,8 +804,11 @@ namespace voxel
         util::assertFatal(coordinate.y > -127 && coordinate.y < 127, "{}", coordinate.y);
         util::assertFatal(coordinate.z > -127 && coordinate.z < 127, "{}", coordinate.z);
 
-        this->global_chunks_buffer.modify(
-            0)[coordinate.x + 128][coordinate.y + 128][coordinate.z + 128] = *maybeThisChunkId;
+        // NOLINTNEXTLINE
+        this->global_chunks_buffer.modify(0)[static_cast<std::size_t>(coordinate.x) + 128]
+                                            [static_cast<std::size_t>(coordinate.y) + 128]
+                                            [static_cast<std::size_t>(coordinate.z) + 128] =
+            static_cast<u16>(*maybeThisChunkId);
 
         return Chunk {thisChunkId};
     }

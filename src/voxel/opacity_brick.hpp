@@ -61,10 +61,6 @@ namespace voxel
                 util::assertFatal(p.x < BrickEdgeLengthVoxels, "{}", p.x);
                 util::assertFatal(p.y < BrickEdgeLengthVoxels, "{}", p.y);
                 util::assertFatal(p.z < BrickEdgeLengthVoxels, "{}", p.z);
-
-                util::assertFatal(p.x >= 0, "{}", p.x);
-                util::assertFatal(p.y >= 0, "{}", p.y);
-                util::assertFatal(p.z >= 0, "{}", p.z);
             }
 
             const std::size_t linearIndex = p.x + p.z * BrickEdgeLengthVoxels

@@ -9,8 +9,10 @@
 #include "triangle_component.hpp"
 #include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
+#include "voxel/constants.hpp"
 #include "voxel/point_light.hpp"
 #include "voxel/voxel.hpp"
+#include "voxel/world.hpp"
 #include <boost/container_hash/hash_fwd.hpp>
 #include <glm/fwd.hpp>
 #include <numbers>
@@ -24,7 +26,7 @@ namespace verdigris
         : game {game_}
         , ec_manager {game_->getEntityComponentManager()}
         , stager {this->game->getRenderer()->getAllocator()}
-        , chunk_manager(this->game)
+        , voxel_world(this->game)
     {
         this->triangle = this->game->getEntityComponentManager()->createEntity();
 
@@ -100,32 +102,9 @@ namespace verdigris
             return static_cast<voxel::Voxel>(pDist(gen));
         };
 
-        voxel::Chunk c =
-            this->chunk_manager.createChunk(voxel::ChunkCoordinate {glm::i32vec3 {0, 0, 0}});
-
         auto insertVoxelAt = [&](glm::i32vec3 p, voxel::Voxel v) mutable
         {
-            glm::i32vec3 base = {
-                64 * ((p.x < 0 ? (p.x + 1) / 64 - 1 : p.x / 64)),
-                64 * ((p.y < 0 ? (p.y + 1) / 64 - 1 : p.y / 64)),
-                64 * ((p.z < 0 ? (p.z + 1) / 64 - 1 : p.z / 64)),
-            };
-
-            // // util::logTrace("{} {}", glm::to_string(base),
-            // glm::to_string(p));
-
-            // if (!chunks.contains(base))
-            // {
-            //     chunks[base] = this->chunk_manager.allocateChunk(base);
-            // }
-
-            // this->chunk_manager.writeVoxelToChunk(
-            //     chunks[base], voxel::ChunkLocalPosition {p - base},
-            //     genVoxel());
-
-            voxel::ChunkManager::VoxelWrite w {.position {p - base}, .voxel {v}};
-
-            this->chunk_manager.writeVoxelToChunk(c, {&w, 1});
+            this->voxel_world.writeVoxel(voxel::WorldPosition {p}, v);
         };
 
         // for (i32 x = -1024; x < 1024; ++x)
@@ -310,8 +289,6 @@ namespace verdigris
         //         insertVoxelAt({-64, y, x}, voxel::Voxel::Brass);
         //     }
         // }
-        // voxel::PointLight light = this->chunk_manager.createPointLight();
-        // this->lights.push_back(std::move(light));
 
         // std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> ddist {-1.0, 1.0};
@@ -327,7 +304,7 @@ namespace verdigris
 
         for (int i = 0; i < 2; ++i)
         {
-            this->lights.push_back(this->chunk_manager.createPointLight());
+            this->lights.push_back(this->voxel_world.createPointLight({}, {}, {}));
         }
 
         // for (const voxel::PointLight& l : this->lights)
@@ -348,7 +325,7 @@ namespace verdigris
     {
         for (voxel::PointLight& l : this->lights)
         {
-            this->chunk_manager.destroyPointLight(std::move(l));
+            this->voxel_world.destroyPointLight(std::move(l));
         }
     }
 
@@ -398,7 +375,7 @@ namespace verdigris
                     4.0f * std::sin(offset) + 48.0f,
                     28.0f * std::sin(offset)};
 
-                this->chunk_manager.modifyPointLight(
+                this->voxel_world.modifyPointLight(
                     this->lights[i], pos, {1.0, 1.0, 1.0, 512.0}, {0.0, 0.0, 0.025, 0.0});
 
                 this->ec_manager->modifyComponent<TriangleComponent>(
@@ -416,7 +393,7 @@ namespace verdigris
                     4.0f * std::sin(offset * 1.384 + 93.4) + 8.0f,
                     256.0f * std::sin(offset * 1.384 + 93.4)};
 
-                this->chunk_manager.modifyPointLight(
+                this->voxel_world.modifyPointLight(
                     this->lights[i], pos, {1.0, 1.0, 1.0, 2048.0}, {0.0, 0.0, 0.025, 0.0});
             }
         }
@@ -559,8 +536,9 @@ namespace verdigris
                           }},
         });
 
-        draws.append_range(
-            this->chunk_manager.makeRecordObject(this->game, this->stager, this->camera));
+        this->voxel_world.setCamera(this->camera);
+
+        draws.append_range(this->voxel_world.getRecordObjects(this->game, this->stager));
 
         return {this->camera, std::move(draws)};
     }
