@@ -33,6 +33,7 @@ namespace voxel
 
         enum class VoxelWriteOverlapBehavior
         {
+            FailOnOverlap,
             OverwriteOnOverlap,
             // TODO: WriteInFreeSpaces
         };
@@ -40,9 +41,13 @@ namespace voxel
         class VoxelWriteTransaction
         {
         public:
+            VoxelWriteTransaction() = default;
+            VoxelWriteTransaction(std::vector<VoxelWrite>) {}
 
-            void rollback();
-            void leak();
+            void leak() {}
+
+        private:
+            // std::vector<VoxelWrite>
         };
     public:
         explicit World(const game::Game*);
@@ -55,7 +60,7 @@ namespace voxel
         // [[nodiscard]] std::vector<bool> readVoxelOpacity(std::span<const glm::ivec3>) const;
 
         void writeVoxel(WorldPosition, Voxel) const;
-        // void writeVoxel(std::span<const VoxelWrite>) const;
+        void writeVoxel(std::span<const VoxelWrite>) const;
 
         [[nodiscard]] VoxelWriteTransaction
              writeVoxel(VoxelWriteOverlapBehavior, std::span<const VoxelWrite>) const;

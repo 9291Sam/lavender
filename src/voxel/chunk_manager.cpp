@@ -29,7 +29,9 @@
 #include "voxel/material_manager.hpp"
 #include "voxel/opacity_brick.hpp"
 #include "voxel_face_direction.hpp"
+#include <algorithm>
 #include <bit>
+#include <boost/dynamic_bitset/dynamic_bitset.hpp>
 #include <cstddef>
 #include <glm/fwd.hpp>
 #include <glm/geometric.hpp>
@@ -911,6 +913,83 @@ namespace voxel
                 this->opacity_bricks.modify(maybeBrickPointer.pointer).write(bP, true);
             }
         }
+    }
+
+    bool ChunkManager::areAnyVoxelsOccupied(
+        const Chunk& c, std::span<const ChunkLocalPosition> positions)
+    {
+        for (const ChunkLocalPosition& p : positions) // NOLINT
+        {
+            auto [bC, bP] = splitChunkLocalPosition(p);
+
+            MaybeBrickPointer maybeBrickPointer =
+                this->brick_maps.read(c.id).data[bC.x][bC.y][bC.z]; // NOLINT
+
+            if (maybeBrickPointer.isNull())
+            {
+                continue;
+            }
+            else
+            {
+                if (this->opacity_bricks.read(maybeBrickPointer.pointer).read(bP))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    boost::dynamic_bitset<u64> ChunkManager::readVoxelFromChunkOpacity(
+        const Chunk& c, std::span<const ChunkLocalPosition> positions)
+    {
+        boost::dynamic_bitset<u64> out {};
+        out.reserve(positions.size());
+
+        for (std::size_t i = 0; i < positions.size(); ++i)
+        {
+            auto [bC, bP] = splitChunkLocalPosition(positions[i]);
+
+            MaybeBrickPointer maybeBrickPointer =
+                this->brick_maps.read(c.id).data[bC.x][bC.y][bC.z]; // NOLINT
+
+            if (!maybeBrickPointer.isNull()
+                && this->opacity_bricks.read(maybeBrickPointer.pointer).read(bP))
+            {
+                out.set(i);
+            }
+        }
+
+        return out;
+    }
+
+    std::vector<Voxel> ChunkManager::readVoxelFromChunkMaterial(
+        const Chunk& c, std::span<const ChunkLocalPosition> positions)
+    {
+        std::vector<Voxel> out {};
+        out.reserve(positions.size());
+
+        for (const ChunkLocalPosition& p : positions)
+        {
+            auto [bC, bP] = splitChunkLocalPosition(p);
+
+            MaybeBrickPointer maybeBrickPointer =
+                this->brick_maps.read(c.id).data[bC.x][bC.y][bC.z]; // NOLINT
+
+            if (!maybeBrickPointer.isNull())
+            {
+                Voxel v = this->material_bricks.read(maybeBrickPointer.pointer).read(bP);
+
+                out.push_back(v);
+            }
+            else
+            {
+                out.push_back(Voxel::NullAirEmpty);
+            }
+        }
+
+        return out;
     }
 
     std::unique_ptr<DenseBitChunk> ChunkManager::makeDenseBitChunk(u32 chunkId)

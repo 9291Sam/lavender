@@ -60,11 +60,15 @@ namespace voxel
         this->chunk_manager.writeVoxelToChunk(chunkIt->second, {&write, 1});
     }
 
+    void World::writeVoxel(std::span<const VoxelWrite> writes) const
+    {
+        this->writeVoxel(VoxelWriteOverlapBehavior::OverwriteOnOverlap, writes).leak();
+    }
+
     World::VoxelWriteTransaction World::writeVoxel(
         VoxelWriteOverlapBehavior overlapBehavior, std::span<const VoxelWrite> writes) const
     {
-        // std::unordered_map<ChunkCoordinate, std::vector<ChunkLocalPosition>> positionsPerChunk
-        // {};
+        std::unordered_map<ChunkCoordinate, std::vector<ChunkLocalPosition>> positionsPerChunk {};
         std::unordered_map<ChunkCoordinate, std::vector<ChunkManager::VoxelWrite>>
             writesPerChunk {};
 
@@ -72,26 +76,25 @@ namespace voxel
         {
             const auto [coordinate, chunkLocalPosition] = splitWorldPosition(w.position);
 
-            // positionsPerChunk[coordinate].push_back(chunkLocalPosition);
+            positionsPerChunk[coordinate].push_back(chunkLocalPosition);
             writesPerChunk[coordinate].push_back(
                 ChunkManager::VoxelWrite {.position {chunkLocalPosition}, .voxel {w.voxel}});
         }
 
         switch (overlapBehavior)
         {
-        // case VoxelWriteOverlapBehavior::FailOnOverlap:
-        //     for (const auto& [coordinate, chunkLocalPositions] : positionsPerChunk)
-        //     {
-        //         decltype(this->global_chunks)::const_iterator chunkIt =
-        //             getOrInsertChunk(this->global_chunks, this->chunk_manager, coordinate);
+        case VoxelWriteOverlapBehavior::FailOnOverlap:
+            for (const auto& [coordinate, chunkLocalPositions] : positionsPerChunk)
+            {
+                decltype(this->global_chunks)::const_iterator chunkIt =
+                    getOrInsertChunk(this->global_chunks, this->chunk_manager, coordinate);
 
-        //         if (this->chunk_manager.areAnyVoxelsOccupied(chunkIt->second,
-        //         chunkLocalPositions))
-        //         {
-        //             return EMPTY_TRANSACTION;
-        //         }
-        //     }
-        //     [[fallthrough]];
+                if (this->chunk_manager.areAnyVoxelsOccupied(chunkIt->second, chunkLocalPositions))
+                {
+                    return VoxelWriteTransaction {};
+                }
+            }
+            [[fallthrough]];
         case VoxelWriteOverlapBehavior::OverwriteOnOverlap:
             for (const auto& [coordinate, chunkWrites] : writesPerChunk)
             {
@@ -101,7 +104,7 @@ namespace voxel
             }
         }
 
-        return {};
+        return {std::vector<VoxelWrite> {writes.cbegin(), writes.cend()}};
     }
 
     void World::setCamera(game::Camera c) const

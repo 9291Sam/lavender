@@ -230,68 +230,66 @@ namespace verdigris
         }
 
         // // Build doughnut ceiling with a hole in the center
-        // float innerRadius = 128; // Inner radius (hole size)
-        // float outerRadius = 240; // Outer radius (doughnut size)
+        float innerRadius = 128; // Inner radius (hole size)
+        float outerRadius = 240; // Outer radius (doughnut size)
 
-        // for (int h = 0; h < 24; ++h)
-        // {
-        //     int currentHeight =
-        //         h + 52; // Start the doughnut at a base height of 20
-        //     for (float x = -outerRadius; x <= outerRadius; ++x)
-        //     {
-        //         for (float z = -outerRadius; z <= outerRadius; ++z)
-        //         {
-        //             float dist = glm::length(glm::vec2(x, z));
+        for (int h = 0; h < 24; ++h)
+        {
+            int currentHeight = h + 52; // Start the doughnut at a base height of 20
+            for (float x = -outerRadius; x <= outerRadius; ++x)
+            {
+                for (float z = -outerRadius; z <= outerRadius; ++z)
+                {
+                    float dist = glm::length(glm::vec2(x, z));
 
-        //             // Check if the point is within the doughnut's ring shape
-        //             // (between inner and outer radius)
-        //             if (dist >= innerRadius && dist <= outerRadius)
-        //             {
-        //                 // Add a voxel for this (x, z) position at the
-        //                 current
-        //                 // height layer
-        //                 insertVoxelAt(
-        //                     center + glm::f32vec3(x, currentHeight, z),
-        //                     voxel::Voxel::Ruby);
-        //             }
-        //         }
-        //     }
-        // }
+                    // Check if the point is within the doughnut's ring shape
+                    // (between inner and outer radius)
+                    if (dist >= innerRadius && dist <= outerRadius)
+                    {
+                        // Add a voxel for this (x, z) position at the
+                        // current
+                        // height layer
+                        insertVoxelAt(
+                            center + glm::f32vec3(x, currentHeight, z), voxel::Voxel::Ruby);
+                    }
+                }
+            }
+        }
 
-        // for (int x = -3; x < 4; ++x)
-        // {
-        //     for (int z = -3; z < 4; ++z)
-        //     {
-        //         for (int y = 0; y < 12; ++y)
-        //         {
-        //             insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
-        //         }
-        //     }
-        // }
+        for (int x = -3; x < 4; ++x)
+        {
+            for (int z = -3; z < 4; ++z)
+            {
+                for (int y = 0; y < 12; ++y)
+                {
+                    insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+                }
+            }
+        }
 
-        // for (int x = 32; x < 36; ++x)
-        // {
-        //     for (int z = 32; z < 36; ++z)
-        //     {
-        //         for (int y = 0; y < 32; ++y)
-        //         {
-        //             insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
-        //             insertVoxelAt({-x, y, z}, voxel::Voxel::Ruby);
-        //             insertVoxelAt({x, y, -z}, voxel::Voxel::Ruby);
-        //             insertVoxelAt({-x, y, -z}, voxel::Voxel::Ruby);
-        //         }
-        //     }
-        // }
+        for (int x = 32; x < 36; ++x)
+        {
+            for (int z = 32; z < 36; ++z)
+            {
+                for (int y = 0; y < 32; ++y)
+                {
+                    insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+                    insertVoxelAt({-x, y, z}, voxel::Voxel::Ruby);
+                    insertVoxelAt({x, y, -z}, voxel::Voxel::Ruby);
+                    insertVoxelAt({-x, y, -z}, voxel::Voxel::Ruby);
+                }
+            }
+        }
 
-        // for (int x = -64; x < 64; ++x)
-        // {
-        //     for (int y = 0; y < 64; ++y)
-        //     {
-        //         insertVoxelAt({x, y, -64}, voxel::Voxel::Brass);
-        //         insertVoxelAt({x, y, 64}, voxel::Voxel::Brass);
-        //         insertVoxelAt({-64, y, x}, voxel::Voxel::Brass);
-        //     }
-        // }
+        for (int x = -64; x < 64; ++x)
+        {
+            for (int y = 0; y < 64; ++y)
+            {
+                insertVoxelAt({x, y, -64}, voxel::Voxel::Brass);
+                insertVoxelAt({x, y, 64}, voxel::Voxel::Brass);
+                insertVoxelAt({-64, y, x}, voxel::Voxel::Brass);
+            }
+        }
 
         // std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> ddist {-1.0, 1.0};
@@ -310,21 +308,8 @@ namespace verdigris
             this->lights.push_back(this->voxel_world.createPointLight({}, {}, {}));
         }
 
-        // for (const voxel::PointLight& l : this->lights)
-        // {
-        //     this->chunk_manager.modifyPointLight(
-        //         l,
-        //         glm::vec4 {
-        //             genVec3() * glm::vec3 {256.0, 42.0, 256.0}
-        //                 + glm::vec3 {0.0, 61.0, 0.0},
-        //             0.0},
-        //         glm::vec4 {genVec3() / 2.0f + 0.5f, 64.0},
-        //         // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
-        //         glm::vec4 {0.0, 0.0, 0.25, 0.0});
-        // }
-
         std::ignore = this->voxel_world.writeVoxel(
-            voxel::World::VoxelWriteOverlapBehavior::OverwriteOnOverlap, writeList);
+            voxel::World::VoxelWriteOverlapBehavior::FailOnOverlap, writeList);
     }
 
     Verdigris::~Verdigris()
@@ -370,6 +355,7 @@ namespace verdigris
 
         const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
+        util::logTrace("modify light");
         for (int i = 0; i < 2; i++)
         {
             const float offset = this->time_alive * 2 + i * 2 * std::numbers::pi_v<float> / 8.0;
@@ -380,6 +366,8 @@ namespace verdigris
                     28.0f * std::cos(offset),
                     4.0f * std::sin(offset) + 48.0f,
                     28.0f * std::sin(offset)};
+
+                util::logTrace("modify light2");
 
                 this->voxel_world.modifyPointLight(
                     this->lights[i], pos, {1.0, 1.0, 1.0, 512.0}, {0.0, 0.0, 0.025, 0.0});

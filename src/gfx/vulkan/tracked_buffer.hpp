@@ -36,6 +36,11 @@ namespace gfx::vulkan
             return *this->gpu_buffer;
         }
 
+        const T& read(std::size_t offset)
+        {
+            return this->cpu_buffer.data()[offset];
+        }
+
         std::span<const T> read(std::size_t offset, std::size_t size)
         {
             return {this->cpu_buffer.data() + offset, size};

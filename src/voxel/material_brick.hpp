@@ -38,7 +38,7 @@ namespace voxel
             }
         }
 
-        [[nodiscard]] Voxel read(ChunkLocalPosition p) const
+        [[nodiscard]] Voxel read(BrickLocalPosition p) const
         {
             return this->data[p.x][p.y][p.z];
         }
