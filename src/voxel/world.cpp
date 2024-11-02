@@ -2,10 +2,37 @@
 #include "constants.hpp"
 #include "game/frame_generator.hpp"
 #include "gfx/vulkan/buffer.hpp"
+#include "voxel/chunk_manager.hpp"
 #include <glm/fwd.hpp>
 
 namespace voxel
 {
+    namespace
+    {
+        std::unordered_map<ChunkCoordinate, Chunk>::const_iterator getOrInsertChunk(
+            std::unordered_map<ChunkCoordinate, Chunk>& chunks,
+            ChunkManager&                               chunkManager,
+            ChunkCoordinate                             coordinate)
+        {
+            std::unordered_map<ChunkCoordinate, Chunk>::const_iterator maybeChunkIt =
+                chunks.find(coordinate);
+
+            if (maybeChunkIt == chunks.cend())
+            {
+                const auto [it, success] =
+                    chunks.insert({coordinate, chunkManager.createChunk(coordinate)});
+
+                util::assertFatal(
+                    success,
+                    "Duplicate insertion of chunk {}",
+                    glm::to_string(static_cast<glm::i32vec3>(coordinate)));
+
+                maybeChunkIt = it;
+            }
+
+            return maybeChunkIt;
+        }
+    } // namespace
     World::World(const game::Game* game)
         : chunk_manager(game)
     {}
@@ -25,25 +52,56 @@ namespace voxel
     {
         const auto [coordinate, chunkLocalPosition] = splitWorldPosition(position);
 
-        decltype(this->global_chunks)::const_iterator maybeChunkIt =
-            this->global_chunks.find(coordinate);
-
-        if (maybeChunkIt == this->global_chunks.cend())
-        {
-            const auto [it, success] = this->global_chunks.insert(
-                {coordinate, this->chunk_manager.createChunk(coordinate)});
-
-            util::assertFatal(
-                success,
-                "Duplicate insertion of chunk {}",
-                glm::to_string(static_cast<glm::i32vec3>(coordinate)));
-
-            maybeChunkIt = it;
-        }
+        decltype(this->global_chunks)::const_iterator chunkIt =
+            getOrInsertChunk(this->global_chunks, this->chunk_manager, coordinate);
 
         const ChunkManager::VoxelWrite write {.position {chunkLocalPosition}, .voxel {voxel}};
 
-        this->chunk_manager.writeVoxelToChunk(maybeChunkIt->second, {&write, 1});
+        this->chunk_manager.writeVoxelToChunk(chunkIt->second, {&write, 1});
+    }
+
+    World::VoxelWriteTransaction World::writeVoxel(
+        VoxelWriteOverlapBehavior overlapBehavior, std::span<const VoxelWrite> writes) const
+    {
+        // std::unordered_map<ChunkCoordinate, std::vector<ChunkLocalPosition>> positionsPerChunk
+        // {};
+        std::unordered_map<ChunkCoordinate, std::vector<ChunkManager::VoxelWrite>>
+            writesPerChunk {};
+
+        for (const VoxelWrite& w : writes)
+        {
+            const auto [coordinate, chunkLocalPosition] = splitWorldPosition(w.position);
+
+            // positionsPerChunk[coordinate].push_back(chunkLocalPosition);
+            writesPerChunk[coordinate].push_back(
+                ChunkManager::VoxelWrite {.position {chunkLocalPosition}, .voxel {w.voxel}});
+        }
+
+        switch (overlapBehavior)
+        {
+        // case VoxelWriteOverlapBehavior::FailOnOverlap:
+        //     for (const auto& [coordinate, chunkLocalPositions] : positionsPerChunk)
+        //     {
+        //         decltype(this->global_chunks)::const_iterator chunkIt =
+        //             getOrInsertChunk(this->global_chunks, this->chunk_manager, coordinate);
+
+        //         if (this->chunk_manager.areAnyVoxelsOccupied(chunkIt->second,
+        //         chunkLocalPositions))
+        //         {
+        //             return EMPTY_TRANSACTION;
+        //         }
+        //     }
+        //     [[fallthrough]];
+        case VoxelWriteOverlapBehavior::OverwriteOnOverlap:
+            for (const auto& [coordinate, chunkWrites] : writesPerChunk)
+            {
+                this->chunk_manager.writeVoxelToChunk(
+                    getOrInsertChunk(this->global_chunks, this->chunk_manager, coordinate)->second,
+                    chunkWrites);
+            }
+        }
+
+        return {};
     }
 
     void World::setCamera(game::Camera c) const

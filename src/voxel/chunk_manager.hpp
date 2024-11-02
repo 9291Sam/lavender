@@ -65,6 +65,8 @@ namespace voxel
         void destroyPointLight(PointLight);
 
         void writeVoxelToChunk(const Chunk&, std::span<const VoxelWrite>);
+
+        bool areAnyVoxelsOccupied(const Chunk&, std::span<const ChunkLocalPosition>);
         // [[nodiscard]] boost::dynamic_bitset<u64>
         // readVoxelFromChunkOpacity(const Chunk&, std::span<const ChunkLocalPosition>);
         // std::vector<Voxel>

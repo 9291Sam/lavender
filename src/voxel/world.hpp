@@ -33,8 +33,8 @@ namespace voxel
 
         enum class VoxelWriteOverlapBehavior
         {
-            FailOnOverlap,
-            OverwriteOnOverlap
+            OverwriteOnOverlap,
+            // TODO: WriteInFreeSpaces
         };
 
         class VoxelWriteTransaction
@@ -57,8 +57,9 @@ namespace voxel
         void writeVoxel(WorldPosition, Voxel) const;
         // void writeVoxel(std::span<const VoxelWrite>) const;
 
-        // [[nodiscard]] VoxelWriteTransaction
-        //     writeVoxel(VoxelWriteOverlapBehavior, std::span<const VoxelWrite>) const;
+        [[nodiscard]] VoxelWriteTransaction
+             writeVoxel(VoxelWriteOverlapBehavior, std::span<const VoxelWrite>) const;
+        void reverseTransaction(VoxelWriteTransaction) const;
 
         [[nodiscard]] PointLight
         createPointLight(glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs) const;

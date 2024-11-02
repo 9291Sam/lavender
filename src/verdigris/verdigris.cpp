@@ -102,9 +102,12 @@ namespace verdigris
             return static_cast<voxel::Voxel>(pDist(gen));
         };
 
+        std::vector<voxel::World::VoxelWrite> writeList {};
+
         auto insertVoxelAt = [&](glm::i32vec3 p, voxel::Voxel v) mutable
         {
-            this->voxel_world.writeVoxel(voxel::WorldPosition {p}, v);
+            writeList.push_back(
+                voxel::World::VoxelWrite {.position {voxel::WorldPosition {p}}, .voxel {v}});
         };
 
         // for (i32 x = -1024; x < 1024; ++x)
@@ -319,6 +322,9 @@ namespace verdigris
         //         // glm::vec4 {1.0f, 1.0f, 1.0f, 10.0},
         //         glm::vec4 {0.0, 0.0, 0.25, 0.0});
         // }
+
+        std::ignore = this->voxel_world.writeVoxel(
+            voxel::World::VoxelWriteOverlapBehavior::OverwriteOnOverlap, writeList);
     }
 
     Verdigris::~Verdigris()
