@@ -9,19 +9,11 @@
 #include "voxel/chunk_manager.hpp"
 #include "voxel/constants.hpp"
 #include "voxel/voxel.hpp"
+#include <concepts>
 #include <span>
 
 namespace voxel
 {
-
-    struct WorldGenerator
-    {
-        WorldGenerator()          = default;
-        virtual ~WorldGenerator() = default;
-
-        [[nodiscard]] Voxel virtual generate(glm::ivec3) const = 0;
-    };
-
     class World
     {
     public:

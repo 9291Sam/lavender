@@ -20,6 +20,10 @@
 #include <random>
 #include <utility>
 
+//
+#include <FastNoise/FastNoise.h>
+//
+
 namespace verdigris
 {
     Verdigris::Verdigris(game::Game* game_) // NOLINT
@@ -202,7 +206,7 @@ namespace verdigris
             }
         }
 
-        // Build pillars in a circular formation
+        // // Build pillars in a circular formation
         float numPillars = 12;     // Number of pillars
         float radius     = 192.0f; // Radius of the pillar circle
         for (float i = 0; i < numPillars; ++i)
@@ -229,65 +233,86 @@ namespace verdigris
             }
         }
 
-        // // Build doughnut ceiling with a hole in the center
-        float innerRadius = 128; // Inner radius (hole size)
-        float outerRadius = 240; // Outer radius (doughnut size)
+        // // // Build doughnut ceiling with a hole in the center
+        // float innerRadius = 128; // Inner radius (hole size)
+        // float outerRadius = 240; // Outer radius (doughnut size)
 
-        for (int h = 0; h < 24; ++h)
+        // for (int h = 0; h < 24; ++h)
+        // {
+        //     int currentHeight = h + 52; // Start the doughnut at a base height of 20
+        //     for (float x = -outerRadius; x <= outerRadius; ++x)
+        //     {
+        //         for (float z = -outerRadius; z <= outerRadius; ++z)
+        //         {
+        //             float dist = glm::length(glm::vec2(x, z));
+
+        //             // Check if the point is within the doughnut's ring shape
+        //             // (between inner and outer radius)
+        //             if (dist >= innerRadius && dist <= outerRadius)
+        //             {
+        //                 // Add a voxel for this (x, z) position at the
+        //                 // current
+        //                 // height layer
+        //                 insertVoxelAt(
+        //                     center + glm::f32vec3(x, currentHeight, z), voxel::Voxel::Ruby);
+        //             }
+        //         }
+        //     }
+        // }
+
+        // for (int x = -3; x < 4; ++x)
+        // {
+        //     for (int z = -3; z < 4; ++z)
+        //     {
+        //         for (int y = 0; y < 12; ++y)
+        //         {
+        //             insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+        //         }
+        //     }
+        // }
+
+        // for (int x = 32; x < 36; ++x)
+        // {
+        //     for (int z = 32; z < 36; ++z)
+        //     {
+        //         for (int y = 0; y < 32; ++y)
+        //         {
+        //             insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+        //             insertVoxelAt({-x, y, z}, voxel::Voxel::Ruby);
+        //             insertVoxelAt({x, y, -z}, voxel::Voxel::Ruby);
+        //             insertVoxelAt({-x, y, -z}, voxel::Voxel::Ruby);
+        //         }
+        //     }
+        // }
+
+        // for (int x = -64; x < 64; ++x)
+        // {
+        //     for (int y = 0; y < 64; ++y)
+        //     {
+        //         insertVoxelAt({x, y, -64}, voxel::Voxel::Brass);
+        //         insertVoxelAt({x, y, 64}, voxel::Voxel::Brass);
+        //         insertVoxelAt({-64, y, x}, voxel::Voxel::Brass);
+        //     }
+        // }
+
+        auto fnSimplex = FastNoise::New<FastNoise::Simplex>();
+        FastNoise::SmartNode<FastNoise::FractalFBm> fnFractal =
+            FastNoise::New<FastNoise::FractalFBm>();
+
+        fnFractal->SetSource(fnSimplex);
+        fnFractal->SetOctaveCount(5);
+
+        std::vector<float> res {};
+        res.resize(16 * 16);
+
+        fnSimplex->GenUniformGrid2D(res.data(), 0, 0, 16, 16, 0.2f, 1337);
+        int index = 0;
+
+        for (int z = 0; z < 16; z++)
         {
-            int currentHeight = h + 52; // Start the doughnut at a base height of 20
-            for (float x = -outerRadius; x <= outerRadius; ++x)
+            for (int y = 0; y < 16; y++)
             {
-                for (float z = -outerRadius; z <= outerRadius; ++z)
-                {
-                    float dist = glm::length(glm::vec2(x, z));
-
-                    // Check if the point is within the doughnut's ring shape
-                    // (between inner and outer radius)
-                    if (dist >= innerRadius && dist <= outerRadius)
-                    {
-                        // Add a voxel for this (x, z) position at the
-                        // current
-                        // height layer
-                        insertVoxelAt(
-                            center + glm::f32vec3(x, currentHeight, z), voxel::Voxel::Ruby);
-                    }
-                }
-            }
-        }
-
-        for (int x = -3; x < 4; ++x)
-        {
-            for (int z = -3; z < 4; ++z)
-            {
-                for (int y = 0; y < 12; ++y)
-                {
-                    insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
-                }
-            }
-        }
-
-        for (int x = 32; x < 36; ++x)
-        {
-            for (int z = 32; z < 36; ++z)
-            {
-                for (int y = 0; y < 32; ++y)
-                {
-                    insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
-                    insertVoxelAt({-x, y, z}, voxel::Voxel::Ruby);
-                    insertVoxelAt({x, y, -z}, voxel::Voxel::Ruby);
-                    insertVoxelAt({-x, y, -z}, voxel::Voxel::Ruby);
-                }
-            }
-        }
-
-        for (int x = -64; x < 64; ++x)
-        {
-            for (int y = 0; y < 64; ++y)
-            {
-                insertVoxelAt({x, y, -64}, voxel::Voxel::Brass);
-                insertVoxelAt({x, y, 64}, voxel::Voxel::Brass);
-                insertVoxelAt({-64, y, x}, voxel::Voxel::Brass);
+                insertVoxelAt({z, res[index++] * 23, y}, voxel::Voxel::Obsidian);
             }
         }
 
@@ -355,7 +380,7 @@ namespace verdigris
 
         const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
-        util::logTrace("modify light");
+        // util::logTrace("modify light");
         for (int i = 0; i < 2; i++)
         {
             const float offset = this->time_alive * 2 + i * 2 * std::numbers::pi_v<float> / 8.0;
@@ -367,7 +392,7 @@ namespace verdigris
                     4.0f * std::sin(offset) + 48.0f,
                     28.0f * std::sin(offset)};
 
-                util::logTrace("modify light2");
+                // util::logTrace("modify light2");
 
                 this->voxel_world.modifyPointLight(
                     this->lights[i], pos, {1.0, 1.0, 1.0, 512.0}, {0.0, 0.0, 0.025, 0.0});

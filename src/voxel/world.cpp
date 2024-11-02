@@ -104,7 +104,7 @@ namespace voxel
             }
         }
 
-        return {std::vector<VoxelWrite> {writes.cbegin(), writes.cend()}};
+        return {std::vector<VoxelWrite> {writes.begin(), writes.end()}};
     }
 
     void World::setCamera(game::Camera c) const
