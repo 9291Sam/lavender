@@ -37,10 +37,10 @@ CalculatedLightPower calculate_light_power(
     return CalculatedLightPower(diffuse_strength, specular_strength);
 }
 
-#define DrivingAxis u32
-const u32 DrivingAxis_X = 0;
-const u32 DrivingAxis_Y = 1;
-const u32 DrivingAxis_Z = 2;
+// #define DrivingAxis u32
+// const u32 DrivingAxis_X = 0;
+// const u32 DrivingAxis_Y = 1;
+// const u32 DrivingAxis_Z = 2;
 
 i32 moduloEuclideani32(i32 lhs, i32 rhs)
 {
@@ -77,11 +77,18 @@ struct GetIdxAndBitResult
     u32 bit;
 };
 
+bool err = false;
+
 GetIdxAndBitResult getIdxAndBit(ivec3 p)
 {
     const u32 linearIndex = 
         p.x + p.z * 8
         + p.y * 8 * 8;
+
+    if (linearIndex >= 512 || any(lessThan(p, ivec3(0))) || any(greaterThanEqual(p, ivec3(8))))
+    {
+        err = true;
+    }
 
     return GetIdxAndBitResult(linearIndex / 32, linearIndex % 32);
 }
@@ -250,8 +257,8 @@ bool traceWorld(vec3 rayPos, vec3 rayDir, float max_dist) {
 //The raycasting code is somewhat based around a 2D raycasting toutorial found here: 
 //http://lodev.org/cgtutor/raycasting.html
 
-const bool USE_BRANCHLESS_DDA = false;
-const int MAX_RAY_STEPS = 512;
+// const bool USE_BRANCHLESS_DDA = false;
+// const int MAX_RAY_STEPS = 512;
 
 // float sdSphere(vec3 p, float d) { return length(p) - d; } 
 
@@ -268,53 +275,53 @@ const int MAX_RAY_STEPS = 512;
 // 	return d < 0.0;
 // }
 
-vec2 rotate2d(vec2 v, float a) {
-	float sinA = sin(a);
-	float cosA = cos(a);
-	return vec2(v.x * cosA - v.y * sinA, v.y * cosA + v.x * sinA);	
-}
-// Function signature for ray tracing   
-bool traceRealDDARay(vec3 rayPos, vec3 rayDir, float max_dist) {
-    ivec3 mapPos = ivec3(floor(rayPos));
-    vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir);
-    ivec3 rayStep = ivec3(sign(rayDir));
-    vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
-    bvec3 mask;
+// vec2 rotate2d(vec2 v, float a) {
+// 	float sinA = sin(a);
+// 	float cosA = cos(a);
+// 	return vec2(v.x * cosA - v.y * sinA, v.y * cosA + v.x * sinA);	
+// }
+// // Function signature for ray tracing   
+// bool traceRealDDARay(vec3 rayPos, vec3 rayDir, float max_dist) {
+//     ivec3 mapPos = ivec3(floor(rayPos));
+//     vec3 deltaDist = abs(vec3(length(rayDir)) / rayDir);
+//     ivec3 rayStep = ivec3(sign(rayDir));
+//     vec3 sideDist = (sign(rayDir) * (vec3(mapPos) - rayPos) + (sign(rayDir) * 0.5) + 0.5) * deltaDist;
+//     bvec3 mask;
 
-    for (int i = 0; i < MAX_RAY_STEPS && length(vec3(mapPos) - rayPos) < max_dist; i++) {
-        if (isGlobalPositionOccupied(mapPos)) return true;
+//     for (int i = 0; i < MAX_RAY_STEPS && length(vec3(mapPos) - rayPos) < max_dist; i++) {
+//         if (isGlobalPositionOccupied(mapPos)) return true;
         
-        if (USE_BRANCHLESS_DDA) {
-            mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
-            sideDist += vec3(mask) * deltaDist;
-            mapPos += ivec3(vec3(mask)) * rayStep;
-        } else {
-            if (sideDist.x < sideDist.y) {
-                if (sideDist.x < sideDist.z) {
-                    sideDist.x += deltaDist.x;
-                    mapPos.x += rayStep.x;
-                    mask = bvec3(true, false, false);
-                } else {
-                    sideDist.z += deltaDist.z;
-                    mapPos.z += rayStep.z;
-                    mask = bvec3(false, false, true);
-                }
-            } else {
-                if (sideDist.y < sideDist.z) {
-                    sideDist.y += deltaDist.y;
-                    mapPos.y += rayStep.y;
-                    mask = bvec3(false, true, false);
-                } else {
-                    sideDist.z += deltaDist.z;
-                    mapPos.z += rayStep.z;
-                    mask = bvec3(false, false, true);
-                }
-            }
-        }
-    }
+//         if (USE_BRANCHLESS_DDA) {
+//             mask = lessThanEqual(sideDist.xyz, min(sideDist.yzx, sideDist.zxy));
+//             sideDist += vec3(mask) * deltaDist;
+//             mapPos += ivec3(vec3(mask)) * rayStep;
+//         } else {
+//             if (sideDist.x < sideDist.y) {
+//                 if (sideDist.x < sideDist.z) {
+//                     sideDist.x += deltaDist.x;
+//                     mapPos.x += rayStep.x;
+//                     mask = bvec3(true, false, false);
+//                 } else {
+//                     sideDist.z += deltaDist.z;
+//                     mapPos.z += rayStep.z;
+//                     mask = bvec3(false, false, true);
+//                 }
+//             } else {
+//                 if (sideDist.y < sideDist.z) {
+//                     sideDist.y += deltaDist.y;
+//                     mapPos.y += rayStep.y;
+//                     mask = bvec3(false, true, false);
+//                 } else {
+//                     sideDist.z += deltaDist.z;
+//                     mapPos.z += rayStep.z;
+//                     mask = bvec3(false, false, true);
+//                 }
+//             }
+//         }
+//     }
 
-    return false;
-}
+//     return false;
+// }
 
 // void mainImage(out vec4 fragColor, in vec2 fragCoord) {
 //     vec2 screenPos = (fragCoord.xy / iResolution.xy) * 2.0 - 1.0;
@@ -335,33 +342,33 @@ bool traceRealDDARay(vec3 rayPos, vec3 rayDir, float max_dist) {
 // }
 
 
-bool trace_ray_shitty_perfect(const vec3 origin, const vec3 dir, const float max_dist)
-{    
-    if (isGlobalPositionOccupied(ivec3(floor(origin)))) return true;
+// bool trace_ray_shitty_perfect(const vec3 origin, const vec3 dir, const float max_dist)
+// {    
+//     if (isGlobalPositionOccupied(ivec3(floor(origin)))) return true;
 
-    float t = 0.0;
+//     float t = 0.0;
 
-    // Axis distance to nearest cell (with a small bias).
-    const vec3 dist =  fract(-origin * sign(dir)) + 1e-4;
-    // Raytraced distance to each axis.
-    const vec3 leng = dist / abs(dir);
-    // Nearest axis' raytrace distance (as a vec3).
-    const float closestAxis = min(leng.x, min(leng.y, leng.z));
+//     // Axis distance to nearest cell (with a small bias).
+//     const vec3 dist =  fract(-origin * sign(dir)) + 1e-4;
+//     // Raytraced distance to each axis.
+//     const vec3 leng = dist / abs(dir);
+//     // Nearest axis' raytrace distance (as a vec3).
+//     const float closestAxis = min(leng.x, min(leng.y, leng.z));
 
-    for(int i = 0; i < 256; i++)
-    {
-        t += closestAxis;
+//     for(int i = 0; i < 256; i++)
+//     {
+//         t += closestAxis;
 
-        if (t > max_dist)
-        {
-            return false;
-        }
+//         if (t > max_dist)
+//         {
+//             return false;
+//         }
         
-        if (isGlobalPositionOccupied(ivec3(floor(origin + dir * t)))) return true;
-    } 
+//         if (isGlobalPositionOccupied(ivec3(floor(origin + dir * t)))) return true;
+//     } 
     
-    return false;
-}
+//     return false;
+// }
 
 bool traceDDARay(vec3 start, vec3 end)
 {
@@ -446,6 +453,11 @@ void main()
         }
 
         sum_diffuse = clamp(sum_diffuse, 0.07, 1024.0);
+
+        if (err)
+        {
+            sum_diffuse = vec3(0.0);
+        }
 
         vec3 realColor = clamp(
             exp_strength_falloff(sum_diffuse) * this_material.diffuse_color.xyz +

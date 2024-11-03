@@ -322,7 +322,7 @@ namespace verdigris
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 
-        for (int i = 0; i < 2; ++i)
+        for (int i = 0; i < 32; ++i)
         {
             this->lights.push_back(this->voxel_world.createPointLight({}, {}, {}));
         }
@@ -378,7 +378,7 @@ namespace verdigris
         const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
         // util::logTrace("modify light");
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 32; i++)
         {
             const float offset = this->time_alive * 2 + i * 2 * std::numbers::pi_v<float> / 8.0;
 
