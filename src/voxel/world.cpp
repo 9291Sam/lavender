@@ -121,13 +121,18 @@ namespace voxel
 
         int radius = 3;
 
+        constexpr std::size_t MaxChunkGenerationsPerFrame = 2;
+
+        u32 chunkGenerations = 0;
+
         for (int i = -radius; i <= radius; ++i)
         {
             for (int j = -radius; j <= radius; ++j)
             {
                 ChunkCoordinate shouldExist {{cameraCoordinate.x + i, 0, cameraCoordinate.z + j}};
 
-                if (!this->global_chunks.contains(shouldExist))
+                if (!this->global_chunks.contains(shouldExist)
+                    && chunkGenerations++ < MaxChunkGenerationsPerFrame)
                 {
                     this->writeVoxel(this->generator->generateChunk(shouldExist));
                 }

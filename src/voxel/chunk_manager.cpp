@@ -33,6 +33,7 @@
 #include <bit>
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 #include <cstddef>
+#include <future>
 #include <glm/fwd.hpp>
 #include <glm/geometric.hpp>
 #include <glm/vector_relational.hpp>
@@ -528,40 +529,73 @@ namespace voxel
             {
                 CpuChunkData& thisChunkData = this->cpu_chunk_data[chunkId];
 
-                if (thisChunkData.needs_remesh)
+                switch (static_cast<u32>(thisChunkData.needs_remesh) << 1
+                        | static_cast<u32>(thisChunkData.is_remesh_in_progress))
                 {
-                    if (thisChunkData.face_data.has_value())
+                case 0b00:
+                    break; // do nothing
+                case 0b01:
+                    [[fallthrough]];
+                case 0b11: {
+                    if (thisChunkData.future_mesh.valid())
                     {
-                        for (util::RangeAllocation a : *thisChunkData.face_data)
+                        // free old stuff if it exists
+                        if (thisChunkData.face_data.has_value())
                         {
-                            this->voxel_face_allocator.free(a);
+                            for (util::RangeAllocation a : *thisChunkData.face_data)
+                            {
+                                this->voxel_face_allocator.free(a);
+                            }
                         }
+
+                        // grab all of the new data, allocate gpu memory for it and move everything
+                        // there
+                        thisChunkData.is_remesh_in_progress = false;
+
+                        const std::array<std::vector<GreedyVoxelFace>, 6>& greedyFaces =
+                            thisChunkData.future_mesh.get();
+
+                        std::array<util::RangeAllocation, 6> allocations {};
+
+                        for (auto [thisAllocation, faces] :
+                             std::views::zip(allocations, greedyFaces))
+                        {
+                            thisAllocation =
+                                this->voxel_face_allocator.allocate(static_cast<u32>(faces.size()));
+
+                            std::copy(
+                                faces.cbegin(),
+                                faces.cend(),
+                                this->voxel_faces.getDataNonCoherent().data()
+                                    + thisAllocation.offset);
+
+                            const gfx::vulkan::FlushData flush {
+                                .offset_elements {thisAllocation.offset},
+                                .size_elements {faces.size()},
+                            };
+
+                            this->voxel_faces.flush({&flush, 1});
+                        }
+
+                        thisChunkData.face_data = allocations;
                     }
-                    std::array<std::vector<GreedyVoxelFace>, 6> greedyFaces =
-                        meshChunkGreedy(this->makeDenseBitChunk(chunkId));
-                    std::array<util::RangeAllocation, 6> allocations {};
+                }
+                break; // keep waiting
+                case 0b10: {
+                    thisChunkData.is_remesh_in_progress = true;
 
-                    for (auto [thisAllocation, faces] : std::views::zip(allocations, greedyFaces))
-                    {
-                        thisAllocation =
-                            this->voxel_face_allocator.allocate(static_cast<u32>(faces.size()));
+                    std::unique_ptr<DenseBitChunk> chunkData = makeDenseBitChunk(chunkId);
 
-                        std::copy(
-                            faces.cbegin(),
-                            faces.cend(),
-                            this->voxel_faces.getDataNonCoherent().data() + thisAllocation.offset);
-
-                        const gfx::vulkan::FlushData flush {
-                            .offset_elements {thisAllocation.offset},
-                            .size_elements {faces.size()},
-                        };
-
-                        this->voxel_faces.flush({&flush, 1});
-                    }
-
-                    thisChunkData.face_data = allocations;
+                    thisChunkData.future_mesh = std::async(
+                        [](std::unique_ptr<DenseBitChunk> localData)
+                        {
+                            return meshChunkGreedy(std::move(localData));
+                        },
+                        std::move(chunkData));
 
                     thisChunkData.needs_remesh = false;
+                    break;
+                }
                 }
 
                 // TODO: opacity tests cpu-side culling

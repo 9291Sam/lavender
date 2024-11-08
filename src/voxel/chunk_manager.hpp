@@ -80,9 +80,11 @@ namespace voxel
 
         struct CpuChunkData
         {
-            glm::vec4                                           position;
-            std::optional<std::array<util::RangeAllocation, 6>> face_data;
-            bool                                                needs_remesh;
+            glm::vec4                                                       position;
+            std::optional<std::array<util::RangeAllocation, 6>>             face_data;
+            bool                                                            needs_remesh;
+            bool                                                            is_remesh_in_progress;
+            std::shared_future<std::array<std::vector<GreedyVoxelFace>, 6>> future_mesh;
         };
 
         util::IndexAllocator      chunk_id_allocator;
