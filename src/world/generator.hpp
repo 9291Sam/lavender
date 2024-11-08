@@ -9,12 +9,13 @@
 
 namespace world
 {
-    struct WorldChunkGenerator
+    struct WorldChunkGenerator : public voxel::World::ChunkGenerator
     {
     public:
         WorldChunkGenerator(std::size_t seed)
             : simplex {FastNoise::New<FastNoise::Simplex>()}
             , fractal {FastNoise::New<FastNoise::FractalFBm>()}
+            , seed {seed}
         {
             this->fractal->SetSource(this->simplex);
             this->fractal->SetOctaveCount(5);
@@ -23,8 +24,14 @@ namespace world
             this->fractal->SetWeightedStrength(9.403);
         }
 
+        ~WorldChunkGenerator() = default;
+
         std::vector<voxel::World::VoxelWrite> generateChunk(voxel::ChunkCoordinate coordinate)
         {
+            if (coordinate.y != 0)
+            {
+                return {};
+            }
             voxel::WorldPosition root = voxel::getWorldPositionOfChunkCoordinate(coordinate);
 
             std::vector<float> res {};
@@ -33,8 +40,10 @@ namespace world
             std::vector<float> mat {};
             mat.resize(64 * 64);
 
-            this->simplex->GenUniformGrid2D(res.data(), root.z, root.x, 64, 64, 0.02f, 13437);
-            this->simplex->GenUniformGrid2D(mat.data(), root.z, root.x, 64, 64, 0.02f, 8594835);
+            this->simplex->GenUniformGrid2D(
+                res.data(), root.z, root.x, 64, 64, 0.02f, this->seed * 13437);
+            this->simplex->GenUniformGrid2D(
+                mat.data(), root.z, root.x, 64, 64, 0.02f, this->seed * 8594835);
             const std::array<std::array<float, 64>, 64>* ptr =
                 reinterpret_cast<const std::array<std::array<float, 64>, 64>*>(res.data());
 
@@ -71,5 +80,6 @@ namespace world
     private:
         FastNoise::SmartNode<FastNoise::Simplex>    simplex;
         FastNoise::SmartNode<FastNoise::FractalFBm> fractal;
+        std::size_t                                 seed;
     };
 } // namespace world

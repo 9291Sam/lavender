@@ -33,8 +33,13 @@ namespace voxel
             return maybeChunkIt;
         }
     } // namespace
-    World::World(const game::Game* game)
+
+    World::ChunkGenerator::~ChunkGenerator() = default;
+
+    World::World(std::unique_ptr<ChunkGenerator> generator_, const game::Game* game)
         : chunk_manager(game)
+        , generator {std::move(generator_)}
+
     {}
 
     World::~World()
@@ -110,6 +115,22 @@ namespace voxel
     void World::setCamera(game::Camera c) const
     {
         this->camera = c;
+
+        ChunkCoordinate cameraCoordinate =
+            splitWorldPosition(WorldPosition {c.getPosition()}).first;
+
+        for (int i = -3; i <= 3; ++i)
+        {
+            for (int j = -3; j <= 3; ++j)
+            {
+                ChunkCoordinate shouldExist {{cameraCoordinate.x + i, 0, cameraCoordinate.z + j}};
+
+                if (!this->global_chunks.contains(shouldExist))
+                {
+                    this->writeVoxel(this->generator->generateChunk(shouldExist));
+                }
+            }
+        }
     }
 
     std::vector<game::FrameGenerator::RecordObject>

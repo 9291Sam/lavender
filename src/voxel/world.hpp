@@ -23,6 +23,12 @@ namespace voxel
             Voxel         voxel;
         };
 
+        struct ChunkGenerator
+        {
+            virtual ~ChunkGenerator()                                      = 0;
+            virtual std::vector<VoxelWrite> generateChunk(ChunkCoordinate) = 0;
+        };
+
         enum class VoxelWriteOverlapBehavior
         {
             FailOnOverlap,
@@ -42,7 +48,7 @@ namespace voxel
             // std::vector<VoxelWrite>
         };
     public:
-        explicit World(const game::Game*);
+        explicit World(std::unique_ptr<ChunkGenerator>, const game::Game*);
         ~World();
 
         [[nodiscard]] Voxel              readVoxelMaterial(WorldPosition) const;
@@ -73,6 +79,7 @@ namespace voxel
         getRecordObjects(const game::Game*, const gfx::vulkan::BufferStager&);
 
     private:
+        mutable std::unique_ptr<ChunkGenerator>            generator;
         mutable ChunkManager                               chunk_manager;
         mutable std::unordered_map<ChunkCoordinate, Chunk> global_chunks;
         mutable game::Camera                               camera;

@@ -13,7 +13,7 @@
 #include "voxel/point_light.hpp"
 #include "voxel/voxel.hpp"
 #include "voxel/world.hpp"
-#include "world/world.hpp"
+#include "world/generator.hpp"
 #include <boost/container_hash/hash_fwd.hpp>
 #include <glm/fwd.hpp>
 #include <numbers>
@@ -31,7 +31,7 @@ namespace verdigris
         : game {game_}
         , ec_manager {game_->getEntityComponentManager()}
         , stager {this->game->getRenderer()->getAllocator()}
-        , voxel_world(this->game)
+        , voxel_world(std::make_unique<world::WorldChunkGenerator>(38484334), this->game)
     {
         this->triangle = this->game->getEntityComponentManager()->createEntity();
 
@@ -111,8 +111,8 @@ namespace verdigris
 
         auto insertVoxelAt = [&](glm::i32vec3 p, voxel::Voxel v) mutable
         {
-            writeList.push_back(
-                voxel::World::VoxelWrite {.position {voxel::WorldPosition {p}}, .voxel {v}});
+            writeList.push_back(voxel::World::VoxelWrite {
+                .position {voxel::WorldPosition {p + glm::i32vec3 {0, 64, 0}}}, .voxel {v}});
         };
 
         // for (i32 x = -1024; x < 1024; ++x)
@@ -123,19 +123,19 @@ namespace verdigris
         //     }
         // }
 
-        for (i32 x = -256; x < 256; ++x)
-        {
-            for (i32 z = -256; z < 256; ++z)
-            {
-                for (i32 y = 0; y < 128; ++y)
-                {
-                    if (y == 0)
-                    {
-                        insertVoxelAt({x, y, z}, voxel::Voxel::Gold);
-                    }
-                }
-            }
-        }
+        // for (i32 x = -256; x < 256; ++x)
+        // {
+        //     for (i32 z = -256; z < 256; ++z)
+        //     {
+        //         for (i32 y = 0; y < 128; ++y)
+        //         {
+        //             if (y == 0)
+        //             {
+        //                 insertVoxelAt({x, y, z}, voxel::Voxel::Gold);
+        //             }
+        //         }
+        //     }
+        // }
 
         // for (i32 x = -64; x < 64; ++x)
         // {

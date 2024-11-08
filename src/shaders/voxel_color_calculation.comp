@@ -76,7 +76,7 @@ GetIdxAndBitResult getIdxAndBit(ivec3 p)
 {
     const u32 linearIndex = 
         p.x + p.z * 8
-        + p.y * 8 * 8;
+        + p.y * 8 * 8;  
 
     return GetIdxAndBitResult(linearIndex / 32, linearIndex % 32);
 }
