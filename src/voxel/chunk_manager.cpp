@@ -638,14 +638,13 @@ namespace voxel
                 }
             });
 
-        util::logTrace("flushing!");
         this->gpu_chunk_data.flush();
         this->brick_maps.flush();
         this->brick_parent_info.flush();
         this->material_bricks.flush();
         this->opacity_bricks.flush();
-        this->lights_buffer.flushWhole();
-        this->global_chunks_buffer.flushWhole();
+        this->lights_buffer.flush();
+        this->global_chunks_buffer.flush();
 
         if (!indirectCommands.empty())
         {
