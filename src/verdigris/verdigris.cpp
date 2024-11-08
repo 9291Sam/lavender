@@ -407,19 +407,20 @@ namespace verdigris
         // {
         //     for (i32 i = 0; i < 32; ++i)
         //     {
-        //         this->chunk_manager.writeVoxel(
-        //             thisPos + glm::i32vec3 {0, i, 0}, voxel::Voxel::Pearl);
-        //         this->chunk_manager.writeVoxel(
-        //             prevPos + glm::i32vec3 {0, i, 0},
-        //             voxel::Voxel::NullAirEmpty);
+        //         this->voxel_world.writeVoxel(
+        //             voxel::WorldPosition {thisPos + glm::i32vec3 {0, i, 0}},
+        //             voxel::Voxel::Pearl);
+        //         this->voxel_world.writeVoxel(
+        //               voxel::WorldPosition {prevPos + glm::i32vec3 {0, i, 0},
+        //               voxel::Voxel::NullAirEmpty);
         //     }
         // }
 
         // TODO: moving diagonally is faster
         const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
                                     gfx::Window::Action::PlayerSprint)
-                                         ? 256.0f
-                                         : 32.0f;
+                                         ? 64.0f
+                                         : 16.0f;
         const float rotateSpeedScale = 6.0f;
 
         if (this->game->getRenderer()->getWindow()->isActionActive(

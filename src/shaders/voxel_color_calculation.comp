@@ -194,9 +194,9 @@ bool traceBlock(u32 brick, vec3 rayPos, vec3 rayDir, vec3 iMask, float max_dist)
     
     for  (int i = 0;
         i < 27 && 
-        all(lessThanEqual(mapPos, vec3(7.0))) && // POSSIBLE FAULT
-        all(greaterThanEqual(mapPos, vec3(0.0))) && // POSSIBLE FAULT
-        length(mapPos - rayPos) <= max_dist; // POSSIBLE FAULT
+        all(lessThanEqual(mapPos, vec3(7.0))) &&
+        all(greaterThanEqual(mapPos, vec3(0.0))) &&
+        length(mapPos - rayPos) <= max_dist;
         ++i) 
     {
         if (OpactityBrick_readUnchecked(brick, ivec3(mapPos)))

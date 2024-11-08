@@ -151,9 +151,7 @@ namespace voxel
                         - static_cast<glm::f32vec3>(cameraCoordinate).xz()),
                     glm::vec2 {static_cast<float>(radius)})))
             {
-                {
-                    toRemove.push_back(coordinate);
-                }
+                toRemove.push_back(coordinate);
             }
         }
 
