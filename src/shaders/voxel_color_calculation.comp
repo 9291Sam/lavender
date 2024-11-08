@@ -245,6 +245,11 @@ bool traceWorld(vec3 rayPos, vec3 rayDir, float max_dist) {
 
 bool traceDDARay(vec3 start, vec3 end)
 {
+    if (distance(end, start) > 512)
+    {
+        return true;
+    }
+
     return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
 }
   

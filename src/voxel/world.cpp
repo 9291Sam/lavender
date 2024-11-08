@@ -4,6 +4,7 @@
 #include "gfx/vulkan/buffer.hpp"
 #include "voxel/chunk_manager.hpp"
 #include <glm/fwd.hpp>
+#include <numbers>
 
 namespace voxel
 {
@@ -119,7 +120,7 @@ namespace voxel
         ChunkCoordinate cameraCoordinate =
             splitWorldPosition(WorldPosition {c.getPosition()}).first;
 
-        int radius = 3;
+        int radius = 10;
 
         constexpr std::size_t MaxChunkGenerationsPerFrame = 2;
 
@@ -137,6 +138,30 @@ namespace voxel
                     this->writeVoxel(this->generator->generateChunk(shouldExist));
                 }
             }
+        }
+
+        std::vector<ChunkCoordinate> toRemove {};
+
+        for (const auto& [coordinate, chunk] : this->global_chunks)
+        {
+            if (glm::distance(
+                    static_cast<glm::f32vec3>(coordinate),
+                    static_cast<glm::f32vec3>(cameraCoordinate))
+                > static_cast<float>(radius) * std::numbers::sqrt3_v<float>)
+            {
+                toRemove.push_back(coordinate);
+            }
+        }
+
+        for (ChunkCoordinate c : toRemove)
+        {
+            decltype(this->global_chunks)::const_iterator it = this->global_chunks.find(c);
+
+            util::assertFatal(it != this->global_chunks.cend(), "ooops");
+
+            decltype(this->global_chunks)::node_type chunk = this->global_chunks.extract(it);
+
+            this->chunk_manager.destroyChunk(std::move(chunk.mapped()));
         }
     }
 

@@ -598,7 +598,7 @@ namespace voxel
                 }
                 }
 
-                // TODO: opacity tests cpu-side culling
+                // TODO: better opacity tests cpu-side culling
                 bool isChunkInFrustum = false;
 
                 isChunkInFrustum |=
