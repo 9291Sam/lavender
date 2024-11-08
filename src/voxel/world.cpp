@@ -4,6 +4,7 @@
 #include "gfx/vulkan/buffer.hpp"
 #include "voxel/chunk_manager.hpp"
 #include <glm/fwd.hpp>
+#include <glm/vector_relational.hpp>
 #include <numbers>
 
 namespace voxel
@@ -144,12 +145,15 @@ namespace voxel
 
         for (const auto& [coordinate, chunk] : this->global_chunks)
         {
-            if (glm::distance(
-                    static_cast<glm::f32vec3>(coordinate),
-                    static_cast<glm::f32vec3>(cameraCoordinate))
-                > static_cast<float>(radius) * std::numbers::sqrt3_v<float>)
+            if (glm::any(glm::greaterThan(
+                    glm::abs(
+                        static_cast<glm::f32vec3>(coordinate).xz()
+                        - static_cast<glm::f32vec3>(cameraCoordinate).xz()),
+                    glm::vec2 {static_cast<float>(radius)})))
             {
-                toRemove.push_back(coordinate);
+                {
+                    toRemove.push_back(coordinate);
+                }
             }
         }
 
