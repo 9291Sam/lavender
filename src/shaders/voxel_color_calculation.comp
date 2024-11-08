@@ -1,8 +1,224 @@
 #version 460
 
-#include "types.glsl"
-#include "voxel_descriptors.glsl"
-#include "global_descriptor_set.glsl"
+#extension GL_EXT_shader_explicit_arithmetic_types : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : enable
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_KHR_shader_subgroup_basic : require
+#extension GL_KHR_shader_subgroup_ballot : require
+
+#define u8 uint8_t
+#define u16 uint16_t
+#define u32 uint
+#define u64 uint64_t
+
+#define i8 int8_t
+#define i16 int16_t
+#define i32 int
+#define i64 int64_t
+
+#ifndef SRC_SHADERS_INCLUDE_VOXEL_DESCRIPTORS_GLSL
+#define SRC_SHADERS_INCLUDE_VOXEL_DESCRIPTORS_GLSL
+
+struct MaybeBrickPointer
+{
+    u32 pointer;
+};
+
+struct BrickPointer
+{
+    u32 pointer;
+};
+
+struct Voxel
+{
+    u16 data;
+};
+
+struct GreedyVoxelFace
+{
+    u32 data;
+};
+u32 GreedyVoxelFace_x(GreedyVoxelFace self) { return bitfieldExtract(self.data, 0, 6); }
+u32 GreedyVoxelFace_y(GreedyVoxelFace self) { return bitfieldExtract(self.data, 6, 6); }
+u32 GreedyVoxelFace_z(GreedyVoxelFace self) { return bitfieldExtract(self.data, 12, 6); }
+u32 GreedyVoxelFace_width(GreedyVoxelFace self) { return bitfieldExtract(self.data, 18, 6); }
+u32 GreedyVoxelFace_height(GreedyVoxelFace self) { return bitfieldExtract(self.data, 24, 6); }
+
+struct BrickMap
+{
+    MaybeBrickPointer data[8][8][8];
+};
+
+struct MaterialBrick
+{
+    Voxel data[8][8][8];
+};
+
+struct OpacityBrick
+{
+    u32 data[16];
+};
+
+struct VoxelMaterial
+{
+    vec4  ambient_color;
+    vec4  diffuse_color;
+    vec4  specular_color;
+    float diffuse_subsurface_weight;
+    float specular;
+    float roughness;
+    float metallic;
+    vec4  emissive_color_power;
+    vec4  coat_color_power;
+};
+
+struct BrickParentInfo
+{
+    u32 data;
+};
+
+struct VisibilityBrick
+{
+    OpacityBrick view_dir[6];
+};
+
+struct VisibleFaceData
+{
+    u32 data;
+    vec3 color;
+};
+
+struct FaceIdBrick
+{
+    u32 data[8][8][8];
+};
+
+struct DirectionalFaceIdBricks
+{
+    FaceIdBrick dir[6];
+};
+
+struct PointLight {
+    vec4 position;
+    vec4 color_and_power;  // xyz = color, w = power
+    vec4 falloffs;         // x = constant, y = linear, z = quadratic, w = cubic
+};
+
+float estimateLightEffectiveDistance(PointLight light)
+{
+    return light.color_and_power.w / 256.0 * (sqrt(light.falloffs.z));
+}
+
+struct GpuChunkData
+{
+    ivec4 position;
+};
+
+layout(set = 1, binding = 0) readonly buffer GpuChunkDataBuffer
+{
+    GpuChunkData data[];
+} in_chunk_data;
+
+layout(set = 1, binding = 1) readonly buffer BrickMapBuffer
+{
+   BrickMap map[];
+} in_brick_maps;
+
+layout(set = 1, binding = 2) readonly buffer BrickParentInfoBuffer
+{
+    BrickParentInfo info[];
+} in_brick_parent_info;
+
+layout(set = 1, binding = 3) readonly buffer MaterialBrickBuffer
+{
+    MaterialBrick brick[];
+} in_material_bricks;
+
+layout(set = 1, binding = 4) readonly buffer OpacityBrickBuffer
+{
+    OpacityBrick brick[];
+} in_opacity_bricks;
+
+layout(set = 1, binding = 5) buffer VisibilityBrickBuffer
+{
+    VisibilityBrick brick[];
+} in_visibility_bricks;
+
+layout(set = 1, binding = 6) buffer DirectionalFaceIdBrickBuffer
+{
+    DirectionalFaceIdBricks brick[];
+} in_face_id_bricks;
+
+layout(set = 1, binding = 7) readonly buffer GreedyVoxelFaces
+{
+    GreedyVoxelFace face[];
+} in_greedy_voxel_faces;
+
+layout(set = 1, binding = 8) readonly buffer VoxelMaterialBuffer
+{
+    VoxelMaterial material[];
+} in_voxel_materials;
+
+layout(set = 1, binding = 9) buffer GlobalVoxelDataBuffer
+{
+    u32 number_of_visible_faces;
+    u32 number_of_indirect_dispatches_x;
+    u32 number_of_indirect_dispatches_y;
+    u32 number_of_indirect_dispatches_z;
+    u32 number_of_lights;
+} in_global_voxel_data;
+
+layout(set = 1, binding = 10)  buffer VisibleFaceDataBuffer
+{
+    VisibleFaceData data[];
+} in_visible_face_data;
+
+layout(set = 1, binding = 11) buffer PointLightsBuffer
+{
+    PointLight lights[];
+} in_point_lights;
+
+layout(set = 1, binding = 12) buffer GlobalChunkBuffer
+{   
+    u16 chunk[256][256][256];
+} in_global_chunks;
+
+vec3 unpackNormalId(u32 id)
+{
+    const vec3 available_normals[6] = {
+        vec3(0.0, 1.0, 0.0),
+        vec3(0.0, -1.0, 0.0),
+        vec3(-1.0, 0.0, 0.0),
+        vec3(1.0, 0.0, 0.0),
+        vec3(0.0, 0.0, -1.0),
+        vec3(0.0, 0.0, 1.0),
+    };
+
+    return available_normals[id];
+}
+
+#endif // SRC_SHADERS_INCLUDE_VOXEL_DESCRIPTORS_GLSL
+
+#ifndef SRC_SHADERS_INCLUDE_GLOBAL_DESCRIPTOR_SET_GLSL
+#define SRC_SHADERS_INCLUDE_GLOBAL_DESCRIPTOR_SET_GLSL
+
+
+layout(set = 0, binding = 0) uniform MVPBlock {
+    mat4 matrix[1024];
+} in_mvp_matrices;
+
+layout(set = 0, binding = 1) uniform GlobalInfo
+{
+    vec4 camera_position;
+    uint frame_number;
+    float time_alive;
+} in_global_info;
+
+layout(set = 0, binding = 2, r32f) uniform image2D depth_buffer;
+layout(set = 0, binding = 3, r32ui) uniform uimage2D visible_voxel_image;
+layout(set = 0, binding = 4) uniform sampler do_nothing_sampler; 
+
+#endif // SRC_SHADERS_INCLUDE_GLOBAL_DESCRIPTOR_SET_GLSL
 
 
 struct CalculatedLightPower {
@@ -95,6 +311,11 @@ GetIdxAndBitResult getIdxAndBit(ivec3 p)
 
 bool OpactityBrick_read(u32 ptr, ivec3 pos)
 {
+    if (ptr == ~0u  || any(lessThan(pos, ivec3(0))) || any(greaterThanEqual(pos, ivec3(8))))
+    {
+        return false;
+    }
+
     GetIdxAndBitResult r = getIdxAndBit(pos);
 
     if ((in_opacity_bricks.brick[ptr].data[r.idx] & (1u << r.bit)) == 0)
@@ -205,10 +426,12 @@ bool traceBlock(u32 brick, vec3 rayPos, vec3 rayDir, vec3 iMask, float max_dist)
     vec3 sideDist = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
     vec3 mask = iMask;
     
-    while (
-        all(lessThanEqual(mapPos, vec3(7.0))) &&
-        all(greaterThanEqual(mapPos, vec3(0.0))) &&
-        length(mapPos - rayPos) < max_dist)
+    for  (int i = 0;
+        i < 27 && 
+        all(lessThanEqual(mapPos, vec3(7.0))) && // POSSIBLE FAULT
+        all(greaterThanEqual(mapPos, vec3(0.0))) && // POSSIBLE FAULT
+        length(mapPos - rayPos) <= max_dist; // POSSIBLE FAULT
+        ++i) 
     {
         if (OpactityBrick_read(brick, ivec3(mapPos)))
             return true;

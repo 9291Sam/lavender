@@ -26,7 +26,7 @@ namespace world
             std::vector<float> res {};
             res.resize(64 * 64);
 
-            this->simplex->GenUniformGrid2D(res.data(), root.z, root.x, 64, 64, 0.002f, 13437);
+            this->simplex->GenUniformGrid2D(res.data(), root.z, root.x, 64, 64, 0.02f, 13437);
 
             const std::array<std::array<float, 64>, 64>* ptr =
                 reinterpret_cast<const std::array<std::array<float, 64>, 64>*>(res.data());

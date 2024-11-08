@@ -299,9 +299,9 @@ namespace verdigris
         world::WorldChunkGenerator            gener {894398345};
         std::vector<voxel::World::VoxelWrite> writes {};
 
-        for (int i = -7; i < 8; ++i)
+        for (int i = -2; i < 2; ++i)
         {
-            for (int j = -7; j < 8; ++j)
+            for (int j = -2; j < 2; ++j)
             {
                 writes.append_range(gener.generateChunk({{i, 0, j}}));
             }
@@ -322,7 +322,7 @@ namespace verdigris
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 
-        for (int i = 0; i < 32; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             this->lights.push_back(this->voxel_world.createPointLight({}, {}, {}));
         }
@@ -378,7 +378,7 @@ namespace verdigris
         const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
         // util::logTrace("modify light");
-        for (int i = 0; i < 32; i++)
+        for (int i = 0; i < 3; i++)
         {
             const float offset = this->time_alive * 2 + i * 2 * std::numbers::pi_v<float> / 8.0;
 

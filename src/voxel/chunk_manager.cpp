@@ -638,6 +638,7 @@ namespace voxel
                 }
             });
 
+        util::logTrace("flushing!");
         this->gpu_chunk_data.flush();
         this->brick_maps.flush();
         this->brick_parent_info.flush();
