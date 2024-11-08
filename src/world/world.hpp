@@ -5,6 +5,7 @@
 #include "voxel/voxel.hpp"
 #include "voxel/world.hpp"
 #include <FastNoise/FastNoise.h>
+#include <boost/container/detail/destroyers.hpp>
 
 namespace world
 {
@@ -17,6 +18,9 @@ namespace world
         {
             this->fractal->SetSource(this->simplex);
             this->fractal->SetOctaveCount(5);
+            this->fractal->SetGain(1.024);
+            this->fractal->SetLacunarity(4.034);
+            this->fractal->SetWeightedStrength(9.403);
         }
 
         std::vector<voxel::World::VoxelWrite> generateChunk(voxel::ChunkCoordinate coordinate)
@@ -26,10 +30,16 @@ namespace world
             std::vector<float> res {};
             res.resize(64 * 64);
 
-            this->simplex->GenUniformGrid2D(res.data(), root.z, root.x, 64, 64, 0.002f, 13437);
+            std::vector<float> mat {};
+            mat.resize(64 * 64);
 
+            this->simplex->GenUniformGrid2D(res.data(), root.z, root.x, 64, 64, 0.02f, 13437);
+            this->simplex->GenUniformGrid2D(mat.data(), root.z, root.x, 64, 64, 0.02f, 8594835);
             const std::array<std::array<float, 64>, 64>* ptr =
                 reinterpret_cast<const std::array<std::array<float, 64>, 64>*>(res.data());
+
+            const std::array<std::array<float, 64>, 64>* matptr =
+                reinterpret_cast<const std::array<std::array<float, 64>, 64>*>(mat.data());
 
             std::vector<voxel::World::VoxelWrite> out {};
             out.reserve(4096);
@@ -47,7 +57,8 @@ namespace world
                         auto w = voxel::World::VoxelWrite {
                             .position {voxel::assembleWorldPosition(
                                 coordinate, voxel::ChunkLocalPosition {{i, h, j}})},
-                            .voxel {voxel::Voxel::Obsidian}};
+                            .voxel {static_cast<voxel::Voxel>(
+                                util::map<float>((*matptr)[i][j], -1.0f, 1.0f, 1.0f, 9.0f))}};
 
                         out.push_back(w);
                     }

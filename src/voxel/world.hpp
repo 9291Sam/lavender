@@ -45,11 +45,11 @@ namespace voxel
         explicit World(const game::Game*);
         ~World();
 
-        // [[nodiscard]] Voxel              readVoxelMaterial(glm::ivec3) const;
-        // [[nodiscard]] std::vector<Voxel> readVoxelMaterial(std::span<const glm::ivec3>) const;
+        [[nodiscard]] Voxel              readVoxelMaterial(WorldPosition) const;
+        [[nodiscard]] std::vector<Voxel> readVoxelMaterial(std::span<const WorldPosition>) const;
 
-        // [[nodiscard]] bool              readVoxelOpacity(glm::ivec3) const;
-        // [[nodiscard]] std::vector<bool> readVoxelOpacity(std::span<const glm::ivec3>) const;
+        [[nodiscard]] bool              readVoxelOpacity(WorldPosition) const;
+        [[nodiscard]] std::vector<bool> readVoxelOpacity(std::span<const WorldPosition>) const;
 
         void writeVoxel(WorldPosition, Voxel) const;
         void writeVoxel(std::span<const VoxelWrite>) const;

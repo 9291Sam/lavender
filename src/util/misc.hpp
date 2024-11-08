@@ -98,4 +98,10 @@ namespace util
         return remainder;
     }
 
+    template<class T>
+
+    [[nodiscard]] T map(T x, T inMin, T inMax, T outMin, T outMax)
+    {
+        return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+    }
 } // namespace util

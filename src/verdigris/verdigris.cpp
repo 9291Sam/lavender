@@ -322,13 +322,13 @@ namespace verdigris
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 
-        for (int i = 0; i < 2; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             this->lights.push_back(this->voxel_world.createPointLight({}, {}, {}));
         }
 
         this->lights.push_back(this->voxel_world.createPointLight(
-            {105, 115, 104}, {1.0, 1.0, 1.0, 384}, {0.0, 0.0, 0.025f, 0.0}));
+            {105, 315, 104}, {1.0, 1.0, 1.0, 384}, {0.0, 0.0, 0.025f, 0.0}));
 
         std::ignore = this->voxel_world.writeVoxel(
             voxel::World::VoxelWriteOverlapBehavior::OverwriteOnOverlap, writeList);
@@ -378,15 +378,15 @@ namespace verdigris
         const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
         // util::logTrace("modify light");
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < 3; i++)
         {
-            const float offset = this->time_alive * 2 + i * 2 * std::numbers::pi_v<float> / 8.0;
+            const float offset = this->time_alive * 2 + i * std::numbers::pi_v<float> / 2.0;
 
             if (i == 0)
             {
                 const glm::vec3 pos = glm::vec3 {
                     78.0f * std::cos(offset),
-                    4.0f * std::sin(offset) + 48.0f,
+                    4.0f * std::sin(offset) + 122.0f,
                     78.0f * std::sin(offset)};
 
                 // util::logTrace("modify light2");
@@ -406,7 +406,7 @@ namespace verdigris
             {
                 const glm::vec3 pos = glm::vec3 {
                     256.0f * std::cos(offset * 1.384 + 93.4),
-                    4.0f * std::sin(offset * 1.384 + 93.4) + 47.0f,
+                    4.0f * std::sin(offset * 1.384 + 93.4) + 147.0f,
                     256.0f * std::sin(offset * 1.384 + 93.4)};
 
                 this->voxel_world.modifyPointLight(
