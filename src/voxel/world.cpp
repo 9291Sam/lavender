@@ -119,9 +119,11 @@ namespace voxel
         ChunkCoordinate cameraCoordinate =
             splitWorldPosition(WorldPosition {c.getPosition()}).first;
 
-        for (int i = -3; i <= 3; ++i)
+        int radius = 3;
+
+        for (int i = -radius; i <= radius; ++i)
         {
-            for (int j = -3; j <= 3; ++j)
+            for (int j = -radius; j <= radius; ++j)
             {
                 ChunkCoordinate shouldExist {{cameraCoordinate.x + i, 0, cameraCoordinate.z + j}};
 
