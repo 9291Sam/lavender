@@ -4,6 +4,7 @@
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer_stager.hpp"
 #include <vector>
+#include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_handles.hpp>
 
 namespace gfx::vulkan
@@ -100,15 +101,19 @@ namespace gfx::vulkan
             this->flushes.clear();
         }
 
-        void flushWhole()
+        void flushWhole(bool force = false)
         {
-            if (!this->flushes.empty())
+            if (!this->flushes.empty() || force)
             {
                 std::span<T>       gpuData = this->gpu_buffer.getDataNonCoherent();
                 std::span<const T> cpuData = this->cpu_buffer;
 
                 std::memcpy(gpuData.data(), cpuData.data(), cpuData.size_bytes());
 
+                const gfx::vulkan::FlushData wholeFlush {
+                    .offset_elements {0}, .size_elements {this->cpu_buffer.size()}};
+
+                this->gpu_buffer.flush({&wholeFlush, 1});
                 this->flushes.clear();
             }
         }

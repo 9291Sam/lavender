@@ -299,9 +299,9 @@ namespace verdigris
         world::WorldChunkGenerator            gener {894398345};
         std::vector<voxel::World::VoxelWrite> writes {};
 
-        for (int i = -7; i < 8; ++i)
+        for (int i = -2; i < 2; ++i)
         {
-            for (int j = -7; j < 8; ++j)
+            for (int j = -2; j < 2; ++j)
             {
                 writes.append_range(gener.generateChunk({{i, 0, j}}));
             }
