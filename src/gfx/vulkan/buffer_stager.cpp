@@ -70,11 +70,6 @@ namespace gfx::vulkan
 
                 for (const auto& [fence, allocations] : toFreeMap)
                 {
-                    if (fence == nullptr)
-                    {
-                        util::logWarn("dont allow!");
-                        continue;
-                    }
                     if (this->allocator->getDevice().getFenceStatus(fence) == vk::Result::eSuccess)
                     {
                         toRemove.push_back(fence);

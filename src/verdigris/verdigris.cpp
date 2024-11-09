@@ -527,18 +527,6 @@ namespace verdigris
                 });
             });
 
-        draws.push_back(game::FrameGenerator::RecordObject {
-            .transform {},
-            .render_pass {game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
-            .pipeline {},
-            .descriptors {},
-            .record_func {[this](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
-                          {
-                              this->game->getRenderer()->getStager().flushTransfers(
-                                  commandBuffer, {});
-                          }},
-        });
-
         this->voxel_world.setCamera(this->camera);
 
         draws.append_range(

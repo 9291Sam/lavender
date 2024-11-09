@@ -1,5 +1,6 @@
 #include "frame_manager.hpp"
 #include "device.hpp"
+#include "gfx/vulkan/buffer_stager.hpp"
 #include "gfx/vulkan/frame_manager.hpp"
 #include <expected>
 #include <optional>
@@ -94,7 +95,8 @@ namespace gfx::vulkan
 
     std::expected<void, Frame::ResizeNeeded> Frame::recordAndDisplay(
         std::optional<vk::Fence>                    previousFrameFence,
-        std::function<void(vk::CommandBuffer, u32)> withCommandBuffer)
+        std::function<void(vk::CommandBuffer, u32)> withCommandBuffer,
+        const BufferStager&                         stager)
     {
         const auto [acquireImageResult, maybeNextImageIdx] =
             this->device->getDevice().acquireNextImageKHR(
@@ -150,6 +152,9 @@ namespace gfx::vulkan
 
                 this->command_buffer->reset();
                 this->command_buffer->begin(commandBufferBeginInfo);
+
+                // HACK: flush all buffers on this
+                stager.flushTransfers(*this->command_buffer, *this->frame_in_flight);
 
                 withCommandBuffer(*this->command_buffer, maybeNextImageIdx);
 
@@ -234,7 +239,8 @@ namespace gfx::vulkan
     FrameManager::~FrameManager() noexcept = default;
 
     std::expected<void, Frame::ResizeNeeded> FrameManager::recordAndDisplay(
-        std::function<void(std::size_t, vk::CommandBuffer, u32)> recordFunc)
+        std::function<void(std::size_t, vk::CommandBuffer, u32)> recordFunc,
+        const BufferStager&                                      stager)
     {
         this->flying_frame_index += 1;
         this->flying_frame_index %= FramesInFlight;
@@ -246,7 +252,8 @@ namespace gfx::vulkan
                     [&](vk::CommandBuffer commandBuffer, u32 swapchainIndex)
                     {
                         recordFunc(this->flying_frame_index, commandBuffer, swapchainIndex);
-                    });
+                    },
+                    stager);
 
         this->previous_frame_finished_fence =
             this->flying_frames.at(this->flying_frame_index).getFrameInFlightFence();

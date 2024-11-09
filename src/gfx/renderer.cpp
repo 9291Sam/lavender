@@ -101,7 +101,8 @@ namespace gfx
                                 swapchainImageIdx,
                                 *lockedCriticalSection->swapchain,
                                 flyingFrameIdx);
-                        });
+                        },
+                        *this->stager);
 
                 if (!drawFrameResult.has_value())
                 {

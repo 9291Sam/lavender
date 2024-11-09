@@ -5,6 +5,7 @@
 // the easiest solution
 #include "offsetAllocator.cpp" // NOLINT: stupid fucking library
 #include "util/log.hpp"
+#include "util/timer.hpp"
 #include <source_location>
 
 namespace util

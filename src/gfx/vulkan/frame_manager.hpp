@@ -1,6 +1,7 @@
 #pragma once
 
 #include "device.hpp"
+#include "gfx/vulkan/buffer_stager.hpp"
 #include <chrono>
 #include <cstddef>
 #include <functional>
@@ -34,7 +35,8 @@ namespace gfx::vulkan
         [[nodiscard]] std::expected<void, Frame::ResizeNeeded> recordAndDisplay(
             std::optional<vk::Fence> previousFrameFence,
             // u32 is the swapchain image's index
-            std::function<void(vk::CommandBuffer, u32)>);
+            std::function<void(vk::CommandBuffer, u32)>,
+            const BufferStager&);
 
         [[nodiscard]] vk::Fence getFrameInFlightFence() const noexcept;
 
@@ -64,8 +66,8 @@ namespace gfx::vulkan
 
         // std::size_t is the flying frame index
         // u32 is the swapchain image's index
-        [[nodiscard]] std::expected<void, Frame::ResizeNeeded>
-            recordAndDisplay(std::function<void(std::size_t, vk::CommandBuffer, u32)>);
+        [[nodiscard]] std::expected<void, Frame::ResizeNeeded> recordAndDisplay(
+            std::function<void(std::size_t, vk::CommandBuffer, u32)>, const BufferStager&);
     private:
         vk::Device                        device;
         std::optional<vk::Fence>          previous_frame_finished_fence;
