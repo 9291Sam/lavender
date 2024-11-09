@@ -55,63 +55,80 @@ namespace gfx::vulkan
                     .output_buffer {buffer},
                     .output_offset {offset},
                     .size {static_cast<u32>(dataToWrite.size_bytes())},
-                    .frames_alive {0}});
+                });
             });
     }
 
-    void BufferStager::flushTransfers(vk::CommandBuffer commandBuffer) const
+    void
+    BufferStager::flushTransfers(vk::CommandBuffer commandBuffer, vk::Fence flushFinishFence) const
     {
-        std::vector<util::RangeAllocation> allocationsToFree {};
-        std::vector<FlushData>             stagingFlushes {};
-
-        this->transfers.lock(
-            [&](std::vector<BufferTransfer>& lockedTransfers)
+        // Free all allocations that have already completed.
+        this->transfers_to_free.lock(
+            [&](std::unordered_map<vk::Fence, std::vector<BufferTransfer>>& toFreeMap)
             {
-                std::vector<BufferTransfer> transfersToRetain {};
-                transfersToRetain.reserve(lockedTransfers.size());
+                std::vector<vk::Fence> toRemove {};
 
-                for (BufferTransfer& t : lockedTransfers)
+                for (const auto& [fence, allocations] : toFreeMap)
                 {
-                    if (t.frames_alive == 0)
+                    if (fence == nullptr)
                     {
-                        stagingFlushes.push_back(FlushData {
-                            .offset_elements {t.staging_allocation.offset},
-                            .size_elements {t.size}});
-
-                        const vk::BufferCopy bufferCopy {
-                            .srcOffset {t.staging_allocation.offset},
-                            .dstOffset {t.output_offset},
-                            .size {t.size},
-                        };
-
-                        commandBuffer.copyBuffer(
-                            *this->staging_buffer, t.output_buffer, 1, &bufferCopy);
+                        util::logWarn("dont allow!");
+                        continue;
                     }
-
-                    if (t.frames_alive > FramesInFlight)
+                    if (this->allocator->getDevice().getFenceStatus(fence) == vk::Result::eSuccess)
                     {
-                        allocationsToFree.push_back(t.staging_allocation);
-                    }
-                    else
-                    {
-                        t.frames_alive += 1;
+                        toRemove.push_back(fence);
 
-                        transfersToRetain.push_back(t);
+                        this->transfer_allocator.lock(
+                            [&](util::RangeAllocator& stagingAllocator)
+                            {
+                                for (BufferTransfer transfer : allocations)
+                                {
+                                    stagingAllocator.free(transfer.staging_allocation);
+                                }
+                            });
                     }
                 }
 
-                lockedTransfers = transfersToRetain;
+                for (vk::Fence f : toRemove)
+                {
+                    toFreeMap.erase(f);
+                }
             });
+
+        std::vector<BufferTransfer> grabbedTransfers = this->transfers.moveInner();
+
+        std::unordered_map<vk::Buffer, std::vector<vk::BufferCopy>> copies {};
+        std::vector<FlushData>                                      stagingFlushes {};
+
+        for (const BufferTransfer& transfer : grabbedTransfers)
+        {
+            copies[transfer.output_buffer].push_back(vk::BufferCopy {
+                .srcOffset {transfer.staging_allocation.offset},
+                .dstOffset {transfer.output_offset},
+                .size {transfer.size},
+            });
+
+            stagingFlushes.push_back(FlushData {
+                .offset_elements {transfer.staging_allocation.offset},
+                .size_elements {transfer.size}});
+        }
+
+        for (const auto& [outputBuffer, bufferCopies] : copies)
+        {
+            if (bufferCopies.size() > 128)
+            {
+                util::logTrace("Excessive copies on buffer {}", bufferCopies.size());
+            }
+            commandBuffer.copyBuffer(*this->staging_buffer, outputBuffer, bufferCopies);
+        }
 
         this->staging_buffer.flush(stagingFlushes);
 
-        this->transfer_allocator.lock(
-            [&](util::RangeAllocator& allocator_)
+        this->transfers_to_free.lock(
+            [&](std::unordered_map<vk::Fence, std::vector<BufferTransfer>>& toFreeMap)
             {
-                for (util::RangeAllocation allocation : allocationsToFree)
-                {
-                    allocator_.free(allocation);
-                }
+                toFreeMap[flushFinishFence].append_range(std::move(grabbedTransfers));
             });
     }
 

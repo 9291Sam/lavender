@@ -30,7 +30,6 @@ namespace verdigris
     Verdigris::Verdigris(game::Game* game_) // NOLINT
         : game {game_}
         , ec_manager {game_->getEntityComponentManager()}
-        , stager {this->game->getRenderer()->getAllocator()}
         , voxel_world(std::make_unique<world::WorldChunkGenerator>(38484334), this->game)
     {
         this->triangle = this->game->getEntityComponentManager()->createEntity();
@@ -535,13 +534,15 @@ namespace verdigris
             .descriptors {},
             .record_func {[this](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
                           {
-                              this->stager.flushTransfers(commandBuffer);
+                              this->game->getRenderer()->getStager().flushTransfers(
+                                  commandBuffer, {});
                           }},
         });
 
         this->voxel_world.setCamera(this->camera);
 
-        draws.append_range(this->voxel_world.getRecordObjects(this->game, this->stager));
+        draws.append_range(
+            this->voxel_world.getRecordObjects(this->game, this->game->getRenderer()->getStager()));
 
         return {this->camera, std::move(draws)};
     }

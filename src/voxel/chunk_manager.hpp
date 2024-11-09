@@ -103,25 +103,25 @@ namespace voxel
             u32       normal;
             u32       chunk_id;
         };
-        gfx::vulkan::Buffer<ChunkDrawIndirectInstancePayload> indirect_payload;
-        gfx::vulkan::Buffer<vk::DrawIndirectCommand>          indirect_commands;
+        gfx::vulkan::WriteOnlyBuffer<ChunkDrawIndirectInstancePayload> indirect_payload;
+        gfx::vulkan::WriteOnlyBuffer<vk::DrawIndirectCommand>          indirect_commands;
 
         struct BrickParentInformation
         {
             u32 parent_chunk             : 23; // actually only using 16
             u32 position_in_parent_chunk : 9;
         };
-        BrickPointerAllocator                              brick_allocator;
-        gfx::vulkan::TrackedBuffer<BrickParentInformation> brick_parent_info;
-        gfx::vulkan::TrackedBuffer<MaterialBrick>          material_bricks;
-        gfx::vulkan::TrackedBuffer<OpacityBrick>           opacity_bricks;
-        gfx::vulkan::Buffer<VisibilityBrick>               visibility_bricks;
-        gfx::vulkan::Buffer<DirectionalFaceIdBrick>        face_id_bricks;
+        BrickPointerAllocator                                brick_allocator;
+        gfx::vulkan::TrackedBuffer<BrickParentInformation>   brick_parent_info;
+        gfx::vulkan::TrackedBuffer<MaterialBrick>            material_bricks;
+        gfx::vulkan::TrackedBuffer<OpacityBrick>             opacity_bricks;
+        gfx::vulkan::WriteOnlyBuffer<VisibilityBrick>        visibility_bricks;
+        gfx::vulkan::WriteOnlyBuffer<DirectionalFaceIdBrick> face_id_bricks;
 
-        util::RangeAllocator                 voxel_face_allocator;
-        gfx::vulkan::Buffer<GreedyVoxelFace> voxel_faces;
+        util::RangeAllocator                          voxel_face_allocator;
+        gfx::vulkan::WriteOnlyBuffer<GreedyVoxelFace> voxel_faces;
 
-        gfx::vulkan::Buffer<VoxelMaterial> material_buffer;
+        gfx::vulkan::WriteOnlyBuffer<VoxelMaterial> material_buffer;
 
         struct GlobalVoxelData
         {
@@ -137,8 +137,8 @@ namespace voxel
             u32       data;
             glm::vec3 calculated_color;
         };
-        gfx::vulkan::Buffer<GlobalVoxelData> global_voxel_data;
-        gfx::vulkan::Buffer<VisibleFaceData> visible_face_data;
+        gfx::vulkan::WriteOnlyBuffer<GlobalVoxelData> global_voxel_data;
+        gfx::vulkan::WriteOnlyBuffer<VisibleFaceData> visible_face_data;
 
         util::IndexAllocator                           light_allocator;
         gfx::vulkan::TrackedBuffer<InternalPointLight> lights_buffer;

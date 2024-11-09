@@ -85,8 +85,8 @@ namespace game
 
         struct GlobalInfoDescriptors
         {
-            gfx::vulkan::Buffer<glm::mat4>       mvp_matrices;
-            gfx::vulkan::Buffer<GlobalFrameInfo> global_frame_info;
+            gfx::vulkan::GpuOnlyBuffer<glm::mat4>       mvp_matrices;
+            gfx::vulkan::GpuOnlyBuffer<GlobalFrameInfo> global_frame_info;
 
             gfx::vulkan::Image2D depth_buffer;
 

@@ -26,34 +26,33 @@ namespace gfx::vulkan
 
         template<class T>
             requires std::is_trivially_copyable_v<T>
-        void enqueueTransfer(const Buffer<T>& buffer, u32 offset, std::span<T> data) const
+        void enqueueTransfer(const GpuOnlyBuffer<T>& buffer, u32 offset, std::span<T> data) const
         {
             this->enqueueByteTransfer(
                 *buffer,
-                offset,
-                std::span<const std::byte> {// NOLINTNEXTLINE
-                                            reinterpret_cast<const std::byte*>(data.data()),
-                                            data.size_bytes()});
+                offset, // NOLINTNEXTLINE
+                std::span {reinterpret_cast<const std::byte*>(data.data()), data.size_bytes()});
         }
+
+        void flushTransfers(vk::CommandBuffer, vk::Fence flushFinishFence) const;
+
+    private:
 
         void enqueueByteTransfer(vk::Buffer, u32 offset, std::span<const std::byte>) const;
 
-        void flushTransfers(vk::CommandBuffer) const;
-
-    private:
         struct BufferTransfer
         {
             util::RangeAllocation staging_allocation;
             vk::Buffer            output_buffer;
             u32                   output_offset;
             u32                   size;
-            u32                   frames_alive;
         };
 
-        const Allocator*                       allocator;
-        mutable gfx::vulkan::Buffer<std::byte> staging_buffer;
+        const Allocator*                                allocator;
+        mutable gfx::vulkan::WriteOnlyBuffer<std::byte> staging_buffer;
 
-        util::Mutex<util::RangeAllocator>        transfer_allocator;
-        util::Mutex<std::vector<BufferTransfer>> transfers;
+        util::Mutex<util::RangeAllocator>                                       transfer_allocator;
+        util::Mutex<std::vector<BufferTransfer>>                                transfers;
+        util::Mutex<std::unordered_map<vk::Fence, std::vector<BufferTransfer>>> transfers_to_free;
     };
 } // namespace gfx::vulkan

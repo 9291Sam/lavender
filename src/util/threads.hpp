@@ -9,6 +9,7 @@
 #include <optional>
 #include <shared_mutex>
 #include <span>
+#include <type_traits>
 #include <vector>
 
 namespace util
@@ -90,6 +91,26 @@ namespace util
 
             return output;
         }
+
+        std::tuple_element_t<0, std::tuple<T...>> moveInner() const
+            requires (sizeof...(T) == 1)
+        {
+            using V = std::tuple_element_t<0, std::tuple<T...>>;
+
+            static_assert(std::is_default_constructible_v<V>);
+
+            V output {};
+
+            this->lock(
+                [&](V& data)
+                {
+                    output = std::move(data);
+                });
+
+            return output;
+        }
+
+
 
     private:
         mutable std::unique_ptr<std::mutex> mutex;

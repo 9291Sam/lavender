@@ -4,6 +4,7 @@
 #include "util/atomic.hpp"
 #include "util/threads.hpp"
 #include "vulkan/allocator.hpp"
+#include "vulkan/buffer_stager.hpp"
 #include "vulkan/device.hpp"
 #include "vulkan/frame_manager.hpp"
 #include "vulkan/instance.hpp"
@@ -69,6 +70,7 @@ namespace gfx
         this->surface   = this->window->createSurface(**this->instance);
         this->device    = std::make_unique<vulkan::Device>(**this->instance, *this->surface);
         this->allocator = std::make_unique<vulkan::Allocator>(*this->instance, *this->device);
+        this->stager    = std::make_unique<vulkan::BufferStager>(&*this->allocator);
 
         this->critical_section = util::Mutex {
             Renderer::makeCriticalSection(*this->device, *this->surface, *this->window)};
@@ -152,6 +154,11 @@ namespace gfx
     const vulkan::Allocator* Renderer::getAllocator() const noexcept
     {
         return &*this->allocator;
+    }
+
+    const vulkan::BufferStager& Renderer::getStager() const noexcept
+    {
+        return *this->stager;
     }
 
     const Window* Renderer::getWindow() const noexcept

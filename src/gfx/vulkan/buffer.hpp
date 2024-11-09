@@ -24,28 +24,27 @@ namespace gfx::vulkan
 
     template<class T>
         requires std::is_trivially_copyable_v<T>
-    class Buffer
+    class GpuOnlyBuffer
     {
     public:
 
-        Buffer()
+        GpuOnlyBuffer()
             : allocator {nullptr}
             , buffer {nullptr}
             , allocation {nullptr}
             , elements {0}
-            , mapped_memory {nullptr}
         {}
-        Buffer(
+        GpuOnlyBuffer(
             const Allocator*        allocator_,
             vk::BufferUsageFlags    usage,
             vk::MemoryPropertyFlags memoryPropertyFlags,
             std::size_t             elements_,
-            std::string             name)
-            : allocator {allocator_}
+            std::string             name_)
+            : name {std::move(name_)}
+            , allocator {allocator_}
             , buffer {nullptr}
             , allocation {nullptr}
             , elements {elements_}
-            , mapped_memory {nullptr}
         {
             util::assertFatal(
                 !(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eHostCoherent),
@@ -99,38 +98,37 @@ namespace gfx::vulkan
                         .pNext {nullptr},
                         .objectType {vk::ObjectType::eBuffer},
                         .objectHandle {std::bit_cast<u64>(this->buffer)},
-                        .pObjectName {name.c_str()},
+                        .pObjectName {this->name.c_str()},
                     });
             }
 
             bufferBytesAllocated += (this->elements * sizeof(T));
         }
-        ~Buffer()
+        ~GpuOnlyBuffer()
         {
             this->free();
         }
 
-        Buffer(const Buffer&) = delete;
-        Buffer& operator= (Buffer&& other) noexcept
+        GpuOnlyBuffer(const GpuOnlyBuffer&) = delete;
+        GpuOnlyBuffer& operator= (GpuOnlyBuffer&& other) noexcept
         {
             if (this == &other)
             {
                 return *this;
             }
 
-            this->~Buffer();
+            this->~GpuOnlyBuffer();
 
-            new (this) Buffer {std::move(other)};
+            new (this) GpuOnlyBuffer {std::move(other)};
 
             return *this;
         }
-        Buffer& operator= (const Buffer&) = delete;
-        Buffer(Buffer&& other) noexcept
+        GpuOnlyBuffer& operator= (const GpuOnlyBuffer&) = delete;
+        GpuOnlyBuffer(GpuOnlyBuffer&& other) noexcept
             : allocator {other.allocator}
             , buffer {other.buffer}
             , allocation {other.allocation}
             , elements {other.elements}
-            , mapped_memory {other.mapped_memory.exchange(nullptr, std::memory_order_seq_cst)}
         {
             other.allocator  = nullptr;
             other.buffer     = nullptr;
@@ -141,6 +139,68 @@ namespace gfx::vulkan
         vk::Buffer operator* () const
         {
             return vk::Buffer {this->buffer};
+        }
+
+    protected:
+
+        void free()
+        {
+            if (this->allocator == nullptr)
+            {
+                return;
+            }
+
+            ::vmaDestroyBuffer(**this->allocator, this->buffer, this->allocation);
+
+            bufferBytesAllocated -= (this->elements * sizeof(T));
+        }
+
+        std::string      name;
+        const Allocator* allocator;
+        vk::Buffer       buffer;
+        VmaAllocation    allocation;
+        std::size_t      elements;
+    };
+
+    template<class T>
+    class WriteOnlyBuffer : public GpuOnlyBuffer<T>
+    {
+    public:
+
+        WriteOnlyBuffer(
+            const Allocator*        allocator_,
+            vk::BufferUsageFlags    usage,
+            vk::MemoryPropertyFlags memoryPropertyFlags,
+            std::size_t             elements_,
+            std::string             name_)
+            : gfx::vulkan::GpuOnlyBuffer<T> {
+                  allocator_, usage, memoryPropertyFlags, elements_, std::move(name_)}
+        {}
+        ~WriteOnlyBuffer()
+        {
+            this->free();
+        }
+
+        WriteOnlyBuffer(const WriteOnlyBuffer&) = delete;
+        WriteOnlyBuffer& operator= (WriteOnlyBuffer&& other) noexcept
+        {
+            if (this == &other)
+            {
+                return *this;
+            }
+
+            this->~Buffer();
+
+            new (this) WriteOnlyBuffer {std::move(other)};
+
+            return *this;
+        }
+        WriteOnlyBuffer& operator= (const WriteOnlyBuffer&) = delete;
+        WriteOnlyBuffer(WriteOnlyBuffer&& other) noexcept
+            : GpuOnlyBuffer<T> {std::move(other)}
+            , mapped_memory {other.mapped_memory.load()}
+        {
+            other.mapped_memory = nullptr;
         }
 
         std::span<const T> getDataNonCoherent() const
@@ -198,27 +258,15 @@ namespace gfx::vulkan
                 vk::to_string(vk::Result {result}));
         }
 
-
-
-
     private:
 
         void free()
         {
-            if (this->allocator == nullptr)
-            {
-                return;
-            }
-
             if (this->mapped_memory != nullptr)
             {
                 ::vmaUnmapMemory(**this->allocator, this->allocation);
                 this->mapped_memory = nullptr;
             }
-
-            ::vmaDestroyBuffer(**this->allocator, this->buffer, this->allocation);
-
-            bufferBytesAllocated -= (this->elements * sizeof(T));
         }
 
         T* getMappedData() const
@@ -249,12 +297,41 @@ namespace gfx::vulkan
             return this->mapped_memory;
         }
 
-        const Allocator* allocator;
-
-        vk::Buffer    buffer;
-        VmaAllocation allocation;
-
-        std::size_t             elements;
         mutable std::atomic<T*> mapped_memory;
+    };
+
+    template<class T>
+    class CpuCachedBuffer : private WriteOnlyBuffer<T>
+    {
+    public:
+
+        void write(std::size_t offset, std::span<const T>);
+        void write(std::size_t, const T&);
+
+        std::span<const T> read(std::size_t offset, std::size_t size);
+        const T&           read(std::size_t) const;
+
+        std::span<T> modify(std::size_t offset, std::size_t size);
+        T&           modify(std::size_t);
+
+        // void flushViaStager(const gfx::vulkan::BufferStager& stager)
+        // {
+        //     this->mergeFlushes();
+
+        //     for (const FlushData& f : this->flushes)
+        //     {
+        //         stager.enqueueTransfer(
+        //             this->gpu_buffer,
+        //             f.offset_elements,
+        //             {this->cpu_buffer.data() + f.offset_elements,
+        //              this->cpu_buffer.data() + f.offset_elements + f.size_elements});
+        //     }
+
+        //     this->flushes.clear();
+        // }
+
+    private:
+        std::vector<T>         cpu_buffer;
+        std::vector<FlushData> flushes;
     };
 } // namespace gfx::vulkan

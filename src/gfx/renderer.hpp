@@ -1,6 +1,7 @@
 #pragma once
 
 #include "util/misc.hpp"
+#include "vulkan/buffer_stager.hpp"
 #include <functional>
 #include <memory>
 #include <util/threads.hpp>
@@ -40,11 +41,12 @@ namespace gfx
             std::function<void(vk::CommandBuffer, u32, vulkan::Swapchain&, std::size_t)>) const;
         [[nodiscard]] bool shouldWindowClose() const noexcept;
 
-        [[nodiscard]] const vulkan::Device*    getDevice() const noexcept;
-        [[nodiscard]] const vulkan::Allocator* getAllocator() const noexcept;
-        [[nodiscard]] const Window*            getWindow() const noexcept;
-        [[nodiscard]] u32                      getFrameNumber() const noexcept;
-        [[nodiscard]] float                    getTimeAlive() const noexcept;
+        [[nodiscard]] const vulkan::Device*       getDevice() const noexcept;
+        [[nodiscard]] const vulkan::Allocator*    getAllocator() const noexcept;
+        [[nodiscard]] const Window*               getWindow() const noexcept;
+        [[nodiscard]] const vulkan::BufferStager& getStager() const noexcept;
+        [[nodiscard]] u32                         getFrameNumber() const noexcept;
+        [[nodiscard]] float                       getTimeAlive() const noexcept;
 
     private:
         struct RenderingCriticalSection
@@ -58,10 +60,11 @@ namespace gfx
 
         std::unique_ptr<Window> window;
 
-        std::unique_ptr<vulkan::Instance>  instance;
-        vk::UniqueSurfaceKHR               surface;
-        std::unique_ptr<vulkan::Device>    device;
-        std::unique_ptr<vulkan::Allocator> allocator;
+        std::unique_ptr<vulkan::Instance>     instance;
+        vk::UniqueSurfaceKHR                  surface;
+        std::unique_ptr<vulkan::Device>       device;
+        std::unique_ptr<vulkan::Allocator>    allocator;
+        std::unique_ptr<vulkan::BufferStager> stager;
 
         util::Mutex<std::unique_ptr<RenderingCriticalSection>> critical_section;
 

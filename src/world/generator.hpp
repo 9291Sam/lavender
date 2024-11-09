@@ -24,9 +24,10 @@ namespace world
             this->fractal->SetWeightedStrength(9.403);
         }
 
-        ~WorldChunkGenerator() = default;
+        ~WorldChunkGenerator() override = default;
 
-        std::vector<voxel::World::VoxelWrite> generateChunk(voxel::ChunkCoordinate coordinate)
+        std::vector<voxel::World::VoxelWrite>
+        generateChunk(voxel::ChunkCoordinate coordinate) override
         {
             if (coordinate.y != 0)
             {

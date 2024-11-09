@@ -17,7 +17,6 @@ namespace verdigris
         game::Game*                             game;
         const game::ec::EntityComponentManager* ec_manager;
         std::shared_ptr<vk::UniquePipeline>     triangle_pipeline;
-        gfx::vulkan::BufferStager               stager;
         mutable voxel::World                    voxel_world;
         mutable std::vector<voxel::PointLight>  lights;
         mutable float                           time_alive;

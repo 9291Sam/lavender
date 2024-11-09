@@ -25,7 +25,7 @@ namespace voxel
 
     VoxelMaterial getMaterialFromVoxel(Voxel v);
 
-    inline gfx::vulkan::Buffer<VoxelMaterial>
+    inline gfx::vulkan::WriteOnlyBuffer<VoxelMaterial>
     generateVoxelMaterialBuffer(const gfx::Renderer* renderer)
     {
         std::vector<VoxelMaterial> materials {};
@@ -36,7 +36,7 @@ namespace voxel
             materials.push_back(getMaterialFromVoxel(static_cast<Voxel>(i)));
         }
 
-        gfx::vulkan::Buffer<VoxelMaterial> buffer {
+        gfx::vulkan::WriteOnlyBuffer<VoxelMaterial> buffer {
             renderer->getAllocator(),
             vk::BufferUsageFlagBits::eStorageBuffer,
             vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,

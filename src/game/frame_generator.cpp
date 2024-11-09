@@ -32,14 +32,14 @@ namespace game
             vk::MemoryPropertyFlagBits::eDeviceLocal,
             "Global Depth Buffer"};
 
-        gfx::vulkan::Buffer<glm::mat4> mvpMatrices {
+        gfx::vulkan::WriteOnlyBuffer<glm::mat4> mvpMatrices {
             renderer->getAllocator(),
             vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
             1024,
             "Global MVP Matrices"};
 
-        gfx::vulkan::Buffer<GlobalFrameInfo> globalFrameInfo {
+        gfx::vulkan::WriteOnlyBuffer<GlobalFrameInfo> globalFrameInfo {
             renderer->getAllocator(),
             vk::BufferUsageFlagBits::eUniformBuffer | vk::BufferUsageFlagBits::eTransferDst,
             vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
