@@ -88,6 +88,7 @@ namespace gfx
         void attachCursor() const;
         void detachCursor() const;
         void toggleCursor() const;
+        void initializeImgui() const;
         void endFrame();
         // TODO: void updateKeyBindings();
 

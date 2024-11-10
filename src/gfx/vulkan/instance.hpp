@@ -1,6 +1,8 @@
 #pragma once
 
 #include "util/misc.hpp"
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_format_traits.hpp>
 #include <vulkan/vulkan_handles.hpp>
 
@@ -17,8 +19,9 @@ namespace gfx::vulkan
         Instance& operator= (const Instance&) = delete;
         Instance& operator= (Instance&&)      = delete;
 
-        vk::Instance      operator* () const noexcept;
-        [[nodiscard]] u32 getVulkanVersion() const noexcept;
+        vk::Instance                           operator* () const noexcept;
+        [[nodiscard]] u32                      getVulkanVersion() const noexcept;
+        [[nodiscard]] const vk::DynamicLoader& getLoader() const noexcept;
 
     private:
         vk::DynamicLoader                vulkan_loader;

@@ -60,7 +60,7 @@ namespace game
     public:
 
         explicit FrameGenerator(const game::Game*);
-        ~FrameGenerator() = default;
+        ~FrameGenerator();
 
         FrameGenerator(const FrameGenerator&)             = delete;
         FrameGenerator(FrameGenerator&&)                  = delete;

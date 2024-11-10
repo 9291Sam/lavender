@@ -86,6 +86,13 @@ namespace gfx::vulkan
                 .pObjectName {"Global Descriptor Pool"},
             });
         }
+
+        this->pipeline_cache = this->device.createPipelineCacheUnique(vk::PipelineCacheCreateInfo {
+            .sType {vk::StructureType::ePipelineCacheCreateInfo},
+            .pNext {nullptr},
+            .flags {},
+            .initialDataSize {0},
+            .pInitialData {nullptr}});
     }
 
     Allocator::~Allocator()
@@ -396,7 +403,7 @@ namespace gfx::vulkan
                     };
 
                     auto [result, pipeline] = this->device.createComputePipelineUnique(
-                        nullptr, computePipelineCreateInfo);
+                        *this->pipeline_cache, computePipelineCreateInfo);
 
                     util::assertFatal(
                         result == vk::Result::eSuccess,
@@ -618,8 +625,8 @@ namespace gfx::vulkan
                         .basePipelineIndex {0},
                     };
 
-                    auto [result, pipeline] =
-                        this->device.createGraphicsPipelineUnique(nullptr, pipelineCreateInfo);
+                    auto [result, pipeline] = this->device.createGraphicsPipelineUnique(
+                        *this->pipeline_cache, pipelineCreateInfo);
 
                     util::assertFatal(
                         result == vk::Result::eSuccess,
@@ -751,4 +758,13 @@ namespace gfx::vulkan
         return this->device;
     }
 
+    vk::DescriptorPool Allocator::getRawPool() const
+    {
+        return *this->descriptor_pool;
+    }
+
+    vk::PipelineCache Allocator::getRawCache() const
+    {
+        return *this->pipeline_cache;
+    }
 } // namespace gfx::vulkan

@@ -3,14 +3,22 @@
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/device.hpp"
+#include "gfx/vulkan/frame_manager.hpp"
 #include "gfx/vulkan/image.hpp"
+#include "util/log.hpp"
 #include "util/misc.hpp"
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+#include <bit>
 #include <compare>
 #include <cstddef>
 #include <gfx/renderer.hpp>
+#include <gfx/vulkan/instance.hpp>
 #include <gfx/vulkan/swapchain.hpp>
 #include <gfx/window.hpp>
+#include <imgui.h>
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
@@ -273,7 +281,95 @@ namespace game
                                               **this->set_layout, "Global Descriptor Set")}
         , global_descriptors {
               makeGlobalDescriptors(this->game->getRenderer(), this->global_info_descriptor_set)}
-    {}
+    {
+        ImGui::CreateContext();
+
+        const vk::DynamicLoader& loader = this->game->getRenderer()->getInstance()->getLoader();
+
+        // whatever the fuck this is
+        // Absolute nastiness, thanks `@karnage`!
+        auto getFn = [&loader](const char* name)
+        {
+            return loader.getProcAddress<PFN_vkVoidFunction>(name);
+        };
+        auto lambda = +[](const char* name, void* ud)
+        {
+            const auto* gf = reinterpret_cast<decltype(getFn)*>(ud); // NOLINT
+
+            void (*ptr)() = nullptr;
+
+            ptr = (*gf)(name);
+
+            // HACK: sometimes function ending in KHR are removed if they exist in core,
+            // pave over this
+            if (std::string_view nameView {name}; ptr == nullptr && nameView.ends_with("KHR"))
+            {
+                nameView.remove_suffix(3);
+
+                std::string apiString {nameView};
+
+                ptr = (*gf)(apiString.c_str());
+            }
+
+            util::assertFatal(ptr != nullptr, "Failed to load {}", name);
+
+            return ptr;
+        };
+        ImGui_ImplVulkan_LoadFunctions(lambda, &getFn);
+
+        this->game->getRenderer()->getWindow()->initializeImgui();
+
+        this->game->getRenderer()->getDevice()->acquireQueue(
+            gfx::vulkan::Device::QueueType::Graphics,
+            [&](vk::Queue q)
+            {
+                const VkFormat colorFormat =
+                    static_cast<VkFormat>(gfx::Renderer::ColorFormat.format);
+
+                const VkFormat depthFormat = static_cast<VkFormat>(gfx::Renderer::DepthFormat);
+
+                ImGui_ImplVulkan_InitInfo initInfo {
+                    .Instance {**this->game->getRenderer()->getInstance()},
+                    .PhysicalDevice {this->game->getRenderer()->getDevice()->getPhysicalDevice()},
+                    .Device {this->game->getRenderer()->getDevice()->getDevice()},
+                    .Queue {std::bit_cast<VkQueue>(q)},
+                    .DescriptorPool {this->game->getRenderer()->getAllocator()->getRawPool()},
+                    .RenderPass {nullptr},
+                    .MinImageCount {gfx::vulkan::FramesInFlight},
+                    .ImageCount {gfx::vulkan::FramesInFlight},
+                    .MSAASamples {VK_SAMPLE_COUNT_1_BIT},
+                    .PipelineCache {this->game->getRenderer()->getAllocator()->getRawCache()},
+                    .Subpass {0},
+                    .UseDynamicRendering {true},
+                    .PipelineRenderingCreateInfo {
+                        .sType {VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO},
+                        .pNext {nullptr},
+                        .viewMask {0},
+                        .colorAttachmentCount {1},
+                        .pColorAttachmentFormats {&colorFormat},
+                        .depthAttachmentFormat {depthFormat},
+                        .stencilAttachmentFormat {},
+                    },
+                    .Allocator {nullptr},
+                    .CheckVkResultFn {[](VkResult err)
+                                      {
+                                          util::assertWarn(
+                                              err == VK_SUCCESS,
+                                              "Imgui ResultCheckFailed {}",
+                                              vk::to_string(vk::Result {err}));
+                                      }},
+                    .MinAllocationSize {1024UZ * 1024}};
+
+                ImGui_ImplVulkan_Init(&initInfo);
+
+                ImGui_ImplVulkan_CreateFontsTexture();
+            });
+    }
+
+    FrameGenerator::~FrameGenerator()
+    {
+        ImGui_ImplVulkan_Shutdown();
+    }
 
     void FrameGenerator::internalGenerateFrame(
         vk::CommandBuffer             commandBuffer,
@@ -812,6 +908,18 @@ namespace game
             };
 
             doRenderPass(DynamicRenderingPass::SimpleColor, simpleColorRenderingInfo);
+
+            // imgui new frame
+            ImGui_ImplVulkan_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            // some imgui UI to test
+            ImGui::ShowDemoWindow();
+            util::logTrace("demo");
+
+            // make imgui calculate internal draw structures
+            ImGui::Render();
         }
 
         commandBuffer.pipelineBarrier(

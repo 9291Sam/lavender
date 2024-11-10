@@ -41,6 +41,7 @@ namespace gfx
             std::function<void(vk::CommandBuffer, u32, vulkan::Swapchain&, std::size_t)>) const;
         [[nodiscard]] bool shouldWindowClose() const noexcept;
 
+        [[nodiscard]] const vulkan::Instance*     getInstance() const noexcept;
         [[nodiscard]] const vulkan::Device*       getDevice() const noexcept;
         [[nodiscard]] const vulkan::Allocator*    getAllocator() const noexcept;
         [[nodiscard]] const Window*               getWindow() const noexcept;

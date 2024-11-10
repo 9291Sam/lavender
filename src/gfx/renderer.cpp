@@ -147,6 +147,11 @@ namespace gfx
         });
     }
 
+    const vulkan::Instance* Renderer::getInstance() const noexcept
+    {
+        return &*this->instance;
+    }
+
     const vulkan::Device* Renderer::getDevice() const noexcept
     {
         return &*this->device;

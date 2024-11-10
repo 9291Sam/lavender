@@ -194,4 +194,9 @@ namespace gfx::vulkan
     {
         return this->vulkan_api_version;
     }
+
+    const vk::DynamicLoader& Instance::getLoader() const noexcept
+    {
+        return this->vulkan_loader;
+    }
 } // namespace gfx::vulkan

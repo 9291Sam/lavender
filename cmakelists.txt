@@ -180,7 +180,8 @@ target_compile_definitions(lavender INTERFACE FASTSIMD_INCLUDE_HEADER_ONLY=1)
 target_compile_definitions(lavender PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 target_compile_definitions(lavender PUBLIC VULKAN_HPP_NO_CONSTRUCTORS=1)
 
-target_compile_definitions(lavender PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES=0)
+target_compile_definitions(lavender PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES=1)
+target_compile_definitions(lavender PUBLIC VK_NO_PROTOTYPES=1)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     target_compile_definitions(lavender PUBLIC LAVENDER_DEBUG_BUILD=1)

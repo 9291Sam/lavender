@@ -200,7 +200,6 @@ namespace gfx::vulkan
     class Instance;
     class Device;
     class DescriptorPool;
-    class PipelineCache;
 
     class Allocator
     {
@@ -237,12 +236,15 @@ namespace gfx::vulkan
                                             lookupPipelineLayout(vk::Pipeline) const;
         [[nodiscard]] vk::PipelineBindPoint lookupPipelineBindPoint(vk::Pipeline) const;
 
-        vk::Device getDevice() const;
+        vk::Device         getDevice() const;
+        vk::DescriptorPool getRawPool() const;
+        vk::PipelineCache  getRawCache() const;
 
     private:
         vk::Device               device;
         VmaAllocator             allocator;
         vk::UniqueDescriptorPool descriptor_pool;
+        vk::UniquePipelineCache  pipeline_cache;
         util::Mutex<std::unordered_map<
             CacheableDescriptorSetLayoutCreateInfo,
             std::shared_ptr<vk::UniqueDescriptorSetLayout>>>
