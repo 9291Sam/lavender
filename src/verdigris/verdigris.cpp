@@ -7,6 +7,7 @@
 #include "gfx/window.hpp"
 #include "shaders/shaders.hpp"
 #include "triangle_component.hpp"
+#include "util/misc.hpp"
 #include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
 #include "voxel/constants.hpp"

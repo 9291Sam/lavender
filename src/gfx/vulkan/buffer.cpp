@@ -1,5 +1,5 @@
-#include "allocator.hpp"
 #include "buffer.hpp"
+#include "allocator.hpp"
 #include "frame_manager.hpp"
 #include "util/offsetAllocator.hpp"
 #include "util/range_allocator.hpp"
@@ -10,7 +10,7 @@
 
 namespace gfx::vulkan
 {
-    static constexpr std::size_t StagingBufferSize = 128UZ * 1024 * 1024;
+    static constexpr std::size_t StagingBufferSize = 192UZ * 1024 * 1024;
 
     BufferStager::BufferStager(const Allocator* allocator_)
         : allocator {allocator_}
@@ -20,7 +20,7 @@ namespace gfx::vulkan
               vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,  StagingBufferSize,
               "Staging Buffer"
           }
-        , transfer_allocator {util::RangeAllocator {StagingBufferSize, 1024 * 64}}
+        , transfer_allocator {util::RangeAllocator {StagingBufferSize, 1024 * 128}}
         , transfers {std::vector<BufferTransfer> {}}
     {}
 
@@ -35,6 +35,8 @@ namespace gfx::vulkan
         util::RangeAllocation thisAllocation = this->transfer_allocator.lock(
             [&](util::RangeAllocator& a)
             {
+                this->allocated += dataToWrite.size_bytes();
+
                 return a.allocate(static_cast<u32>(dataToWrite.size_bytes()));
             });
 
@@ -78,6 +80,7 @@ namespace gfx::vulkan
                             {
                                 for (BufferTransfer transfer : allocations)
                                 {
+                                    this->allocated -= transfer.size;
                                     stagingAllocator.free(transfer.staging_allocation);
                                 }
                             });
@@ -124,6 +127,11 @@ namespace gfx::vulkan
             {
                 toFreeMap[flushFinishFence].append_range(std::move(grabbedTransfers));
             });
+    }
+
+    std::pair<std::size_t, std::size_t> BufferStager::getUsage() const
+    {
+        return {this->allocated.load(), StagingBufferSize};
     }
 
 } // namespace gfx::vulkan

@@ -432,6 +432,8 @@ namespace gfx::vulkan
 
         void flushTransfers(vk::CommandBuffer, vk::Fence flushFinishFence) const;
 
+        std::pair<std::size_t, std::size_t> getUsage() const;
+
     private:
 
         void enqueueByteTransfer(vk::Buffer, u32 offset, std::span<const std::byte>) const;
@@ -444,6 +446,7 @@ namespace gfx::vulkan
             u32                   size;
         };
 
+        mutable std::atomic<std::size_t>                allocated;
         const Allocator*                                allocator;
         mutable gfx::vulkan::WriteOnlyBuffer<std::byte> staging_buffer;
 

@@ -115,4 +115,11 @@ namespace util
     std::vector<std::pair<size_t, size_t>>
     combineIntoRanges(std::vector<size_t> points, size_t maxDistance, size_t maxRanges);
 
+    enum class SuffixType
+    {
+        Short,
+        Full
+    };
+
+    std::string bytesAsSiNamed(long double bytes, SuffixType = SuffixType::Full);
 } // namespace util
