@@ -1,7 +1,7 @@
 #pragma once
 
 #include "device.hpp"
-#include "gfx/vulkan/buffer_stager.hpp"
+#include "gfx/vulkan/buffer.hpp"
 #include <chrono>
 #include <cstddef>
 #include <functional>

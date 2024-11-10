@@ -121,7 +121,7 @@ namespace voxel
         ChunkCoordinate cameraCoordinate =
             splitWorldPosition(WorldPosition {c.getPosition()}).first;
 
-        int radius = 4;
+        int radius = 6;
 
         constexpr std::size_t MaxChunkGenerationsPerFrame = 2;
 

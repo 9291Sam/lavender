@@ -3,7 +3,7 @@
 #include "chunk.hpp"
 #include "game/camera.hpp"
 #include "game/frame_generator.hpp"
-#include "gfx/vulkan/buffer_stager.hpp"
+#include "gfx/vulkan/buffer.hpp"
 #include "glm/gtx/hash.hpp"
 #include "point_light.hpp"
 #include "voxel/chunk_manager.hpp"

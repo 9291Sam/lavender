@@ -1,7 +1,7 @@
 #pragma once
 
 #include "util/misc.hpp"
-#include "vulkan/buffer_stager.hpp"
+#include "vulkan/buffer.hpp"
 #include <functional>
 #include <memory>
 #include <util/threads.hpp>

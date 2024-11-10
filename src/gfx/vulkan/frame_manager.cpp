@@ -1,6 +1,6 @@
 #include "frame_manager.hpp"
 #include "device.hpp"
-#include "gfx/vulkan/buffer_stager.hpp"
+#include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/frame_manager.hpp"
 #include <expected>
 #include <optional>

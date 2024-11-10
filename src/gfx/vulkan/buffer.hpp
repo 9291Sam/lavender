@@ -3,16 +3,21 @@
 #include "gfx/vulkan/allocator.hpp"
 #include "util/log.hpp"
 #include "util/misc.hpp"
+#include "util/range_allocator.hpp"
 #include <type_traits>
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
+#include <vulkan/vulkan_format_traits.hpp>
+#include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
+#include <vulkan/vulkan_to_string.hpp>
 
 namespace gfx::vulkan
 {
     class Allocator;
     class Device;
+    class BufferStager;
 
     struct FlushData
     {
@@ -301,37 +306,166 @@ namespace gfx::vulkan
     };
 
     template<class T>
-    class CpuCachedBuffer : private WriteOnlyBuffer<T>
+    class CpuCachedBuffer : public WriteOnlyBuffer<T>
     {
     public:
 
-        void write(std::size_t offset, std::span<const T>);
-        void write(std::size_t, const T&);
+        CpuCachedBuffer(
+            const Allocator*        allocator_,
+            vk::BufferUsageFlags    usage,
+            vk::MemoryPropertyFlags memoryPropertyFlags,
+            std::size_t             elements_,
+            std::string             name_)
+            : gfx::vulkan::WriteOnlyBuffer<T> {
+                  allocator_, usage, memoryPropertyFlags, elements_, std::move(name_)}
+        {
+            this->cpu_buffer.resize(this->elements);
+        }
+        ~CpuCachedBuffer() = default;
 
-        std::span<const T> read(std::size_t offset, std::size_t size);
-        const T&           read(std::size_t) const;
+        CpuCachedBuffer(const CpuCachedBuffer&) = delete;
+        CpuCachedBuffer& operator= (CpuCachedBuffer&& other) noexcept
+        {
+            if (this == &other)
+            {
+                return *this;
+            }
 
-        std::span<T> modify(std::size_t offset, std::size_t size);
-        T&           modify(std::size_t);
+            this->~Buffer();
 
-        // void flushViaStager(const gfx::vulkan::BufferStager& stager)
-        // {
-        //     this->mergeFlushes();
+            new (this) CpuCachedBuffer {std::move(other)};
 
-        //     for (const FlushData& f : this->flushes)
-        //     {
-        //         stager.enqueueTransfer(
-        //             this->gpu_buffer,
-        //             f.offset_elements,
-        //             {this->cpu_buffer.data() + f.offset_elements,
-        //              this->cpu_buffer.data() + f.offset_elements + f.size_elements});
-        //     }
+            return *this;
+        }
+        CpuCachedBuffer& operator= (const CpuCachedBuffer&) = delete;
+        CpuCachedBuffer(CpuCachedBuffer&& other) noexcept
+            : WriteOnlyBuffer<T> {std::move(other)}
+        {}
 
-        //     this->flushes.clear();
-        // }
+        std::span<const T> read(std::size_t offset, std::size_t size) const
+        {
+            return std::span<const T> {&this->cpu_buffer[offset], size};
+        }
+        const T& read(std::size_t offset) const
+        {
+            return this->cpu_buffer[offset];
+        }
 
+        void write(std::size_t offset, std::span<const T> data)
+        {
+            this->flushes.push_back(
+                FlushData {.offset_elements {offset}, .size_elements {data.size()}});
+
+            std::memcpy(&this->cpu_buffer[offset], data.data(), data.size_bytes());
+        }
+        void write(std::size_t offset, const T& t)
+        {
+            this->write(offset, std::span<const T> {&t, 1});
+        }
+
+        std::span<T> modify(std::size_t offset, std::size_t size)
+        {
+            this->flushes.push_back(FlushData {.offset_elements {offset}, .size_elements {size}});
+
+            return std::span<T> {&this->cpu_buffer[offset], size};
+        }
+        T& modify(std::size_t offset)
+        {
+            return this->modify(offset, 1)[0];
+        }
+
+        void flushViaStager(const BufferStager& stager);
+
+        void mergeFlushes()
+        {
+            std::vector<std::size_t> points {};
+
+            for (const FlushData& f : this->flushes)
+            {
+                for (std::size_t i = 0; i < f.size_elements; ++i)
+                {
+                    points.push_back(i + f.offset_elements);
+                }
+            }
+
+            std::vector<std::pair<std::size_t, std::size_t>> merged =
+                util::combineIntoRanges(points, 65535, 128);
+
+            std::vector<FlushData> newFlushes {};
+            newFlushes.reserve(merged.size());
+
+            for (const auto& [from, to] : merged)
+            {
+                newFlushes.push_back(
+                    FlushData {.offset_elements {from}, .size_elements {to - from + 1}});
+            }
+
+            this->flushes = std::move(newFlushes);
+        }
     private:
         std::vector<T>         cpu_buffer;
         std::vector<FlushData> flushes;
     };
+
+    class BufferStager
+    {
+    public:
+
+        explicit BufferStager(const Allocator*);
+        ~BufferStager() = default;
+
+        BufferStager(const BufferStager&)             = delete;
+        BufferStager(BufferStager&&)                  = delete;
+        BufferStager& operator= (const BufferStager&) = delete;
+        BufferStager& operator= (BufferStager&&)      = delete;
+
+        template<class T>
+            requires std::is_trivially_copyable_v<T>
+        void
+        enqueueTransfer(const GpuOnlyBuffer<T>& buffer, u32 offset, std::span<const T> data) const
+        {
+            this->enqueueByteTransfer(
+                *buffer,
+                offset * sizeof(T), // NOLINTNEXTLINE
+                std::span {reinterpret_cast<const std::byte*>(data.data()), data.size_bytes()});
+        }
+
+        void flushTransfers(vk::CommandBuffer, vk::Fence flushFinishFence) const;
+
+    private:
+
+        void enqueueByteTransfer(vk::Buffer, u32 offset, std::span<const std::byte>) const;
+
+        struct BufferTransfer
+        {
+            util::RangeAllocation staging_allocation;
+            vk::Buffer            output_buffer;
+            u32                   output_offset;
+            u32                   size;
+        };
+
+        const Allocator*                                allocator;
+        mutable gfx::vulkan::WriteOnlyBuffer<std::byte> staging_buffer;
+
+        util::Mutex<util::RangeAllocator>                                       transfer_allocator;
+        util::Mutex<std::vector<BufferTransfer>>                                transfers;
+        util::Mutex<std::unordered_map<vk::Fence, std::vector<BufferTransfer>>> transfers_to_free;
+    };
+
+    template<class T>
+    void CpuCachedBuffer<T>::flushViaStager(const BufferStager& stager)
+    {
+        this->mergeFlushes();
+
+        for (const FlushData& f : this->flushes)
+        {
+            stager.enqueueTransfer(
+                *this,
+                static_cast<u32>(f.offset_elements),
+                {this->cpu_buffer.data() + f.offset_elements, f.size_elements});
+        }
+
+        this->flushes.clear();
+    }
+
 } // namespace gfx::vulkan

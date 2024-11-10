@@ -4,7 +4,7 @@
 #include "util/atomic.hpp"
 #include "util/threads.hpp"
 #include "vulkan/allocator.hpp"
-#include "vulkan/buffer_stager.hpp"
+#include "vulkan/buffer.hpp"
 #include "vulkan/device.hpp"
 #include "vulkan/frame_manager.hpp"
 #include "vulkan/instance.hpp"

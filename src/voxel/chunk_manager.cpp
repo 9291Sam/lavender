@@ -12,7 +12,6 @@
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer.hpp"
-#include "gfx/vulkan/buffer_stager.hpp"
 #include "gfx/vulkan/device.hpp"
 #include "gfx/window.hpp"
 #include "greedy_voxel_face.hpp"

@@ -9,8 +9,6 @@
 #include "game/frame_generator.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/buffer.hpp"
-#include "gfx/vulkan/buffer_stager.hpp"
-#include "gfx/vulkan/tracked_buffer.hpp"
 #include "greedy_voxel_face.hpp"
 #include "material_brick.hpp"
 #include "point_light.hpp"
@@ -94,8 +92,8 @@ namespace voxel
         {
             glm::i32vec4 position;
         };
-        gfx::vulkan::TrackedBuffer<GpuChunkData> gpu_chunk_data;
-        gfx::vulkan::TrackedBuffer<BrickMap>     brick_maps;
+        gfx::vulkan::CpuCachedBuffer<GpuChunkData> gpu_chunk_data;
+        gfx::vulkan::CpuCachedBuffer<BrickMap>     brick_maps;
 
         struct ChunkDrawIndirectInstancePayload
         {
@@ -112,9 +110,9 @@ namespace voxel
             u32 position_in_parent_chunk : 9;
         };
         BrickPointerAllocator                                brick_allocator;
-        gfx::vulkan::TrackedBuffer<BrickParentInformation>   brick_parent_info;
-        gfx::vulkan::TrackedBuffer<MaterialBrick>            material_bricks;
-        gfx::vulkan::TrackedBuffer<OpacityBrick>             opacity_bricks;
+        gfx::vulkan::CpuCachedBuffer<BrickParentInformation> brick_parent_info;
+        gfx::vulkan::CpuCachedBuffer<MaterialBrick>          material_bricks;
+        gfx::vulkan::CpuCachedBuffer<OpacityBrick>           opacity_bricks;
         gfx::vulkan::WriteOnlyBuffer<VisibilityBrick>        visibility_bricks;
         gfx::vulkan::WriteOnlyBuffer<DirectionalFaceIdBrick> face_id_bricks;
 
@@ -140,10 +138,10 @@ namespace voxel
         gfx::vulkan::WriteOnlyBuffer<GlobalVoxelData> global_voxel_data;
         gfx::vulkan::WriteOnlyBuffer<VisibleFaceData> visible_face_data;
 
-        util::IndexAllocator                           light_allocator;
-        gfx::vulkan::TrackedBuffer<InternalPointLight> lights_buffer;
+        util::IndexAllocator                             light_allocator;
+        gfx::vulkan::CpuCachedBuffer<InternalPointLight> lights_buffer;
 
-        gfx::vulkan::TrackedBuffer<std::array<std::array<std::array<u16, 256>, 256>, 256>>
+        gfx::vulkan::CpuCachedBuffer<std::array<std::array<std::array<u16, 256>, 256>, 256>>
             global_chunks_buffer;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> descriptor_set_layout;

@@ -2,7 +2,7 @@
 
 #include "game/ec/entity.hpp"
 #include "game/game.hpp"
-#include "gfx/vulkan/buffer_stager.hpp"
+#include "gfx/vulkan/buffer.hpp"
 #include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
 #include "voxel/world.hpp"
