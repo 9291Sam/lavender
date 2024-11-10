@@ -182,6 +182,7 @@ target_compile_definitions(lavender PUBLIC VULKAN_HPP_NO_CONSTRUCTORS=1)
 
 target_compile_definitions(lavender PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES=1)
 target_compile_definitions(lavender PUBLIC IMGUI_USE_WCHAR32=1)
+target_compile_definitions(lavender PUBLIC IMGUI_ENABLE_FREETYPE_OTSVG=1)
 target_compile_definitions(lavender PUBLIC VK_NO_PROTOTYPES=1)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")

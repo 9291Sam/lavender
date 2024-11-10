@@ -367,21 +367,44 @@ namespace game
 
                 ImGuiIO& io = ImGui::GetIO();
 
-                static ImWchar ranges[] = {0x0001, 0x1FFFF, 0};
-                // static ImFontConfig fontConfig;
-                // fontConfig.OversampleH = fontConfig.OversampleV = 1;
-                // fontConfig.MergeMode                            = true;
-                // fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
+                static ImWchar unifont_ranges[] = {0x0001, 0xFFFF, 0};   // Full range for Unifont
+                static ImWchar emoji_ranges[]   = {0x1F300, 0x1FAFF, 0}; // Emoji range for OpenMoji
 
-                static ImWchar ranges2[] = {
-                    0x0001,
-                    0x0FAF, // Basic Latin + Latin Supplement
-                    0};
+                static ImWchar merged_range[] = {0x0001, 0xFFFFF, 0};
+
+                // static ImWchar ranges[] = {0x0001, 0x1FFFF, 0};
+                // // static ImFontConfig fontConfig;
+                // // fontConfig.OversampleH = fontConfig.OversampleV = 1;
+                // // fontConfig.MergeMode                            = true;
+                // // fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
+
+                // static ImWchar ranges2[] = {
+                //     0x0001,
+                //     0x0FAF, // Basic Latin + Latin Supplement
+                //     0};
 
                 // this->font = io.Fonts->AddFontFromFileTTF(
                 //     "../src/OpenMoji-color-sbix.ttf", 16, nullptr, ranges);
-                this->font =
-                    io.Fonts->AddFontFromFileTTF("../src/unifont-15.1.05.otf", 16, nullptr, ranges);
+                // this->font =
+                //     io.Fonts->AddFontFromFileTTF("../src/unifont-15.1.05.otf", 16, nullptr,
+                //     ranges);
+
+                // Load Unifont with full Unicode range
+                ImFontConfig fontConfigUnifont;
+                fontConfigUnifont.OversampleH = fontConfigUnifont.OversampleV = 1;
+                fontConfigUnifont.MergeMode                                   = false;
+                fontConfigUnifont.SizePixels                                  = 12;
+                fontConfigUnifont.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
+                this->font = io.Fonts->AddFontFromFileTTF(
+                    "../src/unifont-16.0.01.otf", 16, &fontConfigUnifont, merged_range);
+
+                // Load OpenMoji with emoji range and merge into Unifont
+                // ImFontConfig fontConfigEmoji;
+                // fontConfigEmoji.OversampleH = fontConfigEmoji.OversampleV = 1;
+                // fontConfigEmoji.MergeMode = true; // Merge into the existing font
+                // fontConfigEmoji.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
+                // this->font = io.Fonts->AddFontFromFileTTF(
+                //     "../src/noto-untouchedsvg.ttf", 16, &fontConfigEmoji, emoji_ranges);
 
                 io.Fonts->Build();
 
@@ -983,12 +1006,11 @@ namespace game
                             ImGui::TextWrapped("%s", playerPosition.c_str());
 
                             const std::string fpsAndTps = std::format(
-                                "FPS: {:.3f} | Frame Time (ms): {:.3f} \n 🐶 🐱 🦊 🐼 🐻 🐘 🦒 🦋 "
-                                "🌲 🌸 🌞 🌈",
+                                "FPS: {:.3f} | Frame Time (ms): {:.3f}",
                                 1.0 / this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
                                 this->game->getRenderer()->getWindow()->getDeltaTimeSeconds());
 
-                            ImGui::TextWrapped("%s", fpsAndTps.c_str());
+                            ImGui::TextWrapped("%s", (const char*)u8"こん✨ちは");
                         }
 
                         ImGui::PopStyleVar();
@@ -996,6 +1018,7 @@ namespace game
 
                         ImGui::End();
                     }
+                    // ImGui::ShowDemoWindow();
 
                     ImGui::Render();
 
