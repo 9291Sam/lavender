@@ -18,6 +18,7 @@
 #include <gfx/window.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <imgui.h>
+#include <misc/freetype/imgui_freetype.h>
 #include <random>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_core.h>
@@ -366,7 +367,21 @@ namespace game
 
                 ImGuiIO& io = ImGui::GetIO();
 
-                this->font = io.Fonts->AddFontFromFileTTF("../src/unifont-15.1.05.otf", 16);
+                static ImWchar ranges[] = {0x0001, 0x1FFFF, 0};
+                // static ImFontConfig fontConfig;
+                // fontConfig.OversampleH = fontConfig.OversampleV = 1;
+                // fontConfig.MergeMode                            = true;
+                // fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
+
+                static ImWchar ranges2[] = {
+                    0x0001,
+                    0x0FAF, // Basic Latin + Latin Supplement
+                    0};
+
+                // this->font = io.Fonts->AddFontFromFileTTF(
+                //     "../src/OpenMoji-color-sbix.ttf", 16, nullptr, ranges);
+                this->font =
+                    io.Fonts->AddFontFromFileTTF("../src/unifont-15.1.05.otf", 16, nullptr, ranges);
 
                 io.Fonts->Build();
 
