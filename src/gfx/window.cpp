@@ -357,7 +357,7 @@ namespace gfx
         case GLFW_PRESS:
             if (!window->is_cursor_attached.load(std::memory_order_relaxed))
             {
-                window->attachCursor();
+                // window->attachCursor();
             }
 
             if (buttonToModify.exchange(true))

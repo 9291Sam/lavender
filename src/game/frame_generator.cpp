@@ -509,7 +509,9 @@ namespace game
             currentlyBoundDescriptors = {nullptr, nullptr, nullptr, nullptr};
         };
 
-        auto doRenderPass = [&](DynamicRenderingPass p, vk::RenderingInfo info)
+        auto doRenderPass = [&](DynamicRenderingPass                   p,
+                                vk::RenderingInfo                      info,
+                                std::function<void(vk::CommandBuffer)> extraCommands = {})
         {
             clearBindings();
 
@@ -524,6 +526,11 @@ namespace game
                     **this->game->getRenderer()->getAllocator()->lookupPipelineLayout(
                         **o->pipeline),
                     matrixId);
+            }
+
+            if (extraCommands != nullptr)
+            {
+                extraCommands(commandBuffer);
             }
 
             commandBuffer.endRendering();
@@ -907,19 +914,26 @@ namespace game
                 .pStencilAttachment {nullptr},
             };
 
-            doRenderPass(DynamicRenderingPass::SimpleColor, simpleColorRenderingInfo);
+            doRenderPass(
+                DynamicRenderingPass::SimpleColor,
+                simpleColorRenderingInfo,
+                [&](vk::CommandBuffer commandBuffer)
+                {
+                    // imgui new frame
+                    ImGui_ImplVulkan_NewFrame();
+                    ImGui_ImplGlfw_NewFrame();
+                    ImGui::NewFrame();
 
-            // imgui new frame
-            ImGui_ImplVulkan_NewFrame();
-            ImGui_ImplGlfw_NewFrame();
-            ImGui::NewFrame();
+                    // some imgui UI to test
+                    ImGui::ShowDemoWindow();
+                    util::logTrace("demo");
 
-            // some imgui UI to test
-            ImGui::ShowDemoWindow();
-            util::logTrace("demo");
+                    // make imgui calculate internal draw structures
+                    ImGui::Render();
 
-            // make imgui calculate internal draw structures
-            ImGui::Render();
+                    ImGui_ImplVulkan_RenderDrawData(
+                        ImGui::GetDrawData(), static_cast<VkCommandBuffer>(commandBuffer));
+                });
         }
 
         commandBuffer.pipelineBarrier(
