@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
+cmake_policy(SET CMP0169 OLD)
+
 FetchContent_Declare(glfw
     GIT_REPOSITORY https://github.com/glfw/glfw
     GIT_TAG master
@@ -74,6 +76,15 @@ target_compile_definitions(glm INTERFACE GLM_SWIZZLE=1)
 target_compile_definitions(glm INTERFACE GLM_FORCE_RADIANS=1)
 target_compile_definitions(glm INTERFACE GLM_FORCE_SIZE_T_LENGTH=1)
 target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL=1)
+
+
+FetchContent_Declare(imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui
+    GIT_TAG master
+    GIT_SHALLOW TRUE
+    SYSTEM
+)
+FetchContent_Populate(imgui)
  
 
 set(Boost_USE_STATIC_LIBS ON) 
@@ -135,6 +146,15 @@ add_executable(lavender
     ${fastnoise2_SOURCE_DIR}/src/FastNoise/FastNoise_C.cpp
     ${fastnoise2_SOURCE_DIR}/src/FastNoise/Metadata.cpp
     ${fastnoise2_SOURCE_DIR}/src/FastNoise/SmartNode.cpp
+
+    ${imgui_SOURCE_DIR}/imgui_demo.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/imgui.cpp
+
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
 )
 
 # get_cmake_property(_variableNames VARIABLES)
@@ -148,6 +168,7 @@ target_include_directories(lavender SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_include_directories(lavender SYSTEM PUBLIC ${vma_SOURCE_DIR}/include)
 target_include_directories(lavender SYSTEM PUBLIC ${offsetAllocator_SOURCE_DIR})
 target_include_directories(lavender SYSTEM PUBLIC ${ctti_SOURCE_DIR}/include)
+target_include_directories(lavender SYSTEM PUBLIC ${imgui_SOURCE_DIR})
 
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MINOR=${PROJECT_VERSION_MINOR})
@@ -158,6 +179,8 @@ target_compile_definitions(lavender INTERFACE FASTSIMD_INCLUDE_HEADER_ONLY=1)
 
 target_compile_definitions(lavender PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 target_compile_definitions(lavender PUBLIC VULKAN_HPP_NO_CONSTRUCTORS=1)
+
+target_compile_definitions(lavender PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES=0)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     target_compile_definitions(lavender PUBLIC LAVENDER_DEBUG_BUILD=1)
