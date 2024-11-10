@@ -51,15 +51,25 @@ namespace gfx::vulkan
             vk::DescriptorPoolSize {
                 .type {vk::DescriptorType::eStorageImage}, .descriptorCount {1024}},
             vk::DescriptorPoolSize {
+                .type {vk::DescriptorType::eUniformTexelBuffer}, .descriptorCount {1024}},
+            vk::DescriptorPoolSize {
+                .type {vk::DescriptorType::eStorageTexelBuffer}, .descriptorCount {1024}},
+            vk::DescriptorPoolSize {
                 .type {vk::DescriptorType::eUniformBuffer}, .descriptorCount {1024}},
             vk::DescriptorPoolSize {
-                .type {vk::DescriptorType::eStorageBuffer}, .descriptorCount {1024}}};
+                .type {vk::DescriptorType::eStorageBuffer}, .descriptorCount {1024}},
+            vk::DescriptorPoolSize {
+                .type {vk::DescriptorType::eUniformBufferDynamic}, .descriptorCount {1024}},
+            vk::DescriptorPoolSize {
+                .type {vk::DescriptorType::eStorageBufferDynamic}, .descriptorCount {1024}},
+            vk::DescriptorPoolSize {
+                .type {vk::DescriptorType::eInputAttachment}, .descriptorCount {1024}}};
 
         const vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo {
             .sType {vk::StructureType::eDescriptorPoolCreateInfo},
             .pNext {nullptr},
             .flags {vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet},
-            .maxSets {1024},
+            .maxSets {4096},
             .poolSizeCount {static_cast<u32>(availableDescriptors.size())},
             .pPoolSizes {availableDescriptors.data()},
         };
