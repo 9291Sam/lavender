@@ -367,44 +367,23 @@ namespace game
 
                 ImGuiIO& io = ImGui::GetIO();
 
-                static ImWchar unifont_ranges[] = {0x0001, 0xFFFF, 0};   // Full range for Unifont
-                static ImWchar emoji_ranges[]   = {0x1F300, 0x1FAFF, 0}; // Emoji range for OpenMoji
+                {
+                    static ImWchar unifont_ranges[] = {0x0001, 0xFFFF, 0};
+                    ImFontConfig   fontConfigUnifont;
+                    fontConfigUnifont.OversampleH = fontConfigUnifont.OversampleV = 1;
+                    fontConfigUnifont.MergeMode                                   = false;
+                    fontConfigUnifont.SizePixels                                  = 16;
+                    this->font = io.Fonts->AddFontFromFileTTF(
+                        "../src/unifont-16.0.01.otf", 16, &fontConfigUnifont, unifont_ranges);
+                }
 
-                static ImWchar merged_range[] = {0x0001, 0xFFFFF, 0};
-
-                // static ImWchar ranges[] = {0x0001, 0x1FFFF, 0};
-                // // static ImFontConfig fontConfig;
-                // // fontConfig.OversampleH = fontConfig.OversampleV = 1;
-                // // fontConfig.MergeMode                            = true;
-                // // fontConfig.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
-
-                // static ImWchar ranges2[] = {
-                //     0x0001,
-                //     0x0FAF, // Basic Latin + Latin Supplement
-                //     0};
-
-                // this->font = io.Fonts->AddFontFromFileTTF(
-                //     "../src/OpenMoji-color-sbix.ttf", 16, nullptr, ranges);
-                // this->font =
-                //     io.Fonts->AddFontFromFileTTF("../src/unifont-15.1.05.otf", 16, nullptr,
-                //     ranges);
-
-                // Load Unifont with full Unicode range
-                ImFontConfig fontConfigUnifont;
-                fontConfigUnifont.OversampleH = fontConfigUnifont.OversampleV = 1;
-                fontConfigUnifont.MergeMode                                   = false;
-                fontConfigUnifont.SizePixels                                  = 12;
-                fontConfigUnifont.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
-                this->font = io.Fonts->AddFontFromFileTTF(
-                    "../src/unifont-16.0.01.otf", 16, &fontConfigUnifont, merged_range);
-
-                // Load OpenMoji with emoji range and merge into Unifont
-                // ImFontConfig fontConfigEmoji;
-                // fontConfigEmoji.OversampleH = fontConfigEmoji.OversampleV = 1;
-                // fontConfigEmoji.MergeMode = true; // Merge into the existing font
-                // fontConfigEmoji.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
-                // this->font = io.Fonts->AddFontFromFileTTF(
-                //     "../src/noto-untouchedsvg.ttf", 16, &fontConfigEmoji, emoji_ranges);
+                static ImWchar      ranges[] = {0x10000, 0x1FFFF, 0};
+                static ImFontConfig cfg;
+                cfg.OversampleH = cfg.OversampleV = 1;
+                cfg.MergeMode                     = true;
+                cfg.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
+                this->font =
+                    io.Fonts->AddFontFromFileTTF("../src/seguiemj.ttf", 16.0f, &cfg, ranges);
 
                 io.Fonts->Build();
 
@@ -970,54 +949,56 @@ namespace game
                     ImGui_ImplGlfw_NewFrame();
                     ImGui::NewFrame();
 
-                    const ImGuiViewport* const viewport = ImGui::GetMainViewport();
+                    // const ImGuiViewport* const viewport = ImGui::GetMainViewport();
 
-                    const auto [x, y] = viewport->Size;
+                    // const auto [x, y] = viewport->Size;
 
-                    const ImVec2 desiredConsoleSize {2 * x / 9, y}; // 2 / 9 is normal
+                    // const ImVec2 desiredConsoleSize {2 * x / 9, y}; // 2 / 9 is normal
 
-                    ImGui::SetNextWindowPos(
-                        ImVec2 {std::ceil(viewport->Size.x - desiredConsoleSize.x), 0});
-                    ImGui::SetNextWindowSize(desiredConsoleSize);
+                    // ImGui::SetNextWindowPos(
+                    //     ImVec2 {std::ceil(viewport->Size.x - desiredConsoleSize.x), 0});
+                    // ImGui::SetNextWindowSize(desiredConsoleSize);
 
-                    if (ImGui::Begin(
-                            "Console",
-                            nullptr,
-                            ImGuiWindowFlags_NoResize |            // NOLINT
-                                ImGuiWindowFlags_NoSavedSettings | // NOLINT
-                                ImGuiWindowFlags_NoMove |          // NOLINT
-                                ImGuiWindowFlags_NoDecoration))    // NOLINT
-                    {
-                        static constexpr float WindowPadding = 5.0f;
+                    // if (ImGui::Begin(
+                    //         "Console",
+                    //         nullptr,
+                    //         ImGuiWindowFlags_NoResize |            // NOLINT
+                    //             ImGuiWindowFlags_NoSavedSettings | // NOLINT
+                    //             ImGuiWindowFlags_NoMove |          // NOLINT
+                    //             ImGuiWindowFlags_NoDecoration))    // NOLINT
+                    // {
+                    //     static constexpr float WindowPadding = 5.0f;
 
-                        util::assertFatal(this->font != nullptr, "oopers");
+                    //     util::assertFatal(this->font != nullptr, "oopers");
 
-                        ImGui::PushFont(this->font);
-                        ImGui::PushStyleVar(
-                            ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
-                        {
-                            if (ImGui::Button("Button"))
-                            {
-                                util::logTrace("pressed button");
-                            }
+                    //     ImGui::PushFont(this->font);
+                    //     ImGui::PushStyleVar(
+                    //         ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
+                    //     {
+                    //         if (ImGui::Button("Button"))
+                    //         {
+                    //             util::logTrace("pressed button");
+                    //         }
 
-                            const std::string playerPosition = std::format(
-                                "Player position: {}", glm::to_string(camera.getPosition()));
-                            ImGui::TextWrapped("%s", playerPosition.c_str());
+                    //         const std::string playerPosition = std::format(
+                    //             "Player position: {}", glm::to_string(camera.getPosition()));
+                    //         ImGui::TextWrapped("%s", playerPosition.c_str());
 
-                            const std::string fpsAndTps = std::format(
-                                "FPS: {:.3f} | Frame Time (ms): {:.3f}",
-                                1.0 / this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
-                                this->game->getRenderer()->getWindow()->getDeltaTimeSeconds());
+                    //         const std::string fpsAndTps = std::format(
+                    //             "FPS: {:.3f} | Frame Time (ms): {:.3f}",
+                    //             1.0 /
+                    //             this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
+                    //             this->game->getRenderer()->getWindow()->getDeltaTimeSeconds());
 
-                            ImGui::TextWrapped("%s", (const char*)u8"こん✨ちは");
-                        }
+                    ImGui::DebugTextEncoding(
+                        (const char*)u8"こん✨ちは🍋😍🐶 🖨🖨 🐱 🦊 🐼 🐻 🐘 🦒 🦋 🌲 🌸 🌞 🌈");
+                    //     }
 
-                        ImGui::PopStyleVar();
-                        ImGui::PopFont();
+                    //     ImGui::PopStyleVar();
+                    //     ImGui::PopFont();
 
-                        ImGui::End();
-                    }
+                    //     ImGui::End();
+                    // }
                     // ImGui::ShowDemoWindow();
 
                     ImGui::Render();

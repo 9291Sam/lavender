@@ -105,6 +105,8 @@ FetchContent_MakeAvailable(Boost)
 
 find_package(Vulkan REQUIRED)
 
+find_package(Freetype REQUIRED)
+
 
 add_executable(lavender
     src/main.cpp
@@ -155,6 +157,8 @@ add_executable(lavender
 
     ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
     ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+
+    ${imgui_SOURCE_DIR}/misc/freetype/imgui_freetype.cpp
 )
 
 # get_cmake_property(_variableNames VARIABLES)
@@ -169,6 +173,7 @@ target_include_directories(lavender SYSTEM PUBLIC ${vma_SOURCE_DIR}/include)
 target_include_directories(lavender SYSTEM PUBLIC ${offsetAllocator_SOURCE_DIR})
 target_include_directories(lavender SYSTEM PUBLIC ${ctti_SOURCE_DIR}/include)
 target_include_directories(lavender SYSTEM PUBLIC ${imgui_SOURCE_DIR})
+target_include_directories(lavender SYSTEM PUBLIC ${FREETYPE_INCLUDE_DIRS})
 
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MINOR=${PROJECT_VERSION_MINOR})
@@ -182,7 +187,9 @@ target_compile_definitions(lavender PUBLIC VULKAN_HPP_NO_CONSTRUCTORS=1)
 
 target_compile_definitions(lavender PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES=1)
 target_compile_definitions(lavender PUBLIC IMGUI_USE_WCHAR32=1)
+target_compile_definitions(lavender PUBLIC IMGUI_ENABLE_FREETYPE=1)
 target_compile_definitions(lavender PUBLIC IMGUI_ENABLE_FREETYPE_OTSVG=1)
+
 target_compile_definitions(lavender PUBLIC VK_NO_PROTOTYPES=1)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
@@ -203,6 +210,7 @@ target_link_libraries(
     Boost::core
     Boost::type_traits
     FastNoise
+    ${FREETYPE_LIBRARIES}
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
