@@ -1,10 +1,12 @@
 #pragma once
 
+#include "timer.hpp"
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <format>
-#include <limits>
+#include <queue>
 #include <source_location>
 #include <string>
 #include <string_view>
@@ -110,72 +112,7 @@ namespace util
     }
 
     // inclusive indicies
-    inline std::vector<std::pair<size_t, size_t>>
-    combineIntoRanges(std::vector<size_t> points, size_t maxDistance, size_t maxRanges)
-    {
-        if (points.empty())
-        {
-            return {};
-        }
+    std::vector<std::pair<size_t, size_t>>
+    combineIntoRanges(std::vector<size_t> points, size_t maxDistance, size_t maxRanges);
 
-        // Sort the points
-        std::sort(points.begin(), points.end());
-
-        std::vector<std::pair<size_t, size_t>> ranges;
-        ranges.reserve(points.size());
-
-        size_t start = points[0];
-        size_t end   = start;
-
-        // Create initial ranges based on maxDistance
-        for (size_t i = 1; i < points.size(); ++i)
-        {
-            size_t point = points[i];
-            if (point - end <= maxDistance)
-            {
-                end = point;
-            }
-            else
-            {
-                ranges.emplace_back(start, end);
-                start = point;
-                end   = point;
-            }
-        }
-
-        // Push the last range
-        ranges.emplace_back(start, end);
-
-        // Merge ranges if they exceed maxRanges
-        if (ranges.size() > maxRanges)
-        {
-            while (ranges.size() > maxRanges)
-            {
-                size_t minDistance = std::numeric_limits<size_t>::max();
-                size_t minIndex    = 0;
-
-                // Find the closest adjacent ranges
-                for (size_t i = 0; i < ranges.size() - 1; ++i)
-                {
-                    size_t distance = ranges[i + 1].first - ranges[i].second;
-                    if (distance < minDistance)
-                    {
-                        minDistance = distance;
-                        minIndex    = i;
-                    }
-                }
-
-                // Merge the closest ranges
-                ranges[minIndex].second = ranges[minIndex + 1].second;
-                ranges.erase(
-                    ranges.begin() + static_cast<std::vector<size_t>::difference_type>(minIndex)
-                    + 1);
-            }
-
-            // Resize to maxRanges
-            ranges.resize(maxRanges);
-        }
-
-        return ranges;
-    }
 } // namespace util

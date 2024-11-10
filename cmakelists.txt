@@ -123,6 +123,7 @@ add_executable(lavender
     src/util/log.cpp
     src/util/misc.cpp
     src/util/range_allocator.cpp
+    src/util/timer.cpp
 
     src/verdigris/verdigris.cpp
     

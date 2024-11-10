@@ -26,11 +26,12 @@ namespace gfx::vulkan
 
         template<class T>
             requires std::is_trivially_copyable_v<T>
-        void enqueueTransfer(const GpuOnlyBuffer<T>& buffer, u32 offset, std::span<T> data) const
+        void
+        enqueueTransfer(const GpuOnlyBuffer<T>& buffer, u32 offset, std::span<const T> data) const
         {
             this->enqueueByteTransfer(
                 *buffer,
-                offset, // NOLINTNEXTLINE
+                offset * sizeof(T), // NOLINTNEXTLINE
                 std::span {reinterpret_cast<const std::byte*>(data.data()), data.size_bytes()});
         }
 

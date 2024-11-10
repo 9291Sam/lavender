@@ -23,7 +23,6 @@
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
-#include "util/timer.hpp"
 #include "voxel/constants.hpp"
 #include "voxel/dense_bit_chunk.hpp"
 #include "voxel/material_manager.hpp"
@@ -672,22 +671,28 @@ namespace voxel
                 }
             });
 
-        this->gpu_chunk_data.flush();
-        this->brick_maps.flush();
-        this->brick_parent_info.flush();
-        this->material_bricks.flush();
-        this->opacity_bricks.flush();
-        this->lights_buffer.flush();
-        this->global_chunks_buffer.flush();
+        this->gpu_chunk_data.flushViaStager(stager);
+        this->brick_maps.flushViaStager(stager);
+        this->brick_parent_info.flushViaStager(stager);
+        this->material_bricks.flushViaStager(stager);
+        this->opacity_bricks.flushViaStager(stager);
+        this->lights_buffer.flushViaStager(stager);
+        this->global_chunks_buffer.flushViaStager(stager);
 
         if (!indirectCommands.empty())
         {
-            stager.enqueueTransfer(this->indirect_commands, 0, std::span {indirectCommands});
+            stager.enqueueTransfer(
+                this->indirect_commands,
+                0,
+                std::span<const vk::DrawIndirectCommand> {indirectCommands});
         }
 
         if (!indirectPayload.empty())
         {
-            stager.enqueueTransfer(this->indirect_payload, 0, std::span {indirectPayload});
+            stager.enqueueTransfer(
+                this->indirect_payload,
+                0,
+                std::span<const ChunkDrawIndirectInstancePayload> {indirectPayload});
         }
 
         game::FrameGenerator::RecordObject update = game::FrameGenerator::RecordObject {

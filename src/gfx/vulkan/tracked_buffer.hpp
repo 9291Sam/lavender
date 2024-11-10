@@ -3,6 +3,7 @@
 #include "buffer.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer_stager.hpp"
+#include "util/misc.hpp"
 #include <vector>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_handles.hpp>
@@ -67,23 +68,22 @@ namespace gfx::vulkan
             std::memcpy(this->cpu_buffer.data() + offset_, data.data(), data.size_bytes());
         }
 
-        // void flushViaStager(const gfx::vulkan::BufferStager& stager)
-        // {
-        //     util::panic(
-        //         "doesnt work!!!! 9proablly to many calls to
-        //         vkCmdCopyBuffer");
-        //     for (const FlushData& f : this->flushes)
-        //     {
-        //         stager.enqueueTransfer(
-        //             this->gpu_buffer,
-        //             f.offset_elements,
-        //             {this->cpu_buffer.data() + f.offset_elements,
-        //              this->cpu_buffer.data() + f.offset_elements
-        //                  + f.size_elements});
-        //     }
+        void flushViaStager(const gfx::vulkan::BufferStager& stager)
+        {
+            this->mergeFlushes();
 
-        //     this->flushes.clear();
-        // }
+            for (const FlushData& f : this->flushes)
+            {
+                stager.enqueueTransfer(
+                    this->gpu_buffer,
+                    static_cast<u32>(f.offset_elements),
+                    {this->cpu_buffer.data() + f.offset_elements, f.size_elements});
+            }
+
+            this->flushes.clear();
+
+            // this->flush()
+        }
 
         void flush()
         {
@@ -120,7 +120,34 @@ namespace gfx::vulkan
         //     }
         // }
 
-        void mergeFlushes() {}
+        void mergeFlushes()
+        {
+            // util::Timer t {"merge"};
+
+            std::vector<std::size_t> points {};
+
+            for (const FlushData& f : this->flushes)
+            {
+                for (std::size_t i = 0; i < f.size_elements; ++i)
+                {
+                    points.push_back(i + f.offset_elements);
+                }
+            }
+
+            std::vector<std::pair<std::size_t, std::size_t>> merged =
+                util::combineIntoRanges(points, 65535, 4);
+
+            std::vector<FlushData> newFlushes {};
+            newFlushes.reserve(merged.size());
+
+            for (const auto& [from, to] : merged)
+            {
+                newFlushes.push_back(
+                    FlushData {.offset_elements {from}, .size_elements {to - from + 1}});
+            }
+
+            this->flushes = std::move(newFlushes);
+        }
 
 
 
