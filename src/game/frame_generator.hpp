@@ -7,6 +7,7 @@
 #include <compare>
 #include <functional>
 #include <gfx/vulkan/image.hpp>
+#include <imgui.h>
 #include <memory>
 #include <util/misc.hpp>
 #include <vulkan/vulkan_format_traits.hpp>
@@ -112,6 +113,7 @@ namespace game
 
         Camera                camera;
         GlobalInfoDescriptors global_descriptors;
+        ImFont*               font;
     };
 
 } // namespace game

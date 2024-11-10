@@ -16,7 +16,9 @@
 #include <gfx/vulkan/instance.hpp>
 #include <gfx/vulkan/swapchain.hpp>
 #include <gfx/window.hpp>
+#include <glm/gtx/string_cast.hpp>
 #include <imgui.h>
+#include <random>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_enums.hpp>
@@ -361,6 +363,12 @@ namespace game
                     .MinAllocationSize {1024UZ * 1024}};
 
                 ImGui_ImplVulkan_Init(&initInfo);
+
+                ImGuiIO& io = ImGui::GetIO();
+
+                this->font = io.Fonts->AddFontFromFileTTF("../src/unifont-15.1.05.otf", 16);
+
+                io.Fonts->Build();
 
                 ImGui_ImplVulkan_CreateFontsTexture();
             });
@@ -924,11 +932,56 @@ namespace game
                     ImGui_ImplGlfw_NewFrame();
                     ImGui::NewFrame();
 
-                    // some imgui UI to test
-                    ImGui::ShowDemoWindow();
-                    util::logTrace("demo");
+                    const ImGuiViewport* const viewport = ImGui::GetMainViewport();
 
-                    // make imgui calculate internal draw structures
+                    const auto [x, y] = viewport->Size;
+
+                    const ImVec2 desiredConsoleSize {2 * x / 9, y}; // 2 / 9 is normal
+
+                    ImGui::SetNextWindowPos(
+                        ImVec2 {std::ceil(viewport->Size.x - desiredConsoleSize.x), 0});
+                    ImGui::SetNextWindowSize(desiredConsoleSize);
+
+                    if (ImGui::Begin(
+                            "Console",
+                            nullptr,
+                            ImGuiWindowFlags_NoResize |            // NOLINT
+                                ImGuiWindowFlags_NoSavedSettings | // NOLINT
+                                ImGuiWindowFlags_NoMove |          // NOLINT
+                                ImGuiWindowFlags_NoDecoration))    // NOLINT
+                    {
+                        static constexpr float WindowPadding = 5.0f;
+
+                        util::assertFatal(this->font != nullptr, "oopers");
+
+                        ImGui::PushFont(this->font);
+                        ImGui::PushStyleVar(
+                            ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
+                        {
+                            if (ImGui::Button("Button"))
+                            {
+                                util::logTrace("pressed button");
+                            }
+
+                            const std::string playerPosition = std::format(
+                                "Player position: {}", glm::to_string(camera.getPosition()));
+                            ImGui::TextWrapped("%s", playerPosition.c_str());
+
+                            const std::string fpsAndTps = std::format(
+                                "FPS: {:.3f} | Frame Time (ms): {:.3f} \n 🐶 🐱 🦊 🐼 🐻 🐘 🦒 🦋 "
+                                "🌲 🌸 🌞 🌈",
+                                1.0 / this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
+                                this->game->getRenderer()->getWindow()->getDeltaTimeSeconds());
+
+                            ImGui::TextWrapped("%s", fpsAndTps.c_str());
+                        }
+
+                        ImGui::PopStyleVar();
+                        ImGui::PopFont();
+
+                        ImGui::End();
+                    }
+
                     ImGui::Render();
 
                     ImGui_ImplVulkan_RenderDrawData(
