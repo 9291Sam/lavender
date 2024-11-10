@@ -18,10 +18,9 @@ namespace world
             , seed {seed}
         {
             this->fractal->SetSource(this->simplex);
-            this->fractal->SetOctaveCount(5);
+            this->fractal->SetOctaveCount(3);
             this->fractal->SetGain(1.024);
-            this->fractal->SetLacunarity(4.034);
-            this->fractal->SetWeightedStrength(9.403);
+            this->fractal->SetLacunarity(2.534);
         }
 
         ~WorldChunkGenerator() override = default;
@@ -41,10 +40,10 @@ namespace world
             std::vector<float> mat {};
             mat.resize(64 * 64);
 
-            this->simplex->GenUniformGrid2D(
-                res.data(), root.z, root.x, 64, 64, 0.02f, this->seed * 13437);
-            this->simplex->GenUniformGrid2D(
-                mat.data(), root.z, root.x, 64, 64, 0.02f, this->seed * 8594835);
+            this->fractal->GenUniformGrid2D(
+                res.data(), root.z, root.x, 64, 64, 0.002f, this->seed * 13437);
+            this->fractal->GenUniformGrid2D(
+                mat.data(), root.z, root.x, 64, 64, 0.002f, this->seed * 8594835);
             const std::array<std::array<float, 64>, 64>* ptr =
                 reinterpret_cast<const std::array<std::array<float, 64>, 64>*>(res.data());
 
@@ -58,9 +57,9 @@ namespace world
             {
                 for (int j = 0; j < 64; ++j)
                 {
-                    u8 height = 12 * (*ptr)[i][j] + 16;
+                    u8 height = 24 * (*ptr)[i][j] + 24;
                     height    = std::clamp(
-                        height, u8 {1}, static_cast<u8>(voxel::ChunkEdgeLengthVoxels - 1));
+                        height, u8 {0}, static_cast<u8>(voxel::ChunkEdgeLengthVoxels - 1));
 
                     for (u8 h = 0; h < height; ++h)
                     {
