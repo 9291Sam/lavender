@@ -382,8 +382,8 @@ namespace game
                 cfg.OversampleH = cfg.OversampleV = 1;
                 cfg.MergeMode                     = true;
                 cfg.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
-                this->font =
-                    io.Fonts->AddFontFromFileTTF("../src/seguiemj.ttf", 16.0f, &cfg, ranges);
+                this->font = io.Fonts->AddFontFromFileTTF(
+                    "../src/OpenMoji-color-colr1_svg.ttf", 24.0f, &cfg, ranges);
 
                 io.Fonts->Build();
 
