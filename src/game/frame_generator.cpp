@@ -1133,6 +1133,9 @@ namespace game
 
                     ImGui_ImplVulkan_RenderDrawData(
                         ImGui::GetDrawData(), static_cast<VkCommandBuffer>(commandBuffer));
+
+                    commandBuffer.setViewport(0, {renderViewport});
+                    commandBuffer.setScissor(0, {scissor});
                 });
         }
 
