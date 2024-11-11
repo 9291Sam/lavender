@@ -5,6 +5,7 @@
 #include "gfx/vulkan/device.hpp"
 #include "gfx/vulkan/frame_manager.hpp"
 #include "gfx/vulkan/image.hpp"
+#include "shaders/shaders.hpp"
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include <backends/imgui_impl_glfw.h>
@@ -75,6 +76,18 @@ namespace game
             vk::MemoryPropertyFlagBits::eDeviceLocal,
             "Visible Voxel Image"};
 
+        gfx::vulkan::Image2D menuRenderTarget {
+            renderer->getAllocator(),
+            renderer->getDevice()->getDevice(),
+            renderer->getWindow()->getFramebufferSize(),
+            vk::Format::eB8G8R8A8Unorm,
+            vk::ImageLayout::eUndefined,
+            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eStorage,
+            vk::ImageAspectFlagBits::eColor,
+            vk::ImageTiling::eOptimal,
+            vk::MemoryPropertyFlagBits::eDeviceLocal,
+            "Menu Render Image"};
+
         vk::UniqueSampler doNothingSampler =
             renderer->getDevice()->getDevice().createSamplerUnique(vk::SamplerCreateInfo {
                 .sType {vk::StructureType::eSamplerCreateInfo},
@@ -117,6 +130,11 @@ namespace game
         const vk::DescriptorImageInfo visibleVoxelImageInfo {
             .sampler {nullptr},
             .imageView {visibleVoxelImage.getView()},
+            .imageLayout {vk::ImageLayout::eGeneral},
+        };
+        const vk::DescriptorImageInfo menuImageInfo {
+            .sampler {nullptr},
+            .imageView {menuRenderTarget.getView()},
             .imageLayout {vk::ImageLayout::eGeneral},
         };
         const vk::DescriptorImageInfo doNothingSamplerInfo {
@@ -182,6 +200,18 @@ namespace game
                     .dstBinding {4},
                     .dstArrayElement {0},
                     .descriptorCount {1},
+                    .descriptorType {vk::DescriptorType::eStorageImage},
+                    .pImageInfo {&menuImageInfo},
+                    .pBufferInfo {nullptr},
+                    .pTexelBufferView {nullptr},
+                },
+                vk::WriteDescriptorSet {
+                    .sType {vk::StructureType::eWriteDescriptorSet},
+                    .pNext {nullptr},
+                    .dstSet {globalDescriptorSet},
+                    .dstBinding {5},
+                    .dstArrayElement {0},
+                    .descriptorCount {1},
                     .descriptorType {vk::DescriptorType::eSampler},
                     .pImageInfo {&doNothingSamplerInfo},
                     .pBufferInfo {nullptr},
@@ -195,6 +225,7 @@ namespace game
             .global_frame_info {std::move(globalFrameInfo)},
             .depth_buffer {std::move(depthBuffer)},
             .visible_voxel_image {std::move(visibleVoxelImage)},
+            .menu_render_target {std::move(menuRenderTarget)},
             .do_nothing_sampler {std::move(doNothingSampler)},
         };
     }
@@ -269,6 +300,15 @@ namespace game
                       },
                       vk::DescriptorSetLayoutBinding {
                           .binding {4},
+                          .descriptorType {vk::DescriptorType::eStorageImage},
+                          .descriptorCount {1},
+                          .stageFlags {
+                              vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment
+                              | vk::ShaderStageFlagBits::eCompute},
+                          .pImmutableSamplers {nullptr},
+                      },
+                      vk::DescriptorSetLayoutBinding {
+                          .binding {5},
                           .descriptorType {vk::DescriptorType::eSampler},
                           .descriptorCount {1},
                           .stageFlags {
@@ -282,8 +322,43 @@ namespace game
                                           ->getAllocator()
                                           ->allocateDescriptorSet(
                                               **this->set_layout, "Global Descriptor Set")}
-        , global_descriptors {
-              makeGlobalDescriptors(this->game->getRenderer(), this->global_info_descriptor_set)}
+        , global_descriptors {makeGlobalDescriptors(
+              this->game->getRenderer(), this->global_info_descriptor_set)}
+        , menu_transfer_pipeline {this->game->getRenderer()->getAllocator()->cachePipeline(
+              gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
+                  .stages {{
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eVertex},
+                          .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
+                              shaders::load("menu_color_transfer.vert"),
+                              "Menu Color Transfer Vertex Shader")},
+                          .entry_point {"main"}},
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eFragment},
+                          .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
+                              shaders::load("menu_color_transfer.frag"),
+                              "Menu Color Transfer Fragment Shader")},
+                          .entry_point {"main"}},
+                  }},
+                  .vertex_attributes {},
+                  .vertex_bindings {},
+                  .topology {vk::PrimitiveTopology::eTriangleList},
+                  .discard_enable {false},
+                  .polygon_mode {vk::PolygonMode::eFill},
+                  .cull_mode {vk::CullModeFlagBits::eNone},
+                  .front_face {vk::FrontFace::eCounterClockwise},
+                  .depth_test_enable {false},
+                  .depth_write_enable {false},
+                  .depth_compare_op {vk::CompareOp::eAlways},
+                  .color_format {gfx::Renderer::ColorFormat.format},
+                  .depth_format {gfx::Renderer::DepthFormat},
+                  .blend_enable {true},
+                  .layout {this->game->getRenderer()->getAllocator()->cachePipelineLayout(
+                      gfx::vulkan::CacheablePipelineLayoutCreateInfo {
+                          .descriptors {{this->set_layout}},
+                          .push_constants {},
+                          .name {"Menu Color Transfer Pipeline Layout"}})},
+                  .name {"Menu Color Transfer Pipeline"}})}
     {
         ImGui::CreateContext();
 
@@ -326,10 +401,7 @@ namespace game
             gfx::vulkan::Device::QueueType::Graphics,
             [&](vk::Queue q)
             {
-                const VkFormat colorFormat =
-                    static_cast<VkFormat>(gfx::Renderer::ColorFormat.format);
-
-                const VkFormat depthFormat = static_cast<VkFormat>(gfx::Renderer::DepthFormat);
+                const VkFormat colorFormat = static_cast<VkFormat>(vk::Format::eB8G8R8A8Unorm);
 
                 ImGui_ImplVulkan_InitInfo initInfo {
                     .Instance {**this->game->getRenderer()->getInstance()},
@@ -350,7 +422,7 @@ namespace game
                         .viewMask {0},
                         .colorAttachmentCount {1},
                         .pColorAttachmentFormats {&colorFormat},
-                        .depthAttachmentFormat {depthFormat},
+                        .depthAttachmentFormat {},
                         .stencilAttachmentFormat {},
                     },
                     .Allocator {nullptr},
@@ -367,12 +439,15 @@ namespace game
 
                 ImGuiIO& io = ImGui::GetIO();
 
+                io.IniFilename = nullptr;
+                io.LogFilename = nullptr;
+
                 {
                     static ImWchar unifont_ranges[] = {0x0001, 0xFFFF, 0};
                     ImFontConfig   fontConfigUnifont;
                     fontConfigUnifont.OversampleH = fontConfigUnifont.OversampleV = 1;
                     fontConfigUnifont.MergeMode                                   = false;
-                    fontConfigUnifont.SizePixels                                  = 16;
+                    fontConfigUnifont.SizePixels                                  = 64;
                     this->font = io.Fonts->AddFontFromFileTTF(
                         "../src/unifont-16.0.01.otf", 16, &fontConfigUnifont, unifont_ranges);
                 }
@@ -382,8 +457,9 @@ namespace game
                 cfg.OversampleH = cfg.OversampleV = 1;
                 cfg.MergeMode                     = true;
                 cfg.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
-                this->font = io.Fonts->AddFontFromFileTTF(
-                    "../src/OpenMoji-color-colr1_svg.ttf", 24.0f, &cfg, ranges);
+                cfg.SizePixels = 64;
+                this->font     = io.Fonts->AddFontFromFileTTF(
+                    "../src/OpenMoji-color-colr1_svg.ttf", 22.0f, &cfg, ranges);
 
                 io.Fonts->Build();
 
@@ -436,6 +512,21 @@ namespace game
             recordablesByPass.at(static_cast<std::size_t>(util::toUnderlying(o.render_pass)))
                 .push_back({&o, thisMatrixId});
         }
+
+        game::FrameGenerator::RecordObject menuObj {
+            .transform {},
+            .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},
+            .pipeline {this->menu_transfer_pipeline},
+            .descriptors {{this->game->getGlobalInfoDescriptorSet(), nullptr, nullptr, nullptr}},
+            .record_func {[](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                          {
+                              commandBuffer.draw(3, 1, 0, 0);
+                          }},
+        };
+
+        // HACK: render imgui
+        recordablesByPass[static_cast<std::size_t>(DynamicRenderingPass::SimpleColor)].push_back(
+            {&menuObj, 0});
 
         commandBuffer.updateBuffer(
             *this->global_descriptors.mvp_matrices,
@@ -679,6 +770,30 @@ namespace game
                         .baseArrayLayer {0},
                         .layerCount {1}}},
                 }});
+
+            commandBuffer.pipelineBarrier(
+                vk::PipelineStageFlagBits::eFragmentShader,
+                vk::PipelineStageFlagBits::eFragmentShader,
+                {},
+                {},
+                {},
+                {vk::ImageMemoryBarrier {
+                    .sType {vk::StructureType::eImageMemoryBarrier},
+                    .pNext {nullptr},
+                    .srcAccessMask {vk::AccessFlagBits::eNone},
+                    .dstAccessMask {vk::AccessFlagBits::eShaderRead},
+                    .oldLayout {vk::ImageLayout::eUndefined},
+                    .newLayout {vk::ImageLayout::eGeneral},
+                    .srcQueueFamilyIndex {graphicsQueueIndex},
+                    .dstQueueFamilyIndex {graphicsQueueIndex},
+                    .image {*this->global_descriptors.menu_render_target},
+                    .subresourceRange {vk::ImageSubresourceRange {
+                        .aspectMask {vk::ImageAspectFlagBits::eColor},
+                        .baseMipLevel {0},
+                        .levelCount {1},
+                        .baseArrayLayer {0},
+                        .layerCount {1}}},
+                }});
         }
 
         commandBuffer.pipelineBarrier(
@@ -745,6 +860,30 @@ namespace game
                 .srcQueueFamilyIndex {graphicsQueueIndex},
                 .dstQueueFamilyIndex {graphicsQueueIndex},
                 .image {*this->global_descriptors.visible_voxel_image},
+                .subresourceRange {vk::ImageSubresourceRange {
+                    .aspectMask {vk::ImageAspectFlagBits::eColor},
+                    .baseMipLevel {0},
+                    .levelCount {1},
+                    .baseArrayLayer {0},
+                    .layerCount {1}}},
+            }});
+
+        commandBuffer.pipelineBarrier(
+            vk::PipelineStageFlagBits::eFragmentShader,
+            vk::PipelineStageFlagBits::eColorAttachmentOutput,
+            vk::DependencyFlags {},
+            {},
+            {},
+            {vk::ImageMemoryBarrier {
+                .sType {vk::StructureType::eImageMemoryBarrier},
+                .pNext {nullptr},
+                .srcAccessMask {vk::AccessFlagBits::eShaderRead},
+                .dstAccessMask {vk::AccessFlagBits::eColorAttachmentWrite},
+                .oldLayout {vk::ImageLayout::eGeneral},
+                .newLayout {vk::ImageLayout::eColorAttachmentOptimal},
+                .srcQueueFamilyIndex {graphicsQueueIndex},
+                .dstQueueFamilyIndex {graphicsQueueIndex},
+                .image {*this->global_descriptors.menu_render_target},
                 .subresourceRange {vk::ImageSubresourceRange {
                     .aspectMask {vk::ImageAspectFlagBits::eColor},
                     .baseMipLevel {0},
@@ -899,6 +1038,128 @@ namespace game
             doRenderPass(DynamicRenderingPass::VoxelColorTransfer, voxelColorTransferRenderingInfo);
         }
 
+        // write menu to weird buffer
+        {
+            const vk::RenderingAttachmentInfo colorAttachmentInfo {
+                .sType {vk::StructureType::eRenderingAttachmentInfo},
+                .pNext {nullptr},
+                .imageView {this->global_descriptors.menu_render_target.getView()},
+                .imageLayout {vk::ImageLayout::eColorAttachmentOptimal},
+                .resolveMode {vk::ResolveModeFlagBits::eNone},
+                .resolveImageView {nullptr},
+                .resolveImageLayout {},
+                .loadOp {vk::AttachmentLoadOp::eClear},
+                .storeOp {vk::AttachmentStoreOp::eStore},
+                .clearValue {
+                    vk::ClearColorValue {.float32 {{0.0f, 0.0f, 0.0f, 0.0f}}},
+                },
+            };
+
+            const vk::RenderingInfo menuRenderingInfo {
+                .sType {vk::StructureType::eRenderingInfo},
+                .pNext {nullptr},
+                .flags {},
+                .renderArea {scissor},
+                .layerCount {1},
+                .viewMask {0},
+                .colorAttachmentCount {1},
+                .pColorAttachments {&colorAttachmentInfo},
+                .pDepthAttachment {nullptr},
+                .pStencilAttachment {nullptr},
+            };
+
+            doRenderPass(
+                DynamicRenderingPass::MenuRender,
+                menuRenderingInfo,
+                [&](vk::CommandBuffer commandBuffer)
+                {
+                    // imgui new frame
+                    ImGui_ImplVulkan_NewFrame();
+                    ImGui_ImplGlfw_NewFrame();
+                    ImGui::NewFrame();
+
+                    const ImGuiViewport* const viewport = ImGui::GetMainViewport();
+
+                    const auto [x, y] = viewport->Size;
+
+                    const ImVec2 desiredConsoleSize {2 * x / 9, y}; // 2 / 9 is normal
+
+                    ImGui::SetNextWindowPos(
+                        ImVec2 {std::ceil(viewport->Size.x - desiredConsoleSize.x), 0});
+                    ImGui::SetNextWindowSize(desiredConsoleSize);
+
+                    if (ImGui::Begin(
+                            "Console",
+                            nullptr,
+                            ImGuiWindowFlags_NoResize |            // NOLINT
+                                ImGuiWindowFlags_NoSavedSettings | // NOLINT
+                                ImGuiWindowFlags_NoMove |          // NOLINT
+                                ImGuiWindowFlags_NoDecoration))    // NOLINT
+                    {
+                        static constexpr float WindowPadding = 5.0f;
+
+                        util::assertFatal(this->font != nullptr, "oopers");
+
+                        ImGui::PushFont(this->font);
+                        ImGui::PushStyleVar(
+                            ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
+
+                        {
+                            if (ImGui::Button("Button"))
+                            {
+                                util::logTrace("pressed button");
+                            }
+
+                            const std::string playerPosition = std::format(
+                                "Player position: {}", glm::to_string(camera.getPosition()));
+                            ImGui::TextWrapped("%s", playerPosition.c_str());
+
+                            const std::string fpsAndTps = std::format(
+                                "FPS: {:.3f} | Frame Time (ms): {:.3f}",
+                                1.0 / this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
+                                this->game->getRenderer()->getWindow()->getDeltaTimeSeconds());
+
+                            ImGui::TextWrapped(
+                                (const char*)u8"ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈");
+                        }
+
+                        ImGui::PopStyleVar();
+                        ImGui::PopFont();
+
+                        ImGui::End();
+                    }
+
+                    ImGui::Render();
+
+                    ImGui_ImplVulkan_RenderDrawData(
+                        ImGui::GetDrawData(), static_cast<VkCommandBuffer>(commandBuffer));
+                });
+        }
+
+        commandBuffer.pipelineBarrier(
+            vk::PipelineStageFlagBits::eFragmentShader,
+            vk::PipelineStageFlagBits::eFragmentShader,
+            vk::DependencyFlags {},
+            {},
+            {},
+            {vk::ImageMemoryBarrier {
+                .sType {vk::StructureType::eImageMemoryBarrier},
+                .pNext {nullptr},
+                .srcAccessMask {vk::AccessFlagBits::eShaderWrite},
+                .dstAccessMask {vk::AccessFlagBits::eShaderRead},
+                .oldLayout {vk::ImageLayout::eColorAttachmentOptimal},
+                .newLayout {vk::ImageLayout::eGeneral},
+                .srcQueueFamilyIndex {graphicsQueueIndex},
+                .dstQueueFamilyIndex {graphicsQueueIndex},
+                .image {*this->global_descriptors.menu_render_target},
+                .subresourceRange {vk::ImageSubresourceRange {
+                    .aspectMask {vk::ImageAspectFlagBits::eColor},
+                    .baseMipLevel {0},
+                    .levelCount {1},
+                    .baseArrayLayer {0},
+                    .layerCount {1}}},
+            }});
+
         // Simple Color
         {
             const vk::RenderingAttachmentInfo colorAttachmentInfo {
@@ -939,73 +1200,7 @@ namespace game
                 .pStencilAttachment {nullptr},
             };
 
-            doRenderPass(
-                DynamicRenderingPass::SimpleColor,
-                simpleColorRenderingInfo,
-                [&](vk::CommandBuffer commandBuffer)
-                {
-                    // imgui new frame
-                    ImGui_ImplVulkan_NewFrame();
-                    ImGui_ImplGlfw_NewFrame();
-                    ImGui::NewFrame();
-
-                    // const ImGuiViewport* const viewport = ImGui::GetMainViewport();
-
-                    // const auto [x, y] = viewport->Size;
-
-                    // const ImVec2 desiredConsoleSize {2 * x / 9, y}; // 2 / 9 is normal
-
-                    // ImGui::SetNextWindowPos(
-                    //     ImVec2 {std::ceil(viewport->Size.x - desiredConsoleSize.x), 0});
-                    // ImGui::SetNextWindowSize(desiredConsoleSize);
-
-                    // if (ImGui::Begin(
-                    //         "Console",
-                    //         nullptr,
-                    //         ImGuiWindowFlags_NoResize |            // NOLINT
-                    //             ImGuiWindowFlags_NoSavedSettings | // NOLINT
-                    //             ImGuiWindowFlags_NoMove |          // NOLINT
-                    //             ImGuiWindowFlags_NoDecoration))    // NOLINT
-                    // {
-                    //     static constexpr float WindowPadding = 5.0f;
-
-                    //     util::assertFatal(this->font != nullptr, "oopers");
-
-                    //     ImGui::PushFont(this->font);
-                    //     ImGui::PushStyleVar(
-                    //         ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
-                    //     {
-                    //         if (ImGui::Button("Button"))
-                    //         {
-                    //             util::logTrace("pressed button");
-                    //         }
-
-                    //         const std::string playerPosition = std::format(
-                    //             "Player position: {}", glm::to_string(camera.getPosition()));
-                    //         ImGui::TextWrapped("%s", playerPosition.c_str());
-
-                    //         const std::string fpsAndTps = std::format(
-                    //             "FPS: {:.3f} | Frame Time (ms): {:.3f}",
-                    //             1.0 /
-                    //             this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
-                    //             this->game->getRenderer()->getWindow()->getDeltaTimeSeconds());
-
-                    ImGui::DebugTextEncoding(
-                        (const char*)u8"こん✨ちは🍋😍🐶 🖨🖨 🐱 🦊 🐼 🐻 🐘 🦒 🦋 🌲 🌸 🌞 🌈");
-                    //     }
-
-                    //     ImGui::PopStyleVar();
-                    //     ImGui::PopFont();
-
-                    //     ImGui::End();
-                    // }
-                    // ImGui::ShowDemoWindow();
-
-                    ImGui::Render();
-
-                    ImGui_ImplVulkan_RenderDrawData(
-                        ImGui::GetDrawData(), static_cast<VkCommandBuffer>(commandBuffer));
-                });
+            doRenderPass(DynamicRenderingPass::SimpleColor, simpleColorRenderingInfo);
         }
 
         commandBuffer.pipelineBarrier(

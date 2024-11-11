@@ -43,9 +43,11 @@ namespace game
             VoxelColorCalculation        = 3,
             // write voxel colors back to the color buffer
             VoxelColorTransfer           = 4,
+            // Render imgui (unorm pass!)
+            MenuRender                   = 5,
             // render everything else
-            SimpleColor                  = 5,
-            DynamicRenderingPassMaxValue = 6,
+            SimpleColor                  = 6,
+            DynamicRenderingPassMaxValue = 7,
         };
 
         struct RecordObject
@@ -93,6 +95,8 @@ namespace game
 
             gfx::vulkan::Image2D visible_voxel_image;
 
+            gfx::vulkan::Image2D menu_render_target;
+
             vk::UniqueSampler do_nothing_sampler;
         };
 
@@ -111,9 +115,10 @@ namespace game
         std::shared_ptr<vk::UniqueDescriptorSetLayout> set_layout;
         vk::DescriptorSet                              global_info_descriptor_set;
 
-        Camera                camera;
-        GlobalInfoDescriptors global_descriptors;
-        ImFont*               font;
+        Camera                              camera;
+        GlobalInfoDescriptors               global_descriptors;
+        ImFont*                             font;
+        std::shared_ptr<vk::UniquePipeline> menu_transfer_pipeline;
     };
 
 } // namespace game
