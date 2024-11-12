@@ -208,6 +208,25 @@ namespace gfx::vulkan
             other.mapped_memory = nullptr;
         }
 
+        void uploadImmediate(u32 offset, std::span<const T> payload) const
+        {
+            std::copy(payload.begin(), payload.end(), this->getDataNonCoherent().data() + offset);
+
+            const gfx::vulkan::FlushData flush {
+                .offset_elements {offset},
+                .size_elements {payload.size()},
+            };
+
+            this->flush({&flush, 1});
+        }
+
+        std::size_t getSizeBytes()
+        {
+            return this->elements * sizeof(T);
+        }
+
+    protected:
+
         std::span<const T> getDataNonCoherent() const
         {
             return {this->getMappedData(), this->elements};
@@ -218,7 +237,7 @@ namespace gfx::vulkan
             return {this->getMappedData(), this->elements};
         }
 
-        void flush(std::span<const FlushData> flushes)
+        void flush(std::span<const FlushData> flushes) const
         {
             VkResult result = VK_ERROR_UNKNOWN;
 

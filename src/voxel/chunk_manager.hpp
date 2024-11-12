@@ -117,7 +117,7 @@ namespace voxel
         gfx::vulkan::WriteOnlyBuffer<DirectionalFaceIdBrick> face_id_bricks;
 
         util::RangeAllocator                          voxel_face_allocator;
-        gfx::vulkan::WriteOnlyBuffer<GreedyVoxelFace> voxel_faces;
+        gfx::vulkan::CpuCachedBuffer<GreedyVoxelFace> voxel_faces;
 
         gfx::vulkan::WriteOnlyBuffer<VoxelMaterial> material_buffer;
 

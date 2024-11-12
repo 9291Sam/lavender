@@ -561,18 +561,7 @@ namespace voxel
                             thisAllocation =
                                 this->voxel_face_allocator.allocate(static_cast<u32>(faces.size()));
 
-                            std::copy(
-                                faces.cbegin(),
-                                faces.cend(),
-                                this->voxel_faces.getDataNonCoherent().data()
-                                    + thisAllocation.offset);
-
-                            const gfx::vulkan::FlushData flush {
-                                .offset_elements {thisAllocation.offset},
-                                .size_elements {faces.size()},
-                            };
-
-                            this->voxel_faces.flush({&flush, 1});
+                            this->voxel_faces.write(thisAllocation.offset, faces);
                         }
 
                         thisChunkData.face_data = allocations;
@@ -674,6 +663,7 @@ namespace voxel
         this->brick_maps.flushViaStager(stager);
         this->brick_parent_info.flushViaStager(stager);
         this->material_bricks.flushViaStager(stager);
+        this->voxel_faces.flushViaStager(stager);
         this->opacity_bricks.flushViaStager(stager);
         this->lights_buffer.flushViaStager(stager);
         this->global_chunks_buffer.flushViaStager(stager);
@@ -699,27 +689,25 @@ namespace voxel
             .render_pass {game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
             .pipeline {nullptr},
             .descriptors {},
-            .record_func {[this, indirectCommands, indirectPayload](
-                              vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
-                          {
-                              commandBuffer.fillBuffer(
-                                  *this->visibility_bricks,
-                                  0,
-                                  this->visibility_bricks.getDataNonCoherent().size_bytes(),
-                                  0);
+            .record_func {
+                [this, indirectCommands, indirectPayload](
+                    vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                {
+                    commandBuffer.fillBuffer(
+                        *this->visibility_bricks, 0, this->visibility_bricks.getSizeBytes(), 0);
 
-                              GlobalVoxelData data {
-                                  .number_of_visible_faces {},
-                                  .number_of_calculating_draws_x {},
-                                  .number_of_calculating_draws_y {},
-                                  .number_of_calculating_draws_z {},
-                                  .number_of_lights {
-                                      this->light_allocator.getUpperBoundOnAllocatedElements()},
-                              };
+                    GlobalVoxelData data {
+                        .number_of_visible_faces {},
+                        .number_of_calculating_draws_x {},
+                        .number_of_calculating_draws_y {},
+                        .number_of_calculating_draws_z {},
+                        .number_of_lights {
+                            this->light_allocator.getUpperBoundOnAllocatedElements()},
+                    };
 
-                              commandBuffer.updateBuffer(
-                                  *this->global_voxel_data, 0, sizeof(GlobalVoxelData), &data);
-                          }}};
+                    commandBuffer.updateBuffer(
+                        *this->global_voxel_data, 0, sizeof(GlobalVoxelData), &data);
+                }}};
 
         game::FrameGenerator::RecordObject chunkDraw = game::FrameGenerator::RecordObject {
             .transform {game::Transform {}},

@@ -43,13 +43,7 @@ namespace voxel
             materials.size(),
             "Voxel Material Buffer"};
 
-        std::span<VoxelMaterial> gpuMaterials = buffer.getDataNonCoherent();
-
-        std::copy(materials.cbegin(), materials.cend(), gpuMaterials.data());
-        const gfx::vulkan::FlushData flushes {
-            .offset_elements {0}, .size_elements {materials.size()}};
-
-        buffer.flush({&flushes, 1});
+        buffer.uploadImmediate(0, materials);
 
         return buffer;
     }
