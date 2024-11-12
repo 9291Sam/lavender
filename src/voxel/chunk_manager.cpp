@@ -119,7 +119,7 @@ namespace voxel
         , voxel_face_allocator {MaxFaces, MaxChunks * 6}
         , voxel_faces(
               this->renderer->getAllocator(),
-              vk::BufferUsageFlagBits::eStorageBuffer,
+              vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
               static_cast<std::size_t>(MaxFaces),
               "Voxel Faces")

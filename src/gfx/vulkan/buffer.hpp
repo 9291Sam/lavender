@@ -4,6 +4,7 @@
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
+#include <ctti/nameof.hpp>
 #include <type_traits>
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
@@ -208,7 +209,8 @@ namespace gfx::vulkan
             other.mapped_memory = nullptr;
         }
 
-        void uploadImmediate(u32 offset, std::span<const T> payload) const
+        void uploadImmediate(u32 offset, std::span<const T> payload)
+            requires std::is_copy_constructible_v<T>
         {
             std::copy(payload.begin(), payload.end(), this->getDataNonCoherent().data() + offset);
 
@@ -226,6 +228,7 @@ namespace gfx::vulkan
         }
 
     protected:
+        friend class BufferStager;
 
         std::span<const T> getDataNonCoherent() const
         {
@@ -237,7 +240,7 @@ namespace gfx::vulkan
             return {this->getMappedData(), this->elements};
         }
 
-        void flush(std::span<const FlushData> flushes) const
+        void flush(std::span<const FlushData> flushes)
         {
             VkResult result = VK_ERROR_UNKNOWN;
 
@@ -338,6 +341,11 @@ namespace gfx::vulkan
             : gfx::vulkan::WriteOnlyBuffer<T> {
                   allocator_, usage, memoryPropertyFlags, elements_, std::move(name_)}
         {
+            util::assertWarn(
+                static_cast<bool>(vk::BufferUsageFlagBits::eTransferDst | usage),
+                "Creating CpuCachedBuffer<{}> without vk::BufferUsageFlagBits::eTransferDst",
+                ctti::ctti_nameof<T>({}).cppstring());
+
             this->cpu_buffer.resize(this->elements);
         }
         ~CpuCachedBuffer() = default;
