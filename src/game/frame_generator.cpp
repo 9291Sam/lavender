@@ -349,7 +349,7 @@ namespace game
                   .front_face {vk::FrontFace::eCounterClockwise},
                   .depth_test_enable {false},
                   .depth_write_enable {false},
-                  .depth_compare_op {vk::CompareOp::eAlways},
+                  .depth_compare_op {},
                   .color_format {gfx::Renderer::ColorFormat.format},
                   .depth_format {gfx::Renderer::DepthFormat},
                   .blend_enable {true},
@@ -524,10 +524,6 @@ namespace game
                           }},
         };
 
-        // HACK: render imgui
-        recordablesByPass[static_cast<std::size_t>(DynamicRenderingPass::SimpleColor)].push_back(
-            {&menuObj, 0});
-
         commandBuffer.updateBuffer(
             *this->global_descriptors.mvp_matrices,
             0,
@@ -556,6 +552,10 @@ namespace game
                     return *l.first < *r.first;
                 });
         }
+
+        // HACK: render imgui last
+        recordablesByPass[static_cast<std::size_t>(DynamicRenderingPass::SimpleColor)].push_back(
+            {&menuObj, 0});
 
         const vk::Extent2D renderExtent = swapchain.getExtent();
 
@@ -1119,8 +1119,12 @@ namespace game
                                 1.0 / this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
                                 this->game->getRenderer()->getWindow()->getDeltaTimeSeconds());
 
-                            ImGui::TextWrapped(
-                                (const char*)u8"ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈");
+                            ImGui::TextWrapped((
+                                const char*)u8"ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\nن عدة "
+                                            u8"الشهور عند الله اثنا عشر شهرا في كتاب الله يوم خلق "
+                                            u8"السماوات والارض منها اربعة حرم ذلك الدين القيم "
+                                            u8"فلاتظلموا فيهن انفسكم وقاتلوا المشركين كافة كما "
+                                            u8"يقاتلونكم كافة واعلموا ان الله مع المتقين");
                         }
 
                         ImGui::PopStyleVar();
