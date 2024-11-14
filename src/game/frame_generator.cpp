@@ -462,7 +462,7 @@ namespace game
                 }
 
                 {
-                    static ImWchar      ranges[] = {0x10000, 0x1FFFF, 0};
+                    static ImWchar      ranges[] = {0x00001, 0x1FFFF, 0};
                     static ImFontConfig cfg;
                     cfg.OversampleH = cfg.OversampleV = 1;
                     cfg.MergeMode                     = true;
@@ -1123,26 +1123,32 @@ namespace game
                         ImGui::PushStyleVar(
                             ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
 
-                        if (ImGui::Button("Button"))
-                        {
-                            util::logTrace("pressed button");
-                        }
+                        const float deltaTime =
+                            this->game->getRenderer()->getWindow()->getDeltaTimeSeconds();
 
-                        const std::string playerPosition = std::format(
-                            "Player position: {}", glm::to_string(camera.getPosition()));
-                        ImGui::TextWrapped("%s", playerPosition.c_str());
+                        // const std::string playerPosition = std::format(
+                        //     "ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\n"
+                        //     "Player position: {{{:.3f}, {:.3f}, {:.3f}}}\n"
+                        //     "FPS / FrameTime: {:.3f} / {:.3f}ms\n"
+                        //     "TPS / TickTime: {} / {}ms\n"
+                        //     "Ram Usage: {}\n"
+                        //     "Vram Usage: {}",
+                        //     camera.getPosition().x,
+                        //     camera.getPosition().y,
+                        //     camera.getPosition().x,
+                        //     1.0f / deltaTime,
+                        //     1000.0f * deltaTime,
+                        //     0.0,
+                        //     0.0,
+                        //     "-1 B",
+                        //    );
 
-                        const std::string fpsAndTps = std::format(
-                            "FPS: {:.3f} | Frame Time (ms): {:.3f}",
-                            1.0f / this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
-                            this->game->getRenderer()->getWindow()->getDeltaTimeSeconds());
+                        auto r = util::bytesAsSiNamed(
+                            static_cast<long double>(gfx::vulkan::bufferBytesAllocated.load()));
 
-                        ImGui::TextWrapped(reinterpret_cast<const char*>(
-                            u8"ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\nن عدة "
-                            u8"الشهور عند الله اثنا عشر شهرا في كتاب الله يوم خلق "
-                            u8"السماوات والارض منها اربعة حرم ذلك الدين القيم "
-                            u8"فلاتظلموا فيهن انفسكم وقاتلوا المشركين كافة كما "
-                            u8"يقاتلونكم كافة واعلموا ان الله مع المتقين"));
+                        ImGui::DebugTextEncoding(r.c_str());
+
+                        util::logTrace("{} {}", r, r.c_str());
 
                         ImGui::PopStyleVar();
                         ImGui::PopFont();
@@ -1279,7 +1285,7 @@ namespace game
     void
     FrameGenerator::generateFrame(Camera newCamera, std::span<const RecordObject> recordObjects)
     {
-        const bool resizeOcurred = this->game->getRenderer()->recordOnThread(
+        this->has_resize_ocurred = this->game->getRenderer()->recordOnThread(
             [&](vk::CommandBuffer       commandBuffer,
                 u32                     swapchainImageIdx,
                 gfx::vulkan::Swapchain& swapchain,
@@ -1289,10 +1295,9 @@ namespace game
                     commandBuffer, swapchainImageIdx, swapchain, flyingFrameIdx, recordObjects);
             });
 
-        this->has_resize_ocurred = resizeOcurred;
-        this->camera             = newCamera;
+        this->camera = newCamera;
 
-        if (resizeOcurred)
+        if (this->has_resize_ocurred)
         {
             this->global_descriptors =
                 makeGlobalDescriptors(this->game->getRenderer(), this->global_info_descriptor_set);

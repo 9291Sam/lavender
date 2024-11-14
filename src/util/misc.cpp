@@ -180,6 +180,14 @@ namespace util
         prefix.append_range(" ");
         prefix.append_range(suffix);
 
+        for (char& c : prefix)
+        {
+            if (c == '\0')
+            {
+                c = '?';
+            }
+        }
+
         return prefix;
     }
 
