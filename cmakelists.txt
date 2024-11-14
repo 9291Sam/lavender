@@ -167,11 +167,9 @@ add_executable(lavender
     src/voxel/chunk_manager.cpp
     src/voxel/material_manager.cpp
     src/voxel/world.cpp
+)
 
-    ${fastnoise2_SOURCE_DIR}/src/FastNoise/FastNoise_C.cpp
-    ${fastnoise2_SOURCE_DIR}/src/FastNoise/Metadata.cpp
-    ${fastnoise2_SOURCE_DIR}/src/FastNoise/SmartNode.cpp
-
+add_library(library_target STATIC
     ${imgui_SOURCE_DIR}/imgui_demo.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
     ${imgui_SOURCE_DIR}/imgui_tables.cpp
@@ -182,9 +180,25 @@ add_executable(lavender
     ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
 
     ${imgui_SOURCE_DIR}/misc/freetype/imgui_freetype.cpp
+    
+    ${fastnoise2_SOURCE_DIR}/src/FastNoise/FastNoise_C.cpp
+    ${fastnoise2_SOURCE_DIR}/src/FastNoise/Metadata.cpp
+    ${fastnoise2_SOURCE_DIR}/src/FastNoise/SmartNode.cpp
 
     ${plutosvg_SOURCE_DIR}/source/plutosvg.c
 )
+
+target_link_libraries(library_target PRIVATE 
+FastNoise
+plutovg::plutovg
+${FREETYPE_LIBRARIES})
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(library_target PRIVATE -w) # Disable all warnings
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(library_target PRIVATE /W0) # Set warning level to 0
+endif()
+
 
 # get_cmake_property(_variableNames VARIABLES)
 # list (SORT _variableNames)
@@ -201,21 +215,41 @@ target_include_directories(lavender SYSTEM PUBLIC ${imgui_SOURCE_DIR})
 target_include_directories(lavender SYSTEM PUBLIC ${FREETYPE_INCLUDE_DIRS})
 target_include_directories(lavender SYSTEM PUBLIC ${plutosvg_SOURCE_DIR}/source)
 
+
+target_include_directories(library_target SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
+target_include_directories(library_target SYSTEM PUBLIC ${imgui_SOURCE_DIR})
+target_include_directories(library_target SYSTEM PUBLIC ${FREETYPE_INCLUDE_DIRS})
+target_include_directories(library_target SYSTEM PUBLIC ${plutosvg_SOURCE_DIR}/source)
+target_include_directories(library_target SYSTEM PUBLIC ${fastnoise2_SOURCE_DIR}/include)
+
+
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MINOR=${PROJECT_VERSION_MINOR})
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_PATCH=${PROJECT_VERSION_PATCH})
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_TWEAK=${PROJECT_VERSION_TWEAK})
 
 target_compile_definitions(lavender INTERFACE FASTSIMD_INCLUDE_HEADER_ONLY=1)
+target_compile_definitions(library_target INTERFACE FASTSIMD_INCLUDE_HEADER_ONLY=1)
 
 target_compile_definitions(lavender PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 target_compile_definitions(lavender PUBLIC VULKAN_HPP_NO_CONSTRUCTORS=1)
+target_compile_definitions(library_target PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
+target_compile_definitions(library_target PUBLIC VULKAN_HPP_NO_CONSTRUCTORS=1)
 
 target_compile_definitions(lavender PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES=1)
 target_compile_definitions(lavender PUBLIC IMGUI_USE_WCHAR32=1)
 target_compile_definitions(lavender PUBLIC IMGUI_ENABLE_FREETYPE=1)
 target_compile_definitions(lavender PUBLIC IMGUI_ENABLE_FREETYPE_PLUTOSVG=1)
 target_compile_definitions(lavender PUBLIC PLUTOSVG_HAS_FREETYPE=1)
+
+target_compile_definitions(library_target PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES=1)
+target_compile_definitions(library_target PUBLIC IMGUI_USE_WCHAR32=1)
+target_compile_definitions(library_target PUBLIC IMGUI_ENABLE_FREETYPE=1)
+target_compile_definitions(library_target PUBLIC IMGUI_ENABLE_FREETYPE_PLUTOSVG=1)
+target_compile_definitions(library_target PUBLIC PLUTOSVG_HAS_FREETYPE=1)
+target_compile_definitions(library_target PUBLIC PLUTOSVG_BUILD_STATIC=1)
+
+
 
  
 
@@ -241,6 +275,7 @@ target_link_libraries(
     FastNoise
     plutovg::plutovg
     ${FREETYPE_LIBRARIES}
+    library_target
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -258,6 +293,9 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         -Wno-gnu-zero-line-directive
         -Wno-missing-prototypes
         -Wno-switch-enum
+        -Wno-undefined-func-template
+        -Wno-newline-eof
+        -Wno-switch-default
     )
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
