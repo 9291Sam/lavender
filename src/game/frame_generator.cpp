@@ -1123,29 +1123,26 @@ namespace game
                         ImGui::PushStyleVar(
                             ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
 
+                        if (ImGui::Button("Button"))
                         {
-                            if (ImGui::Button("Button"))
-                            {
-                                util::logTrace("pressed button");
-                            }
-
-                            const std::string playerPosition = std::format(
-                                "Player position: {}", glm::to_string(camera.getPosition()));
-                            ImGui::TextWrapped("%s", playerPosition.c_str());
-
-                            const std::string fpsAndTps = std::format(
-                                "FPS: {:.3f} | Frame Time (ms): {:.3f}",
-                                1.0f
-                                    / this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
-                                this->game->getRenderer()->getWindow()->getDeltaTimeSeconds());
-
-                            ImGui::TextWrapped(reinterpret_cast<const char*>(
-                                u8"ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\nن عدة "
-                                u8"الشهور عند الله اثنا عشر شهرا في كتاب الله يوم خلق "
-                                u8"السماوات والارض منها اربعة حرم ذلك الدين القيم "
-                                u8"فلاتظلموا فيهن انفسكم وقاتلوا المشركين كافة كما "
-                                u8"يقاتلونكم كافة واعلموا ان الله مع المتقين"));
+                            util::logTrace("pressed button");
                         }
+
+                        const std::string playerPosition = std::format(
+                            "Player position: {}", glm::to_string(camera.getPosition()));
+                        ImGui::TextWrapped("%s", playerPosition.c_str());
+
+                        const std::string fpsAndTps = std::format(
+                            "FPS: {:.3f} | Frame Time (ms): {:.3f}",
+                            1.0f / this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
+                            this->game->getRenderer()->getWindow()->getDeltaTimeSeconds());
+
+                        ImGui::TextWrapped(reinterpret_cast<const char*>(
+                            u8"ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\nن عدة "
+                            u8"الشهور عند الله اثنا عشر شهرا في كتاب الله يوم خلق "
+                            u8"السماوات والارض منها اربعة حرم ذلك الدين القيم "
+                            u8"فلاتظلموا فيهن انفسكم وقاتلوا المشركين كافة كما "
+                            u8"يقاتلونكم كافة واعلموا ان الله مع المتقين"));
 
                         ImGui::PopStyleVar();
                         ImGui::PopFont();

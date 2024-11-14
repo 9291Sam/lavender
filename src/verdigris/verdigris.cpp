@@ -8,8 +8,6 @@
 #include "triangle_component.hpp"
 #include "util/misc.hpp"
 #include "util/static_filesystem.hpp"
-#include "voxel/chunk.hpp"
-#include "voxel/chunk_manager.hpp"
 #include "voxel/constants.hpp"
 #include "voxel/point_light.hpp"
 #include "voxel/voxel.hpp"

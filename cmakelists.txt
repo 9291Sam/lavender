@@ -40,45 +40,26 @@ target_compile_definitions(glm INTERFACE GLM_FORCE_RADIANS=1)
 target_compile_definitions(glm INTERFACE GLM_FORCE_SIZE_T_LENGTH=1)
 target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL=1)
 
-
 FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui GIT_TAG master GIT_SHALLOW TRUE SYSTEM)
 FetchContent_Populate(imgui)
 
 FetchContent_Declare(plutovg GIT_REPOSITORY https://github.com/sammycage/plutovg.git GIT_TAG main GIT_SHALLOW ON FIND_PACKAGE_ARGS 0.0.3)
 FetchContent_MakeAvailable(plutovg)
 
-
-
-FetchContent_Declare(plutosvg
-    GIT_REPOSITORY https://github.com/sammycage/plutosvg
-    GIT_TAG master
-    GIT_SHALLOW TRUE
-    SYSTEM
-)
+FetchContent_Declare(plutosvg GIT_REPOSITORY https://github.com/sammycage/plutosvg GIT_TAG master GIT_SHALLOW TRUE SYSTEM)
 FetchContent_Populate(plutosvg)
-
- 
 
 set(Boost_USE_STATIC_LIBS ON) 
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME ON) 
 set(BOOST_ENABLE_CMAKE ON)
 set(BOOST_INCLUDE_LIBRARIES container unordered dynamic_bitset core type_traits)
-
 message("Downloading boost, this will take some time!")
-FetchContent_Declare(
-  Boost
-  GIT_REPOSITORY https://github.com/boostorg/boost.git
-  GIT_TAG boost-1.86.0
-  GIT_SHALLOW TRUE
-  SYSTEM
-)
+FetchContent_Declare( Boost GIT_REPOSITORY https://github.com/boostorg/boost.git GIT_TAG boost-1.86.0 GIT_SHALLOW TRUE SYSTEM)
 FetchContent_MakeAvailable(Boost)
 
 find_package(Vulkan REQUIRED)
-
 find_package(Freetype REQUIRED)
-
 
 add_executable(lavender
     src/main.cpp
@@ -117,6 +98,33 @@ add_executable(lavender
     src/voxel/material_manager.cpp
     src/voxel/world.cpp
 )
+target_include_directories(lavender PUBLIC src)
+target_include_directories(lavender SYSTEM PUBLIC ${vma_SOURCE_DIR}/include)
+target_include_directories(lavender SYSTEM PUBLIC ${offsetAllocator_SOURCE_DIR})
+target_include_directories(lavender SYSTEM PUBLIC ${ctti_SOURCE_DIR}/include)
+target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
+target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MINOR=${PROJECT_VERSION_MINOR})
+target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_PATCH=${PROJECT_VERSION_PATCH})
+target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_TWEAK=${PROJECT_VERSION_TWEAK})
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    target_compile_definitions(lavender PUBLIC LAVENDER_DEBUG_BUILD=1)
+else()
+    target_compile_definitions(lavender PUBLIC LAVENDER_DEBUG_BUILD=0)
+endif()
+target_link_libraries(
+    lavender
+    PRIVATE
+    concurrentqueue
+    glm
+    Boost::container
+    Boost::unordered
+    Boost::dynamic_bitset
+    Boost::core
+    Boost::type_traits
+    ${FREETYPE_LIBRARIES}
+    library_target
+)
+
 
 add_library(library_target STATIC
     ${imgui_SOURCE_DIR}/imgui_demo.cpp
@@ -136,95 +144,34 @@ add_library(library_target STATIC
 
     ${plutosvg_SOURCE_DIR}/source/plutosvg.c
 )
-
-target_link_libraries(library_target PRIVATE 
-glfw
-FastNoise
-plutovg::plutovg
-${FREETYPE_LIBRARIES})
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(library_target PRIVATE -w) # Disable all warnings
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    target_compile_options(library_target PRIVATE /W0) # Set warning level to 0
-endif()
-
-
-# get_cmake_property(_variableNames VARIABLES)
-# list (SORT _variableNames)
-# foreach (_variableName ${_variableNames})
-#     message(STATUS "${_variableName}=${${_variableName}}")
-# endforeach()
-
-target_include_directories(lavender PUBLIC src)
-target_include_directories(lavender SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
-target_include_directories(lavender SYSTEM PUBLIC ${vma_SOURCE_DIR}/include)
-target_include_directories(lavender SYSTEM PUBLIC ${offsetAllocator_SOURCE_DIR})
-target_include_directories(lavender SYSTEM PUBLIC ${ctti_SOURCE_DIR}/include)
-target_include_directories(lavender SYSTEM PUBLIC ${imgui_SOURCE_DIR})
-target_include_directories(lavender SYSTEM PUBLIC ${FREETYPE_INCLUDE_DIRS})
-target_include_directories(lavender SYSTEM PUBLIC ${plutosvg_SOURCE_DIR}/source)
-
-
 target_include_directories(library_target SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
 target_include_directories(library_target SYSTEM PUBLIC ${imgui_SOURCE_DIR})
 target_include_directories(library_target SYSTEM PUBLIC ${FREETYPE_INCLUDE_DIRS})
 target_include_directories(library_target SYSTEM PUBLIC ${plutosvg_SOURCE_DIR}/source)
 target_include_directories(library_target SYSTEM PUBLIC ${fastnoise2_SOURCE_DIR}/include)
-
-
-target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MAJOR=${PROJECT_VERSION_MAJOR})
-target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MINOR=${PROJECT_VERSION_MINOR})
-target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_PATCH=${PROJECT_VERSION_PATCH})
-target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_TWEAK=${PROJECT_VERSION_TWEAK})
-
-
-target_compile_definitions(lavender PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
-target_compile_definitions(lavender PUBLIC VULKAN_HPP_NO_CONSTRUCTORS=1)
 target_compile_definitions(library_target PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 target_compile_definitions(library_target PUBLIC VULKAN_HPP_NO_CONSTRUCTORS=1)
-
-target_compile_definitions(lavender PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES=1)
-target_compile_definitions(lavender PUBLIC IMGUI_USE_WCHAR32=1)
-target_compile_definitions(lavender PUBLIC IMGUI_ENABLE_FREETYPE=1)
-target_compile_definitions(lavender PUBLIC IMGUI_ENABLE_FREETYPE_PLUTOSVG=1)
-target_compile_definitions(lavender PUBLIC PLUTOSVG_HAS_FREETYPE=1)
-
 target_compile_definitions(library_target PUBLIC IMGUI_IMPL_VULKAN_NO_PROTOTYPES=1)
 target_compile_definitions(library_target PUBLIC IMGUI_USE_WCHAR32=1)
 target_compile_definitions(library_target PUBLIC IMGUI_ENABLE_FREETYPE=1)
 target_compile_definitions(library_target PUBLIC IMGUI_ENABLE_FREETYPE_PLUTOSVG=1)
 target_compile_definitions(library_target PUBLIC PLUTOSVG_HAS_FREETYPE=1)
 target_compile_definitions(library_target PUBLIC PLUTOSVG_BUILD_STATIC=1)
-
-
-
- 
-
-target_compile_definitions(lavender PUBLIC VK_NO_PROTOTYPES=1)
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    target_compile_definitions(lavender PUBLIC LAVENDER_DEBUG_BUILD=1)
-else()
-    target_compile_definitions(lavender PUBLIC LAVENDER_DEBUG_BUILD=0)
-endif()
-
+target_compile_definitions(library_target PUBLIC VK_NO_PROTOTYPES=1)
 target_link_libraries(
-    lavender
-    PRIVATE
+    library_target
+    PUBLIC 
     glfw
-    concurrentqueue
-    glm
-    Boost::container
-    Boost::unordered
-    Boost::dynamic_bitset
-    Boost::core
-    Boost::type_traits
     FastNoise
     plutovg::plutovg
     ${FREETYPE_LIBRARIES}
-    library_target
 )
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+endif()
+
+
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(lavender PUBLIC
@@ -262,15 +209,14 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Ap
         target_link_options(lavender PUBLIC -fsanitize=address)
     endif ()
 
+    target_compile_options(library_target PRIVATE -w) # Disable all warnings
+
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-  # using Intel C++
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-  # using Visual Studio C++
+    target_compile_options(library_target PRIVATE /W0) # Set warning level to 0
 endif()
 
-# find_program(CLANG_TIDY_EXE NAMES "clang-tidy" REQUIRED)
-# set(CLANG_TIDY_COMMAND ${CLANG_TIDY_EXE} "--config-file=../.clang-tidy")
-# set_target_properties(lavender PROPERTIES CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}")
 
 find_package(Vulkan COMPONENTS glslc)
 find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
