@@ -39,9 +39,8 @@ namespace voxel
     World::ChunkGenerator::~ChunkGenerator() = default;
 
     World::World(std::unique_ptr<ChunkGenerator> generator_, const game::Game* game)
-        : chunk_manager(game)
-        , generator {std::move(generator_)}
-
+        : generator {std::move(generator_)}
+        , chunk_manager(game)
     {}
 
     World::~World()
@@ -114,12 +113,12 @@ namespace voxel
         return {std::vector<VoxelWrite> {writes.begin(), writes.end()}};
     }
 
-    void World::setCamera(game::Camera c) const
+    void World::setCamera(game::Camera camera_) const
     {
-        this->camera = c;
+        this->camera = camera_;
 
         ChunkCoordinate cameraCoordinate =
-            splitWorldPosition(WorldPosition {c.getPosition()}).first;
+            splitWorldPosition(WorldPosition {this->camera.getPosition()}).first;
 
         int radius = 6;
 

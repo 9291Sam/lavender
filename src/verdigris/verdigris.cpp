@@ -96,15 +96,16 @@ namespace verdigris
         std::normal_distribution<float>    realDist {64, 3};
         std::uniform_int_distribution<u16> pDist {1, 8};
 
-        auto genFunc = [](i32 x, i32 z) -> i32
-        {
-            return static_cast<i32>(8 * std::sin(x / 24.0) + 8 * std::cos(z / 24.0) + 32.0) - 128;
-        };
+        // auto genFunc = [](i32 x, i32 z) -> i32
+        // {
+        //     return static_cast<i32>(8 * std::sin(x / 24.0) + 8 * std::cos(z / 24.0) + 32.0) -
+        //     128;
+        // };
 
-        auto genVoxel = [&] -> voxel::Voxel
-        {
-            return static_cast<voxel::Voxel>(pDist(gen));
-        };
+        // auto genVoxel = [&] -> voxel::Voxel
+        // {
+        //     return static_cast<voxel::Voxel>(pDist(gen));
+        // };
 
         std::vector<voxel::World::VoxelWrite> writeList {};
 
@@ -296,12 +297,12 @@ namespace verdigris
         // }
 
         // std::mt19937_64                       gen {std::random_device {}()};
-        std::uniform_real_distribution<float> ddist {-1.0, 1.0};
+        // std::uniform_real_distribution<float> ddist {-1.0, 1.0};
 
-        auto genVec3 = [&]() -> glm::vec3
-        {
-            return glm::vec3 {ddist(gen), ddist(gen), ddist(gen)};
-        };
+        // auto genVec3 = [&]() -> glm::vec3
+        // {
+        //     return glm::vec3 {ddist(gen), ddist(gen), ddist(gen)};
+        // };
 
         this->camera.addPosition({79.606, 15.586, 16.78});
         this->camera.addPitch(-0.12f);
@@ -338,34 +339,35 @@ namespace verdigris
         }
 
         const float averageFrameTime =
-            std::accumulate(this->frame_times.cbegin(), this->frame_times.cend(), 0.0)
-            / this->frame_times.size();
+            std::accumulate(this->frame_times.cbegin(), this->frame_times.cend(), 0.0f)
+            / static_cast<float>(this->frame_times.size());
 
         this->time_alive += deltaTime;
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {-1.0, 1.0};
 
-        auto genVec3 = [&]() -> glm::vec3
-        {
-            return glm::vec3 {pDist(gen), pDist(gen), pDist(gen)};
-        };
+        // auto genVec3 = [&]() -> glm::vec3
+        // {
+        //     return glm::vec3 {pDist(gen), pDist(gen), pDist(gen)};
+        // };
 
-        auto genSpiralPos = [](i32 f)
-        {
-            const float t = static_cast<float>(f) / 256.0f;
+        // auto genSpiralPos = [](i32 f)
+        // {
+        //     const float t = static_cast<float>(f) / 256.0f;
 
-            const float x = 32.0f * std::sin(t);
-            const float z = 32.0f * std::cos(t);
+        //     const float x = 32.0f * std::sin(t);
+        //     const float z = 32.0f * std::cos(t);
 
-            return glm::i32vec3 {static_cast<i32>(x), 66.0, static_cast<i32>(z)};
-        };
+        //     return glm::i32vec3 {static_cast<i32>(x), 66.0, static_cast<i32>(z)};
+        // };
 
-        const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
+        // const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
         // util::logTrace("modify light");
-        for (int i = 0; i < 3; i++)
+        for (std::size_t i = 0; i < 3; i++)
         {
-            const float offset = this->time_alive * 2 + i * std::numbers::pi_v<float> / 2.0;
+            const float offset =
+                this->time_alive * 2 + static_cast<float>(i) * std::numbers::pi_v<float> / 2.0f;
 
             if (i == 0)
             {
@@ -390,17 +392,17 @@ namespace verdigris
             else
             {
                 const glm::vec3 pos = glm::vec3 {
-                    256.0f * std::cos(offset * 1.384 + 93.4),
-                    4.0f * std::sin(offset * 1.384 + 93.4) + 147.0f,
-                    256.0f * std::sin(offset * 1.384 + 93.4)};
+                    256.0f * std::cos(offset * 1.384f + 93.4f),
+                    4.0f * std::sin(offset * 1.384f + 93.4f) + 147.0f,
+                    256.0f * std::sin(offset * 1.384f + 93.4f)};
 
                 this->voxel_world.modifyPointLight(
                     this->lights[i], pos, {1.0, 1.0, 1.0, 2048.0}, {0.0, 0.0, 0.025, 0.0});
             }
         }
 
-        auto thisPos = genSpiralPos(frameNumber);
-        auto prevPos = genSpiralPos(frameNumber - 1);
+        // auto thisPos = genSpiralPos(frameNumber);
+        // auto prevPos = genSpiralPos(frameNumber - 1);
 
         // if (thisPos != prevPos)
         // {

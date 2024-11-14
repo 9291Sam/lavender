@@ -9,6 +9,11 @@
 
 namespace util
 {
+    const char* RangeAllocator::OutOfBlocks::what() const noexcept
+    {
+        return "RangeAllocator::OutOfBlocks";
+    }
+
     RangeAllocator::RangeAllocator(u32 size, u32 maxAllocations)
         : internal_allocator {std::make_unique<OffsetAllocator::Allocator>(size, maxAllocations)}
     {}

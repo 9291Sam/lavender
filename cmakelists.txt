@@ -12,66 +12,27 @@ if (CMAKE_VERSION VERSION_GREATER 3.30)
     cmake_policy(SET CMP0169 OLD)
 endif()
 
-FetchContent_Declare(glfw
-    GIT_REPOSITORY https://github.com/glfw/glfw
-    GIT_TAG master
-    GIT_SHALLOW TRUE
-    SYSTEM
-)
+FetchContent_Declare(glfw GIT_REPOSITORY https://github.com/glfw/glfw GIT_TAG master GIT_SHALLOW TRUE SYSTEM)
 FetchContent_MakeAvailable(glfw)
 
-FetchContent_Declare(concurrentqueue
-    GIT_REPOSITORY https://github.com/cameron314/concurrentqueue
-    GIT_TAG master
-    GIT_SHALLOW TRUE
-    SYSTEM
-)
+FetchContent_Declare(concurrentqueue GIT_REPOSITORY https://github.com/cameron314/concurrentqueue GIT_TAG master GIT_SHALLOW TRUE SYSTEM)
 FetchContent_MakeAvailable(concurrentqueue)
 
-FetchContent_Declare(vma
-    GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
-    GIT_TAG master
-    GIT_SHALLOW TRUE
-    SYSTEM
-)
+FetchContent_Declare(vma GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator GIT_TAG master GIT_SHALLOW TRUE SYSTEM)
 FetchContent_MakeAvailable(vma)
 
-FetchContent_Declare(offsetAllocator
-    GIT_REPOSITORY https://github.com/sebbbi/offsetAllocator/
-    GIT_TAG main
-    GIT_SHALLOW TRUE
-    SYSTEM
-)
+FetchContent_Declare(offsetAllocator GIT_REPOSITORY https://github.com/sebbbi/offsetAllocator/ GIT_TAG main GIT_SHALLOW TRUE SYSTEM)
 FetchContent_Populate(offsetAllocator)
 
-
-FetchContent_Declare(ctti
-    GIT_REPOSITORY https://github.com/Manu343726/ctti.git
-    GIT_TAG master
-    GIT_SHALLOW TRUE
-    SYSTEM
-)
+FetchContent_Declare(ctti GIT_REPOSITORY https://github.com/Manu343726/ctti.git GIT_TAG master GIT_SHALLOW TRUE SYSTEM)
 FetchContent_Populate(ctti)
 
-
-FetchContent_Declare(FastNoise2
-    GIT_REPOSITORY https://github.com/Auburn/FastNoise2/
-    GIT_TAG master
-    GIT_SHALLOW TRUE
-    SYSTEM
-)
+FetchContent_Declare(FastNoise2 GIT_REPOSITORY https://github.com/Auburn/FastNoise2/ GIT_TAG master GIT_SHALLOW TRUE SYSTEM)
 FetchContent_Populate(FastNoise2)
-
 set(FASTNOISE2_NOISETOOL OFF CACHE BOOL "Build Noise Tool" FORCE) #example if don't need the graph tool
 add_subdirectory(${fastnoise2_SOURCE_DIR})
 
-
-FetchContent_Declare(glm
-    GIT_REPOSITORY https://github.com/g-truc/glm
-    GIT_TAG master
-    GIT_SHALLOW TRUE
-    SYSTEM
-)
+FetchContent_Declare(glm GIT_REPOSITORY https://github.com/g-truc/glm GIT_TAG master GIT_SHALLOW TRUE SYSTEM)
 FetchContent_MakeAvailable(glm)
 target_compile_definitions(glm INTERFACE GLM_FORCE_DEPTH_ZERO_TO_ONE=1)
 target_compile_definitions(glm INTERFACE GLM_SWIZZLE=1)
@@ -80,22 +41,10 @@ target_compile_definitions(glm INTERFACE GLM_FORCE_SIZE_T_LENGTH=1)
 target_compile_definitions(glm INTERFACE GLM_ENABLE_EXPERIMENTAL=1)
 
 
-FetchContent_Declare(imgui
-    GIT_REPOSITORY https://github.com/ocornut/imgui
-    GIT_TAG master
-    GIT_SHALLOW TRUE
-    SYSTEM
-)
+FetchContent_Declare(imgui GIT_REPOSITORY https://github.com/ocornut/imgui GIT_TAG master GIT_SHALLOW TRUE SYSTEM)
 FetchContent_Populate(imgui)
 
-
-FetchContent_Declare(plutovg
-    GIT_REPOSITORY https://github.com/sammycage/plutovg.git
-    GIT_TAG main
-    GIT_SHALLOW ON
-    FIND_PACKAGE_ARGS 0.0.3
-)
-
+FetchContent_Declare(plutovg GIT_REPOSITORY https://github.com/sammycage/plutovg.git GIT_TAG main GIT_SHALLOW ON FIND_PACKAGE_ARGS 0.0.3)
 FetchContent_MakeAvailable(plutovg)
 
 
@@ -189,6 +138,7 @@ add_library(library_target STATIC
 )
 
 target_link_libraries(library_target PRIVATE 
+glfw
 FastNoise
 plutovg::plutovg
 ${FREETYPE_LIBRARIES})
@@ -228,8 +178,6 @@ target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_MINOR=${PROJECT_VERS
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_PATCH=${PROJECT_VERSION_PATCH})
 target_compile_definitions(lavender PUBLIC LAVENDER_VERSION_TWEAK=${PROJECT_VERSION_TWEAK})
 
-target_compile_definitions(lavender INTERFACE FASTSIMD_INCLUDE_HEADER_ONLY=1)
-target_compile_definitions(library_target INTERFACE FASTSIMD_INCLUDE_HEADER_ONLY=1)
 
 target_compile_definitions(lavender PUBLIC VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1)
 target_compile_definitions(lavender PUBLIC VULKAN_HPP_NO_CONSTRUCTORS=1)
@@ -278,7 +226,7 @@ target_link_libraries(
     library_target
 )
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(lavender PUBLIC
         -Weverything
         -Wno-c++98-compat
@@ -295,25 +243,10 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         -Wno-switch-enum
         -Wno-undefined-func-template
         -Wno-newline-eof
+        -Wno-padded
+        -Wno-poison-system-directories
         -Wno-switch-default
-    )
-
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-        # Add debug symbols that lldb can actually read
-        target_compile_options(lavender PUBLIC -glldb)
-        target_compile_options(lavender PUBLIC -gdwarf-4)
-        target_compile_options(lavender PUBLIC -g3)
-
-        # target_compile_options(lavender PUBLIC -fsanitize=thread)
-        # target_link_options(lavender PUBLIC -fsanitize=thread)
-
-        # target_compile_options(lavender PUBLIC -fsanitize=undefined)
-        # target_link_options(lavender PUBLIC -fsanitize=undefined)
-    endif ()
-
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-    target_compile_options(lavender PUBLIC
-        -Wno-braced-scalar-init
+        -Wno-weak-vtables
     )
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")

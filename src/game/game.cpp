@@ -25,6 +25,8 @@ namespace game
     //     return globalGame;
     // }
 
+    Game::GameState::~GameState() = default;
+
     Game::Game()
         : renderer {std::make_unique<gfx::Renderer>()}
         , frame_generator {std::make_unique<FrameGenerator>(this)}

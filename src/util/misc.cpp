@@ -90,7 +90,8 @@ namespace util
 
                 // Merge the two ranges at 'index' and 'index + 1'
                 ranges[index].second = ranges[index + 1].second;
-                ranges.erase(ranges.begin() + index + 1);
+                ranges.erase(
+                    ranges.begin() + static_cast<decltype(ranges)::difference_type>(index) + 1);
 
                 // Remove invalidated gaps and add the updated gaps in the heap
                 // Reinserted gaps will now include only the adjacent pairs affected by the merge

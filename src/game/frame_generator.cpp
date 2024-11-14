@@ -455,7 +455,7 @@ namespace game
 
                     this->font = io.Fonts->AddFontFromMemoryTTF(
                         const_cast<std::byte*>(unifont.data()),
-                        unifont.size_bytes(),
+                        static_cast<int>(unifont.size_bytes()),
                         16,
                         &fontConfigUnifont,
                         unifont_ranges);
@@ -474,7 +474,7 @@ namespace game
 
                     this->font = io.Fonts->AddFontFromMemoryTTF(
                         const_cast<std::byte*>(emojiFont.data()),
-                        emojiFont.size_bytes(),
+                        static_cast<int>(emojiFont.size_bytes()),
                         22.0f,
                         &cfg,
                         ranges);
@@ -537,9 +537,9 @@ namespace game
             .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},
             .pipeline {this->menu_transfer_pipeline},
             .descriptors {{this->game->getGlobalInfoDescriptorSet(), nullptr, nullptr, nullptr}},
-            .record_func {[](vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+            .record_func {[](vk::CommandBuffer cb, vk::PipelineLayout, u32)
                           {
-                              commandBuffer.draw(3, 1, 0, 0);
+                              cb.draw(3, 1, 0, 0);
                           }},
         };
 
@@ -1090,7 +1090,7 @@ namespace game
             doRenderPass(
                 DynamicRenderingPass::MenuRender,
                 menuRenderingInfo,
-                [&](vk::CommandBuffer commandBuffer)
+                [&](vk::CommandBuffer cb)
                 {
                     // imgui new frame
                     ImGui_ImplVulkan_NewFrame();
@@ -1135,15 +1135,16 @@ namespace game
 
                             const std::string fpsAndTps = std::format(
                                 "FPS: {:.3f} | Frame Time (ms): {:.3f}",
-                                1.0 / this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
+                                1.0f
+                                    / this->game->getRenderer()->getWindow()->getDeltaTimeSeconds(),
                                 this->game->getRenderer()->getWindow()->getDeltaTimeSeconds());
 
-                            ImGui::TextWrapped((
-                                const char*)u8"ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\nن عدة "
-                                            u8"الشهور عند الله اثنا عشر شهرا في كتاب الله يوم خلق "
-                                            u8"السماوات والارض منها اربعة حرم ذلك الدين القيم "
-                                            u8"فلاتظلموا فيهن انفسكم وقاتلوا المشركين كافة كما "
-                                            u8"يقاتلونكم كافة واعلموا ان الله مع المتقين");
+                            ImGui::TextWrapped(reinterpret_cast<const char*>(
+                                u8"ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\nن عدة "
+                                u8"الشهور عند الله اثنا عشر شهرا في كتاب الله يوم خلق "
+                                u8"السماوات والارض منها اربعة حرم ذلك الدين القيم "
+                                u8"فلاتظلموا فيهن انفسكم وقاتلوا المشركين كافة كما "
+                                u8"يقاتلونكم كافة واعلموا ان الله مع المتقين"));
                         }
 
                         ImGui::PopStyleVar();
@@ -1157,8 +1158,8 @@ namespace game
                     ImGui_ImplVulkan_RenderDrawData(
                         ImGui::GetDrawData(), static_cast<VkCommandBuffer>(commandBuffer));
 
-                    commandBuffer.setViewport(0, {renderViewport});
-                    commandBuffer.setScissor(0, {scissor});
+                    cb.setViewport(0, {renderViewport});
+                    cb.setScissor(0, {scissor});
                 });
         }
 

@@ -25,7 +25,7 @@ namespace voxel
 
         struct ChunkGenerator
         {
-            virtual ~ChunkGenerator()                                      = 0;
+            virtual ~ChunkGenerator();
             virtual std::vector<VoxelWrite> generateChunk(ChunkCoordinate) = 0;
         };
 

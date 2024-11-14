@@ -9,11 +9,13 @@ CMRC_DECLARE(lav);
 
 namespace staticFilesystem
 {
-    std::span<const std::byte> loadResource(const std::string& resource)
+    std::span<const std::byte> loadResource(std::string_view resource)
     {
         try
         {
-            const cmrc::file resourceFile = cmrc::lav::get_filesystem().open(resource);
+            std::string ownedString {resource};
+
+            const cmrc::file resourceFile = cmrc::lav::get_filesystem().open(ownedString);
 
             // NOLINTNEXTLINE
             return {reinterpret_cast<const std::byte*>(resourceFile.begin()), resourceFile.size()};

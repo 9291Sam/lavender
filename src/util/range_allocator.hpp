@@ -25,12 +25,9 @@ namespace util
     class RangeAllocator
     {
     public:
-        class OutOfBlocks : public std::bad_alloc
+        struct OutOfBlocks : public std::bad_alloc
         {
-            [[nodiscard]] const char* what() const noexcept override
-            {
-                return "RangeAllocator::OutOfBlocks";
-            }
+            [[nodiscard]] const char* what() const noexcept override;
         };
     public:
         RangeAllocator(u32 size, u32 maxAllocations);

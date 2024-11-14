@@ -33,8 +33,8 @@ namespace game
     public:
         struct GameState
         {
-            GameState()          = default;
-            virtual ~GameState() = default;
+            GameState() = default;
+            virtual ~GameState();
 
             GameState(const GameState&)             = delete;
             GameState(GameState&&)                  = delete;

@@ -30,7 +30,7 @@ namespace OffsetAllocator
         _BitScanReverse(&retVal, v);
         return 31 - retVal;
 #else
-        return __builtin_clz(v);
+        return static_cast<uint32>(__builtin_clz(v));
 #endif
     }
 
@@ -41,94 +41,97 @@ namespace OffsetAllocator
         _BitScanForward(&retVal, v);
         return retVal;
 #else
-        return __builtin_ctz(v);
+        return static_cast<uint32>(__builtin_ctz(v));
 #endif
     }
 
-    namespace SmallFloat
+    namespace
     {
-        static constexpr uint32 MANTISSA_BITS  = 3;
-        static constexpr uint32 MANTISSA_VALUE = 1 << MANTISSA_BITS;
-        static constexpr uint32 MANTISSA_MASK  = MANTISSA_VALUE - 1;
-
-        // Bin sizes follow floating point (exponent + mantissa) distribution (piecewise linear log
-        // approx) This ensures that for each size class, the average overhead percentage stays the
-        // same
-        uint32 uintToFloatRoundUp(uint32 size)
+        namespace SmallFloat
         {
-            uint32 exp      = 0;
-            uint32 mantissa = 0;
+            static constexpr uint32 MANTISSA_BITS  = 3;
+            static constexpr uint32 MANTISSA_VALUE = 1 << MANTISSA_BITS;
+            static constexpr uint32 MANTISSA_MASK  = MANTISSA_VALUE - 1;
 
-            if (size < MANTISSA_VALUE)
+            // Bin sizes follow floating point (exponent + mantissa) distribution (piecewise linear
+            // log approx) This ensures that for each size class, the average overhead percentage
+            // stays the same
+            uint32 uintToFloatRoundUp(uint32 size)
             {
-                // Denorm: 0..(MANTISSA_VALUE-1)
-                mantissa = size;
-            }
-            else
-            {
-                // Normalized: Hidden high bit always 1. Not stored. Just like float.
-                uint32 leadingZeros  = lzcnt_nonzero(size);
-                uint32 highestSetBit = 31 - leadingZeros;
+                uint32 exp      = 0;
+                uint32 mantissa = 0;
 
-                uint32 mantissaStartBit = highestSetBit - MANTISSA_BITS;
-                exp                     = mantissaStartBit + 1;
-                mantissa                = (size >> mantissaStartBit) & MANTISSA_MASK;
-
-                uint32 lowBitsMask = (1 << mantissaStartBit) - 1;
-
-                // Round up!
-                if ((size & lowBitsMask) != 0)
+                if (size < MANTISSA_VALUE)
                 {
-                    mantissa++;
+                    // Denorm: 0..(MANTISSA_VALUE-1)
+                    mantissa = size;
+                }
+                else
+                {
+                    // Normalized: Hidden high bit always 1. Not stored. Just like float.
+                    uint32 leadingZeros  = lzcnt_nonzero(size);
+                    uint32 highestSetBit = 31 - leadingZeros;
+
+                    uint32 mantissaStartBit = highestSetBit - MANTISSA_BITS;
+                    exp                     = mantissaStartBit + 1;
+                    mantissa                = (size >> mantissaStartBit) & MANTISSA_MASK;
+
+                    uint32 lowBitsMask = (1 << mantissaStartBit) - 1;
+
+                    // Round up!
+                    if ((size & lowBitsMask) != 0)
+                    {
+                        mantissa++;
+                    }
+                }
+
+                return (exp << MANTISSA_BITS)
+                     + mantissa; // + allows mantissa->exp overflow for round up
+            }
+
+            uint32 uintToFloatRoundDown(uint32 size)
+            {
+                uint32 exp      = 0;
+                uint32 mantissa = 0;
+
+                if (size < MANTISSA_VALUE)
+                {
+                    // Denorm: 0..(MANTISSA_VALUE-1)
+                    mantissa = size;
+                }
+                else
+                {
+                    // Normalized: Hidden high bit always 1. Not stored. Just like float.
+                    uint32 leadingZeros  = lzcnt_nonzero(size);
+                    uint32 highestSetBit = 31 - leadingZeros;
+
+                    uint32 mantissaStartBit = highestSetBit - MANTISSA_BITS;
+                    exp                     = mantissaStartBit + 1;
+                    mantissa                = (size >> mantissaStartBit) & MANTISSA_MASK;
+                }
+
+                return (exp << MANTISSA_BITS) | mantissa;
+            }
+
+            uint32 floatToUint(uint32 floatValue)
+            {
+                uint32 exponent = floatValue >> MANTISSA_BITS;
+                uint32 mantissa = floatValue & MANTISSA_MASK;
+                if (exponent == 0)
+                {
+                    // Denorms
+                    return mantissa;
+                }
+                else
+                {
+                    return (mantissa | MANTISSA_VALUE) << (exponent - 1);
                 }
             }
-
-            return (exp << MANTISSA_BITS)
-                 + mantissa; // + allows mantissa->exp overflow for round up
-        }
-
-        uint32 uintToFloatRoundDown(uint32 size)
-        {
-            uint32 exp      = 0;
-            uint32 mantissa = 0;
-
-            if (size < MANTISSA_VALUE)
-            {
-                // Denorm: 0..(MANTISSA_VALUE-1)
-                mantissa = size;
-            }
-            else
-            {
-                // Normalized: Hidden high bit always 1. Not stored. Just like float.
-                uint32 leadingZeros  = lzcnt_nonzero(size);
-                uint32 highestSetBit = 31 - leadingZeros;
-
-                uint32 mantissaStartBit = highestSetBit - MANTISSA_BITS;
-                exp                     = mantissaStartBit + 1;
-                mantissa                = (size >> mantissaStartBit) & MANTISSA_MASK;
-            }
-
-            return (exp << MANTISSA_BITS) | mantissa;
-        }
-
-        uint32 floatToUint(uint32 floatValue)
-        {
-            uint32 exponent = floatValue >> MANTISSA_BITS;
-            uint32 mantissa = floatValue & MANTISSA_MASK;
-            if (exponent == 0)
-            {
-                // Denorms
-                return mantissa;
-            }
-            else
-            {
-                return (mantissa | MANTISSA_VALUE) << (exponent - 1);
-            }
-        }
-    } // namespace SmallFloat
+        } // namespace SmallFloat
+    } // namespace
 
     // Utility functions
-    uint32 findLowestSetBitAfter(uint32 bitMask, uint32 startBitIndex)
+    static uint32 findLowestSetBitAfter(uint32 bitMask, uint32 startBitIndex)
     {
         uint32 maskBeforeStartIndex = (1 << startBitIndex) - 1;
         uint32 maskAfterStartIndex  = ~maskBeforeStartIndex;
