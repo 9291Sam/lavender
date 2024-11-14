@@ -153,12 +153,12 @@ add_executable(lavender
     src/gfx/renderer.cpp
     src/gfx/window.cpp
 
-    src/shaders/shaders.cpp
 
     src/util/index_allocator.cpp
     src/util/log.cpp
     src/util/misc.cpp
     src/util/range_allocator.cpp
+    src/util/static_filesystem.cpp
     src/util/timer.cpp
 
     src/verdigris/verdigris.cpp
@@ -362,6 +362,8 @@ cmrc_add_resource_library(
     build/src/shaders/voxel_render.vert.bin
     build/src/shaders/voxel_render.frag.bin
     build/src/shaders/voxel_visibility_detection.comp.bin
+    res/OpenMoji-color-colr1_svg.ttf
+    res/unifont-16.0.01.otf
 )
 
 target_link_libraries(lavender PRIVATE lav2)

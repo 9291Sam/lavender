@@ -88,7 +88,7 @@ void main()
 
     gl_Position = in_mvp_matrices.matrix[in_push_constants.matrix_id] * vec4(face_point_world, 1.0);
     out_chunk_local_position = point_within_chunk + -0.5 * normal;
-    out_chunk_id = in_chunk_id;
+    out_chunk_id  = in_chunk_id;
     out_normal_id = in_normal_id;
     out_frag_location_world = face_point_world;
 }

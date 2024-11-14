@@ -17,11 +17,11 @@
 #include "greedy_voxel_face.hpp"
 #include "opacity_brick.hpp"
 #include "point_light.hpp"
-#include "shaders/shaders.hpp"
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
+#include "util/static_filesystem.hpp"
 #include "voxel/constants.hpp"
 #include "voxel/dense_bit_chunk.hpp"
 #include "voxel/material_manager.hpp"
@@ -278,12 +278,14 @@ namespace voxel
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eVertex},
                           .shader {this->renderer->getAllocator()->cacheShaderModule(
-                              shaders::load("voxel_render.vert"), "Voxel Render Vertex Shader")},
+                              staticFilesystem::loadShader("voxel_render.vert"),
+                              "Voxel Render Vertex Shader")},
                           .entry_point {"main"}},
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eFragment},
                           .shader {this->renderer->getAllocator()->cacheShaderModule(
-                              shaders::load("voxel_render.frag"), "Voxel Render Fragment Shader")},
+                              staticFilesystem::loadShader("voxel_render.frag"),
+                              "Voxel Render Fragment Shader")},
                           .entry_point {"main"}},
                   }},
                   .vertex_attributes {{
@@ -335,7 +337,7 @@ namespace voxel
               gfx::vulkan::CacheableComputePipelineCreateInfo {
                   .entry_point {"main"},
                   .shader {this->renderer->getAllocator()->cacheShaderModule(
-                      shaders::load("voxel_visibility_detection.comp"),
+                      staticFilesystem::loadShader("voxel_visibility_detection.comp"),
                       "Voxel Visibility Detection Compute Shader")},
                   .layout {this->renderer->getAllocator()->cachePipelineLayout(
                       gfx::vulkan::CacheablePipelineLayoutCreateInfo {
@@ -349,7 +351,7 @@ namespace voxel
               gfx::vulkan::CacheableComputePipelineCreateInfo {
                   .entry_point {"main"},
                   .shader {this->renderer->getAllocator()->cacheShaderModule(
-                      shaders::load("voxel_color_calculation.comp"),
+                      staticFilesystem::loadShader("voxel_color_calculation.comp"),
                       "Voxel Color Calculation Compute Shader")},
                   .layout {this->renderer->getAllocator()->cachePipelineLayout(
                       gfx::vulkan::CacheablePipelineLayoutCreateInfo {
@@ -366,15 +368,15 @@ namespace voxel
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eVertex},
                           .shader {this->renderer->getAllocator()->cacheShaderModule(
-                              shaders::load("voxel_color_transfer.vert"),
+                              staticFilesystem::loadShader("voxel_color_transfer.vert"),
                               "Voxel Color Transfer Vertex "
                               "Shader")},
                           .entry_point {"main"}},
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eFragment},
                           .shader {this->renderer->getAllocator()->cacheShaderModule(
-                              shaders::load("voxel_color_transfer."
-                                            "frag"),
+                              staticFilesystem::loadShader("voxel_color_transfer."
+                                                           "frag"),
                               "Voxel Color Transfer Fragment "
                               "Shader")},
                           .entry_point {"main"}},

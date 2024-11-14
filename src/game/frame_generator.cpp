@@ -5,9 +5,9 @@
 #include "gfx/vulkan/device.hpp"
 #include "gfx/vulkan/frame_manager.hpp"
 #include "gfx/vulkan/image.hpp"
-#include "shaders/shaders.hpp"
 #include "util/log.hpp"
 #include "util/misc.hpp"
+#include "util/static_filesystem.hpp"
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <bit>
@@ -330,13 +330,13 @@ namespace game
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eVertex},
                           .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
-                              shaders::load("menu_color_transfer.vert"),
+                              staticFilesystem::loadShader("menu_color_transfer.vert"),
                               "Menu Color Transfer Vertex Shader")},
                           .entry_point {"main"}},
                       gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                           .stage {vk::ShaderStageFlagBits::eFragment},
                           .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
-                              shaders::load("menu_color_transfer.frag"),
+                              staticFilesystem::loadShader("menu_color_transfer.frag"),
                               "Menu Color Transfer Fragment Shader")},
                           .entry_point {"main"}},
                   }},
@@ -448,18 +448,37 @@ namespace game
                     fontConfigUnifont.OversampleH = fontConfigUnifont.OversampleV = 1;
                     fontConfigUnifont.MergeMode                                   = false;
                     fontConfigUnifont.SizePixels                                  = 64;
-                    this->font = io.Fonts->AddFontFromFileTTF(
-                        "../src/unifont-16.0.01.otf", 16, &fontConfigUnifont, unifont_ranges);
+                    fontConfigUnifont.FontDataOwnedByAtlas                        = false;
+
+                    std::span<const std::byte> unifont =
+                        staticFilesystem::loadResource("res/unifont-16.0.01.otf");
+
+                    this->font = io.Fonts->AddFontFromMemoryTTF(
+                        const_cast<std::byte*>(unifont.data()),
+                        unifont.size_bytes(),
+                        16,
+                        &fontConfigUnifont,
+                        unifont_ranges);
                 }
 
-                static ImWchar      ranges[] = {0x10000, 0x1FFFF, 0};
-                static ImFontConfig cfg;
-                cfg.OversampleH = cfg.OversampleV = 1;
-                cfg.MergeMode                     = true;
-                cfg.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
-                cfg.SizePixels = 64;
-                this->font     = io.Fonts->AddFontFromFileTTF(
-                    "../src/OpenMoji-color-colr1_svg.ttf", 22.0f, &cfg, ranges);
+                {
+                    static ImWchar      ranges[] = {0x10000, 0x1FFFF, 0};
+                    static ImFontConfig cfg;
+                    cfg.OversampleH = cfg.OversampleV = 1;
+                    cfg.MergeMode                     = true;
+                    cfg.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
+                    cfg.SizePixels = 64;
+
+                    std::span<const std::byte> emojiFont =
+                        staticFilesystem::loadResource("res/OpenMoji-color-colr1_svg.ttf");
+
+                    this->font = io.Fonts->AddFontFromMemoryTTF(
+                        const_cast<std::byte*>(emojiFont.data()),
+                        emojiFont.size_bytes(),
+                        22.0f,
+                        &cfg,
+                        ranges);
+                }
 
                 io.Fonts->Build();
 

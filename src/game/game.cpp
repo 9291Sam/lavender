@@ -2,13 +2,13 @@
 #include "camera.hpp"
 #include "ec/entity_component_manager.hpp"
 #include "frame_generator.hpp"
+#include "util/static_filesystem.hpp"
 #include "util/threads.hpp"
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/allocator.hpp>
 #include <gfx/vulkan/device.hpp>
 #include <gfx/window.hpp>
 #include <memory>
-#include <shaders/shaders.hpp>
 #include <util/log.hpp>
 #include <vulkan/vulkan_structs.hpp>
 

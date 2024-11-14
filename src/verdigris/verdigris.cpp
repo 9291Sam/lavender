@@ -5,9 +5,9 @@
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/window.hpp"
-#include "shaders/shaders.hpp"
 #include "triangle_component.hpp"
 #include "util/misc.hpp"
+#include "util/static_filesystem.hpp"
 #include "voxel/chunk.hpp"
 #include "voxel/chunk_manager.hpp"
 #include "voxel/constants.hpp"
@@ -15,16 +15,13 @@
 #include "voxel/voxel.hpp"
 #include "voxel/world.hpp"
 #include "world/generator.hpp"
+#include <FastNoise/FastNoise.h>
 #include <boost/container_hash/hash_fwd.hpp>
 #include <glm/fwd.hpp>
 #include <numbers>
 #include <numeric>
 #include <random>
 #include <utility>
-
-//
-#include <FastNoise/FastNoise.h>
-//
 
 namespace verdigris
 {
@@ -41,13 +38,15 @@ namespace verdigris
                     gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                         .stage {vk::ShaderStageFlagBits::eVertex},
                         .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
-                            shaders::load("triangle.vert"), "Triangle Vertex Shader")},
+                            staticFilesystem::loadShader("triangle.vert"),
+                            "Triangle Vertex Shader")},
                         .entry_point {"main"},
                     },
                     gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
                         .stage {vk::ShaderStageFlagBits::eFragment},
                         .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
-                            shaders::load("triangle.frag"), "Triangle Fragment Shader")},
+                            staticFilesystem::loadShader("triangle.frag"),
+                            "Triangle Fragment Shader")},
                         .entry_point {"main"},
                     },
                 }},
