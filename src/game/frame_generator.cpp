@@ -408,6 +408,11 @@ namespace game
                     .Instance {**this->game->getRenderer()->getInstance()},
                     .PhysicalDevice {this->game->getRenderer()->getDevice()->getPhysicalDevice()},
                     .Device {this->game->getRenderer()->getDevice()->getDevice()},
+                    .QueueFamily {
+                        this->game->getRenderer()
+                            ->getDevice()
+                            ->getFamilyOfQueueType(gfx::vulkan::Device::QueueType::Graphics)
+                            .value()},
                     .Queue {std::bit_cast<VkQueue>(q)},
                     .DescriptorPool {this->game->getRenderer()->getAllocator()->getRawPool()},
                     .RenderPass {nullptr},

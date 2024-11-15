@@ -22,6 +22,8 @@
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
 #include "util/static_filesystem.hpp"
+#include "util/timer.hpp"
+#include "voxel/brick_pointer.hpp"
 #include "voxel/constants.hpp"
 #include "voxel/dense_bit_chunk.hpp"
 #include "voxel/material_manager.hpp"
@@ -524,9 +526,12 @@ namespace voxel
 
         u32 callNumber = 0;
 
+        util::Timer t1 {"iterate"};
+
         this->chunk_id_allocator.iterateThroughAllocatedElements(
             [&, this](u32 chunkId)
             {
+                util::Timer   ttt {"single iter"};
                 CpuChunkData& thisChunkData = this->cpu_chunk_data[chunkId];
 
                 switch (static_cast<u32>(thisChunkData.needs_remesh) << 1
@@ -573,12 +578,15 @@ namespace voxel
                 case 0b10: {
                     thisChunkData.is_remesh_in_progress = true;
 
-                    std::unique_ptr<DenseBitChunk> chunkData = makeDenseBitChunk(chunkId);
+                    BrickList chunkData = this->formBrickList(chunkId);
 
                     thisChunkData.future_mesh = std::async(
-                        [](std::unique_ptr<DenseBitChunk> localData)
+                        [](BrickList localData) // NOLINT: lifetimes exist
                         {
-                            return meshChunkGreedy(std::move(localData));
+                            std::unique_ptr<DenseBitChunk> denseBitData =
+                                localData.formDenseBitChunk();
+
+                            return meshChunkGreedy(std::move(denseBitData));
                         },
                         std::move(chunkData));
 
@@ -661,6 +669,10 @@ namespace voxel
                 }
             });
 
+        t1.end();
+
+        util::Timer t2 {"flush"};
+
         this->gpu_chunk_data.flushViaStager(stager);
         this->brick_maps.flushViaStager(stager);
         this->brick_parent_info.flushViaStager(stager);
@@ -685,6 +697,10 @@ namespace voxel
                 0,
                 std::span<const ChunkDrawIndirectInstancePayload> {indirectPayload});
         }
+
+        t2.end();
+
+        util::Timer t3 {"contruct"};
 
         game::FrameGenerator::RecordObject update = game::FrameGenerator::RecordObject {
             .transform {},
@@ -1020,11 +1036,13 @@ namespace voxel
         return out;
     }
 
-    std::unique_ptr<DenseBitChunk> ChunkManager::makeDenseBitChunk(u32 chunkId)
+    ChunkManager::BrickList ChunkManager::formBrickList(u32 chunkId)
     {
-        std::unique_ptr<DenseBitChunk> out = std::make_unique<DenseBitChunk>();
+        util::Timer t {"dbc"};
 
-        const BrickMap& thisBrickMap = this->brick_maps.read(chunkId, 1)[0];
+        BrickList out {};
+
+        const BrickMap& thisBrickMap = this->brick_maps.read(chunkId);
 
         thisBrickMap.iterateOverPointers(
             // NOLINTNEXTLINE
@@ -1032,19 +1050,7 @@ namespace voxel
             {
                 if (!ptr.isNull())
                 {
-                    const OpacityBrick& thisBrick = this->opacity_bricks.read(ptr.pointer, 1)[0];
-
-                    thisBrick.iterateOverVoxels(
-                        [&](BrickLocalPosition bP, bool isFilled)
-                        {
-                            ChunkLocalPosition pos = assembleChunkLocalPosition(bC, bP);
-
-                            if (isFilled)
-                            {
-                                // NOLINTNEXTLINE
-                                out->data[pos.x][pos.y] |= (1ULL << pos.z);
-                            }
-                        });
+                    out.data.push_back({bC, this->opacity_bricks.read(ptr.pointer)});
                 }
             });
 

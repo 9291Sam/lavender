@@ -72,7 +72,34 @@ namespace voxel
 
     private:
 
-        std::unique_ptr<DenseBitChunk> makeDenseBitChunk(u32 chunkId);
+        struct BrickList
+        {
+            std::vector<std::pair<BrickCoordinate, OpacityBrick>> data;
+
+            [[nodiscard]] std::unique_ptr<DenseBitChunk> formDenseBitChunk() const
+            {
+                std::unique_ptr<DenseBitChunk> out = std::make_unique<DenseBitChunk>();
+
+                for (const auto& [bC, thisBrick] : this->data)
+                {
+                    thisBrick.iterateOverVoxels(
+                        [&](BrickLocalPosition bP, bool isFilled)
+                        {
+                            ChunkLocalPosition pos = assembleChunkLocalPosition(bC, bP);
+
+                            if (isFilled)
+                            {
+                                // NOLINTNEXTLINE
+                                out->data[pos.x][pos.y] |= (1ULL << pos.z);
+                            }
+                        });
+                }
+
+                return out;
+            }
+        };
+
+        BrickList formBrickList(u32 chunkId);
 
         const gfx::Renderer* renderer;
 

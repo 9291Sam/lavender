@@ -108,10 +108,6 @@ namespace gfx::vulkan
                     });
             }
 
-            auto l = bufferBytesAllocated.load();
-
-            util::logTrace("allocated {} {}", (this->elements * sizeof(T)), l);
-
             bufferBytesAllocated += (this->elements * sizeof(T));
         }
         ~GpuOnlyBuffer()

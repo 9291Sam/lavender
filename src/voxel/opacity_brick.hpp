@@ -56,13 +56,6 @@ namespace voxel
         static std::pair<std::size_t, std::size_t>
         getIdxAndBitOfBrickLocalPosition(BrickLocalPosition p)
         {
-            if constexpr (util::isDebugBuild())
-            {
-                util::assertFatal(p.x < BrickEdgeLengthVoxels, "{}", p.x);
-                util::assertFatal(p.y < BrickEdgeLengthVoxels, "{}", p.y);
-                util::assertFatal(p.z < BrickEdgeLengthVoxels, "{}", p.z);
-            }
-
             const std::size_t linearIndex = p.x + p.z * BrickEdgeLengthVoxels
                                           + p.y * BrickEdgeLengthVoxels * BrickEdgeLengthVoxels;
 

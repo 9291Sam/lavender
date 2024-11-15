@@ -123,5 +123,6 @@ namespace util
         Full
     };
 
+    std::string bytesAsSiNamed(std::size_t, SuffixType = SuffixType::Full);
     std::string bytesAsSiNamed(long double bytes, SuffixType = SuffixType::Full);
 } // namespace util
