@@ -8,8 +8,61 @@
 #include <thread>
 #include <tuple>
 
+#if defined(_WIN32)
+#include <psapi.h>
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <mach/mach.h>
+#elif defined(__linux__)
+#include <sys/resource.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
 namespace util
 {
+
+    std::size_t getMemoryUsage()
+    {
+#if defined(_WIN32)
+        // Windows implementation
+        PROCESS_MEMORY_COUNTERS memInfo;
+        if (GetProcessMemoryInfo(GetCurrentProcess(), &memInfo, sizeof(memInfo)))
+        {
+            return memInfo.WorkingSetSize;
+        }
+        return 0;
+
+#elif defined(__APPLE__)
+        // macOS implementation
+        struct mach_task_basic_info info;
+        mach_msg_type_number_t      infoCount = MACH_TASK_BASIC_INFO_COUNT;
+        if (task_info(
+                mach_task_self(),
+                MACH_TASK_BASIC_INFO,
+                reinterpret_cast<task_info_t>(&info),
+                &infoCount)
+            == KERN_SUCCESS)
+        {
+            return info.resident_size;
+        }
+        return 0;
+
+#elif defined(__linux__)
+        // Linux implementation
+        struct rusage usage;
+        if (getrusage(RUSAGE_SELF, &usage) == 0)
+        {
+            return usage.ru_maxrss * 1024L; // ru_maxrss is in KB on Linux
+        }
+        return 0;
+
+#else
+        // Unsupported platform
+        return 0;
+#endif
+    }
+
     [[noreturn]] void debugBreak(std::source_location l)
     {
         std::ignore = std::fputs("util::debugBreak()\n", stderr);

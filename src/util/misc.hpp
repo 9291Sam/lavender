@@ -31,6 +31,8 @@ using F64 = double;
 
 namespace util
 {
+    std::size_t getMemoryUsage();
+
     template<class T>
     using Fn = T;
 

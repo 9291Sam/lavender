@@ -1142,7 +1142,7 @@ namespace game
                             1000.0f * deltaTime,
                             0.0,
                             0.0,
-                            "-1 B",
+                            util::bytesAsSiNamed(util::getMemoryUsage()),
                             util::bytesAsSiNamed(
                                 gfx::vulkan::bufferBytesAllocated.load(std::memory_order_relaxed)),
                             util::bytesAsSiNamed(
