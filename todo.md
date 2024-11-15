@@ -9,6 +9,9 @@ entity system
 physics
 LODs
 
+profiling on imgui via tracing
+render thread & worker threads
+
 asperta
 aperita
 asperita
