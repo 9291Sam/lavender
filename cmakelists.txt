@@ -88,6 +88,7 @@ add_executable(lavender
     src/util/log.cpp
     src/util/misc.cpp
     src/util/range_allocator.cpp
+    src/util/ranges.cpp
     src/util/static_filesystem.cpp
     src/util/timer.cpp
 

@@ -4,8 +4,10 @@
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
+#include "util/ranges.hpp"
 #include <ctti/nameof.hpp>
 #include <type_traits>
+#include <vector>
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
@@ -407,26 +409,33 @@ namespace gfx::vulkan
 
         void mergeFlushes()
         {
-            std::vector<std::size_t> points {};
+            std::vector<util::InclusiveRange> ranges {};
+            ranges.reserve(this->flushes.size());
 
             for (const FlushData& f : this->flushes)
             {
-                for (std::size_t i = 0; i < f.size_elements; ++i)
-                {
-                    points.push_back(i + f.offset_elements);
-                }
+                ranges.push_back(util::InclusiveRange {
+                    .start {f.offset_elements}, .end {f.offset_elements + f.size_elements - 1}});
             }
 
-            std::vector<std::pair<std::size_t, std::size_t>> merged =
-                util::combineIntoRanges(points, 65535, 128);
+            std::vector<util::InclusiveRange> mergedRanges =
+                util::mergeDownRanges(std::move(ranges), 128);
 
             std::vector<FlushData> newFlushes {};
-            newFlushes.reserve(merged.size());
+            newFlushes.reserve(mergedRanges.size());
 
-            for (const auto& [from, to] : merged)
+            for (const auto& r : mergedRanges)
             {
+                if (r.start == ~0UZ || r.end == ~0UZ)
+                {
+                    util::logFatal("{} {}", mergedRanges.size(), ranges.size());
+                    for (auto r2 : ranges)
+                    {
+                        util::logTrace("{} {}", r2.start, r2.end);
+                    }
+                }
                 newFlushes.push_back(
-                    FlushData {.offset_elements {from}, .size_elements {to - from + 1}});
+                    FlushData {.offset_elements {r.start}, .size_elements {r.size()}});
             }
 
             this->flushes = std::move(newFlushes);
