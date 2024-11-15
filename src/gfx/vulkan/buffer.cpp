@@ -10,6 +10,8 @@
 
 namespace gfx::vulkan
 {
+    std::atomic<std::size_t> bufferBytesAllocated = 0; // NOLINT
+
     static constexpr std::size_t StagingBufferSize = 192UZ * 1024 * 1024;
 
     BufferStager::BufferStager(const Allocator* allocator_)

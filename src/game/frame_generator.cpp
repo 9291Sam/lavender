@@ -8,6 +8,7 @@
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/static_filesystem.hpp"
+#include <atomic>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <bit>
@@ -1126,29 +1127,28 @@ namespace game
                         const float deltaTime =
                             this->game->getRenderer()->getWindow()->getDeltaTimeSeconds();
 
-                        // const std::string playerPosition = std::format(
-                        //     "ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\n"
-                        //     "Player position: {{{:.3f}, {:.3f}, {:.3f}}}\n"
-                        //     "FPS / FrameTime: {:.3f} / {:.3f}ms\n"
-                        //     "TPS / TickTime: {} / {}ms\n"
-                        //     "Ram Usage: {}\n"
-                        //     "Vram Usage: {}",
-                        //     camera.getPosition().x,
-                        //     camera.getPosition().y,
-                        //     camera.getPosition().x,
-                        //     1.0f / deltaTime,
-                        //     1000.0f * deltaTime,
-                        //     0.0,
-                        //     0.0,
-                        //     "-1 B",
-                        //    );
+                        const std::string menuText = std::format(
+                            "ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\n"
+                            "Player position: {{{:.3f}, {:.3f}, {:.3f}}}\n"
+                            "FPS / FrameTime: {:.3f} / {:.3f}ms\n"
+                            "TPS / TickTime: {} / {}ms\n"
+                            "Ram Usage: {}\n"
+                            "Vram Usage: {}\n"
+                            "Staging Usage: {}",
+                            camera.getPosition().x,
+                            camera.getPosition().y,
+                            camera.getPosition().x,
+                            1.0f / deltaTime,
+                            1000.0f * deltaTime,
+                            0.0,
+                            0.0,
+                            "-1 B",
+                            util::bytesAsSiNamed(
+                                gfx::vulkan::bufferBytesAllocated.load(std::memory_order_relaxed)),
+                            util::bytesAsSiNamed(
+                                this->game->getRenderer()->getStager().getUsage().first));
 
-                        auto r = util::bytesAsSiNamed(
-                            static_cast<long double>(gfx::vulkan::bufferBytesAllocated.load()));
-
-                        ImGui::DebugTextEncoding(r.c_str());
-
-                        util::logTrace("{} {}", r, r.c_str());
+                        ImGui::TextWrapped("%s", menuText.c_str());
 
                         ImGui::PopStyleVar();
                         ImGui::PopFont();

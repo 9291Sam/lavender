@@ -166,19 +166,18 @@ namespace util
 
         const long double base  = std::log10(bytes) / std::log10(unit);
         const long double value = std::pow(unit, base - std::floor(base));
-        std::string       prefix {std::format("{:.3}", value)};
+        std::string       prefix {std::format("{:.3f}", value)};
 
         if (std::string_view {prefix}.ends_with(".0"))
         {
-            prefix.pop_back();
-            prefix.pop_back();
+            prefix.resize(prefix.size() - 2);
         }
 
         const std::string_view suffix =
             getSuffixes(type).at(static_cast<std::size_t>(std::floor(base)));
 
-        prefix.append_range(" ");
-        prefix.append_range(suffix);
+        prefix.push_back(' ');
+        prefix.append(suffix);
 
         for (char& c : prefix)
         {

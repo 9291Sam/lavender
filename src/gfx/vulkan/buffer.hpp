@@ -26,7 +26,7 @@ namespace gfx::vulkan
         vk::DeviceSize size_elements;
     };
 
-    static inline std::atomic<std::size_t> bufferBytesAllocated; // NOLINT
+    extern std::atomic<std::size_t> bufferBytesAllocated; // NOLINT
 
     template<class T>
         requires std::is_trivially_copyable_v<T>
@@ -107,6 +107,10 @@ namespace gfx::vulkan
                         .pObjectName {this->name.c_str()},
                     });
             }
+
+            auto l = bufferBytesAllocated.load();
+
+            util::logTrace("allocated {} {}", (this->elements * sizeof(T)), l);
 
             bufferBytesAllocated += (this->elements * sizeof(T));
         }
@@ -294,6 +298,8 @@ namespace gfx::vulkan
                 ::vmaUnmapMemory(**this->allocator, this->allocation);
                 this->mapped_memory = nullptr;
             }
+
+            GpuOnlyBuffer<T>::free();
         }
 
         T* getMappedData() const

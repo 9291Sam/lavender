@@ -159,7 +159,6 @@ namespace gfx::vulkan
                 withCommandBuffer(*this->command_buffer, maybeNextImageIdx);
 
                 this->command_buffer->end();
-
                 const vk::PipelineStageFlags dstStageWaitFlags =
                     vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
