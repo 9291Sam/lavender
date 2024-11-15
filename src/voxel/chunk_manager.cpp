@@ -526,12 +526,9 @@ namespace voxel
 
         u32 callNumber = 0;
 
-        util::Timer t1 {"iterate"};
-
         this->chunk_id_allocator.iterateThroughAllocatedElements(
             [&, this](u32 chunkId)
             {
-                util::Timer   ttt {"single iter"};
                 CpuChunkData& thisChunkData = this->cpu_chunk_data[chunkId];
 
                 switch (static_cast<u32>(thisChunkData.needs_remesh) << 1
@@ -669,10 +666,6 @@ namespace voxel
                 }
             });
 
-        t1.end();
-
-        util::Timer t2 {"flush"};
-
         this->gpu_chunk_data.flushViaStager(stager);
         this->brick_maps.flushViaStager(stager);
         this->brick_parent_info.flushViaStager(stager);
@@ -697,10 +690,6 @@ namespace voxel
                 0,
                 std::span<const ChunkDrawIndirectInstancePayload> {indirectPayload});
         }
-
-        t2.end();
-
-        util::Timer t3 {"contruct"};
 
         game::FrameGenerator::RecordObject update = game::FrameGenerator::RecordObject {
             .transform {},
@@ -1038,8 +1027,6 @@ namespace voxel
 
     ChunkManager::BrickList ChunkManager::formBrickList(u32 chunkId)
     {
-        util::Timer t {"dbc"};
-
         BrickList out {};
 
         const BrickMap& thisBrickMap = this->brick_maps.read(chunkId);

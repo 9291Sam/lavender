@@ -428,7 +428,7 @@ namespace gfx::vulkan
             {
                 if (r.start == ~0UZ || r.end == ~0UZ)
                 {
-                    util::logFatal("{} {}", mergedRanges.size(), ranges.size());
+                    util::logTrace("{} {}", mergedRanges.size(), ranges.size());
                     for (auto r2 : ranges)
                     {
                         util::logTrace("{} {}", r2.start, r2.end);

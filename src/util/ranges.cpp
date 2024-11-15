@@ -1,5 +1,7 @@
 #include "ranges.hpp"
+#include "util/log.hpp"
 #include <algorithm>
+#include <limits>
 #include <optional>
 #include <ranges>
 #include <vector>
@@ -15,6 +17,18 @@ namespace util
     {
         return r.start == ~0UZ && r.end == ~0UZ;
     }
+
+    // std::string formatVectorRanges(const std::vector<InclusiveRange>& r)
+    // {
+    //     std::string result {};
+
+    //     for (auto rr : r)
+    //     {
+    //         result += std::format("[{}, {}], ", rr.start, rr.end);
+    //     }
+
+    //     return result;
+    // }
 
     std::vector<InclusiveRange> mergeAndSortOverlappingRanges(std::vector<InclusiveRange> ranges)
     {
@@ -50,7 +64,7 @@ namespace util
                     continue;
                 }
 
-                if (iterant.start <= base.end)
+                if (iterant.start <= base.end || base.end == iterant.start - 1)
                 {
                     base.end = iterant.end;
                     iterant  = makeInvalidIterant();
@@ -80,10 +94,14 @@ namespace util
     std::vector<InclusiveRange>
     mergeDownRanges(std::vector<InclusiveRange> inputRanges, std::size_t numberOfRanges)
     {
+        // util::logTrace("Input: {}", formatVectorRanges(inputRanges));
+
         std::vector<InclusiveRange> mergedSortedRanges =
             mergeAndSortOverlappingRanges(std::move(inputRanges));
 
-        if (mergedSortedRanges.size() < numberOfRanges)
+        // util::logTrace("Merged Sorted: {}", formatVectorRanges(mergedSortedRanges));
+
+        if (mergedSortedRanges.size() <= numberOfRanges)
         {
             return mergedSortedRanges;
         }
@@ -104,42 +122,101 @@ namespace util
                 .distance_between {mergedSortedRanges[i + 1].start - mergedSortedRanges[i].end}});
         }
 
+        // {
+        //     std::string msg {};
+
+        //     for (auto& d : deltas)
+        //     {
+        //         msg += std::format("{{#{}, ~{}}}, ", d.referent_base_index, d.distance_between);
+        //     }
+
+        //     util::logTrace("calculated deltas {}", msg);
+        // }
+
         std::ranges::sort(
             deltas,
             [](const DeltaInformation& l, const DeltaInformation& r)
             {
-                return l.distance_between > r.distance_between;
+                return l.distance_between < r.distance_between;
             });
-        // discard all of the deltas that are higher than we care about
-        deltas.resize(numberOfRanges);
 
-        std::vector<std::size_t> buckets {};
-        buckets.resize(mergedSortedRanges.size(), std::numeric_limits<std::size_t>::max());
+        util::logTrace("{} {}", deltas.size(), numberOfRanges);
+        // discard all of the deltas that are higher than we care about
+        deltas.resize(deltas.size() - numberOfRanges);
+
+        // {
+        //     std::string msg {};
+
+        //     for (auto& d : deltas)
+        //     {
+        //         msg += std::format("{{#{}, ~{}}}, ", d.referent_base_index, d.distance_between);
+        //     }
+
+        //     util::logTrace("sorted deltas deltas {}", msg);
+        // }
+
+        std::vector<std::size_t> nonMonotonicBuckets {};
+        nonMonotonicBuckets.resize(
+            mergedSortedRanges.size(), std::numeric_limits<std::size_t>::max());
+
+        // {
+        //     std::string msg {};
+
+        //     for (auto& b : nonMonotonicBuckets)
+        //     {
+        //         msg += std::format("{{b{}}}, ", b);
+        //     }
+
+        //     util::logTrace("pre nonMonotonicBuckets {}", msg);
+        // }
 
         std::size_t nextBucket = 0;
 
         for (const DeltaInformation& d : deltas)
         {
-            if (buckets[d.referent_base_index] == std::numeric_limits<std::size_t>::max())
+            if (nonMonotonicBuckets[d.referent_base_index]
+                == std::numeric_limits<std::size_t>::max())
             {
-                buckets[d.referent_base_index] = nextBucket++;
+                nonMonotonicBuckets[d.referent_base_index] = nextBucket++;
             }
 
-            buckets[d.referent_base_index + 1] = buckets[d.referent_base_index];
+            nonMonotonicBuckets[d.referent_base_index + 1] =
+                nonMonotonicBuckets[d.referent_base_index];
         }
+
+        for (std::size_t& b : nonMonotonicBuckets)
+        {
+            if (b == ~0UZ)
+            {
+                b = nextBucket++;
+            }
+        }
+
+        // {
+        //     std::string msg {};
+
+        //     for (auto& b : nonMonotonicBuckets)
+        //     {
+        //         msg += std::format("{{b{}}}, ", b);
+        //     }
+
+        //     util::logTrace("post nonMonotomicBuckets {}", msg);
+        // }
 
         std::vector<InclusiveRange> output {};
         output.resize(
-            numberOfRanges,
+            nextBucket,
             InclusiveRange {.start {std::numeric_limits<std::size_t>::max()}, .end {0UZ}});
 
         for (std::size_t i = 0; i < mergedSortedRanges.size(); ++i)
         {
-            const std::size_t bucket = buckets[i];
+            const std::size_t bucket = nonMonotonicBuckets[i];
 
             output[bucket].start = std::min({output[bucket].start, mergedSortedRanges[i].start});
             output[bucket].end   = std::max({output[bucket].end, mergedSortedRanges[i].end});
         }
+
+        // util::logTrace("Output: {}", formatVectorRanges(output));
 
         return output;
     }
