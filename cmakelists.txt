@@ -53,7 +53,7 @@ set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREADED ON)  
 set(Boost_USE_STATIC_RUNTIME ON) 
 set(BOOST_ENABLE_CMAKE ON)
-set(BOOST_INCLUDE_LIBRARIES container unordered dynamic_bitset core type_traits)
+set(BOOST_INCLUDE_LIBRARIES container unordered dynamic_bitset core type_traits sort)
 message("Downloading boost, this will take some time!")
 FetchContent_Declare( Boost GIT_REPOSITORY https://github.com/boostorg/boost.git GIT_TAG boost-1.86.0 GIT_SHALLOW TRUE SYSTEM)
 FetchContent_MakeAvailable(Boost)
@@ -122,6 +122,7 @@ target_link_libraries(
     Boost::dynamic_bitset
     Boost::core
     Boost::type_traits
+    Boost::sort
     ${FREETYPE_LIBRARIES}
     library_target
 )
@@ -169,7 +170,6 @@ target_link_libraries(
 )
 
 
-
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_compile_options(lavender PUBLIC
         -Weverything
@@ -204,8 +204,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Ap
         # target_compile_options(lavender PUBLIC -fsanitize=thread)
         # target_link_options(lavender PUBLIC -fsanitize=thread)
 
-        target_compile_options(lavender PUBLIC -fsanitize=address)
-        target_link_options(lavender PUBLIC -fsanitize=address)
+        # target_compile_options(lavender PUBLIC -fsanitize=address)
+        # target_link_options(lavender PUBLIC -fsanitize=address)
     endif ()
 
     target_compile_options(library_target PRIVATE -w) # Disable all warnings

@@ -18,7 +18,8 @@ namespace util
         Timer& operator= (const Timer&) = delete;
         Timer& operator= (Timer&&)      = delete;
 
-        void end();
+        /// Returns the number of microseconds this action took
+        std::size_t end();
 
     private:
         std::string                                        name;

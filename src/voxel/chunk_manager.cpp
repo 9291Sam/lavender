@@ -526,6 +526,8 @@ namespace voxel
 
         u32 callNumber = 0;
 
+        util::Timer t {"iterate"};
+
         this->chunk_id_allocator.iterateThroughAllocatedElements(
             [&, this](u32 chunkId)
             {
@@ -608,23 +610,17 @@ namespace voxel
 
                 for (auto x :
                      {thisChunkData.position.x,
-                      thisChunkData.position.x + ChunkEdgeLengthVoxels / 4.0f,
-                      thisChunkData.position.x + ChunkEdgeLengthVoxels / 2.0f,
-                      thisChunkData.position.x + ChunkEdgeLengthVoxels / 1.3333f,
+                      //   thisChunkData.position.x + ChunkEdgeLengthVoxels / 2.0f,
                       thisChunkData.position.x + ChunkEdgeLengthVoxels})
                 {
                     for (auto y :
                          {thisChunkData.position.y,
-                          thisChunkData.position.y + ChunkEdgeLengthVoxels / 4.0f,
-                          thisChunkData.position.y + ChunkEdgeLengthVoxels / 2.0f,
-                          thisChunkData.position.y + ChunkEdgeLengthVoxels / 1.3333f,
+                          //   thisChunkData.position.y + ChunkEdgeLengthVoxels / 2.0f,
                           thisChunkData.position.y + ChunkEdgeLengthVoxels})
                     {
                         for (auto z :
                              {thisChunkData.position.z,
-                              thisChunkData.position.z + ChunkEdgeLengthVoxels / 4.0f,
-                              thisChunkData.position.z + ChunkEdgeLengthVoxels / 2.0f,
-                              thisChunkData.position.z + ChunkEdgeLengthVoxels / 1.3333f,
+                              //   thisChunkData.position.z + ChunkEdgeLengthVoxels / 2.0f,
                               thisChunkData.position.z + ChunkEdgeLengthVoxels})
                         {
                             glm::vec4 cornerPos {x, y, z, 1.0};
@@ -666,6 +662,10 @@ namespace voxel
                 }
             });
 
+        t.end();
+
+        util::Timer t1 {"flushes"};
+
         this->gpu_chunk_data.flushViaStager(stager);
         this->brick_maps.flushViaStager(stager);
         this->brick_parent_info.flushViaStager(stager);
@@ -690,6 +690,8 @@ namespace voxel
                 0,
                 std::span<const ChunkDrawIndirectInstancePayload> {indirectPayload});
         }
+
+        t1.end();
 
         game::FrameGenerator::RecordObject update = game::FrameGenerator::RecordObject {
             .transform {},

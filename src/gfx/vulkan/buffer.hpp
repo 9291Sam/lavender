@@ -385,7 +385,7 @@ namespace gfx::vulkan
         void write(std::size_t offset, std::span<const T> data)
         {
             this->flushes.push_back(
-                FlushData {.offset_elements {offset}, .size_elements {data.size()}});
+                util::InclusiveRange {.start {offset}, .end {offset + data.size() - 1}});
 
             std::memcpy(&this->cpu_buffer[offset], data.data(), data.size_bytes());
         }
@@ -396,7 +396,10 @@ namespace gfx::vulkan
 
         std::span<T> modify(std::size_t offset, std::size_t size)
         {
-            this->flushes.push_back(FlushData {.offset_elements {offset}, .size_elements {size}});
+            util::assertFatal(size > 0, "dont do this");
+
+            this->flushes.push_back(
+                util::InclusiveRange {.start {offset}, .end {offset + size - 1}});
 
             return std::span<T> {&this->cpu_buffer[offset], size};
         }
@@ -407,42 +410,43 @@ namespace gfx::vulkan
 
         void flushViaStager(const BufferStager& stager);
 
-        void mergeFlushes()
+        std::vector<FlushData> mergeFlushes()
         {
-            std::vector<util::InclusiveRange> ranges {};
-            ranges.reserve(this->flushes.size());
+            std::vector<util::InclusiveRange> mergedRanges;
 
-            for (const FlushData& f : this->flushes)
+            const std::size_t maxFlushesPerFrame = 32768;
+
+            if (this->flushes.size() > maxFlushesPerFrame)
             {
-                ranges.push_back(util::InclusiveRange {
-                    .start {f.offset_elements}, .end {f.offset_elements + f.size_elements - 1}});
-            }
+                const std::size_t newSize = this->flushes.size() - maxFlushesPerFrame;
 
-            std::vector<util::InclusiveRange> mergedRanges =
-                util::mergeDownRanges(std::move(ranges), 128);
+                std::vector<util::InclusiveRange> theseFlushes {
+                    this->flushes.cbegin() + newSize, this->flushes.cend()};
+
+                this->flushes.resize(newSize);
+
+                mergedRanges = util::mergeDownRanges(std::move(theseFlushes), 64);
+                // era
+            }
+            else
+            {
+                mergedRanges = util::mergeDownRanges(std::move(this->flushes), 64);
+            }
 
             std::vector<FlushData> newFlushes {};
             newFlushes.reserve(mergedRanges.size());
 
             for (const auto& r : mergedRanges)
             {
-                if (r.start == ~0UZ || r.end == ~0UZ)
-                {
-                    util::logTrace("{} {}", mergedRanges.size(), ranges.size());
-                    for (auto r2 : ranges)
-                    {
-                        util::logTrace("{} {}", r2.start, r2.end);
-                    }
-                }
                 newFlushes.push_back(
                     FlushData {.offset_elements {r.start}, .size_elements {r.size()}});
             }
 
-            this->flushes = std::move(newFlushes);
+            return newFlushes;
         }
     private:
-        std::vector<T>         cpu_buffer;
-        std::vector<FlushData> flushes;
+        std::vector<T>                    cpu_buffer;
+        std::vector<util::InclusiveRange> flushes;
     };
 
     class BufferStager
@@ -496,17 +500,27 @@ namespace gfx::vulkan
     template<class T>
     void CpuCachedBuffer<T>::flushViaStager(const BufferStager& stager)
     {
-        this->mergeFlushes();
+        auto s = this->flushes.size();
 
-        for (const FlushData& f : this->flushes)
+        util::Timer            t {"merge"};
+        std::vector<FlushData> mergedFlushes = this->mergeFlushes();
+
+        auto res = t.end();
+
+        if (res > 1000)
+        {
+            util::logTrace("merge of {} took {}us", s, res);
+        }
+
+        util::Timer t2 {"rest"};
+
+        for (const FlushData& f : mergedFlushes)
         {
             stager.enqueueTransfer(
                 *this,
                 static_cast<u32>(f.offset_elements),
                 {this->cpu_buffer.data() + f.offset_elements, f.size_elements});
         }
-
-        this->flushes.clear();
     }
 
 } // namespace gfx::vulkan

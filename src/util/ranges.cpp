@@ -1,6 +1,7 @@
 #include "ranges.hpp"
 #include "util/log.hpp"
 #include <algorithm>
+#include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
 #include <limits>
 #include <optional>
 #include <ranges>
@@ -32,17 +33,24 @@ namespace util
 
     std::vector<InclusiveRange> mergeAndSortOverlappingRanges(std::vector<InclusiveRange> ranges)
     {
+        util::Timer t2("merge and sort | sort");
+
         if (ranges.size() <= 1)
         {
             return ranges;
         }
 
-        std::ranges::sort(
-            ranges,
+        boost::sort::block_indirect_sort(
+            ranges.begin(),
+            ranges.end(),
             [](const InclusiveRange& l, const InclusiveRange& r)
             {
                 return l.start < r.start;
             });
+
+        t2.end();
+
+        util::Timer t {"propagate up"};
 
         std::size_t numberOfValidRanges = ranges.size();
 
@@ -77,6 +85,10 @@ namespace util
             }
         }
 
+        t.end();
+
+        util::Timer t3 {"repropagate"};
+
         std::vector<InclusiveRange> output {};
         output.reserve(numberOfValidRanges);
 
@@ -94,12 +106,10 @@ namespace util
     std::vector<InclusiveRange>
     mergeDownRanges(std::vector<InclusiveRange> inputRanges, std::size_t numberOfRanges)
     {
-        // util::logTrace("Input: {}", formatVectorRanges(inputRanges));
-
         std::vector<InclusiveRange> mergedSortedRanges =
             mergeAndSortOverlappingRanges(std::move(inputRanges));
 
-        // util::logTrace("Merged Sorted: {}", formatVectorRanges(mergedSortedRanges));
+        util::Timer _("merge down");
 
         if (mergedSortedRanges.size() <= numberOfRanges)
         {
@@ -121,17 +131,6 @@ namespace util
                 .referent_base_index {i},
                 .distance_between {mergedSortedRanges[i + 1].start - mergedSortedRanges[i].end}});
         }
-
-        // {
-        //     std::string msg {};
-
-        //     for (auto& d : deltas)
-        //     {
-        //         msg += std::format("{{#{}, ~{}}}, ", d.referent_base_index, d.distance_between);
-        //     }
-
-        //     util::logTrace("calculated deltas {}", msg);
-        // }
 
         std::ranges::sort(
             deltas,

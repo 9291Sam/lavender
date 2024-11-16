@@ -329,6 +329,7 @@ namespace verdigris
     std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
     Verdigris::onFrame(float deltaTime) const
     {
+        util::Timer t {"on frame"};
         this->frame_times.push_back(deltaTime);
 
         if (this->frame_times.size() > 128)

@@ -1,5 +1,6 @@
 #include "timer.hpp"
 #include "log.hpp"
+#include <chrono>
 
 namespace util
 {
@@ -15,18 +16,22 @@ namespace util
         this->end();
     }
 
-    void Timer::end()
+    std::size_t Timer::end()
     {
         if (!this->ended)
         {
             this->ended = true;
 
-            util::logTrace<const char*, std::chrono::microseconds>(
-                "{} | {}",
-                this->name.data(),
+            std::chrono::microseconds durationUs =
                 std::chrono::duration_cast<std::chrono::microseconds>(
-                    std::chrono::steady_clock::now() - this->start),
-                this->location);
+                    std::chrono::steady_clock::now() - this->start);
+
+            util::logTrace<const char*, const std::chrono::microseconds&>(
+                "{} | {}", this->name.data(), durationUs, this->location);
+
+            return static_cast<std::size_t>(durationUs.count());
         }
+
+        return 0;
     }
 } // namespace util
