@@ -4,11 +4,75 @@
 #include "util/ranges.hpp"
 #include "verdigris/verdigris.hpp"
 #include <cassert>
+#include <concepts>
 #include <ctti/type_id.hpp>
 #include <glm/gtx/hash.hpp>
 #include <iostream>
+#include <type_traits>
 #include <utility>
 #include <vector>
+
+// class EntityManager;
+
+// struct UniqueEntity
+// {
+//     UniqueEntity() = delete;
+//     ~UniqueEntity()
+//     {
+//         this->owner->free(this);
+//     }
+
+//     UniqueEntity(const UniqueEntity&)             = delete;
+//     UniqueEntity(UniqueEntity&&)                  = default;
+//     UniqueEntity& operator= (const UniqueEntity&) = delete;
+//     UniqueEntity& operator= (UniqueEntity&&)      = default;
+
+//     [[nodiscard]] const EntityManager* getOwner() const
+//     {
+//         return this->owner;
+//     }
+
+//     [[nodiscard]] u64 getId() const
+//     {
+//         return this->id;
+//     }
+// private:
+//     friend class EntityManager;
+
+//     const EntityManager* owner;
+//     u64                  id;
+// };
+
+// struct IntrusiveInherentEntity
+// {
+//     virtual ~IntrusiveInherentEntity()                          = default;
+//     [[nodiscard]] virtual const UniqueEntity& getEntity() const = 0;
+
+//     [[nodiscard]] u64 addComponent(int) const
+//     {
+//         return this->getEntity().getId();
+//     }
+// };
+
+// struct ConcreteEntity : IntrusiveInherentEntity
+// {
+//     UniqueEntity e;
+
+//     explicit ConcreteEntity(UniqueEntity e_)
+//         : e {std::move(e_)}
+//     {}
+// };
+
+// struct EntityManager
+// {
+//     template<std::derived_from<IntrusiveInherentEntity> T, class... Args>
+//     T createInherentEntity(Args&&... args)
+//     {
+//         static_assert(
+//             std::is_constructible_v<T, Args..., UniqueEntity>,
+//             "T must be constructable from T {Args..., UniqueEntity}!");
+//     }
+// };
 
 int main()
 {

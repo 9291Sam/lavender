@@ -49,10 +49,12 @@ void main()
         face_number / 64
     );
 
-    const u32 face_id = in_face_id_bricks
-            .brick[brick_pointer]
-            .dir[normal]
-            .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
+    const u32 face_id = face_id_map_read(in_face_brick_data);
+    
+    // in_face_id_bricks
+    //         .brick[brick_pointer]
+    //         .dir[normal]
+    //         .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
 
     out_color = vec4(in_visible_face_data.data[face_id].color.xyz, 1.0);
 }

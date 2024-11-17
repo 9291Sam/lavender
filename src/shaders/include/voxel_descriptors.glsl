@@ -128,10 +128,65 @@ layout(set = 1, binding = 5) buffer VisibilityBrickBuffer
     VisibilityBrick brick[];
 } in_visibility_bricks;
 
+struct HashMapNode32
+{
+    u32 key;
+    u32 value;
+};
+
 layout(set = 1, binding = 6) buffer DirectionalFaceIdBrickBuffer
 {
-    DirectionalFaceIdBricks brick[];
-} in_face_id_bricks;
+    HashMapNode32 node[];
+} in_face_id_map;
+
+const u32 kHashTableCapacity = 8192 * 4096;
+const u32 kEmpty = ~0;
+
+u32 integerHash(u32 h)
+{
+    h ^= h >> 16;
+    h *= 0x85ebca6b;
+    h ^= h >> 13;
+    h *= 0xc2b2ae35;
+    h ^= h >> 16;
+    return h;
+}
+
+void face_id_map_write(u32 key, u32 value)
+{
+    u32 slot = integerHash(key);
+
+    while (true)
+    {
+        u32 prev = atomicCompSwap(in_face_id_map.node[slot].key, kEmpty, key);
+
+        if (prev == kEmpty || prev == key)
+        {
+            in_face_id_map.node[slot].value = value;
+            break;
+        }
+        
+        slot = (slot + 1) & (kHashTableCapacity-1);
+    }
+}
+
+u32 face_id_map_read(u32 key)
+{
+    u32 slot = integerHash(key);
+
+    while (true)
+    {
+        if (in_face_id_map.node[slot].key == key)
+        {
+            return in_face_id_map.node[slot].value;
+        }
+        if (in_face_id_map.node[slot].key == kEmpty)
+        {
+            return kEmpty;
+        }
+        slot = (slot + 1) & (kHashTableCapacity - 1);
+    }
+}
 
 layout(set = 1, binding = 7) readonly buffer GreedyVoxelFaces
 {

@@ -412,7 +412,7 @@ namespace gfx::vulkan
         {
             std::vector<util::InclusiveRange> mergedRanges;
 
-            const std::size_t maxFlushesPerFrame = 32768;
+            const std::size_t maxFlushesPerFrame = 131072;
 
             if (this->flushes.size() > maxFlushesPerFrame)
             {

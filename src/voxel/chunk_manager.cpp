@@ -58,6 +58,7 @@ namespace voxel
     static constexpr u32 MaxBricks          = 131072;
     static constexpr u32 MaxFaces           = 1048576 * 4;
     static constexpr u32 MaxLights          = 4096;
+    static constexpr u32 MaxFaceIdMapNodes  = 8192 * 4096;
 
     ChunkManager::ChunkManager(const game::Game* game)
         : renderer {game->getRenderer()}
@@ -112,12 +113,12 @@ namespace voxel
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxBricks),
               "Visibility Bricks")
-        , face_id_bricks(
+        , face_id_map(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
-              static_cast<std::size_t>(MaxBricks),
-              "Face Id Bricks")
+              static_cast<std::size_t>(MaxFaceIdMapNodes),
+              "Face Id Map")
         , voxel_face_allocator {MaxFaces, MaxChunks * 6}
         , voxel_faces(
               this->renderer->getAllocator(),
@@ -440,7 +441,7 @@ namespace voxel
                 .range {vk::WholeSize},
             },
             vk::DescriptorBufferInfo {
-                .buffer {*this->face_id_bricks},
+                .buffer {*this->face_id_map},
                 .offset {0},
                 .range {vk::WholeSize},
             },
@@ -694,6 +695,9 @@ namespace voxel
                 {
                     commandBuffer.fillBuffer(
                         *this->visibility_bricks, 0, this->visibility_bricks.getSizeBytes(), 0);
+
+                    commandBuffer.fillBuffer(
+                        *this->face_id_map, 0, this->face_id_map.getSizeBytes(), ~0U);
 
                     GlobalVoxelData data {
                         .number_of_visible_faces {},
