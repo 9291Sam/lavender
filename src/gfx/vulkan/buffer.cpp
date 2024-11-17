@@ -115,7 +115,7 @@ namespace gfx::vulkan
 
         for (const auto& [outputBuffer, bufferCopies] : copies)
         {
-            if (bufferCopies.size() > 16)
+            if (bufferCopies.size() > 128)
             {
                 util::logTrace("Excessive copies on buffer {}", bufferCopies.size());
             }

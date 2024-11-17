@@ -421,7 +421,9 @@ namespace gfx::vulkan
                 const std::size_t newSize = this->flushes.size() - maxFlushesPerFrame;
 
                 std::vector<util::InclusiveRange> theseFlushes {
-                    this->flushes.cbegin() + newSize, this->flushes.cend()};
+                    this->flushes.cbegin()
+                        + static_cast<decltype(this->flushes)::difference_type>(newSize),
+                    this->flushes.cend()};
 
                 this->flushes.resize(newSize);
 
@@ -500,19 +502,7 @@ namespace gfx::vulkan
     template<class T>
     void CpuCachedBuffer<T>::flushViaStager(const BufferStager& stager)
     {
-        auto s = this->flushes.size();
-
-        util::Timer            t {"merge"};
         std::vector<FlushData> mergedFlushes = this->mergeFlushes();
-
-        auto res = t.end();
-
-        if (res > 1000)
-        {
-            util::logTrace("merge of {} took {}us", s, res);
-        }
-
-        util::Timer t2 {"rest"};
 
         for (const FlushData& f : mergedFlushes)
         {

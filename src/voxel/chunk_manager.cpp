@@ -519,14 +519,10 @@ namespace voxel
     ChunkManager::makeRecordObject(
         const game::Game* game, const gfx::vulkan::BufferStager& stager, game::Camera c)
     {
-        // util::Timer t {"end make record object"};
-        // util::logTrace("starting make record obhject");
         std::vector<vk::DrawIndirectCommand>          indirectCommands {};
         std::vector<ChunkDrawIndirectInstancePayload> indirectPayload {};
 
         u32 callNumber = 0;
-
-        util::Timer t {"iterate"};
 
         this->chunk_id_allocator.iterateThroughAllocatedElements(
             [&, this](u32 chunkId)
@@ -662,10 +658,6 @@ namespace voxel
                 }
             });
 
-        t.end();
-
-        util::Timer t1 {"flushes"};
-
         this->gpu_chunk_data.flushViaStager(stager);
         this->brick_maps.flushViaStager(stager);
         this->brick_parent_info.flushViaStager(stager);
@@ -690,8 +682,6 @@ namespace voxel
                 0,
                 std::span<const ChunkDrawIndirectInstancePayload> {indirectPayload});
         }
-
-        t1.end();
 
         game::FrameGenerator::RecordObject update = game::FrameGenerator::RecordObject {
             .transform {},

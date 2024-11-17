@@ -33,8 +33,6 @@ namespace util
 
     std::vector<InclusiveRange> mergeAndSortOverlappingRanges(std::vector<InclusiveRange> ranges)
     {
-        util::Timer t2("merge and sort | sort");
-
         if (ranges.size() <= 1)
         {
             return ranges;
@@ -47,10 +45,6 @@ namespace util
             {
                 return l.start < r.start;
             });
-
-        t2.end();
-
-        util::Timer t {"propagate up"};
 
         std::size_t numberOfValidRanges = ranges.size();
 
@@ -85,10 +79,6 @@ namespace util
             }
         }
 
-        t.end();
-
-        util::Timer t3 {"repropagate"};
-
         std::vector<InclusiveRange> output {};
         output.reserve(numberOfValidRanges);
 
@@ -108,8 +98,6 @@ namespace util
     {
         std::vector<InclusiveRange> mergedSortedRanges =
             mergeAndSortOverlappingRanges(std::move(inputRanges));
-
-        util::Timer _("merge down");
 
         if (mergedSortedRanges.size() <= numberOfRanges)
         {
@@ -138,8 +126,6 @@ namespace util
             {
                 return l.distance_between < r.distance_between;
             });
-
-        util::logTrace("{} {}", deltas.size(), numberOfRanges);
         // discard all of the deltas that are higher than we care about
         deltas.resize(deltas.size() - numberOfRanges);
 

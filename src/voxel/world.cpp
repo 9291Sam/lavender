@@ -169,7 +169,6 @@ namespace voxel
     std::vector<game::FrameGenerator::RecordObject>
     World::getRecordObjects(const game::Game* game, const gfx::vulkan::BufferStager& stager)
     {
-        util::Timer t {"make record objects"};
         return this->chunk_manager.makeRecordObject(game, stager, this->camera);
     }
 

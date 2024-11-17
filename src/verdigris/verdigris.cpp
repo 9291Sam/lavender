@@ -329,7 +329,6 @@ namespace verdigris
     std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
     Verdigris::onFrame(float deltaTime) const
     {
-        util::Timer t {"on frame"};
         this->frame_times.push_back(deltaTime);
 
         if (this->frame_times.size() > 128)
@@ -350,20 +349,20 @@ namespace verdigris
         //     return glm::vec3 {pDist(gen), pDist(gen), pDist(gen)};
         // };
 
-        // auto genSpiralPos = [](i32 f)
-        // {
-        //     const float t = static_cast<float>(f) / 256.0f;
+        auto genSpiralPos = [](i32 f)
+        {
+            const float t = static_cast<float>(f) / 256.0f;
 
-        //     const float x = 32.0f * std::sin(t);
-        //     const float z = 32.0f * std::cos(t);
+            const float x = 32.0f * std::sin(t);
+            const float z = 32.0f * std::cos(t);
 
-        //     return glm::i32vec3 {static_cast<i32>(x), 66.0, static_cast<i32>(z)};
-        // };
+            return glm::i32vec3 {static_cast<i32>(x), 66.0, static_cast<i32>(z)};
+        };
 
         // const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
         // util::logTrace("modify light");
-        for (std::size_t i = 0; i < 3; i++)
+        for (std::size_t i = 0; i < 2; i++)
         {
             const float offset =
                 this->time_alive * 2 + static_cast<float>(i) * std::numbers::pi_v<float> / 2.0f;
@@ -391,30 +390,29 @@ namespace verdigris
             else
             {
                 const glm::vec3 pos = glm::vec3 {
-                    256.0f * std::cos(offset * 1.384f + 93.4f),
-                    4.0f * std::sin(offset * 1.384f + 93.4f) + 147.0f,
-                    256.0f * std::sin(offset * 1.384f + 93.4f)};
+                    256.0f * std::cos(38.4f * 1.384f + 93.4f),
+                    4.0f * std::sin(38.4f * 1.384f + 93.4f) + 147.0f,
+                    256.0f * std::sin(38.4f * 1.384f + 93.4f)};
 
                 this->voxel_world.modifyPointLight(
                     this->lights[i], pos, {1.0, 1.0, 1.0, 2048.0}, {0.0, 0.0, 0.025, 0.0});
             }
         }
 
-        // auto thisPos = genSpiralPos(frameNumber);
-        // auto prevPos = genSpiralPos(frameNumber - 1);
+        auto thisPos = genSpiralPos(this->game->getRenderer()->getFrameNumber());
+        auto prevPos = genSpiralPos(this->game->getRenderer()->getFrameNumber() - 1);
 
-        // if (thisPos != prevPos)
-        // {
-        //     for (i32 i = 0; i < 32; ++i)
-        //     {
-        //         this->voxel_world.writeVoxel(
-        //             voxel::WorldPosition {thisPos + glm::i32vec3 {0, i, 0}},
-        //             voxel::Voxel::Pearl);
-        //         this->voxel_world.writeVoxel(
-        //               voxel::WorldPosition {prevPos + glm::i32vec3 {0, i, 0},
-        //               voxel::Voxel::NullAirEmpty);
-        //     }
-        // }
+        if (thisPos != prevPos)
+        {
+            for (i32 i = 0; i < 32; ++i)
+            {
+                this->voxel_world.writeVoxel(
+                    voxel::WorldPosition {thisPos + glm::i32vec3 {0, i, 0}}, voxel::Voxel::Pearl);
+                this->voxel_world.writeVoxel(
+                    voxel::WorldPosition {prevPos + glm::i32vec3 {0, i, 0}},
+                    voxel::Voxel::NullAirEmpty);
+            }
+        }
 
         // TODO: moving diagonally is faster
         const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
