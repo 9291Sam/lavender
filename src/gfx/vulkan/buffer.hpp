@@ -296,8 +296,6 @@ namespace gfx::vulkan
                 ::vmaUnmapMemory(**this->allocator, this->allocation);
                 this->mapped_memory = nullptr;
             }
-
-            GpuOnlyBuffer<T>::free();
         }
 
         T* getMappedData() const

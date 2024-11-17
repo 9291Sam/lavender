@@ -349,7 +349,7 @@ namespace verdigris
         //     return glm::vec3 {pDist(gen), pDist(gen), pDist(gen)};
         // };
 
-        auto genSpiralPos = [](i32 f)
+        auto genSpiralPos = [](u32 f)
         {
             const float t = static_cast<float>(f) / 256.0f;
 
