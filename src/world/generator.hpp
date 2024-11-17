@@ -62,7 +62,7 @@ namespace world
                     height = std::clamp(
                         height, u8 {0}, static_cast<u8>(voxel::ChunkEdgeLengthVoxels - 4));
 
-                    for (u8 h = 0; h < height; ++h)
+                    for (u8 h = 1; h < height; ++h)
                     {
                         auto w = voxel::World::VoxelWrite {
                             .position {voxel::assembleWorldPosition(
