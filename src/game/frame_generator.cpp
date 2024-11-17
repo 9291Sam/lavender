@@ -28,6 +28,9 @@
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
+std::atomic<u32> numberOfFacesVisible              = 0; // NOLINT
+std::atomic<u32> numberOfFacesPossibleInHashBuffer = 0; // NOLINT
+
 namespace game
 {
     FrameGenerator::GlobalInfoDescriptors FrameGenerator::makeGlobalDescriptors(
@@ -1132,6 +1135,9 @@ namespace game
                         const float deltaTime =
                             this->game->getRenderer()->getWindow()->getDeltaTimeSeconds();
 
+                        auto faces    = numberOfFacesVisible.load();
+                        auto possible = numberOfFacesPossibleInHashBuffer.load();
+
                         const std::string menuText = std::format(
                             "ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\n"
                             "Player position: {{{:.3f}, {:.3f}, {:.3f}}}\n"
@@ -1139,7 +1145,8 @@ namespace game
                             "TPS / TickTime: {} / {}ms\n"
                             "Ram Usage: {}\n"
                             "Vram Usage: {}\n"
-                            "Staging Usage: {}",
+                            "Staging Usage: {}\n"
+                            "Faces Visible {} / {} | {:.3f}%",
                             camera.getPosition().x,
                             camera.getPosition().y,
                             camera.getPosition().x,
@@ -1151,7 +1158,10 @@ namespace game
                             util::bytesAsSiNamed(
                                 gfx::vulkan::bufferBytesAllocated.load(std::memory_order_relaxed)),
                             util::bytesAsSiNamed(
-                                this->game->getRenderer()->getStager().getUsage().first));
+                                this->game->getRenderer()->getStager().getUsage().first),
+                            faces,
+                            possible,
+                            100.0 * static_cast<float>(faces) / static_cast<float>(possible));
 
                         ImGui::TextWrapped("%s", menuText.c_str());
 

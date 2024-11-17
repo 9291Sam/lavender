@@ -162,6 +162,7 @@ namespace voxel
             u32 number_of_calculating_draws_y;
             u32 number_of_calculating_draws_z;
             u32 number_of_lights;
+            u32 readback_number_of_visible_faces;
         };
 
         struct VisibleFaceData

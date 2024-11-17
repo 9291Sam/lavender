@@ -306,7 +306,7 @@ namespace verdigris
         // meshoperation (copy of everything)
         // once its done upload it to the gpu
 
-        this->camera.addPosition({79.606, 115.586, 16.78});
+        this->camera.addPosition({79.606, 75.586, 16.78});
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 

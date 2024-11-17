@@ -265,6 +265,11 @@ void main()
 {
     const u32 global_invocation_index = gl_GlobalInvocationID.x;
 
+    if (global_invocation_index == 0)
+    {
+        in_global_voxel_data.readback_number_of_visible_faces = in_global_voxel_data.number_of_visible_faces;
+    }
+
     if (global_invocation_index < in_global_voxel_data.number_of_visible_faces)
     {
         const u32 this_face_data = in_visible_face_data.data[global_invocation_index].data;

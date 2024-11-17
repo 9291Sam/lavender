@@ -214,7 +214,8 @@ namespace gfx::vulkan
         void uploadImmediate(u32 offset, std::span<const T> payload)
             requires std::is_copy_constructible_v<T>
         {
-            std::copy(payload.begin(), payload.end(), this->getDataNonCoherent().data() + offset);
+            std::copy(
+                payload.begin(), payload.end(), this->getGpuDataNonCoherent().data() + offset);
 
             const gfx::vulkan::FlushData flush {
                 .offset_elements {offset},
@@ -229,15 +230,14 @@ namespace gfx::vulkan
             return this->elements * sizeof(T);
         }
 
-    protected:
         friend class BufferStager;
 
-        std::span<const T> getDataNonCoherent() const
+        std::span<const T> getGpuDataNonCoherent() const
         {
             return {this->getMappedData(), this->elements};
         }
 
-        std::span<T> getDataNonCoherent()
+        std::span<T> getGpuDataNonCoherent()
         {
             return {this->getMappedData(), this->elements};
         }

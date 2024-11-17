@@ -42,7 +42,7 @@ namespace gfx::vulkan
                 return a.allocate(static_cast<u32>(dataToWrite.size_bytes()));
             });
 
-        std::span<std::byte> stagingBufferData = this->staging_buffer.getDataNonCoherent();
+        std::span<std::byte> stagingBufferData = this->staging_buffer.getGpuDataNonCoherent();
 
         // static_assert(std::is_trivially_copyable_v<std::byte>);
         std::memcpy(

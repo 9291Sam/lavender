@@ -13,6 +13,9 @@
 #include <vulkan/vulkan_format_traits.hpp>
 #include <vulkan/vulkan_handles.hpp>
 
+extern std::atomic<u32> numberOfFacesVisible;              // NOLINT
+extern std::atomic<u32> numberOfFacesPossibleInHashBuffer; // NOLINT
+
 namespace gfx
 {
     class Renderer;

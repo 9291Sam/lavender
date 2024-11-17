@@ -55,10 +55,10 @@ namespace voxel
 
     static constexpr u32 MaxChunks          = 4096;
     static constexpr u32 DirectionsPerChunk = 6;
-    static constexpr u32 MaxBricks          = 131072;
+    static constexpr u32 MaxBricks          = 131072 * 8;
     static constexpr u32 MaxFaces           = 1048576 * 4;
     static constexpr u32 MaxLights          = 4096;
-    static constexpr u32 MaxFaceIdMapNodes  = 8192 * 4096;
+    static constexpr u32 MaxFaceIdMapNodes  = 1U << 24U;
 
     ChunkManager::ChunkManager(const game::Game* game)
         : renderer {game->getRenderer()}
@@ -709,8 +709,12 @@ namespace voxel
                     };
 
                     commandBuffer.updateBuffer(
-                        *this->global_voxel_data, 0, sizeof(GlobalVoxelData), &data);
+                        *this->global_voxel_data, 0, sizeof(GlobalVoxelData) - 4, &data);
                 }}};
+
+        numberOfFacesVisible =
+            this->global_voxel_data.getGpuDataNonCoherent()[0].readback_number_of_visible_faces;
+        numberOfFacesPossibleInHashBuffer = MaxFaceIdMapNodes;
 
         game::FrameGenerator::RecordObject chunkDraw = game::FrameGenerator::RecordObject {
             .transform {game::Transform {}},

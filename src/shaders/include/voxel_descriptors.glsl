@@ -139,7 +139,7 @@ layout(set = 1, binding = 6) buffer DirectionalFaceIdBrickBuffer
     HashMapNode32 node[];
 } in_face_id_map;
 
-const u32 kHashTableCapacity = 8192 * 4096;
+const u32 kHashTableCapacity = 1U << 24U;
 const u32 kEmpty = ~0;
 
 u32 integerHash(u32 h)
@@ -156,7 +156,7 @@ void face_id_map_write(u32 key, u32 value)
 {
     u32 slot = integerHash(key);
 
-    while (true)
+    for (int i = 0; i < kHashTableCapacity; ++i)
     {
         u32 prev = atomicCompSwap(in_face_id_map.node[slot].key, kEmpty, key);
 
@@ -174,7 +174,7 @@ u32 face_id_map_read(u32 key)
 {
     u32 slot = integerHash(key);
 
-    while (true)
+    for (int i = 0; i < kHashTableCapacity; ++i)
     {
         if (in_face_id_map.node[slot].key == key)
         {
@@ -205,6 +205,7 @@ layout(set = 1, binding = 9) buffer GlobalVoxelDataBuffer
     u32 number_of_indirect_dispatches_y;
     u32 number_of_indirect_dispatches_z;
     u32 number_of_lights;
+    u32 readback_number_of_visible_faces;
 } in_global_voxel_data;
 
 layout(set = 1, binding = 10)  buffer VisibleFaceDataBuffer
