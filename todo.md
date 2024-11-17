@@ -1,4 +1,5 @@
-fix crashing on exit
+
+Add dense brick optimization
 voxel transactrions
 animations
 allow for enabling of assertions at startup (assert and debug seperate)

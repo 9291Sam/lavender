@@ -179,4 +179,13 @@ namespace std
             return std::hash<glm::i32vec3> {}(static_cast<glm::i32vec3>(c));
         }
     };
+
+    template<>
+    struct hash<voxel::WorldPosition>
+    {
+        std::size_t operator() (const voxel::WorldPosition& c) const
+        {
+            return std::hash<glm::i32vec3> {}(static_cast<glm::i32vec3>(c));
+        }
+    };
 } // namespace std
