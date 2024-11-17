@@ -504,6 +504,8 @@ namespace voxel
         const std::size_t len = sizeof(*gpuChunksBufferPtr);
         std::memset(gpuChunksBufferPtr, -1, len);
 
+        this->face_id_map.fillImmediate(FaceIdBrickHashMapStorage {.key {~0U}, .value {~0U}});
+
         this->renderer->getDevice()->getDevice().updateDescriptorSets(
             static_cast<u32>(writes.size()), writes.data(), 0, nullptr);
 
@@ -695,9 +697,6 @@ namespace voxel
                 {
                     commandBuffer.fillBuffer(
                         *this->visibility_bricks, 0, this->visibility_bricks.getSizeBytes(), 0);
-
-                    commandBuffer.fillBuffer(
-                        *this->face_id_map, 0, this->face_id_map.getSizeBytes(), ~0U);
 
                     GlobalVoxelData data {
                         .number_of_visible_faces {},

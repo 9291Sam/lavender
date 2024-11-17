@@ -225,6 +225,20 @@ namespace gfx::vulkan
             this->flush({&flush, 1});
         }
 
+        void fillImmediate(const T& value)
+        {
+            const std::span<T> data = this->getGpuDataNonCoherent();
+
+            std::fill(data.begin(), data.end(), value);
+
+            const gfx::vulkan::FlushData flush {
+                .offset_elements {0},
+                .size_elements {this->elements},
+            };
+
+            this->flush({&flush, 1});
+        }
+
         std::size_t getSizeBytes()
         {
             return this->elements * sizeof(T);
