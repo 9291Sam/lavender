@@ -60,9 +60,9 @@ namespace world
                     u8 height = static_cast<u8>(24.0f * (*ptr)[i][j] + 24.0f);
 
                     height = std::clamp(
-                        height, u8 {4}, static_cast<u8>(voxel::ChunkEdgeLengthVoxels - 4));
+                        height, u8 {0}, static_cast<u8>(voxel::ChunkEdgeLengthVoxels - 4));
 
-                    for (u8 h = height - 4; h < height; ++h)
+                    for (u8 h = 0; h < height; ++h)
                     {
                         auto w = voxel::World::VoxelWrite {
                             .position {voxel::assembleWorldPosition(

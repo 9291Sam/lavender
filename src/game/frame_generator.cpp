@@ -28,8 +28,14 @@
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
-std::atomic<u32> numberOfFacesVisible              = 0; // NOLINT
-std::atomic<u32> numberOfFacesPossibleInHashBuffer = 0; // NOLINT
+std::atomic<u32> numberOfFacesVisible  = 0; // NOLINT
+std::atomic<u32> numberOfFacesPossible = 0; // NOLINT
+
+std::atomic<u32> numberOfChunksAllocated = 0; // NOLINT
+std::atomic<u32> numberOfChunksPossible  = 0; // NOLINT
+
+std::atomic<u32> numberOfBricksAllocated = 0; // NOLINT
+std::atomic<u32> numberOfBricksPossible  = 0; // NOLINT
 
 namespace game
 {
@@ -1135,8 +1141,14 @@ namespace game
                         const float deltaTime =
                             this->game->getRenderer()->getWindow()->getDeltaTimeSeconds();
 
-                        auto faces    = numberOfFacesVisible.load();
-                        auto possible = numberOfFacesPossibleInHashBuffer.load();
+                        auto faces         = numberOfFacesVisible.load();
+                        auto facesPossible = numberOfFacesPossible.load();
+
+                        auto chunks         = numberOfChunksAllocated.load();
+                        auto chunksPossible = numberOfChunksPossible.load();
+
+                        auto bricks         = numberOfBricksAllocated.load();
+                        auto bricksPossible = numberOfBricksPossible.load();
 
                         const std::string menuText = std::format(
                             "ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\n"
@@ -1146,7 +1158,9 @@ namespace game
                             "Ram Usage: {}\n"
                             "Vram Usage: {}\n"
                             "Staging Usage: {}\n"
-                            "Faces Visible {} / {} | {:.3f}%",
+                            "Chunks Visible {} / {} | {:.3f}%\n"
+                            "Bricks Visible {} / {} | {:.3f}%\n"
+                            "Faces Visible {} / {} | {:.3f}%\n",
                             camera.getPosition().x,
                             camera.getPosition().y,
                             camera.getPosition().x,
@@ -1159,9 +1173,18 @@ namespace game
                                 gfx::vulkan::bufferBytesAllocated.load(std::memory_order_relaxed)),
                             util::bytesAsSiNamed(
                                 this->game->getRenderer()->getStager().getUsage().first),
+
+                            chunks,
+                            chunksPossible,
+                            100.0f * static_cast<float>(chunks)
+                                / static_cast<float>(chunksPossible),
+                            bricks,
+                            bricksPossible,
+                            100.0f * static_cast<float>(bricks)
+                                / static_cast<float>(bricksPossible),
                             faces,
-                            possible,
-                            100.0 * static_cast<float>(faces) / static_cast<float>(possible));
+                            facesPossible,
+                            100.0f * static_cast<float>(faces) / static_cast<float>(facesPossible));
 
                         ImGui::TextWrapped("%s", menuText.c_str());
 

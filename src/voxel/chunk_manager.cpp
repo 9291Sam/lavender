@@ -714,7 +714,13 @@ namespace voxel
 
         numberOfFacesVisible =
             this->global_voxel_data.getGpuDataNonCoherent()[0].readback_number_of_visible_faces;
-        numberOfFacesPossibleInHashBuffer = MaxFaceIdMapNodes;
+        numberOfFacesPossible = MaxFaceIdMapNodes;
+
+        numberOfChunksAllocated = this->chunk_id_allocator.getNumberAllocated();
+        numberOfChunksPossible  = MaxChunks;
+
+        numberOfBricksAllocated = this->brick_allocator.getNumberAllocated();
+        numberOfBricksPossible  = MaxBricks;
 
         game::FrameGenerator::RecordObject chunkDraw = game::FrameGenerator::RecordObject {
             .transform {game::Transform {}},
@@ -863,7 +869,7 @@ namespace voxel
                 {
                     if (!ptr.isNull())
                     {
-                        this->brick_allocator.free(BrickPointer {ptr.pointer});
+                        this->brick_allocator.free(ptr.pointer);
                     }
                 }
             }
@@ -919,7 +925,8 @@ namespace voxel
             // TODO: fix all of these modify calls, this isn't great...
             if (maybeBrickPointer.isNull())
             {
-                const BrickPointer newBrickPointer = this->brick_allocator.allocate();
+                const BrickPointer newBrickPointer =
+                    BrickPointer {this->brick_allocator.allocate().value()};
 
                 maybeBrickPointer = newBrickPointer;
 

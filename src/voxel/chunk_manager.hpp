@@ -136,7 +136,7 @@ namespace voxel
             u32 parent_chunk             : 23; // actually only using 16
             u32 position_in_parent_chunk : 9;
         };
-        BrickPointerAllocator                                brick_allocator;
+        util::IndexAllocator                                 brick_allocator;
         gfx::vulkan::CpuCachedBuffer<BrickParentInformation> brick_parent_info;
         gfx::vulkan::CpuCachedBuffer<MaterialBrick>          material_bricks;
         gfx::vulkan::CpuCachedBuffer<OpacityBrick>           opacity_bricks;

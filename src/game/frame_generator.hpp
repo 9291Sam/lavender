@@ -13,8 +13,14 @@
 #include <vulkan/vulkan_format_traits.hpp>
 #include <vulkan/vulkan_handles.hpp>
 
-extern std::atomic<u32> numberOfFacesVisible;              // NOLINT
-extern std::atomic<u32> numberOfFacesPossibleInHashBuffer; // NOLINT
+extern std::atomic<u32> numberOfFacesVisible;  // NOLINT
+extern std::atomic<u32> numberOfFacesPossible; // NOLINT
+
+extern std::atomic<u32> numberOfChunksAllocated; // NOLINT
+extern std::atomic<u32> numberOfChunksPossible;  // NOLINT
+
+extern std::atomic<u32> numberOfBricksAllocated; // NOLINT
+extern std::atomic<u32> numberOfBricksPossible;  // NOLINT
 
 namespace gfx
 {

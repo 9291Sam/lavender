@@ -4,6 +4,7 @@
 #include <boost/container/flat_set.hpp>
 #include <cstddef>
 #include <expected>
+#include <source_location>
 #include <util/log.hpp>
 
 namespace util
@@ -44,11 +45,27 @@ namespace util
         IndexAllocator& operator= (const IndexAllocator&) = delete;
         IndexAllocator& operator= (IndexAllocator&&)      = default;
 
-        void                updateAvailableBlockAmount(IndexType newAmount);
+        void              updateAvailableBlockAmount(IndexType newAmount);
+        [[nodiscard]] u32 getNumberAllocated() const
+        {
+            return static_cast<u32>(this->next_available_block - this->free_block_list.size());
+        }
         [[nodiscard]] float getPercentAllocated() const
         {
-            return static_cast<float>(this->next_available_block - this->free_block_list.size())
+            return static_cast<float>(this->getNumberAllocated())
                  / static_cast<float>(this->max_number_of_blocks);
+        }
+
+        IndexType allocateOrPanic(std::source_location loc = std::source_location::current())
+        {
+            std::expected<IndexType, OutOfBlocks> maybeNewAllocation = this->allocate();
+
+            if (!maybeNewAllocation.has_value())
+            {
+                util::panic<>("util::IndexAllocation::allocateOrPanic failed!", loc);
+            }
+
+            return *maybeNewAllocation;
         }
 
         std::expected<IndexType, OutOfBlocks> allocate();
