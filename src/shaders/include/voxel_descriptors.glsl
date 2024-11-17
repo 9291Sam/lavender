@@ -144,11 +144,14 @@ const u32 kEmpty = ~0;
 
 u32 integerHash(u32 h)
 {
-    h ^= h >> 16;
-    h *= 0x85ebca6b;
-    h ^= h >> 13;
-    h *= 0xc2b2ae35;
-    h ^= h >> 16;
+    h ^= h >> 17;
+    h *= 0xed5ad4bbU;
+    h ^= h >> 11;
+    h *= 0xac4c1b51U;
+    h ^= h >> 15;
+    h *= 0x31848babU;
+    h ^= h >> 14;
+
     return h;
 }
 
