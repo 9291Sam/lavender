@@ -164,7 +164,8 @@ namespace verdigris
         // const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
         // util::logTrace("modify light");
-        for (std::size_t i = 0; i < 2; i++)
+        int i = 0;
+        for (const voxel::PointLight& l : this->lights)
         {
             const float offset =
                 this->time_alive * 2 + static_cast<float>(i) * std::numbers::pi_v<float> / 2.0f;
@@ -179,7 +180,7 @@ namespace verdigris
                 // util::logTrace("modify light2");
 
                 this->voxel_world.modifyPointLight(
-                    this->lights[i], pos, {1.0, 1.0, 1.0, 512.0}, {0.0, 0.0, 0.025, 0.0});
+                    l, pos, {1.0, 1.0, 1.0, 512.0}, {0.0, 0.0, 0.025, 0.0});
 
                 this->ec_manager->modifyComponent<TriangleComponent>(
                     this->triangle,
@@ -197,8 +198,10 @@ namespace verdigris
                     256.0f * std::sin(38.4f * 1.384f + 93.4f)};
 
                 this->voxel_world.modifyPointLight(
-                    this->lights[i], pos, {1.0, 1.0, 1.0, 2048.0}, {0.0, 0.0, 0.025, 0.0});
+                    l, pos, {1.0, 1.0, 1.0, 2048.0}, {0.0, 0.0, 0.025, 0.0});
             }
+
+            i += 1;
         }
 
         auto thisPos = genSpiralPos(this->game->getRenderer()->getFrameNumber());

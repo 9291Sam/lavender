@@ -10,6 +10,7 @@
 #include "voxel/constants.hpp"
 #include "voxel/voxel.hpp"
 #include <concepts>
+#include <future>
 #include <span>
 
 namespace voxel
@@ -79,8 +80,10 @@ namespace voxel
         getRecordObjects(const game::Game*, const gfx::vulkan::BufferStager&);
 
     private:
+
         mutable std::unique_ptr<ChunkGenerator>            generator;
         mutable ChunkManager                               chunk_manager;
+        // TODO: make async!
         mutable std::unordered_map<ChunkCoordinate, Chunk> global_chunks;
         mutable game::Camera                               camera;
     };
