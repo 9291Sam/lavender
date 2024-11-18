@@ -6,6 +6,7 @@
 #include "voxel/world.hpp"
 #include <FastNoise/FastNoise.h>
 #include <boost/container/detail/destroyers.hpp>
+#include <random>
 #include <unordered_map>
 
 namespace world
@@ -27,38 +28,47 @@ namespace world
 
             auto insertVoxelAt = [&](glm::i32vec3 p, voxel::Voxel v) mutable
             {
-                this->modify_list[{voxel::WorldPosition {p + glm::i32vec3 {0, 64, 0}}}] = v;
+                this->modify_list[{voxel::WorldPosition {p}}] = v;
             };
 
-            // for (i32 x = -1024; x < 1024; ++x)
-            // {
-            //     for (i32 z = -1024; z < 1024; ++z)
-            //     {
-            //         insertVoxelAt(glm::ivec3 {x, genFunc(x, z), z}, genVoxel());
-            //     }
-            // }
+            std::mt19937_64                    gen {std::random_device {}()};
+            std::normal_distribution<float>    realDist {64, 3};
+            std::uniform_int_distribution<u16> pDist {1, 8};
 
-            // for (i32 x = -256; x < 256; ++x)
-            // {
-            //     for (i32 z = -256; z < 256; ++z)
-            //     {
-            //         for (i32 y = 0; y < 128; ++y)
-            //         {
-            //             if (y == 0)
-            //             {
-            //                 insertVoxelAt({x, y, z}, voxel::Voxel::Gold);
-            //             }
-            //         }
-            //     }
-            // }
+            auto genVoxel = [&] -> voxel::Voxel
+            {
+                return static_cast<voxel::Voxel>(pDist(gen));
+            };
 
-            // for (i32 x = -64; x < 64; ++x)
-            // {
-            //     for (i32 z = -64; z < 64; ++z)
-            //     {
-            //         insertVoxelAt({x, 64, z}, voxel::Voxel::Emerald);
-            //     }
-            // }
+            for (i32 x = -1024; x < 1024; ++x)
+            {
+                for (i32 z = -1024; z < 1024; ++z)
+                {
+                    insertVoxelAt(glm::ivec3 {x, 64, z}, genVoxel());
+                }
+            }
+
+            for (i32 x = -256; x < 256; ++x)
+            {
+                for (i32 z = -256; z < 256; ++z)
+                {
+                    for (i32 y = 0; y < 128; ++y)
+                    {
+                        if (y == 0)
+                        {
+                            insertVoxelAt({x, y, z}, voxel::Voxel::Gold);
+                        }
+                    }
+                }
+            }
+
+            for (i32 x = -64; x < 64; ++x)
+            {
+                for (i32 z = -64; z < 64; ++z)
+                {
+                    insertVoxelAt({x, 64, z}, voxel::Voxel::Emerald);
+                }
+            }
 
             glm::f32vec3 center = {0, 0, 0}; // Center of the structure
 
@@ -150,66 +160,66 @@ namespace world
             }
 
             // // // Build doughnut ceiling with a hole in the center
-            // float innerRadius = 128; // Inner radius (hole size)
-            // float outerRadius = 240; // Outer radius (doughnut size)
+            float innerRadius = 128; // Inner radius (hole size)
+            float outerRadius = 240; // Outer radius (doughnut size)
 
-            // for (int h = 0; h < 24; ++h)
-            // {
-            //     int currentHeight = h + 52; // Start the doughnut at a base height of 20
-            //     for (float x = -outerRadius; x <= outerRadius; ++x)
-            //     {
-            //         for (float z = -outerRadius; z <= outerRadius; ++z)
-            //         {
-            //             float dist = glm::length(glm::vec2(x, z));
+            for (int h = 0; h < 24; ++h)
+            {
+                int currentHeight = h + 52; // Start the doughnut at a base height of 20
+                for (float x = -outerRadius; x <= outerRadius; ++x)
+                {
+                    for (float z = -outerRadius; z <= outerRadius; ++z)
+                    {
+                        float dist = glm::length(glm::vec2(x, z));
 
-            //             // Check if the point is within the doughnut's ring shape
-            //             // (between inner and outer radius)
-            //             if (dist >= innerRadius && dist <= outerRadius)
-            //             {
-            //                 // Add a voxel for this (x, z) position at the
-            //                 // current
-            //                 // height layer
-            //                 insertVoxelAt(
-            //                     center + glm::f32vec3(x, currentHeight, z), voxel::Voxel::Ruby);
-            //             }
-            //         }
-            //     }
-            // }
+                        // Check if the point is within the doughnut's ring shape
+                        // (between inner and outer radius)
+                        if (dist >= innerRadius && dist <= outerRadius)
+                        {
+                            // Add a voxel for this (x, z) position at the
+                            // current
+                            // height layer
+                            insertVoxelAt(
+                                center + glm::f32vec3(x, currentHeight, z), voxel::Voxel::Ruby);
+                        }
+                    }
+                }
+            }
 
-            // for (int x = -3; x < 4; ++x)
-            // {
-            //     for (int z = -3; z < 4; ++z)
-            //     {
-            //         for (int y = 0; y < 12; ++y)
-            //         {
-            //             insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
-            //         }
-            //     }
-            // }
+            for (int x = -3; x < 4; ++x)
+            {
+                for (int z = -3; z < 4; ++z)
+                {
+                    for (int y = 0; y < 12; ++y)
+                    {
+                        insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+                    }
+                }
+            }
 
-            // for (int x = 32; x < 36; ++x)
-            // {
-            //     for (int z = 32; z < 36; ++z)
-            //     {
-            //         for (int y = 0; y < 32; ++y)
-            //         {
-            //             insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
-            //             insertVoxelAt({-x, y, z}, voxel::Voxel::Ruby);
-            //             insertVoxelAt({x, y, -z}, voxel::Voxel::Ruby);
-            //             insertVoxelAt({-x, y, -z}, voxel::Voxel::Ruby);
-            //         }
-            //     }
-            // }
+            for (int x = 32; x < 36; ++x)
+            {
+                for (int z = 32; z < 36; ++z)
+                {
+                    for (int y = 0; y < 32; ++y)
+                    {
+                        insertVoxelAt({x, y, z}, voxel::Voxel::Ruby);
+                        insertVoxelAt({-x, y, z}, voxel::Voxel::Ruby);
+                        insertVoxelAt({x, y, -z}, voxel::Voxel::Ruby);
+                        insertVoxelAt({-x, y, -z}, voxel::Voxel::Ruby);
+                    }
+                }
+            }
 
-            // for (int x = -64; x < 64; ++x)
-            // {
-            //     for (int y = 0; y < 64; ++y)
-            //     {
-            //         insertVoxelAt({x, y, -64}, voxel::Voxel::Brass);
-            //         insertVoxelAt({x, y, 64}, voxel::Voxel::Brass);
-            //         insertVoxelAt({-64, y, x}, voxel::Voxel::Brass);
-            //     }
-            // }
+            for (int x = -64; x < 64; ++x)
+            {
+                for (int y = 0; y < 64; ++y)
+                {
+                    insertVoxelAt({x, y, -64}, voxel::Voxel::Brass);
+                    insertVoxelAt({x, y, 64}, voxel::Voxel::Brass);
+                    insertVoxelAt({-64, y, x}, voxel::Voxel::Brass);
+                }
+            }
 
             util::logTrace("modify list of {}", this->modify_list.size());
         }
@@ -248,12 +258,10 @@ namespace world
             {
                 for (std::size_t j = 0; j < 64; ++j)
                 {
-                    u8 height = static_cast<u8>(24.0f * (*ptr)[i][j] + 24.0f);
+                    u8 height = 2;
+                    // static_cast<u8>(std::clamp(12.0f * (*ptr)[i][j] + 12.0f, 0.0f, 64.0f));
 
-                    height = std::clamp(
-                        height, u8 {0}, static_cast<u8>(voxel::ChunkEdgeLengthVoxels - 4));
-
-                    for (u8 h = 1; h < height; ++h)
+                    for (u8 h = 0; h < 64; ++h)
                     {
                         voxel::WorldPosition worldPosition = voxel::assembleWorldPosition(
                             coordinate, voxel::ChunkLocalPosition {{i, h, j}});
@@ -261,30 +269,22 @@ namespace world
                         decltype(this->modify_list)::const_iterator maybeIt =
                             this->modify_list.find(worldPosition);
 
-                        voxel::Voxel voxelToWrite = static_cast<voxel::Voxel>(
-                            util::map<float>((*matptr)[i][j], -1.0f, 1.0f, 1.0f, 9.0f));
+                        voxel::Voxel v = voxel::Voxel::NullAirEmpty;
 
                         if (maybeIt != this->modify_list.cend())
                         {
-                            voxelToWrite = maybeIt->second;
+                            v = maybeIt->second;
+                        }
+                        else if (h < height)
+                        {
+                            v = static_cast<voxel::Voxel>(
+                                util::map<float>((*matptr)[i][j], -1.0f, 1.0f, 1.0f, 9.0f));
                         }
 
-                        out.push_back(voxel::World::VoxelWrite {
-                            .position {worldPosition}, .voxel {voxelToWrite}});
-                    }
-
-                    for (u8 h = height; h < 64; ++h)
-                    {
-                        voxel::WorldPosition worldPosition = voxel::assembleWorldPosition(
-                            coordinate, voxel::ChunkLocalPosition {{i, h, j}});
-
-                        decltype(this->modify_list)::const_iterator maybeIt =
-                            this->modify_list.find(worldPosition);
-
-                        if (maybeIt != this->modify_list.cend())
+                        if (v != voxel::Voxel::NullAirEmpty)
                         {
-                            out.push_back(voxel::World::VoxelWrite {
-                                .position {worldPosition}, .voxel {maybeIt->second}});
+                            out.push_back(
+                                voxel::World::VoxelWrite {.position {worldPosition}, .voxel {v}});
                         }
                     }
                 }

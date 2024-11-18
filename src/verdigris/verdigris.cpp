@@ -90,21 +90,11 @@ namespace verdigris
         //     render::TriangleComponent {
         //         .transform.translation {glm::vec3 {1.3, 3.0, 3.0}}});
 
-        std::mt19937_64                    gen {std::random_device {}()};
-        std::normal_distribution<float>    realDist {64, 3};
-        std::uniform_int_distribution<u16> pDist {1, 8};
-
         // auto genFunc = [](i32 x, i32 z) -> i32
         // {
         //     return static_cast<i32>(8 * std::sin(x / 24.0) + 8 * std::cos(z / 24.0) + 32.0) -
         //     128;
         // };
-
-        // auto genVoxel = [&] -> voxel::Voxel
-        // {
-        //     return static_cast<voxel::Voxel>(pDist(gen));
-        // };
-
         // std::mt19937_64                       gen {std::random_device {}()};
         // std::uniform_real_distribution<float> ddist {-1.0, 1.0};
 
@@ -121,10 +111,10 @@ namespace verdigris
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 
-        for (int i = 0; i < 3; ++i)
-        {
-            this->lights.push_back(this->voxel_world.createPointLight({}, {}, {}));
-        }
+        // for (int i = 0; i < 3; ++i)
+        // {
+        //     this->lights.push_back(this->voxel_world.createPointLight({}, {}, {}));
+        // }
 
         this->lights.push_back(this->voxel_world.createPointLight(
             {105, 315, 104}, {1.0, 1.0, 1.0, 384}, {0.0, 0.0, 0.025f, 0.0}));
