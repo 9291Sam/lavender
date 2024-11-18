@@ -7,12 +7,7 @@ namespace ecs
 {
     // This is a bare
     struct Entity : public RawEntity
-    {
-        void addComponent()
-        {
-            getGlobalECSManager()->template addComponent<int>(*this, 3);
-        }
-    };
+    {};
 
     class UniqueEntity : public Entity
     {

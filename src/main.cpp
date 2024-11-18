@@ -1,10 +1,12 @@
 #include "ecs/entity.hpp"
+#include "ecs/raw_entity.hpp"
 #include "game/game.hpp"
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/ranges.hpp"
 #include "verdigris/verdigris.hpp"
 #include <algorithm>
+#include <boost/unordered/concurrent_flat_map.hpp>
 #include <cassert>
 #include <concepts>
 #include <ctti/type_id.hpp>
@@ -18,441 +20,424 @@
 #include <utility>
 #include <vector>
 
-// Forward declaration of EntityManager
-class EntityManager;
+// // Forward declaration of EntityManager
+// class EntityManager;
 
-class UniqueEntity
-{
-public:
-    UniqueEntity() = delete;
-    ~UniqueEntity();
+// class UniqueEntity
+// {
+// public:
+//     UniqueEntity() = delete;
+//     ~UniqueEntity();
 
-    UniqueEntity(const UniqueEntity&)             = delete;
-    UniqueEntity(UniqueEntity&&)                  = default;
-    UniqueEntity& operator= (const UniqueEntity&) = delete;
-    UniqueEntity& operator= (UniqueEntity&&)      = default;
+//     UniqueEntity(const UniqueEntity&)             = delete;
+//     UniqueEntity(UniqueEntity&&)                  = default;
+//     UniqueEntity& operator= (const UniqueEntity&) = delete;
+//     UniqueEntity& operator= (UniqueEntity&&)      = default;
 
-    [[nodiscard]] const EntityManager* getOwner() const
-    {
-        return this->owner;
-    }
+//     [[nodiscard]] const EntityManager* getOwner() const
+//     {
+//         return this->owner;
+//     }
 
-    [[nodiscard]] uint64_t getId() const
-    {
-        return this->id;
-    }
+//     [[nodiscard]] uint64_t getId() const
+//     {
+//         return this->id;
+//     }
 
-public:
-    friend class EntityManager;
+// public:
+//     friend class EntityManager;
 
-    UniqueEntity(EntityManager* owner, uint64_t id)
-        : owner(owner)
-        , id(id)
-    {}
+//     UniqueEntity(EntityManager* owner, uint64_t id)
+//         : owner(owner)
+//         , id(id)
+//     {}
 
-    // These methods are defined after EntityManager is fully declared
-    template<typename Component, typename... Args>
-    void addComponent(Args&&... args);
+//     // These methods are defined after EntityManager is fully declared
+//     template<typename Component, typename... Args>
+//     void addComponent(Args&&... args);
 
-    template<typename Component>
-    void removeComponent();
+//     template<typename Component>
+//     void removeComponent();
 
-    template<typename Component>
-    Component& getComponent();
+//     template<typename Component>
+//     Component& getComponent();
 
-    template<typename Component>
-    const Component& getComponent() const;
+//     template<typename Component>
+//     const Component& getComponent() const;
 
-    EntityManager* owner;
-    uint64_t       id;
-};
+//     EntityManager* owner;
+//     uint64_t       id;
+// };
 
-// Base class for inherently allocated entities
-struct InherentEntity
-{
-    virtual ~InherentEntity() = default;
+// // Base class for inherently allocated entities
+// struct InherentEntity
+// {
+//     virtual ~InherentEntity() = default;
 
-    // Get the UniqueEntity and invoke component functions on it
-    [[nodiscard]] virtual UniqueEntity& getEntity() const = 0;
+//     InherentEntity(const InherentEntity&) = delete;
+//     InherentEntity(InherentEntity&&)      = delete;
 
-    // Delegate the component management to the UniqueEntity's methods
-    template<typename Component, typename... Args>
-    void addComponent(Args&&... args)
-    {
-        getEntity().addComponent<Component>(std::forward<Args>(args)...);
-    }
+//     // Get the UniqueEntity and invoke component functions on it
+//     [[nodiscard]] virtual UniqueEntity& getEntity() const = 0;
 
-    template<typename Component>
-    void removeComponent()
-    {
-        getEntity().removeComponent<Component>();
-    }
+//     // Delegate the component management to the UniqueEntity's methods
+//     template<typename Component, typename... Args>
+//     void addComponent(Args&&... args)
+//     {
+//         getEntity().addComponent<Component>(std::forward<Args>(args)...);
+//     }
 
-    template<typename Component>
-    Component& getComponent()
-    {
-        return getEntity().getComponent<Component>();
-    }
+//     template<typename Component>
+//     void removeComponent()
+//     {
+//         getEntity().removeComponent<Component>();
+//     }
 
-    template<typename Component>
-    const Component& getComponent() const
-    {
-        return getEntity().getComponent<Component>();
-    }
-};
+//     template<typename Component>
+//     Component& getComponent()
+//     {
+//         return getEntity().getComponent<Component>();
+//     }
 
-// Component storage
-class ComponentStorageBase
-{
-public:
-    virtual ~ComponentStorageBase() = default;
-};
+//     template<typename Component>
+//     const Component& getComponent() const
+//     {
+//         return getEntity().getComponent<Component>();
+//     }
+// };
 
-template<typename Component>
-class ComponentStorage : public ComponentStorageBase
-{
-public:
-    void add(uint64_t entityId, Component component)
-    {
-        if (entityIndexMap.find(entityId) != entityIndexMap.end())
-        {
-            throw std::runtime_error("Component already exists for this entity!");
-        }
-        size_t index = components.size();
-        components.push_back(std::move(component));
-        entityIndexMap[entityId] = index;
-    }
+// // Component storage
+// class ComponentStorageBase
+// {
+// public:
+//     virtual ~ComponentStorageBase() = default;
+// };
 
-    void remove(uint64_t entityId)
-    {
-        auto it = entityIndexMap.find(entityId);
-        if (it == entityIndexMap.end())
-        {
-            throw std::runtime_error("Component does not exist for this entity!");
-        }
-        size_t index = it->second;
-        if (index != components.size() - 1)
-        {
-            std::swap(components[index], components.back());
-            auto swappedEntity = std::find_if(
-                entityIndexMap.begin(),
-                entityIndexMap.end(),
-                [index](const auto& pair)
-                {
-                    return pair.second == index;
-                });
-            swappedEntity->second = index;
-        }
-        components.pop_back();
-        entityIndexMap.erase(it);
-    }
+// template<typename Component>
+// class ComponentStorage : public ComponentStorageBase
+// {
+// public:
+//     void add(uint64_t entityId, Component component)
+//     {
+//         if (entityIndexMap.find(entityId) != entityIndexMap.end())
+//         {
+//             throw std::runtime_error("Component already exists for this entity!");
+//         }
+//         size_t index = components.size();
+//         components.push_back(std::move(component));
+//         entityIndexMap[entityId] = index;
+//     }
 
-    Component& get(uint64_t entityId)
-    {
-        auto it = entityIndexMap.find(entityId);
-        if (it == entityIndexMap.end())
-        {
-            throw std::runtime_error("Component does not exist for this entity!");
-        }
-        return components[it->second];
-    }
+//     void remove(uint64_t entityId)
+//     {
+//         auto it = entityIndexMap.find(entityId);
+//         if (it == entityIndexMap.end())
+//         {
+//             throw std::runtime_error("Component does not exist for this entity!");
+//         }
+//         size_t index = it->second;
+//         if (index != components.size() - 1)
+//         {
+//             std::swap(components[index], components.back());
+//             auto swappedEntity = std::find_if(
+//                 entityIndexMap.begin(),
+//                 entityIndexMap.end(),
+//                 [index](const auto& pair)
+//                 {
+//                     return pair.second == index;
+//                 });
+//             swappedEntity->second = index;
+//         }
+//         components.pop_back();
+//         entityIndexMap.erase(it);
+//     }
 
-    const Component& get(uint64_t entityId) const
-    {
-        auto it = entityIndexMap.find(entityId);
-        if (it == entityIndexMap.end())
-        {
-            throw std::runtime_error("Component does not exist for this entity!");
-        }
-        return components[it->second];
-    }
+//     Component& get(uint64_t entityId)
+//     {
+//         auto it = entityIndexMap.find(entityId);
+//         if (it == entityIndexMap.end())
+//         {
+//             throw std::runtime_error("Component does not exist for this entity!");
+//         }
+//         return components[it->second];
+//     }
 
-private:
-    std::vector<Component>               components;
-    std::unordered_map<uint64_t, size_t> entityIndexMap;
-}; // Base class for entity storage
-class EntityStorageBase
-{
-public:
-    virtual ~EntityStorageBase() = default;
-};
+//     const Component& get(uint64_t entityId) const
+//     {
+//         auto it = entityIndexMap.find(entityId);
+//         if (it == entityIndexMap.end())
+//         {
+//             throw std::runtime_error("Component does not exist for this entity!");
+//         }
+//         return components[it->second];
+//     }
 
-// Entity Storage to hold entities of a specific type
-template<typename T>
-class EntityStorage : public EntityStorageBase
-{
-public:
-    T* createEntity(UniqueEntity entity, auto&&... args)
-    {
-        entities.emplace_back(std::move(entity), std::forward<decltype(args)>(args)...);
-        return &entities.back();
-    }
+// private:
+//     std::vector<Component>               components;
+//     std::unordered_map<uint64_t, size_t> entityIndexMap;
+// }; // Base class for entity storage
+// class EntityStorageBase
+// {
+// public:
+//     virtual ~EntityStorageBase() = default;
+// };
 
-    std::vector<T>& getEntities()
-    {
-        return entities;
-    }
-    const std::vector<T>& getEntities() const
-    {
-        return entities;
-    }
+// // Entity Storage to hold entities of a specific type
+// template<typename T>
+// class EntityStorage : public EntityStorageBase
+// {
+// public:
+//     T* createEntity(UniqueEntity entity, auto&&... args)
+//     {
+//         entities.emplace_back(std::move(entity), std::forward<decltype(args)>(args)...);
+//         return &entities.back();
+//     }
 
-private:
-    std::vector<T> entities;
-};
+//     std::vector<T>& getEntities()
+//     {
+//         return entities;
+//     }
+//     const std::vector<T>& getEntities() const
+//     {
+//         return entities;
+//     }
 
-// Entity Manager
-class EntityManager
-{
-public:
-    template<typename T>
-    struct EntityDeleter;
+// private:
+//     std::vector<T> entities;
+// };
 
-    template<typename T>
-    using ManagedEntityPtr = std::unique_ptr<T, EntityDeleter<T>>;
+// // Entity Manager
+// class EntityManager
+// {
+// public:
+//     template<typename T>
+//     struct EntityDeleter;
 
-    template<typename T, typename... Args>
-    ManagedEntityPtr<T> createInherentEntity(Args&&... args)
-    {
-        static_assert(std::is_base_of_v<InherentEntity, T>, "T must inherit from InherentEntity!");
-        static_assert(
-            std::is_constructible_v<T, UniqueEntity, Args...>,
-            "T must be constructible from UniqueEntity and Args!");
+//     template<typename T>
+//     using ManagedEntityPtr = std::unique_ptr<T, EntityDeleter<T>>;
 
-        auto id     = allocateEntityId();
-        auto entity = UniqueEntity {this, id};
+//     template<typename T, typename... Args>
+//     ManagedEntityPtr<T> createInherentEntity(Args&&... args)
+//     {
+//         static_assert(std::is_base_of_v<InherentEntity, T>, "T must inherit from
+//         InherentEntity!"); static_assert(
+//             std::is_constructible_v<T, UniqueEntity, Args...>,
+//             "T must be constructible from UniqueEntity and Args!");
 
-        auto& storage     = getStorage<T>();
-        T*    ptr         = storage.createEntity(std::move(entity), std::forward<Args>(args)...);
-        entityIndices[id] = reinterpret_cast<void*>(ptr);
+//         auto id     = allocateEntityId();
+//         auto entity = UniqueEntity {this, id};
 
-        return ManagedEntityPtr<T>(ptr, EntityDeleter<T> {this});
-    }
+//         auto& storage     = getStorage<T>();
+//         T*    ptr         = storage.createEntity(std::move(entity), std::forward<Args>(args)...);
+//         entityIndices[id] = reinterpret_cast<void*>(ptr);
 
-    template<typename Component, typename... Args>
-    void addComponent(uint64_t entityId, Args&&... args)
-    {
-        getOrCreateComponentStorage<Component>().add(
-            entityId, Component(std::forward<Args>(args)...));
-    }
+//         return ManagedEntityPtr<T>(ptr, EntityDeleter<T> {this});
+//     }
 
-    template<typename Component>
-    void removeComponent(uint64_t entityId)
-    {
-        getOrCreateComponentStorage<Component>().remove(entityId);
-    }
+//     template<typename Component, typename... Args>
+//     void addComponent(uint64_t entityId, Args&&... args)
+//     {
+//         getOrCreateComponentStorage<Component>().add(
+//             entityId, Component(std::forward<Args>(args)...));
+//     }
 
-    template<typename Component>
-    Component& getComponent(uint64_t entityId)
-    {
-        return getOrCreateComponentStorage<Component>().get(entityId);
-    }
+//     template<typename Component>
+//     void removeComponent(uint64_t entityId)
+//     {
+//         getOrCreateComponentStorage<Component>().remove(entityId);
+//     }
 
-    template<typename Component>
-    const Component& getComponent(uint64_t entityId) const
-    {
-        return getOrCreateComponentStorage<Component>().get(entityId);
-    }
+//     template<typename Component>
+//     Component& getComponent(uint64_t entityId)
+//     {
+//         return getOrCreateComponentStorage<Component>().get(entityId);
+//     }
 
-    void free(const UniqueEntity* entity)
-    {
-        auto it = entityIndices.find(entity->getId());
-        if (it != entityIndices.end())
-        {
-            entityIndices.erase(it);
-        }
-    }
+//     template<typename Component>
+//     const Component& getComponent(uint64_t entityId) const
+//     {
+//         return getOrCreateComponentStorage<Component>().get(entityId);
+//     }
 
-    template<typename T>
-    EntityStorage<T>& getStorage()
-    {
-        auto it = storages.find(typeid(T));
-        if (it == storages.end())
-        {
-            // Create a new storage if it doesn't exist
-            auto storage        = std::make_unique<EntityStorage<T>>();
-            storages[typeid(T)] = std::move(storage);
-        }
-        return *reinterpret_cast<EntityStorage<T>*>(storages[typeid(T)].get());
-    }
+//     void free(const UniqueEntity* entity)
+//     {
+//         auto it = entityIndices.find(entity->getId());
+//         if (it != entityIndices.end())
+//         {
+//             entityIndices.erase(it);
+//         }
+//     }
 
-    template<typename T>
-    struct EntityDeleter
-    {
-        EntityManager* manager;
-        void           operator() (T* entity) const
-        {
-            manager->free(&entity->getEntity());
-        }
-    };
+//     template<typename T>
+//     EntityStorage<T>& getStorage()
+//     {
+//         auto it = storages.find(typeid(T));
+//         if (it == storages.end())
+//         {
+//             // Create a new storage if it doesn't exist
+//             auto storage        = std::make_unique<EntityStorage<T>>();
+//             storages[typeid(T)] = std::move(storage);
+//         }
+//         return *reinterpret_cast<EntityStorage<T>*>(storages[typeid(T)].get());
+//     }
 
-    uint64_t allocateEntityId()
-    {
-        return nextEntityId++;
-    }
+//     template<typename T>
+//     struct EntityDeleter
+//     {
+//         EntityManager* manager;
+//         void           operator() (T* entity) const
+//         {
+//             manager->free(&entity->getEntity());
+//         }
+//     };
 
-    template<typename Component>
-    ComponentStorage<Component>& getOrCreateComponentStorage()
-    {
-        auto it = componentStorages.find(typeid(Component));
-        if (it == componentStorages.end())
-        {
-            componentStorages[typeid(Component)] = std::make_unique<ComponentStorage<Component>>();
-        }
-        return *reinterpret_cast<ComponentStorage<Component>*>(
-            componentStorages[typeid(Component)].get());
-    }
+//     uint64_t allocateEntityId()
+//     {
+//         return nextEntityId++;
+//     }
 
-private:
-    uint64_t                                                                   nextEntityId = 0;
-    std::unordered_map<std::type_index, std::unique_ptr<ComponentStorageBase>> componentStorages;
-    std::unordered_map<std::type_index, std::unique_ptr<EntityStorageBase>>
-                                        storages; // Added for polymorphic storage handling
-    std::unordered_map<uint64_t, void*> entityIndices;
-};
+//     template<typename Component>
+//     ComponentStorage<Component>& getOrCreateComponentStorage()
+//     {
+//         auto it = componentStorages.find(typeid(Component));
+//         if (it == componentStorages.end())
+//         {
+//             componentStorages[typeid(Component)] =
+//             std::make_unique<ComponentStorage<Component>>();
+//         }
+//         return *reinterpret_cast<ComponentStorage<Component>*>(
+//             componentStorages[typeid(Component)].get());
+//     }
 
-UniqueEntity::~UniqueEntity()
-{
-    this->owner->free(this);
-}
+// private:
+//     uint64_t                                                                   nextEntityId = 0;
+//     std::unordered_map<std::type_index, std::unique_ptr<ComponentStorageBase>> componentStorages;
+//     std::unordered_map<std::type_index, std::unique_ptr<EntityStorageBase>>
+//                                         storages; // Added for polymorphic storage handling
+//     std::unordered_map<uint64_t, void*> entityIndices;
+// };
 
-template<typename Component, typename... Args>
-void UniqueEntity::addComponent(Args&&... args)
-{
-    if (owner)
-    {
-        owner->addComponent<Component>(id, std::forward<Args>(args)...);
-    }
-}
+// UniqueEntity::~UniqueEntity()
+// {
+//     this->owner->free(this);
+// }
 
-template<typename Component>
-void UniqueEntity::removeComponent()
-{
-    if (owner)
-    {
-        owner->removeComponent<Component>(id);
-    }
-}
+// template<typename Component, typename... Args>
+// void UniqueEntity::addComponent(Args&&... args)
+// {
+//     if (owner)
+//     {
+//         owner->addComponent<Component>(id, std::forward<Args>(args)...);
+//     }
+// }
 
-template<typename Component>
-Component& UniqueEntity::getComponent()
-{
-    if (owner)
-    {
-        return owner->getComponent<Component>(id);
-    }
-    throw std::runtime_error("Owner is not valid!");
-}
+// template<typename Component>
+// void UniqueEntity::removeComponent()
+// {
+//     if (owner)
+//     {
+//         owner->removeComponent<Component>(id);
+//     }
+// }
 
-template<typename Component>
-const Component& UniqueEntity::getComponent() const
-{
-    if (owner)
-    {
-        return owner->getComponent<Component>(id);
-    }
-    throw std::runtime_error("Owner is not valid!");
-}
+// template<typename Component>
+// Component& UniqueEntity::getComponent()
+// {
+//     if (owner)
+//     {
+//         return owner->getComponent<Component>(id);
+//     }
+//     throw std::runtime_error("Owner is not valid!");
+// }
 
-// A concrete entity type that inherits from InherentEntity
-class ConcreteEntity : public InherentEntity
-{
-public:
-    ConcreteEntity(UniqueEntity entity)
-        : entity_(std::move(entity))
-        , health_(100)
-        , name_("Unknown")
-    {}
+// template<typename Component>
+// const Component& UniqueEntity::getComponent() const
+// {
+//     if (owner)
+//     {
+//         return owner->getComponent<Component>(id);
+//     }
+//     throw std::runtime_error("Owner is not valid!");
+// }
 
-    UniqueEntity& getEntity() const override
-    {
-        return entity_;
-    }
+// // A concrete entity type that inherits from InherentEntity
+// class ConcreteEntity : public InherentEntity
+// {
+// public:
+//     ConcreteEntity(UniqueEntity entity)
+//         : entity_(std::move(entity))
+//         , health_(100)
+//         , name_("Unknown")
+//     {}
 
-    // Some data related to the concrete entity
-    int getHealth() const
-    {
-        return health_;
-    }
-    void setHealth(int health)
-    {
-        health_ = health;
-    }
+//     UniqueEntity& getEntity() const override
+//     {
+//         return entity_;
+//     }
 
-    std::string getName() const
-    {
-        return name_;
-    }
-    void setName(const std::string& name)
-    {
-        name_ = name;
-    }
+//     // Some data related to the concrete entity
+//     int getHealth() const
+//     {
+//         return health_;
+//     }
+//     void setHealth(int health)
+//     {
+//         health_ = health;
+//     }
 
-private:
-    mutable UniqueEntity entity_;
-    int                  health_;
-    std::string          name_;
-};
+//     std::string getName() const
+//     {
+//         return name_;
+//     }
+//     void setName(const std::string& name)
+//     {
+//         name_ = name;
+//     }
 
-template<typename T>
-using ManagedEntityPtr = EntityManager::ManagedEntityPtr<T>;
+// private:
+//     mutable UniqueEntity entity_;
+//     int                  health_;
+//     std::string          name_;
+// };
+
+// template<typename T>
+// using ManagedEntityPtr = EntityManager::ManagedEntityPtr<T>;
 
 int main()
 {
     util::installGlobalLoggerRacy();
-    // ecs::installGlobalECSManagerRacy();
+    ecs::installGlobalECSManagerRacy();
 
     try
     {
-        ecs::UniqueEntity e {};
+        // boost::unordered::concurrent_flat_map<double, int> map {};
 
-        EntityManager                    manager;
-        ManagedEntityPtr<ConcreteEntity> entity = manager.createInherentEntity<ConcreteEntity>();
+        // map.insert({3.0, 4});
 
-        // Add components to the entity via member functions
-        entity->addComponent<int>(42);
-        entity->addComponent<std::string>("Hello ECS");
+        ecs::RawEntity e = ecs::getGlobalECSManager()->createEntity();
+        ecs::getGlobalECSManager()->addComponent(e, int {});
 
-        // Add some data to the ConcreteEntity
-        entity->setHealth(75);
-        entity->setName("PlayerOne");
+        // ecs::UniqueEntity e {};
 
-        // Log component values
-        util::logLog("Component int: {}", entity->getComponent<int>());
-        util::logLog("Component std::string: {}", entity->getComponent<std::string>());
+        // EntityManager                    manager;
+        // ManagedEntityPtr<ConcreteEntity> entity = manager.createInherentEntity<ConcreteEntity>();
 
-        // Log entity's own data
-        util::logLog("Entity health: {}", entity->getHealth());
-        util::logLog("Entity name: {}", entity->getName());
+        // // Add components to the entity via member functions
+        // entity->addComponent<int>(42);
+        // entity->addComponent<std::string>("Hello ECS");
 
-        // std::vector<util::InclusiveRange> ranges {};
+        // // Add some data to the ConcreteEntity
+        // entity->setHealth(75);
+        // entity->setName("PlayerOne");
 
-        // ranges.push_back({65, 78});
-        // ranges.push_back({64, 73});
-        // ranges.push_back({65, 78});
-        // ranges.push_back({65, 79});
+        // // Log component values
+        // util::logLog("Component int: {}", entity->getComponent<int>());
+        // util::logLog("Component std::string: {}", entity->getComponent<std::string>());
 
-        // for (std::size_t i = 0; i < 12; ++i)
-        // {
-        //     ranges.push_back({i, i});
-        // }
+        // // Log entity's own data
+        // util::logLog("Entity health: {}", entity->getHealth());
+        // util::logLog("Entity name: {}", entity->getName());
 
-        // ranges.push_back({2365, 2478});
-
-        // ranges.push_back({14, 18});
-        // ranges.push_back({15, 22});
-
-        // ranges.push_back({165, 178});
-
-        // ranges.push_back({238, 1283});
-
-        // ranges.push_back({3165, 9378});
-
-        // ranges.push_back({1324, 38418});
-        // ranges.push_back({1325, 38422});
-
-        // std::vector<util::InclusiveRange> combined = util::mergeDownRanges(ranges, 3);
-        // util::panic("kill");
         util::logLog(
             "starting lavender {}.{}.{}.{}{}",
             LAVENDER_VERSION_MAJOR,

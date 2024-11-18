@@ -50,7 +50,7 @@ namespace game::ec
         /// Destroys the given entity, warns on failure
         void destroyEntity(Entity, std::source_location = std::source_location::current()) const;
 
-        // /// Returns whether or not this entity is alive
+        /// Returns whether or not this entity is alive
         bool isEntityAlive(Entity) const;
 
         template<Component C>
