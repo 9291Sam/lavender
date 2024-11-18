@@ -12,6 +12,8 @@
 #include <concepts>
 #include <future>
 #include <span>
+#include <unordered_map>
+#include <variant>
 
 namespace voxel
 {
@@ -81,9 +83,10 @@ namespace voxel
 
     private:
 
-        mutable std::unique_ptr<ChunkGenerator>            generator;
-        mutable ChunkManager                               chunk_manager;
-        // TODO: make async!
+        mutable std::unique_ptr<ChunkGenerator> generator;
+        mutable ChunkManager                    chunk_manager;
+        mutable std::unordered_map<ChunkCoordinate, std::future<std::vector<VoxelWrite>>>
+                                                           generator_writes;
         mutable std::unordered_map<ChunkCoordinate, Chunk> global_chunks;
         mutable game::Camera                               camera;
     };

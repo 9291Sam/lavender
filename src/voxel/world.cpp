@@ -122,20 +122,19 @@ namespace voxel
 
         int radius = 9;
 
-        constexpr std::size_t MaxChunkGenerationsPerFrame = 2;
-
-        u32 chunkGenerations = 0;
-
         for (int i = -radius; i <= radius; ++i)
         {
             for (int j = -radius; j <= radius; ++j)
             {
                 ChunkCoordinate shouldExist {{cameraCoordinate.x + i, 0, cameraCoordinate.z + j}};
 
-                if (!this->global_chunks.contains(shouldExist)
-                    && chunkGenerations++ < MaxChunkGenerationsPerFrame)
+                if (!this->global_chunks.contains(shouldExist))
                 {
-                    this->writeVoxel(this->generator->generateChunk(shouldExist));
+                    this->generator_writes[shouldExist] = std::async(
+                        [coord = shouldExist, this]
+                        {
+                            return this->generator->generateChunk(coord);
+                        });
                 }
             }
         }
@@ -152,6 +151,23 @@ namespace voxel
             {
                 toRemove.push_back(coordinate);
             }
+        }
+
+        std::vector<ChunkCoordinate> deq {};
+
+        for (auto& [coord, maybeWrites] : this->generator_writes)
+        {
+            if (maybeWrites.valid())
+            {
+                this->writeVoxel(maybeWrites.get());
+
+                deq.push_back(coord);
+            }
+        }
+
+        for (ChunkCoordinate c : deq)
+        {
+            this->generator_writes.erase(c);
         }
 
         for (ChunkCoordinate c : toRemove)
