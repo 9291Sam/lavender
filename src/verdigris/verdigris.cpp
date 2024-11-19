@@ -103,7 +103,7 @@ namespace verdigris
             this->triangles.push_back(std::move(e));
         }
 
-        for (int j = 0; j < 4096; ++j)
+        for (int j = 0; j < 16384; ++j)
         {
             ecs::UniqueEntity e = ecs::createEntity();
 
@@ -301,14 +301,15 @@ namespace verdigris
 
         std::vector<game::FrameGenerator::RecordObject> draws {};
 
-        std::uniform_real_distribution<float> ddist {-1.0, 1.0};
+        std::normal_distribution<float> ddist {0.0, 1.14f};
+        // std::uniform_real_distribution<float> ddist {-1.0, 1.0};
 
         auto genVec3 = [&]() -> glm::vec3
         {
             return glm::vec3 {
-                48.0f * std ::sin(ddist(gen)) * ddist(gen),
-                48.0f * std ::sin(ddist(gen)) * ddist(gen),
-                48.0f * std ::sin(ddist(gen)) * ddist(gen)};
+                16.0f * std ::sin(ddist(gen)) * ddist(gen),
+                16.0f * std ::sin(ddist(gen)) * ddist(gen),
+                16.0f * std ::sin(ddist(gen)) * ddist(gen)};
         };
 
         ecs::getGlobalECSManager()->iterateComponents<VoxelComponent>(
@@ -318,7 +319,7 @@ namespace verdigris
 
                 const glm::vec3 center {
                     184.0f * std::sin(this->time_alive),
-                    128.0f,
+                    134.0f,
                     184.0f * std::cos(this->time_alive)};
 
                 const voxel::WorldPosition pos {glm::i32vec3 {center + genVec3()}};
