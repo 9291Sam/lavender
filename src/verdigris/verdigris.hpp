@@ -1,6 +1,6 @@
 #pragma once
 
-#include "game/ec/entity.hpp"
+#include "ecs/entity.hpp"
 #include "game/game.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "voxel/chunk.hpp"
@@ -13,15 +13,14 @@ namespace verdigris
 {
     struct Verdigris : public game::Game::GameState
     {
-        mutable game::Camera                    camera;
-        game::Game*                             game;
-        const game::ec::EntityComponentManager* ec_manager;
-        std::shared_ptr<vk::UniquePipeline>     triangle_pipeline;
-        mutable voxel::World                    voxel_world;
-        mutable std::vector<voxel::PointLight>  lights;
-        mutable float                           time_alive;
-        mutable std::deque<float>               frame_times;
-        game::ec::Entity                        triangle;
+        mutable game::Camera                   camera;
+        game::Game*                            game;
+        std::shared_ptr<vk::UniquePipeline>    triangle_pipeline;
+        mutable voxel::World                   voxel_world;
+        mutable std::vector<voxel::PointLight> lights;
+        mutable float                          time_alive;
+        mutable std::deque<float>              frame_times;
+        ecs::UniqueEntity                      triangle;
 
         explicit Verdigris(game::Game* game_);
 

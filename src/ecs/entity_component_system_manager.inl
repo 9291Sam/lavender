@@ -171,7 +171,12 @@ namespace ecs
                 this->accessComponentStorage<C>(
                     [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
                     {
-                        componentExists = storage.visit(func);
+                        componentExists = storage.visit(
+                            e.id,
+                            [&](const std::pair<u32, C&>& pair)
+                            {
+                                func(pair.second);
+                            });
                     });
             });
 
@@ -527,6 +532,21 @@ namespace ecs
     }
 
     template<class C>
+    void EntityComponentSystemManager::iterateComponents(
+        std::invocable<RawEntity, const C&> auto func) const
+    {
+        this->accessComponentStorage<C>(
+            [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
+            {
+                storage.cvisit_all(
+                    [&](const std::pair<u32, C>& pair)
+                    {
+                        return func(RawEntity {.id {pair.first}}, pair.second);
+                    });
+            });
+    }
+
+    template<class C>
     void EntityComponentSystemManager::accessComponentStorage(
         std::invocable<boost::unordered::concurrent_flat_map<u32, C>&> auto func) const
     {
@@ -538,6 +558,7 @@ namespace ecs
 
                 if (it != erasedStorage.cend())
                 {
+                    // NOLINTNEXTLINE
                     func(*reinterpret_cast<boost::unordered::concurrent_flat_map<u32, C>*>(
                         it->second->getRawStorage()));
 
@@ -555,6 +576,7 @@ namespace ecs
                 [&](std::unordered_map<ctti::type_id_t, std::unique_ptr<ComponentStorageBase>>&
                         erasedStorage)
                 {
+                    // NOLINTNEXTLINE
                     func(*reinterpret_cast<boost::unordered::concurrent_flat_map<u32, C>*>(
                         erasedStorage
                             .insert({ctti::type_id<C>(), std::make_unique<ComponentStorage<C>>()})
@@ -733,6 +755,14 @@ namespace ecs
         C&& c, std::source_location location) const
     {
         ecs::getGlobalECSManager()->setOrInsertComponent(*this, std::forward<C>(c), location);
+    }
+
+    template<class Concrete>
+    template<class C>
+    void EntityComponentOperationsCRTPBase<Concrete>::iterateComponents(
+        std::invocable<RawEntity, const C&> auto func) const
+    {
+        ecs::getGlobalECSManager()->iterateComponents<C>(*this, func);
     }
 
 } // namespace ecs

@@ -20,7 +20,7 @@ namespace ecs
 {
     class UniqueEntity;
 
-    // I have absolutely no idea, thank you @melak47
+    // I have absolutely no idea, thank you @melak47 NOLINT
     template<typename Derived, template<auto> class BaseTemplate>
     struct IsDerivedFromAutoBase
     {
@@ -31,11 +31,11 @@ namespace ecs
         static std::false_type test(...);
 
     public:
-        static constexpr bool value = decltype(test(std::declval<Derived*>()))::value;
+        static constexpr bool Value = decltype(test(std::declval<Derived*>()))::value;
     };
 
     template<typename T, template<auto> class BaseTemplate>
-    concept DerivedFromAutoBase = IsDerivedFromAutoBase<T, BaseTemplate>::value;
+    concept DerivedFromAutoBase = IsDerivedFromAutoBase<T, BaseTemplate>::Value;
 
     enum class TryAddComponentResult
     {
@@ -109,6 +109,11 @@ namespace ecs
 
             util::assertWarn(retainedEntities == 0, "Retained {} entities", retainedEntities);
         }
+
+        EntityComponentSystemManager(const EntityComponentSystemManager&)             = delete;
+        EntityComponentSystemManager(EntityComponentSystemManager&&)                  = delete;
+        EntityComponentSystemManager& operator= (const EntityComponentSystemManager&) = delete;
+        EntityComponentSystemManager& operator= (EntityComponentSystemManager&&)      = delete;
 
         template<class T, class... Args>
             requires DerivedFromAutoBase<T, InherentEntityBase>
@@ -191,6 +196,9 @@ namespace ecs
         template<class C>
         void setOrInsertComponent(
             RawEntity, C&&, std::source_location = std::source_location::current()) const;
+
+        template<class C>
+        void iterateComponents(std::invocable<RawEntity, const C&> auto) const;
     private:
 
         [[nodiscard]] u32 getNewEntityId() const
@@ -211,6 +219,14 @@ namespace ecs
 
     template<class T>
     using ManagedEntityPtr = EntityComponentSystemManager::ManagedEntityPtr<T>;
+
+    template<class T, class... Args>
+    ManagedEntityPtr<T> allocateInherentEntity(Args&&... args)
+    {
+        return ecs::getGlobalECSManager()->allocateInherentEntity<T>(
+            std::forward<Args...>(args)...);
+    }
+
 } // namespace ecs
 
 #include "entity_component_system_manager.inl"

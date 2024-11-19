@@ -30,7 +30,7 @@ namespace ecs
         [[nodiscard]] RawEntity  getRawEntityCRTP() const;
         [[nodiscard]] RawEntity& getRawEntityRefCRTP();
 
-        operator RawEntity () const;
+        operator RawEntity () const; // NOLINT: desired behavior
 
         [[nodiscard]] bool tryDestroyEntity();
         void               destroyEntity(std::source_location = std::source_location::current());
@@ -88,6 +88,9 @@ namespace ecs
         template<class C>
         void
         setOrInsertComponent(C&&, std::source_location = std::source_location::current()) const;
+
+        template<class C>
+        void iterateComponents(std::invocable<RawEntity, const C&> auto) const;
     };
 
     struct RawEntity : public EntityComponentOperationsCRTPBase<RawEntity>
@@ -115,13 +118,13 @@ namespace ecs
 
         [[nodiscard]] RawEntity getRawEntity() const
         {
-            // NOLINTNEXTLINE;
-            return *reinterpret_cast<const RawEntity*>(
-                reinterpret_cast<const std::byte*>(this) + offset());
+            return *reinterpret_cast<const RawEntity*>(               // NOLINT
+                reinterpret_cast<const std::byte*>(this) + offset()); // NOLINT
         }
 
         [[nodiscard]] RawEntity& getRawEntityRef()
         {
+            // NOLINTNEXTLINE
             return *reinterpret_cast<RawEntity*>(reinterpret_cast<std::byte*>(this) + offset());
         }
     };
@@ -145,19 +148,20 @@ namespace ecs
     }
 
     template<typename T, typename U>
-    struct dependent
+    struct Dependent
     {
-        using type = T;
+        using Type = T;
     };
 
     template<typename T, typename U>
-    using dependent_t = typename dependent<T, U>::type;
+    using DependentT = typename Dependent<T, U>::Type;
 
+// NOLINTNEXTLINE
 #define DERIVE_INHERENT_ENTITY(type, name)                                                         \
     public ::ecs::InherentEntityBase<                                                              \
         [](auto dummy)                                                                             \
         {                                                                                          \
-            using T = ::ecs::dependent_t<type, decltype(dummy)>;                                   \
+            using T = ::ecs::DependentT<type, decltype(dummy)>;                                    \
             static_assert(                                                                         \
                 std::same_as<::ecs::UniqueEntity, decltype(T::name)>,                              \
                 "The field pointed to must be an instance of RawEntity");                          \

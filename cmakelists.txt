@@ -66,9 +66,6 @@ add_executable(lavender
 
     src/ecs/entity_component_storage.cpp
     src/ecs/raw_entity.cpp
-
-    src/game/ec/entity_component_manager.cpp
-    src/game/ec/entity_storage.cpp
     
     src/game/camera.cpp
     src/game/frame_generator.cpp

@@ -14,10 +14,6 @@ namespace gfx
 
 namespace game
 {
-    namespace ec
-    {
-        class EntityComponentManager;
-    } // namespace ec
 
     namespace render
     {
@@ -59,8 +55,7 @@ namespace game
         [[nodiscard]] float getFovYRadians() const noexcept;
         [[nodiscard]] float getAspectRatio() const noexcept;
 
-        const gfx::Renderer*              getRenderer() const noexcept;
-        const ec::EntityComponentManager* getEntityComponentManager() const noexcept;
+        const gfx::Renderer* getRenderer() const noexcept;
         std::shared_ptr<vk::UniqueDescriptorSetLayout>
                           getGlobalInfoDescriptorSetLayout() const noexcept;
         vk::DescriptorSet getGlobalInfoDescriptorSet() const noexcept;
@@ -87,8 +82,6 @@ namespace game
         // Rendering abstraction
         std::unique_ptr<gfx::Renderer>  renderer;
         std::unique_ptr<FrameGenerator> frame_generator;
-
-        std::unique_ptr<ec::EntityComponentManager> ec_manager;
 
         util::Mutex<std::unique_ptr<GameState>> active_game_state;
 

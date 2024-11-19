@@ -1,6 +1,7 @@
 
 #include "verdigris.hpp"
-#include "game/ec/entity_component_manager.hpp"
+#include "ecs/entity_component_system_manager.hpp"
+#include "ecs/raw_entity.hpp"
 #include "game/game.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
@@ -25,11 +26,9 @@ namespace verdigris
 {
     Verdigris::Verdigris(game::Game* game_) // NOLINT
         : game {game_}
-        , ec_manager {game_->getEntityComponentManager()}
         , voxel_world(std::make_unique<world::WorldChunkGenerator>(38484334), this->game)
+        , triangle {ecs::getGlobalECSManager()->createEntity()}
     {
-        this->triangle = this->game->getEntityComponentManager()->createEntity();
-
         this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
             gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
                 .stages {{
@@ -71,24 +70,7 @@ namespace verdigris
                         .name {"Triangle Pipeline Layout"}})},
                 .name {"Triangle Pipeline"}});
 
-        this->ec_manager->addComponent(this->triangle, TriangleComponent {});
-        // this->ec_manager->addComponent(entity, render::TriangleComponent
-        // {});
-
-        // this->ec_manager->destroyEntity(entity);
-
-        // this->ec_manager->addComponent(
-        //     entity,
-        //     render::TriangleComponent {
-        //         .transform.translation {glm::vec3 {10.8, 3.0, -1.4}}});
-        // this->ec_manager->addComponent(
-        //     entity,
-        //     render::TriangleComponent {
-        //         .transform.translation {glm::vec3 {-1.8, 2.1, -9.3}}});
-        // this->ec_manager->addComponent(
-        //     entity,
-        //     render::TriangleComponent {
-        //         .transform.translation {glm::vec3 {1.3, 3.0, 3.0}}});
+        this->triangle.addComponent(TriangleComponent {});
 
         // auto genFunc = [](i32 x, i32 z) -> i32
         // {
@@ -182,8 +164,7 @@ namespace verdigris
                 this->voxel_world.modifyPointLight(
                     l, pos, {1.0, 1.0, 1.0, 512.0}, {0.0, 0.0, 0.025, 0.0});
 
-                this->ec_manager->modifyComponent<TriangleComponent>(
-                    this->triangle,
+                this->triangle.mutateComponent<TriangleComponent>(
                     [&](TriangleComponent& t)
                     {
                         t.transform.translation = pos;
@@ -311,8 +292,8 @@ namespace verdigris
 
         std::vector<game::FrameGenerator::RecordObject> draws {};
 
-        this->game->getEntityComponentManager()->iterateComponents<TriangleComponent>(
-            [&](game::ec::Entity, const TriangleComponent& c)
+        ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
+            [&](ecs::RawEntity, const TriangleComponent& c)
             {
                 draws.push_back(game::FrameGenerator::RecordObject {
                     .transform {c.transform},

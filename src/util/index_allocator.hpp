@@ -2,7 +2,6 @@
 
 #include "misc.hpp"
 #include <boost/container/flat_set.hpp>
-#include <cstddef>
 #include <expected>
 #include <source_location>
 #include <util/log.hpp>

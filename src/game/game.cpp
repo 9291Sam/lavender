@@ -1,6 +1,5 @@
 #include "game.hpp"
 #include "camera.hpp"
-#include "ec/entity_component_manager.hpp"
 #include "frame_generator.hpp"
 #include "util/static_filesystem.hpp"
 #include "util/threads.hpp"
@@ -30,7 +29,6 @@ namespace game
     Game::Game()
         : renderer {std::make_unique<gfx::Renderer>()}
         , frame_generator {std::make_unique<FrameGenerator>(this)}
-        , ec_manager {std::make_unique<ec::EntityComponentManager>()}
         , active_game_state {util::Mutex<std::unique_ptr<GameState>> {nullptr}}
         , should_game_keep_ticking {true}
         , should_game_close {false}
@@ -88,11 +86,6 @@ namespace game
     const gfx::Renderer* Game::getRenderer() const noexcept
     {
         return this->renderer.get();
-    }
-
-    const ec::EntityComponentManager* Game::getEntityComponentManager() const noexcept
-    {
-        return this->ec_manager.get();
     }
 
     vk::DescriptorSet Game::getGlobalInfoDescriptorSet() const noexcept

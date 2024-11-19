@@ -1,5 +1,7 @@
+#include "ecs/raw_entity.hpp"
 #include "entity.hpp"
 #include "entity_component_system_manager.hpp"
+#include "util/log.hpp"
 
 namespace ecs
 {
@@ -23,14 +25,19 @@ namespace ecs
 
             this->entities_guard->insert({newId});
 
-            util::logTrace("allocating {}", newId);
-
             return RawEntity {.id {newId}};
         }
     }
 
     bool EntityComponentSystemManager::tryDestroyEntity(RawEntity e) const
     {
+        if (e.id == NullEntity)
+        {
+            util::logWarn("tried to destroy a null entity!");
+
+            return false;
+        }
+
         const std::size_t visited = this->entities_guard->erase_if(
             e.id,
             [this](const auto& entityId)
@@ -53,8 +60,6 @@ namespace ecs
     void
     EntityComponentSystemManager::destroyEntity(RawEntity e, std::source_location location) const
     {
-        util::logTrace<>("detroying", location);
-
         util::assertWarn<>(
             this->tryDestroyEntity(e), "Tried to destroy an already dead entity!", location);
     }
