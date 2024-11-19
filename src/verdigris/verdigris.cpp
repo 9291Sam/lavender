@@ -1,5 +1,6 @@
 
 #include "verdigris.hpp"
+#include "ecs/entity.hpp"
 #include "ecs/entity_component_system_manager.hpp"
 #include "ecs/raw_entity.hpp"
 #include "game/game.hpp"
@@ -16,6 +17,7 @@
 #include "world/generator.hpp"
 #include <FastNoise/FastNoise.h>
 #include <boost/container_hash/hash_fwd.hpp>
+#include <boost/unordered/concurrent_flat_map.hpp>
 #include <glm/fwd.hpp>
 #include <numbers>
 #include <numeric>
@@ -77,13 +79,29 @@ namespace verdigris
         //     return static_cast<i32>(8 * std::sin(x / 24.0) + 8 * std::cos(z / 24.0) + 32.0) -
         //     128;
         // };
-        // std::mt19937_64                       gen {std::random_device {}()};
-        // std::uniform_real_distribution<float> ddist {-1.0, 1.0};
+        std::mt19937_64                       gen {std::random_device {}()};
+        std::uniform_real_distribution<float> ddist {-1.0, 1.0};
 
-        // auto genVec3 = [&]() -> glm::vec3
-        // {
-        //     return glm::vec3 {ddist(gen), ddist(gen), ddist(gen)};
-        // };
+        auto genVec3 = [&]() -> glm::vec3
+        {
+            return glm::vec3 {
+                32.0f * std ::sin(ddist(gen)) * ddist(gen),
+                32.0f * std ::sin(ddist(gen)) * ddist(gen) + 80.0f,
+                32.0f * std ::sin(ddist(gen)) * ddist(gen)};
+        };
+
+        for (int j = 0; j < 867; ++j)
+        {
+            ecs::UniqueEntity e = ecs::getGlobalECSManager()->createEntity();
+
+            TriangleComponent t {};
+            t.transform.translation = genVec3();
+            t.transform.scale       = glm::vec3 {8.0f};
+
+            e.addComponent(t);
+
+            this->triangles.push_back(std::move(e));
+        }
 
         // CpuMasterBuffer
         // meshoperation (copy of everything)
@@ -93,10 +111,10 @@ namespace verdigris
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 
-        // for (int i = 0; i < 3; ++i)
-        // {
-        //     this->lights.push_back(this->voxel_world.createPointLight({}, {}, {}));
-        // }
+        for (int i = 0; i < 3; ++i)
+        {
+            this->lights.push_back(this->voxel_world.createPointLight({}, {}, {}));
+        }
 
         this->lights.push_back(this->voxel_world.createPointLight(
             {105, 315, 104}, {1.0, 1.0, 1.0, 384}, {0.0, 0.0, 0.025f, 0.0}));
@@ -190,12 +208,12 @@ namespace verdigris
 
         if (thisPos != prevPos)
         {
-            for (i32 i = 0; i < 32; ++i)
+            for (i32 j = 0; j < 32; ++j)
             {
                 this->voxel_world.writeVoxel(
-                    voxel::WorldPosition {thisPos + glm::i32vec3 {0, i, 0}}, voxel::Voxel::Pearl);
+                    voxel::WorldPosition {thisPos + glm::i32vec3 {0, j, 0}}, voxel::Voxel::Pearl);
                 this->voxel_world.writeVoxel(
-                    voxel::WorldPosition {prevPos + glm::i32vec3 {0, i, 0}},
+                    voxel::WorldPosition {prevPos + glm::i32vec3 {0, j, 0}},
                     voxel::Voxel::NullAirEmpty);
             }
         }

@@ -61,23 +61,6 @@ int main()
             LAVENDER_VERSION_TWEAK,
             util::isDebugBuild() ? " | Debug Build" : "");
 
-        ecs::ManagedEntityPtr<ConcreteEntity> entity =
-            ecs::allocateInherentEntity<ConcreteEntity>(14);
-
-        util::logLog("Entity health: {}", entity->getHealth());
-
-        entity->addComponent<int>(42);
-        entity->addComponent<std::string>("Hello");
-
-        entity->setHealth(75);
-        entity->setName("Player");
-
-        util::logLog("Component int: {}", entity->getComponent<int>());
-        util::logLog("Component std::string: {}", entity->getComponent<std::string>());
-
-        util::logLog("Entity health: {}", entity->getHealth());
-        util::logLog("Entity name: {}", entity->getName());
-
         game::Game game {};
 
         game.loadGameState<verdigris::Verdigris>();

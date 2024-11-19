@@ -258,8 +258,8 @@ namespace world
             {
                 for (std::size_t j = 0; j < 64; ++j)
                 {
-                    u8 height = 2;
-                    // static_cast<u8>(std::clamp(12.0f * (*ptr)[i][j] + 12.0f, 0.0f, 64.0f));
+                    u8 height =
+                        static_cast<u8>(std::clamp(2.0f * (*ptr)[i][j] + 4.0f, 0.0f, 64.0f));
 
                     for (u8 h = 0; h < 64; ++h)
                     {

@@ -133,10 +133,10 @@ namespace ecs
         [[nodiscard]] bool isEntityAlive(RawEntity) const;
 
         template<class C>
-        [[nodiscard]] TryAddComponentResult tryAddComponent(RawEntity, C&&) const;
+        [[nodiscard]] TryAddComponentResult tryAddComponent(RawEntity, C) const;
         template<class C>
-        void
-        addComponent(RawEntity, C&&, std::source_location = std::source_location::current()) const;
+        void addComponent(
+            RawEntity, C, std::source_location = std::source_location::current()) const;
 
         template<class C>
         [[nodiscard]] std::expected<C, TryRemoveComponentResult>
@@ -177,25 +177,25 @@ namespace ecs
             getComponent(RawEntity, std::source_location = std::source_location::current()) const;
 
         template<class C>
-        [[nodiscard]] TryPeerComponentResult trySetComponent(RawEntity, C&&) const;
+        [[nodiscard]] TryPeerComponentResult trySetComponent(RawEntity, C) const;
         template<class C>
-        void
-        setComponent(RawEntity, C&&, std::source_location = std::source_location::current()) const;
+        void setComponent(
+            RawEntity, C, std::source_location = std::source_location::current()) const;
 
         template<class C>
             requires std::is_copy_constructible_v<C>
         [[nodiscard]] std::expected<C, TryReplaceComponentResult>
-        tryReplaceComponent(RawEntity, C&&) const;
+            tryReplaceComponent(RawEntity, C) const;
         template<class C, bool PanicOnFail = false>
             requires std::is_copy_constructible_v<C>
         C replaceComponent(
-            RawEntity, C&&, std::source_location = std::source_location::current()) const;
+            RawEntity, C, std::source_location = std::source_location::current()) const;
 
         template<class C>
-        [[nodiscard]] TrySetOrInsertComponentResult trySetOrInsertComponent(RawEntity, C&&) const;
+        [[nodiscard]] TrySetOrInsertComponentResult trySetOrInsertComponent(RawEntity, C) const;
         template<class C>
         void setOrInsertComponent(
-            RawEntity, C&&, std::source_location = std::source_location::current()) const;
+            RawEntity, C, std::source_location = std::source_location::current()) const;
 
         template<class C>
         void iterateComponents(std::invocable<RawEntity, const C&> auto) const;

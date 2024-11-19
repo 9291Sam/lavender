@@ -30,7 +30,7 @@ namespace ecs
 
     template<class C>
     auto
-    EntityComponentSystemManager::tryAddComponent(RawEntity e, C&& c) const -> TryAddComponentResult
+    EntityComponentSystemManager::tryAddComponent(RawEntity e, C c) const -> TryAddComponentResult
     {
         bool added = false;
 
@@ -41,7 +41,7 @@ namespace ecs
                 this->accessComponentStorage<C>(
                     [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
                     {
-                        added = storage.insert({e.id, std::forward<C>(c)});
+                        added = storage.insert({e.id, std::move(c)});
                     });
             });
 
@@ -61,9 +61,9 @@ namespace ecs
 
     template<class C>
     void EntityComponentSystemManager::addComponent(
-        RawEntity e, C&& c, std::source_location location) const
+        RawEntity e, C c, std::source_location location) const
     {
-        switch (this->tryAddComponent(e, std::forward<C>(c)))
+        switch (this->tryAddComponent(e, std::move(c)))
         {
         case TryAddComponentResult::NoError:
             break;
@@ -119,7 +119,8 @@ namespace ecs
     {
         static_assert(
             PanicOnFail || std::is_default_constructible_v<C>,
-            "If you don't panic on the removal of a component it must be default constructable!");
+            "If you don't panic on the removal of a component it must be default "
+            "constructable!");
 
         const std::expected<C, TryRemoveComponentResult> result = this->tryRemoveComponent<C>(e);
 
@@ -386,7 +387,7 @@ namespace ecs
     }
 
     template<class C>
-    [[nodiscard]] auto EntityComponentSystemManager::trySetComponent(RawEntity e, C&& cNew) const
+    [[nodiscard]] auto EntityComponentSystemManager::trySetComponent(RawEntity e, C cNew) const
         -> TryPeerComponentResult
     {
         return this->tryMutateComponent<C>(
@@ -398,7 +399,7 @@ namespace ecs
     }
     template<class C>
     void EntityComponentSystemManager::setComponent(
-        RawEntity e, C&& c, std::source_location location) const
+        RawEntity e, C c, std::source_location location) const
     {
         switch (this->trySetComponent<C>(e, std::forward<C>(c)))
         {
@@ -415,8 +416,8 @@ namespace ecs
 
     template<class C>
         requires std::is_copy_constructible_v<C>
-    [[nodiscard]] auto EntityComponentSystemManager::tryReplaceComponent(
-        RawEntity e, C&& cNew) const -> std::expected<C, TryReplaceComponentResult>
+    [[nodiscard]] auto EntityComponentSystemManager::tryReplaceComponent(RawEntity e, C cNew) const
+        -> std::expected<C, TryReplaceComponentResult>
     {
         std::optional<C> removedComponent = std::nullopt;
 
@@ -448,7 +449,7 @@ namespace ecs
     template<class C, bool PanicOnFail>
         requires std::is_copy_constructible_v<C>
     C EntityComponentSystemManager::replaceComponent(
-        RawEntity e, C&& c, std::source_location location) const
+        RawEntity e, C c, std::source_location location) const
     {
         std::expected<C, TryReplaceComponentResult> result =
             this->tryReplaceComponent<C>(e, std::forward<C>(c));
@@ -491,7 +492,7 @@ namespace ecs
 
     template<class C>
     [[nodiscard]] auto EntityComponentSystemManager::trySetOrInsertComponent(
-        RawEntity e, C&& cNew) const -> TrySetOrInsertComponentResult
+        RawEntity e, C cNew) const -> TrySetOrInsertComponentResult
     {
         const std::size_t visited = this->entities_guard->cvisit(
             e.id,
@@ -516,7 +517,7 @@ namespace ecs
 
     template<class C>
     void EntityComponentSystemManager::setOrInsertComponent(
-        RawEntity e, C&& c, std::source_location location) const
+        RawEntity e, C c, std::source_location location) const
     {
         const TrySetOrInsertComponentResult result =
             this->trySetOrInsertComponent<C>(e, std::forward<C>(c));
@@ -609,17 +610,17 @@ namespace ecs
     template<class Concrete>
     template<class C>
     [[nodiscard]] TryAddComponentResult
-    EntityComponentOperationsCRTPBase<Concrete>::tryAddComponent(C&& c) const
+    EntityComponentOperationsCRTPBase<Concrete>::tryAddComponent(C c) const
     {
-        return ecs::getGlobalECSManager()->tryAddComponent(*this, std::forward<C>(c));
+        return ecs::getGlobalECSManager()->tryAddComponent(*this, std::move(c));
     }
 
     template<class Concrete>
     template<class C>
     void EntityComponentOperationsCRTPBase<Concrete>::addComponent(
-        C&& c, std::source_location location) const
+        C c, std::source_location location) const
     {
-        ecs::getGlobalECSManager()->addComponent(*this, std::forward<C>(c), location);
+        ecs::getGlobalECSManager()->addComponent(*this, std::move(c), location);
     }
 
     template<class Concrete>
@@ -709,7 +710,7 @@ namespace ecs
     template<class Concrete>
     template<class C>
     [[nodiscard]] TryPeerComponentResult
-    EntityComponentOperationsCRTPBase<Concrete>::trySetComponent(C&& c) const
+    EntityComponentOperationsCRTPBase<Concrete>::trySetComponent(C c) const
     {
         return ecs::getGlobalECSManager()->trySetComponent(*this, std::forward<C>(c));
     }
@@ -717,7 +718,7 @@ namespace ecs
     template<class Concrete>
     template<class C>
     void EntityComponentOperationsCRTPBase<Concrete>::setComponent(
-        C&& c, std::source_location location) const
+        C c, std::source_location location) const
     {
         ecs::getGlobalECSManager()->setComponent(*this, std::forward<C>(c), location);
     }
@@ -726,7 +727,7 @@ namespace ecs
     template<class C>
         requires std::is_copy_constructible_v<C>
     [[nodiscard]] std::expected<C, TryReplaceComponentResult>
-    EntityComponentOperationsCRTPBase<Concrete>::tryReplaceComponent(C&& c) const
+    EntityComponentOperationsCRTPBase<Concrete>::tryReplaceComponent(C c) const
     {
         return ecs::getGlobalECSManager()->tryReplaceComponent(*this, std::forward<C>(c));
     }
@@ -735,7 +736,7 @@ namespace ecs
     template<class C, bool PanicOnFail>
         requires std::is_copy_constructible_v<C>
     C EntityComponentOperationsCRTPBase<Concrete>::replaceComponent(
-        C&& c, std::source_location location) const
+        C c, std::source_location location) const
     {
         return ecs::getGlobalECSManager()->replaceComponent<C, PanicOnFail>(
             *this, std::forward<C>(c), location);
@@ -744,7 +745,7 @@ namespace ecs
     template<class Concrete>
     template<class C>
     [[nodiscard]] TrySetOrInsertComponentResult
-    EntityComponentOperationsCRTPBase<Concrete>::trySetOrInsertComponent(C&& c) const
+    EntityComponentOperationsCRTPBase<Concrete>::trySetOrInsertComponent(C c) const
     {
         return ecs::getGlobalECSManager()->trySetOrInsertComponent<C>(*this, std::forward<C>(c));
     }
@@ -752,7 +753,7 @@ namespace ecs
     template<class Concrete>
     template<class C>
     void EntityComponentOperationsCRTPBase<Concrete>::setOrInsertComponent(
-        C&& c, std::source_location location) const
+        C c, std::source_location location) const
     {
         ecs::getGlobalECSManager()->setOrInsertComponent(*this, std::forward<C>(c), location);
     }

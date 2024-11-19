@@ -21,6 +21,7 @@ namespace verdigris
         mutable float                          time_alive;
         mutable std::deque<float>              frame_times;
         ecs::UniqueEntity                      triangle;
+        std::vector<ecs::UniqueEntity>         triangles;
 
         explicit Verdigris(game::Game* game_);
 
