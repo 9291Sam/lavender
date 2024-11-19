@@ -13,6 +13,7 @@
 #include <expected>
 #include <memory>
 #include <source_location>
+#include <type_traits>
 #include <unordered_map>
 
 namespace ecs
@@ -36,35 +37,53 @@ namespace ecs
     template<typename T, template<auto> class BaseTemplate>
     concept DerivedFromAutoBase = IsDerivedFromAutoBase<T, BaseTemplate>::value;
 
+    enum class TryAddComponentResult
+    {
+        NoError,
+        ComponentAlreadyPresent,
+        EntityDead,
+    };
+
+    enum class TryRemoveComponentResult
+    {
+        ComponentNotPresent,
+        EntityDead
+    };
+
+    enum class TryPeerComponentResult
+    {
+        NoError,
+        ComponentNotPresent,
+        EntityDead
+    };
+
+    enum class TryHasComponentResult
+    {
+        NoComponent,
+        HasComponent,
+        EntityDead
+    };
+
+    enum class TryGetComponentResult
+    {
+        ComponentNotPresent,
+        EntityDead,
+    };
+
+    enum class TryReplaceComponentResult
+    {
+        ComponentNotPresent,
+        EntityDead,
+    };
+
+    enum class TrySetOrInsertComponentResult
+    {
+        NoError,
+        EntityDead
+    };
+
     class EntityComponentSystemManager
     {
-    public:
-        enum class TryAddComponentResult
-        {
-            NoError,
-            ComponentAlreadyPresent,
-            EntityDead,
-        };
-
-        enum class TryRemoveComponentResult
-        {
-            ComponentNotPresent,
-            EntityDead
-        };
-
-        enum class TryPeerComponentResult
-        {
-            NoError,
-            ComponentNotPresent,
-            EntityDead
-        };
-
-        enum class TryHasComponentResult
-        {
-            NoComponent,
-            HasComponent,
-            EntityDead
-        };
     public:
 
         template<typename T>
@@ -136,6 +155,35 @@ namespace ecs
         template<class C>
         [[nodiscard]] bool
             hasComponent(RawEntity, std::source_location = std::source_location::current()) const;
+
+        template<class C>
+            requires std::is_copy_constructible_v<C>
+        [[nodiscard]] std::expected<C, TryGetComponentResult> tryGetComponent(RawEntity) const;
+        template<class C, bool PanicOnFail = false>
+            requires std::is_copy_constructible_v<C>
+        [[nodiscard]] C
+            getComponent(RawEntity, std::source_location = std::source_location::current()) const;
+
+        template<class C>
+        [[nodiscard]] TryPeerComponentResult trySetComponent(RawEntity, C&&) const;
+        template<class C>
+        void
+        setComponent(RawEntity, C&&, std::source_location = std::source_location::current()) const;
+
+        template<class C>
+            requires std::is_copy_constructible_v<C>
+        [[nodiscard]] std::expected<C, TryReplaceComponentResult>
+        tryReplaceComponent(RawEntity, C&&) const;
+        template<class C, bool PanicOnFail = false>
+            requires std::is_copy_constructible_v<C>
+        C replaceComponent(
+            RawEntity, C&&, std::source_location = std::source_location::current()) const;
+
+        template<class C>
+        [[nodiscard]] TrySetOrInsertComponentResult trySetOrInsertComponent(RawEntity, C&&) const;
+        template<class C>
+        void setOrInsertComponent(
+            RawEntity, C&&, std::source_location = std::source_location::current()) const;
     private:
 
         [[nodiscard]] u32 getNewEntityId() const

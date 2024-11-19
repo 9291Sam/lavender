@@ -365,10 +365,10 @@
 class ConcreteEntity : DERIVE_INHERENT_ENTITY(ConcreteEntity, entity_)
 {
 public:
-
+#warning make unique
     ConcreteEntity(ecs::RawEntity entity)
-        : entity_(std::move(entity))
-        , health_(100)
+        : health_(100)
+        , entity_(std::move(entity))
         , name_("Unknown")
     {}
 
@@ -417,24 +417,21 @@ int main()
         ecs::ManagedEntityPtr<ConcreteEntity> entity =
             ecs::getGlobalECSManager()->allocateInherentEntity<ConcreteEntity>();
 
-        entity->addComponent(int {4});
-        util::logTrace("{} {}", ecs::getGlobalECSManager()->removeComponent<int>(*entity), "oisdf");
-
         // // Add components to the entity via member functions
-        // entity->addComponent<int>(42);
-        // entity->addComponent<std::string>("Hello ECS");
+        entity->addComponent<int>(42);
+        entity->addComponent<std::string>("Hello ECS");
 
-        // // Add some data to the ConcreteEntity
-        // entity->setHealth(75);
-        // entity->setName("PlayerOne");
+        // Add some data to the ConcreteEntity
+        entity->setHealth(75);
+        entity->setName("PlayerOne");
 
-        // // Log component values
-        // util::logLog("Component int: {}", entity->getComponent<int>());
-        // util::logLog("Component std::string: {}", entity->getComponent<std::string>());
+        // Log component values
+        util::logLog("Component int: {}", entity->getComponent<int>());
+        util::logLog("Component std::string: {}", entity->getComponent<std::string>());
 
-        // // Log entity's own data
-        // util::logLog("Entity health: {}", entity->getHealth());
-        // util::logLog("Entity name: {}", entity->getName());
+        // Log entity's own data
+        util::logLog("Entity health: {}", entity->getHealth());
+        util::logLog("Entity name: {}", entity->getName());
 
         util::logLog(
             "starting lavender {}.{}.{}.{}{}",
