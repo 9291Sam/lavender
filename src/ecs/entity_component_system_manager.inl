@@ -13,15 +13,6 @@
 namespace ecs
 {
 
-    template<class T, class... Args>
-        requires DerivedFromAutoBase<T, InherentEntityBase>
-              && std::is_constructible_v<T, RawEntity, Args...>
-    T* EntityComponentSystemManager::allocateRawInherentEntity(Args&&... args) const
-    {
-        // TODO: dont use system allocator
-        return ::new T {this->createRawEntity(), std::forward<Args...>(args)...}; // NOLINT
-    }
-
     template<class T>
     void EntityComponentSystemManager::freeRawInherentEntity(T* ptr) const
     {
@@ -570,6 +561,27 @@ namespace ecs
                             .first->second->getRawStorage()));
                 });
         }
+    }
+
+    template<class Concrete>
+    [[nodiscard]] bool EntityComponentOperationsCRTPBase<Concrete>::tryDestroyEntity()
+    {
+        RawEntity& self = this->getRawEntityRefCRTP();
+
+        const bool result = ecs::getGlobalECSManager()->tryDestroyEntity(self);
+
+        self.id = NullEntity;
+
+        return result;
+    }
+    template<class Concrete>
+    void EntityComponentOperationsCRTPBase<Concrete>::destroyEntity(std::source_location location)
+    {
+        RawEntity& self = this->getRawEntityRefCRTP();
+
+        ecs::getGlobalECSManager()->destroyEntity(self, location);
+
+        self.id = NullEntity;
     }
 
     template<class Concrete>

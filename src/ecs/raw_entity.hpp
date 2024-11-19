@@ -27,9 +27,13 @@ namespace ecs
     template<class Derived>
     struct EntityComponentOperationsCRTPBase
     {
-        [[nodiscard]] RawEntity getRawEntityCRTP() const;
+        [[nodiscard]] RawEntity  getRawEntityCRTP() const;
+        [[nodiscard]] RawEntity& getRawEntityRefCRTP();
 
         operator RawEntity () const;
+
+        [[nodiscard]] bool tryDestroyEntity();
+        void               destroyEntity(std::source_location = std::source_location::current());
 
         template<class C>
         [[nodiscard]] TryAddComponentResult tryAddComponent(C&&) const;
@@ -86,11 +90,16 @@ namespace ecs
         setOrInsertComponent(C&&, std::source_location = std::source_location::current()) const;
     };
 
-    struct RawEntity
+    struct RawEntity : public EntityComponentOperationsCRTPBase<RawEntity>
     {
         u32 id = NullEntity;
 
         RawEntity getRawEntity()
+        {
+            return *this;
+        }
+
+        [[nodiscard]] RawEntity& getRawEntityRef()
         {
             return *this;
         }
@@ -110,12 +119,23 @@ namespace ecs
             return *reinterpret_cast<const RawEntity*>(
                 reinterpret_cast<const std::byte*>(this) + offset());
         }
+
+        [[nodiscard]] RawEntity& getRawEntityRef()
+        {
+            return *reinterpret_cast<RawEntity*>(reinterpret_cast<std::byte*>(this) + offset());
+        }
     };
 
     template<class Derived>
     RawEntity EntityComponentOperationsCRTPBase<Derived>::getRawEntityCRTP() const
     {
         return static_cast<const Derived*>(this)->getRawEntity();
+    }
+
+    template<class Derived>
+    RawEntity& EntityComponentOperationsCRTPBase<Derived>::getRawEntityRefCRTP()
+    {
+        return static_cast<Derived*>(this)->getRawEntityRef();
     }
 
     template<class Derived>
@@ -139,7 +159,7 @@ namespace ecs
         {                                                                                          \
             using T = ::ecs::dependent_t<type, decltype(dummy)>;                                   \
             static_assert(                                                                         \
-                std::same_as<::ecs::RawEntity, decltype(T::name)>,                                 \
+                std::same_as<::ecs::UniqueEntity, decltype(T::name)>,                              \
                 "The field pointed to must be an instance of RawEntity");                          \
             return offsetof(T, name);                                                              \
         }>

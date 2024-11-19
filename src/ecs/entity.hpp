@@ -5,16 +5,16 @@
 
 namespace ecs
 {
-    class UniqueEntity : public RawEntity
+    class UniqueEntity : public EntityComponentOperationsCRTPBase<UniqueEntity>
     {
     public:
         UniqueEntity() noexcept = default;
         explicit UniqueEntity(RawEntity e)
-            : RawEntity {e}
+            : entity {e}
         {}
         ~UniqueEntity()
         {
-            getGlobalECSManager()->destroyEntity(*this);
+            this->reset();
         }
 
         UniqueEntity(const UniqueEntity&) = delete;
@@ -24,20 +24,44 @@ namespace ecs
         UniqueEntity& operator= (const UniqueEntity&) = delete;
         UniqueEntity& operator= (UniqueEntity&&) noexcept;
 
+        [[nodiscard]] RawEntity getRawEntity() const
+        {
+            return this->entity;
+        }
+
+        [[nodiscard]] RawEntity& getRawEntityRef()
+        {
+            return this->entity;
+        }
+
         RawEntity release()
         {
-            RawEntity e {.id {this->id}};
+            RawEntity e {this->entity};
 
-            this->id = NullEntity;
+            this->entity.id = NullEntity;
 
             return e;
         }
 
         void reset()
         {
-            getGlobalECSManager()->destroyEntity(*this);
+            if (this->entity.id != NullEntity)
+            {
+                getGlobalECSManager()->destroyEntity(*this);
 
-            this->id = NullEntity;
+                this->entity.id = NullEntity;
+            }
         }
+    private:
+        RawEntity entity;
     };
+
+    template<class T, class... Args>
+        requires DerivedFromAutoBase<T, InherentEntityBase>
+              && std::is_constructible_v<T, UniqueEntity, Args...>
+    T* EntityComponentSystemManager::allocateRawInherentEntity(Args&&... args) const
+    {
+        // TODO: dont use system allocator
+        return ::new T {this->createEntity(), std::forward<Args...>(args)...}; // NOLINT
+    }
 } // namespace ecs

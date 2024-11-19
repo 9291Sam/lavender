@@ -103,9 +103,16 @@ namespace ecs
             , component_storage {{}}
         {}
 
+        ~EntityComponentSystemManager()
+        {
+            const std::size_t retainedEntities = this->entities_guard->size();
+
+            util::assertWarn(retainedEntities == 0, "Retained {} entities", retainedEntities);
+        }
+
         template<class T, class... Args>
             requires DerivedFromAutoBase<T, InherentEntityBase>
-                  && std::is_constructible_v<T, RawEntity, Args...>
+                  && std::is_constructible_v<T, UniqueEntity, Args...>
         [[nodiscard]] T* allocateRawInherentEntity(Args&&...) const;
         template<class T>
         void freeRawInherentEntity(T*) const;

@@ -23,13 +23,15 @@ namespace ecs
 
             this->entities_guard->insert({newId});
 
+            util::logTrace("allocating {}", newId);
+
             return RawEntity {.id {newId}};
         }
     }
 
     bool EntityComponentSystemManager::tryDestroyEntity(RawEntity e) const
     {
-        const std::size_t visited = this->entities_guard->visit(
+        const std::size_t visited = this->entities_guard->erase_if(
             e.id,
             [this](const auto& entityId)
             {
@@ -41,6 +43,8 @@ namespace ecs
                             storage->clearAllComponentsForId(entityId);
                         }
                     });
+
+                return true;
             });
 
         return visited != 0;
@@ -49,6 +53,8 @@ namespace ecs
     void
     EntityComponentSystemManager::destroyEntity(RawEntity e, std::source_location location) const
     {
+        util::logTrace<>("detroying", location);
+
         util::assertWarn<>(
             this->tryDestroyEntity(e), "Tried to destroy an already dead entity!", location);
     }
