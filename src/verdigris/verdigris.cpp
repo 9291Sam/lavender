@@ -103,14 +103,15 @@ namespace verdigris
             this->triangles.push_back(std::move(e));
         }
 
-        for (int j = 0; j < 16384; ++j)
+        for (int j = 0; j < 4096; ++j)
         {
             ecs::UniqueEntity e = ecs::createEntity();
 
+            const i32 x = j % 64;
+            const i32 y = j / 64;
+
             e.addComponent(VoxelComponent {
-                .voxel {voxel::Voxel::Emerald},
-                .position {voxel::WorldPosition {
-                    static_cast<glm::ivec3>(genVec3()) + glm::ivec3 {0, 96, 0}}}});
+                .voxel {voxel::Voxel::Emerald}, .position {voxel::WorldPosition {{x, y + 64, 0}}}});
 
             this->voxels.push_back(std::move(e));
         }
@@ -171,7 +172,8 @@ namespace verdigris
             return glm::i32vec3 {static_cast<i32>(x), 66.0, static_cast<i32>(z)};
         };
 
-        // const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
+        // const i32 frameNumber =
+        // static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
         // util::logTrace("modify light");
         if (!this->lights.empty())
@@ -312,27 +314,30 @@ namespace verdigris
                 16.0f * std ::sin(ddist(gen)) * ddist(gen)};
         };
 
+        i32 i = 0;
+
+        const float offset = std::sin(this->time_alive) / 2 + 0.5f;
+
         ecs::getGlobalECSManager()->iterateComponents<VoxelComponent>(
             [&](ecs::RawEntity, VoxelComponent& c)
             {
+                const voxel::WorldPosition previous = c.position;
+
+                const i32 x = i % 64;
+                const i32 y = i / 64;
+
+                const voxel::WorldPosition newPosition {
+                    {x,
+                     y + 64,
+                     static_cast<i32>(-48.0 + 4.0 * std::sin(x / 8.0 + this->time_alive))}};
+
                 this->voxel_world.writeVoxel(c.position, voxel::Voxel::NullAirEmpty);
 
-                const glm::vec3 center {
-                    184.0f * std::sin(this->time_alive),
-                    134.0f,
-                    184.0f * std::cos(this->time_alive)};
+                c.position = newPosition;
 
-                const voxel::WorldPosition pos {glm::i32vec3 {center + genVec3()}};
+                this->voxel_world.writeVoxel(c.position, c.voxel);
 
-                this->voxel_world.modifyPointLight(
-                    this->lights.back(),
-                    center + glm::vec3 {0.0, 192.0f, 0.0f},
-                    {1.0, 1.0, 1.0, 2048.0},
-                    {0.0, 0.0, 0.025, 0.0});
-
-                c.position = pos;
-
-                this->voxel_world.writeVoxel(pos, c.voxel);
+                i += 1;
             });
 
         ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
