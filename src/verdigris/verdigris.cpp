@@ -112,8 +112,6 @@ namespace verdigris
                 .position {voxel::WorldPosition {
                     static_cast<glm::ivec3>(genVec3()) + glm::ivec3 {0, 96, 0}}}});
 
-            util::logTrace("{}", e.getComponent<VoxelComponent>().position.x);
-
             this->voxels.push_back(std::move(e));
         }
 
@@ -127,11 +125,9 @@ namespace verdigris
 
         for (int i = 0; i < 3; ++i)
         {
-            this->lights.push_back(this->voxel_world.createPointLight({}, {}, {}));
+            this->lights.push_back(this->voxel_world.createPointLight(
+                {105, 37, 104}, {1.0, 1.0, 1.0, 384}, {0.0, 0.0, 0.025f, 0.0}));
         }
-
-        this->lights.push_back(this->voxel_world.createPointLight(
-            {105, 315, 104}, {1.0, 1.0, 1.0, 384}, {0.0, 0.0, 0.025f, 0.0}));
     }
 
     Verdigris::~Verdigris()
@@ -178,43 +174,24 @@ namespace verdigris
         // const i32 frameNumber = static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
         // util::logTrace("modify light");
-        int i = 0;
-        for (const voxel::PointLight& l : this->lights)
+        if (!this->lights.empty())
         {
-            const float offset =
-                this->time_alive * 2 + static_cast<float>(i) * std::numbers::pi_v<float> / 2.0f;
+            const glm::vec3 pos = glm::vec3 {
+                78.0f * std::cos(this->time_alive),
+                4.0f * std::sin(this->time_alive) + 122.0f,
+                78.0f * std::sin(this->time_alive)};
 
-            if (i == 0)
-            {
-                const glm::vec3 pos = glm::vec3 {
-                    78.0f * std::cos(offset),
-                    4.0f * std::sin(offset) + 122.0f,
-                    78.0f * std::sin(offset)};
+            // util::logTrace("modify light2");
 
-                // util::logTrace("modify light2");
+            this->voxel_world.modifyPointLight(
+                this->lights.front(), pos, {1.0, 1.0, 1.0, 512.0}, {0.0, 0.0, 0.025, 0.0});
 
-                this->voxel_world.modifyPointLight(
-                    l, pos, {1.0, 1.0, 1.0, 512.0}, {0.0, 0.0, 0.025, 0.0});
-
-                this->triangle.mutateComponent<TriangleComponent>(
-                    [&](TriangleComponent& t)
-                    {
-                        t.transform.translation = pos;
-                        t.transform.scale       = glm::vec3 {4.0f};
-                    });
-            }
-            else
-            {
-                const glm::vec3 pos = glm::vec3 {
-                    256.0f * std::cos(38.4f * 1.384f + 93.4f),
-                    4.0f * std::sin(38.4f * 1.384f + 93.4f) + 147.0f,
-                    256.0f * std::sin(38.4f * 1.384f + 93.4f)};
-
-                this->voxel_world.modifyPointLight(
-                    l, pos, {1.0, 1.0, 1.0, 2048.0}, {0.0, 0.0, 0.025, 0.0});
-            }
-
-            i += 1;
+            this->triangle.mutateComponent<TriangleComponent>(
+                [&](TriangleComponent& t)
+                {
+                    t.transform.translation = pos;
+                    t.transform.scale       = glm::vec3 {4.0f};
+                });
         }
 
         auto thisPos = genSpiralPos(this->game->getRenderer()->getFrameNumber());
@@ -330,21 +307,31 @@ namespace verdigris
         {
             return glm::vec3 {
                 48.0f * std ::sin(ddist(gen)) * ddist(gen),
-                48.0f * std ::sin(ddist(gen)) * ddist(gen) + 80.0f,
+                48.0f * std ::sin(ddist(gen)) * ddist(gen),
                 48.0f * std ::sin(ddist(gen)) * ddist(gen)};
         };
 
         ecs::getGlobalECSManager()->iterateComponents<VoxelComponent>(
-            [&](ecs::RawEntity, const VoxelComponent& c)
+            [&](ecs::RawEntity, VoxelComponent& c)
             {
                 this->voxel_world.writeVoxel(c.position, voxel::Voxel::NullAirEmpty);
 
-                const_cast<VoxelComponent&>(c).position = voxel::WorldPosition {
-                    static_cast<glm::ivec3>(genVec3())
-                    + 5 * genSpiralPos(this->game->getRenderer()->getFrameNumber() * 4)
-                    + glm::ivec3 {0, -296, 0}};
+                const glm::vec3 center {
+                    184.0f * std::sin(this->time_alive),
+                    128.0f,
+                    184.0f * std::cos(this->time_alive)};
 
-                this->voxel_world.writeVoxel(c.position, c.voxel);
+                const voxel::WorldPosition pos {glm::i32vec3 {center + genVec3()}};
+
+                this->voxel_world.modifyPointLight(
+                    this->lights.back(),
+                    center + glm::vec3 {0.0, 192.0f, 0.0f},
+                    {1.0, 1.0, 1.0, 2048.0},
+                    {0.0, 0.0, 0.025, 0.0});
+
+                c.position = pos;
+
+                this->voxel_world.writeVoxel(pos, c.voxel);
             });
 
         ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(

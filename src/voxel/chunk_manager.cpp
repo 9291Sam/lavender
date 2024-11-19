@@ -940,12 +940,12 @@ namespace voxel
             }
 
             // TODO: fix material race | HACK: this just covers it up
-            // if (w.voxel != Voxel::NullAirEmpty)
-            // {
-            // NOLINTNEXTLINE
-            this->material_bricks.modify(maybeBrickPointer.pointer).data[bP.x][bP.y][bP.z] =
-                w.voxel;
-            // }
+            if (w.voxel != Voxel::NullAirEmpty)
+            {
+                // NOLINTNEXTLINE
+                this->material_bricks.modify(maybeBrickPointer.pointer).data[bP.x][bP.y][bP.z] =
+                    w.voxel;
+            }
 
             if (w.voxel == Voxel::NullAirEmpty)
             {

@@ -89,7 +89,7 @@ namespace ecs
         void setOrInsertComponent(C, std::source_location = std::source_location::current()) const;
 
         template<class C>
-        void iterateComponents(std::invocable<RawEntity, const C&> auto) const;
+        void iterateComponents(std::invocable<RawEntity, C&> auto) const;
     };
 
     struct RawEntity : public EntityComponentOperationsCRTPBase<RawEntity>

@@ -198,7 +198,7 @@ namespace ecs
             RawEntity, C, std::source_location = std::source_location::current()) const;
 
         template<class C>
-        void iterateComponents(std::invocable<RawEntity, const C&> auto) const;
+        void iterateComponents(std::invocable<RawEntity, C&> auto) const;
     private:
 
         [[nodiscard]] u32 getNewEntityId() const
