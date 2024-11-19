@@ -1,9 +1,15 @@
+#include "entity.hpp"
 #include "entity_component_system_manager.hpp"
 
 namespace ecs
 {
 
-    RawEntity EntityComponentSystemManager::createEntity() const
+    UniqueEntity EntityComponentSystemManager::createEntity() const
+    {
+        return UniqueEntity {Entity {this->createRawEntity()}};
+    }
+
+    RawEntity EntityComponentSystemManager::createRawEntity() const
     {
         while (true)
         {

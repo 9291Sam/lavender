@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ecs/component_storage.hpp"
+#include "ecs/raw_entity.hpp"
 #include "raw_entity.hpp"
 #include "util/log.hpp"
 #include "util/threads.hpp"
@@ -9,20 +10,53 @@
 #include <boost/unordered/concurrent_flat_set.hpp>
 #include <concepts>
 #include <ctti/type_id.hpp>
+#include <expected>
 #include <memory>
 #include <source_location>
 #include <unordered_map>
 
 namespace ecs
 {
+    class UniqueEntity;
+
+    // I have absolutely no idea, thank you @melak47
+    template<typename Derived, template<auto> class BaseTemplate>
+    struct IsDerivedFromAutoBase
+    {
+    private:
+        template<auto Arg>
+        static std::true_type test(BaseTemplate<Arg>*);
+
+        static std::false_type test(...);
+
+    public:
+        static constexpr bool value = decltype(test(std::declval<Derived*>()))::value;
+    };
+
+    template<typename T, template<auto> class BaseTemplate>
+    concept DerivedFromAutoBase = IsDerivedFromAutoBase<T, BaseTemplate>::value;
+
     class EntityComponentSystemManager
     {
     public:
-        enum class Result
+        enum class TryAddComponentResult
         {
             NoError,
-            ComponentConflict,
+            ComponentAlreadyPresent,
             EntityDead,
+        };
+
+        enum class TryRemoveComponentResult
+        {
+            ComponentNotPresent,
+            EntityDead
+        };
+
+        enum class TryPeerComponentResult
+        {
+            NoError,
+            ComponentNotPresent,
+            EntityDead
         };
 
         enum class TryHasComponentResult
@@ -33,31 +67,55 @@ namespace ecs
         };
     public:
 
+        template<typename T>
+        struct EntityDeleter
+        {
+            void operator() (T* entity) const
+            {
+                ecs::getGlobalECSManager()->freeRawInherentEntity(entity);
+            }
+        };
+
+        template<typename T>
+        using ManagedEntityPtr = std::unique_ptr<T, EntityDeleter<T>>;
+
         EntityComponentSystemManager()
             : entities_guard {std::make_unique<boost::unordered::concurrent_flat_set<u32>>()}
             , component_storage {{}}
         {}
 
-        [[nodiscard]] RawEntity createEntity() const;
-        [[nodiscard]] bool      tryDestroyEntity(RawEntity) const;
+        template<class T, class... Args>
+            requires DerivedFromAutoBase<T, RawEntityBase>
+                  && std::is_constructible_v<T, RawEntity, Args...>
+        [[nodiscard]] T* allocateRawInherentEntity(Args&&...) const;
+        template<class T>
+        void freeRawInherentEntity(T*) const;
+
+        template<class T, class... Args>
+        ManagedEntityPtr<T> allocateInherentEntity(Args&&...) const;
+
+        [[nodiscard]] UniqueEntity createEntity() const;
+        [[nodiscard]] RawEntity    createRawEntity() const;
+        [[nodiscard]] bool         tryDestroyEntity(RawEntity) const;
         void destroyEntity(RawEntity, std::source_location = std::source_location::current()) const;
 
         [[nodiscard]] bool isEntityAlive(RawEntity) const;
 
         template<class C>
-        [[nodiscard]] Result tryAddComponent(RawEntity, C&&) const;
+        [[nodiscard]] TryAddComponentResult tryAddComponent(RawEntity, C&&) const;
         template<class C>
         void
         addComponent(RawEntity, C&&, std::source_location = std::source_location::current()) const;
 
         template<class C>
-        [[nodiscard]] Result tryRemoveComponent(RawEntity, C&&) const;
-        template<class C>
-        void removeComponent(
-            RawEntity, std::source_location = std::source_location::current()) const;
+        [[nodiscard]] std::expected<C, TryRemoveComponentResult>
+            tryRemoveComponent(RawEntity) const;
+        template<class C, bool PanicOnFail = false>
+        C removeComponent(RawEntity, std::source_location = std::source_location::current()) const;
 
         template<class C>
-        [[nodiscard]] Result tryMutateComponent(RawEntity, std::invocable<C&> auto) const;
+        [[nodiscard]] TryPeerComponentResult
+            tryMutateComponent(RawEntity, std::invocable<C&> auto) const;
         template<class C>
         void mutateComponent(
             RawEntity,
@@ -65,15 +123,17 @@ namespace ecs
             std::source_location = std::source_location::current()) const;
 
         template<class C>
-        [[nodiscard]] Result tryReadComponent(RawEntity, std::invocable<const C&> auto) const;
+        [[nodiscard]] TryPeerComponentResult
+            tryReadComponent(RawEntity, std::invocable<const C&> auto) const;
         template<class C>
         void readComponent(
             RawEntity,
-            std::invocable<C&> auto,
+            std::invocable<const C&> auto,
             std::source_location = std::source_location::current()) const;
 
         template<class C>
         [[nodiscard]] TryHasComponentResult tryHasComponent(RawEntity) const;
+        template<class C>
         [[nodiscard]] bool
             hasComponent(RawEntity, std::source_location = std::source_location::current()) const;
     private:
@@ -85,52 +145,7 @@ namespace ecs
 
         template<class C>
         void accessComponentStorage(
-            std::invocable<const boost::unordered::concurrent_flat_map<u32, C>&> auto func) const
-        {
-            const bool needsCreation = this->component_storage.readLock(
-                [&](const std::unordered_map<
-                    ctti::type_id_t,
-                    std::unique_ptr<ComponentStorageBase>>& erasedStorage)
-                {
-                    auto it = erasedStorage.find(ctti::type_id<C>());
-
-                    if (it != erasedStorage.cend())
-                    {
-                        func(
-                            *reinterpret_cast<const boost::unordered::concurrent_flat_map<u32, C>*>(
-                                it->second->getRawStorage()));
-
-                        return false;
-                    }
-                    else
-                    {
-                        return true;
-                    }
-                });
-
-            if (needsCreation)
-            {
-                this->component_storage.writeLock(
-                    [&](std::unordered_map<ctti::type_id_t, std::unique_ptr<ComponentStorageBase>>&
-                            erasedStorage)
-                    {
-                        util::logTrace("{} {}", (void*)(&erasedStorage), erasedStorage.size());
-
-                        erasedStorage.insert({ctti::type_id<C>(), {}});
-
-                        util::logTrace("{} {}", (void*)(&erasedStorage), erasedStorage.size());
-
-                        std::unique_ptr<ComponentStorageBase>& ptr =
-                            erasedStorage[ctti::type_id<C>()];
-
-                        void* data = ptr->getRawStorage();
-
-                        // func(*reinterpret_cast<
-                        //      const boost::unordered::concurrent_flat_map<u32, int>*>(
-                        //     ptr->getRawStorage()));
-                    });
-            }
-        }
+            std::invocable<boost::unordered::concurrent_flat_map<u32, C>&> auto func) const;
 
         mutable std::atomic<u32> next_entity_id;
 
@@ -138,6 +153,9 @@ namespace ecs
         util::RwLock<std::unordered_map<ctti::type_id_t, std::unique_ptr<ComponentStorageBase>>>
             component_storage;
     };
+
+    template<class T>
+    using ManagedEntityPtr = EntityComponentSystemManager::ManagedEntityPtr<T>;
 } // namespace ecs
 
 #include "entity_component_system_manager.inl"

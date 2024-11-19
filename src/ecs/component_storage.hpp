@@ -8,10 +8,10 @@ namespace ecs
     struct ComponentStorageBase
     {
         ComponentStorageBase()          = default;
-        virtual ~ComponentStorageBase() = 0;
+        virtual ~ComponentStorageBase() = default;
 
-        virtual void* getRawStorage();
-        virtual void  clearAllComponentsForId(u32);
+        virtual void* getRawStorage()              = 0;
+        virtual void  clearAllComponentsForId(u32) = 0;
     };
 
     template<class C>

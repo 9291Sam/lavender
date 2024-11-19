@@ -5,14 +5,16 @@
 
 namespace ecs
 {
-    // This is a bare
     struct Entity : public RawEntity
     {};
 
     class UniqueEntity : public Entity
     {
     public:
-        UniqueEntity() noexcept;
+        UniqueEntity() noexcept = default;
+        explicit UniqueEntity(RawEntity e)
+            : Entity {RawEntity {e}}
+        {}
         ~UniqueEntity()
         {
             getGlobalECSManager()->destroyEntity(*this);
@@ -23,7 +25,20 @@ namespace ecs
         UniqueEntity& operator= (const UniqueEntity&) = delete;
         UniqueEntity& operator= (UniqueEntity&&) noexcept;
 
-        Entity release();
-        void   reset();
+        Entity release()
+        {
+            Entity e = *this;
+
+            this->id = NullEntity;
+
+            return e;
+        }
+
+        void reset()
+        {
+            getGlobalECSManager()->destroyEntity(*this);
+
+            this->id = NullEntity;
+        }
     };
 } // namespace ecs

@@ -1,4 +1,5 @@
 #include "ecs/entity.hpp"
+#include "ecs/entity_component_system_manager.hpp"
 #include "ecs/raw_entity.hpp"
 #include "game/game.hpp"
 #include "util/log.hpp"
@@ -360,45 +361,45 @@
 //     throw std::runtime_error("Owner is not valid!");
 // }
 
-// // A concrete entity type that inherits from InherentEntity
-// class ConcreteEntity : public InherentEntity
-// {
-// public:
-//     ConcreteEntity(UniqueEntity entity)
-//         : entity_(std::move(entity))
-//         , health_(100)
-//         , name_("Unknown")
-//     {}
+// A concrete entity type that inherits from InherentEntity
+class ConcreteEntity : DERIVE_ENTITY(ConcreteEntity, entity_)
+{
+public:
+    operator ecs::RawEntity ()
+    {
+        return this->entity_;
+    }
 
-//     UniqueEntity& getEntity() const override
-//     {
-//         return entity_;
-//     }
+    ConcreteEntity(ecs::RawEntity entity)
+        : entity_(std::move(entity))
+        , health_(100)
+        , name_("Unknown")
+    {}
 
-//     // Some data related to the concrete entity
-//     int getHealth() const
-//     {
-//         return health_;
-//     }
-//     void setHealth(int health)
-//     {
-//         health_ = health;
-//     }
+    // Some data related to the concrete entity
+    int getHealth() const
+    {
+        return health_;
+    }
+    void setHealth(int health)
+    {
+        health_ = health;
+    }
 
-//     std::string getName() const
-//     {
-//         return name_;
-//     }
-//     void setName(const std::string& name)
-//     {
-//         name_ = name;
-//     }
+    std::string getName() const
+    {
+        return name_;
+    }
+    void setName(const std::string& name)
+    {
+        name_ = name;
+    }
 
-// private:
-//     mutable UniqueEntity entity_;
-//     int                  health_;
-//     std::string          name_;
-// };
+private:
+    int            health_;
+    ecs::RawEntity entity_;
+    std::string    name_;
+};
 
 // template<typename T>
 // using ManagedEntityPtr = EntityManager::ManagedEntityPtr<T>;
@@ -415,12 +416,19 @@ int main()
         // map.insert({3.0, 4});
 
         ecs::RawEntity e = ecs::getGlobalECSManager()->createEntity();
-        ecs::getGlobalECSManager()->addComponent(e, int {});
+        ecs::getGlobalECSManager()->addComponent(e, int {4});
+
+        util::logTrace("{} {}", ecs::getGlobalECSManager()->removeComponent<int>(e), "oisdf");
 
         // ecs::UniqueEntity e {};
 
-        // EntityManager                    manager;
-        // ManagedEntityPtr<ConcreteEntity> entity = manager.createInherentEntity<ConcreteEntity>();
+        ecs::ManagedEntityPtr<ConcreteEntity> entity =
+            ecs::getGlobalECSManager()->allocateInherentEntity<ConcreteEntity>();
+
+        // entity->addComponent(int {4});
+
+        // util::logTrace("{} {}", ecs::getGlobalECSManager()->removeComponent<int>(*entity),
+        // "oisdf");
 
         // // Add components to the entity via member functions
         // entity->addComponent<int>(42);

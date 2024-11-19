@@ -14,6 +14,8 @@ voxel::World
 voxel::***** // does synchronization, takes in lists in world space and then divvies it up by chunk
 voxel::ChunkManager // takes in vertex buffers and just organizes them and calls the commands
 
+timings of whether or not we're CPU or GPU bottlenecked
+
 profiling on imgui via tracing
 render thread & worker threads
 
