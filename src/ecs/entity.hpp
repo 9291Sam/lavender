@@ -5,15 +5,12 @@
 
 namespace ecs
 {
-    struct Entity : public RawEntity
-    {};
-
-    class UniqueEntity : public Entity
+    class UniqueEntity : public RawEntity
     {
     public:
         UniqueEntity() noexcept = default;
         explicit UniqueEntity(RawEntity e)
-            : Entity {RawEntity {e}}
+            : RawEntity {e}
         {}
         ~UniqueEntity()
         {
@@ -21,13 +18,15 @@ namespace ecs
         }
 
         UniqueEntity(const UniqueEntity&) = delete;
-        UniqueEntity(UniqueEntity&&) noexcept;
+        UniqueEntity(UniqueEntity&& other) noexcept
+            : UniqueEntity {other.release()}
+        {}
         UniqueEntity& operator= (const UniqueEntity&) = delete;
         UniqueEntity& operator= (UniqueEntity&&) noexcept;
 
-        Entity release()
+        RawEntity release()
         {
-            Entity e = *this;
+            RawEntity e {.id {this->id}};
 
             this->id = NullEntity;
 

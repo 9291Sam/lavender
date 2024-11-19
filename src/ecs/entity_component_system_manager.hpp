@@ -85,7 +85,7 @@ namespace ecs
         {}
 
         template<class T, class... Args>
-            requires DerivedFromAutoBase<T, RawEntityBase>
+            requires DerivedFromAutoBase<T, InherentEntityBase>
                   && std::is_constructible_v<T, RawEntity, Args...>
         [[nodiscard]] T* allocateRawInherentEntity(Args&&...) const;
         template<class T>

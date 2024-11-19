@@ -12,7 +12,7 @@ namespace ecs
 {
 
     template<class T, class... Args>
-        requires DerivedFromAutoBase<T, RawEntityBase>
+        requires DerivedFromAutoBase<T, InherentEntityBase>
               && std::is_constructible_v<T, RawEntity, Args...>
     T* EntityComponentSystemManager::allocateRawInherentEntity(Args&&... args) const
     {
@@ -344,12 +344,10 @@ namespace ecs
         }
     }
 
-    template<auto O>
     template<class C>
-    void RawEntityBase<O>::addComponent(C&& c, std::source_location location) const
+    void RawEntity::addComponent(C&& c, std::source_location location) const
     {
-        ecs::getGlobalECSManager()->addComponent(
-            RawEntity {this->getId()}, std::forward<C>(c), location);
+        ecs::getGlobalECSManager()->addComponent(*this, std::forward<C>(c), location);
     }
 
 } // namespace ecs

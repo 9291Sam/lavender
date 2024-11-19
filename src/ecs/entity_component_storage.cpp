@@ -6,7 +6,7 @@ namespace ecs
 
     UniqueEntity EntityComponentSystemManager::createEntity() const
     {
-        return UniqueEntity {Entity {this->createRawEntity()}};
+        return UniqueEntity {this->createRawEntity()};
     }
 
     RawEntity EntityComponentSystemManager::createRawEntity() const

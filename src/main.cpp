@@ -362,13 +362,9 @@
 // }
 
 // A concrete entity type that inherits from InherentEntity
-class ConcreteEntity : DERIVE_ENTITY(ConcreteEntity, entity_)
+class ConcreteEntity : DERIVE_INHERENT_ENTITY(ConcreteEntity, entity_)
 {
 public:
-    operator ecs::RawEntity ()
-    {
-        return this->entity_;
-    }
 
     ConcreteEntity(ecs::RawEntity entity)
         : entity_(std::move(entity))
@@ -411,10 +407,6 @@ int main()
 
     try
     {
-        // boost::unordered::concurrent_flat_map<double, int> map {};
-
-        // map.insert({3.0, 4});
-
         ecs::RawEntity e = ecs::getGlobalECSManager()->createEntity();
         ecs::getGlobalECSManager()->addComponent(e, int {4});
 
@@ -425,10 +417,8 @@ int main()
         ecs::ManagedEntityPtr<ConcreteEntity> entity =
             ecs::getGlobalECSManager()->allocateInherentEntity<ConcreteEntity>();
 
-        // entity->addComponent(int {4});
-
-        // util::logTrace("{} {}", ecs::getGlobalECSManager()->removeComponent<int>(*entity),
-        // "oisdf");
+        entity->addComponent(int {4});
+        util::logTrace("{} {}", ecs::getGlobalECSManager()->removeComponent<int>(*entity), "oisdf");
 
         // // Add components to the entity via member functions
         // entity->addComponent<int>(42);
