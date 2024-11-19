@@ -227,6 +227,7 @@ namespace ecs
             std::forward<Args...>(args)...);
     }
 
+    [[nodiscard]] UniqueEntity createEntity();
 } // namespace ecs
 
 #include "entity_component_system_manager.inl"

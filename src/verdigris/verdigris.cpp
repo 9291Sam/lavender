@@ -29,7 +29,7 @@ namespace verdigris
     Verdigris::Verdigris(game::Game* game_) // NOLINT
         : game {game_}
         , voxel_world(std::make_unique<world::WorldChunkGenerator>(38484334), this->game)
-        , triangle {ecs::getGlobalECSManager()->createEntity()}
+        , triangle {ecs::createEntity()}
     {
         this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
             gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
@@ -101,6 +101,20 @@ namespace verdigris
             e.addComponent(t);
 
             this->triangles.push_back(std::move(e));
+        }
+
+        for (int j = 0; j < 4096; ++j)
+        {
+            ecs::UniqueEntity e = ecs::createEntity();
+
+            e.addComponent(VoxelComponent {
+                .voxel {voxel::Voxel::Emerald},
+                .position {voxel::WorldPosition {
+                    static_cast<glm::ivec3>(genVec3()) + glm::ivec3 {0, 96, 0}}}});
+
+            util::logTrace("{}", e.getComponent<VoxelComponent>().position.x);
+
+            this->voxels.push_back(std::move(e));
         }
 
         // CpuMasterBuffer
@@ -309,6 +323,29 @@ namespace verdigris
         this->camera.addPitch(yDelta * rotateSpeedScale);
 
         std::vector<game::FrameGenerator::RecordObject> draws {};
+
+        std::uniform_real_distribution<float> ddist {-1.0, 1.0};
+
+        auto genVec3 = [&]() -> glm::vec3
+        {
+            return glm::vec3 {
+                48.0f * std ::sin(ddist(gen)) * ddist(gen),
+                48.0f * std ::sin(ddist(gen)) * ddist(gen) + 80.0f,
+                48.0f * std ::sin(ddist(gen)) * ddist(gen)};
+        };
+
+        ecs::getGlobalECSManager()->iterateComponents<VoxelComponent>(
+            [&](ecs::RawEntity, const VoxelComponent& c)
+            {
+                this->voxel_world.writeVoxel(c.position, voxel::Voxel::NullAirEmpty);
+
+                const_cast<VoxelComponent&>(c).position = voxel::WorldPosition {
+                    static_cast<glm::ivec3>(genVec3())
+                    + 5 * genSpiralPos(this->game->getRenderer()->getFrameNumber() * 4)
+                    + glm::ivec3 {0, -296, 0}};
+
+                this->voxel_world.writeVoxel(c.position, c.voxel);
+            });
 
         ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
             [&](ecs::RawEntity, const TriangleComponent& c)

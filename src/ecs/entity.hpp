@@ -64,4 +64,5 @@ namespace ecs
         // TODO: dont use system allocator
         return ::new T {this->createEntity(), std::forward<Args...>(args)...}; // NOLINT
     }
+
 } // namespace ecs
