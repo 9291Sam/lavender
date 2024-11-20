@@ -14,10 +14,10 @@ namespace voxel
                 .specular_color {0.633, 0.727811, 0.633, 0.55},
                 .diffuse_subsurface_weight {0.0},
                 .specular {76.87483f},
-                .roughness {0.0},
-                .metallic {0.0},
-                .emissive_color_power {},
-                .coat_color_power {},
+                .roughness {0.02},            // Gemstone-like smooth surface
+                .metallic {0.0},              // Non-metallic
+                .emissive_color_power {0.0f}, // Non-emissive
+                .coat_color_power {0.0f},     // Small clear coat
             };
         case Voxel::Ruby:
             return VoxelMaterial {
@@ -26,10 +26,10 @@ namespace voxel
                 .specular_color {0.727811, 0.626959, 0.626959, 0.55},
                 .diffuse_subsurface_weight {0.0},
                 .specular {76.89304f},
-                .roughness {0.0},
-                .metallic {0.0},
-                .emissive_color_power {},
-                .coat_color_power {},
+                .roughness {0.02},            // Ruby-like smooth surface
+                .metallic {0.0},              // Non-metallic
+                .emissive_color_power {0.0f}, // Non-emissive
+                .coat_color_power {0.0f},     // Small clear coat
             };
         case Voxel::Pearl:
             return VoxelMaterial {
@@ -38,10 +38,10 @@ namespace voxel
                 .specular_color {0.296648, 0.296648, 0.296648, 0.922},
                 .diffuse_subsurface_weight {0.0},
                 .specular {11.264f},
-                .roughness {0.0},
-                .metallic {0.0},
-                .emissive_color_power {},
-                .coat_color_power {},
+                .roughness {0.1},             // Pearl-like soft reflection
+                .metallic {0.0},              // Non-metallic
+                .emissive_color_power {0.0f}, // Non-emissive
+                .coat_color_power {0.00f},    // Small clear coat
             };
         case Voxel::Obsidian:
             return VoxelMaterial {
@@ -50,10 +50,10 @@ namespace voxel
                 .specular_color {0.332741, 0.328634, 0.346435, 0.82},
                 .diffuse_subsurface_weight {0.0},
                 .specular {38.4394f},
-                .roughness {0.0},
-                .metallic {0.0},
-                .emissive_color_power {},
-                .coat_color_power {},
+                .roughness {0.2},             // Slightly rougher, stone-like surface
+                .metallic {0.0},              // Non-metallic
+                .emissive_color_power {0.0f}, // Non-emissive
+                .coat_color_power {0.0f},     // No clear coat
             };
         case Voxel::Brass:
             return VoxelMaterial {
@@ -62,10 +62,10 @@ namespace voxel
                 .specular_color {0.992157, 0.941176, 0.807843, 1.0},
                 .diffuse_subsurface_weight {0.0},
                 .specular {27.8974f},
-                .roughness {0.0},
-                .metallic {0.0},
-                .emissive_color_power {},
-                .coat_color_power {},
+                .roughness {0.05},            // Polished brass with a smooth finish
+                .metallic {0.5},              // Slightly metallic
+                .emissive_color_power {0.0f}, // Non-emissive
+                .coat_color_power {0.0f},     // Moderate clear coat
             };
         case Voxel::Chrome:
             return VoxelMaterial {
@@ -74,11 +74,10 @@ namespace voxel
                 .specular_color {0.774597, 0.774597, 0.774597, 1.0},
                 .diffuse_subsurface_weight {0.0},
                 .specular {76.88138f},
-                .roughness {0.0},
-                .metallic {0.0},
-                .emissive_color_power {},
-                .coat_color_power {},
-
+                .roughness {0.01},            // Chrome is very smooth
+                .metallic {1.0},              // Chrome is metallic
+                .emissive_color_power {0.0f}, // Non-emissive
+                .coat_color_power {0.0f},     // Clear coat for extra reflectivity
             };
         case Voxel::Copper:
             return VoxelMaterial {
@@ -87,11 +86,10 @@ namespace voxel
                 .specular_color {0.256777, 0.137622, 0.086014, 1.0},
                 .diffuse_subsurface_weight {0.0},
                 .specular {12.84395f},
-                .roughness {0.0},
-                .metallic {0.0},
-                .emissive_color_power {},
-                .coat_color_power {},
-
+                .roughness {0.05},            // Polished copper
+                .metallic {1.0},              // Copper is metallic
+                .emissive_color_power {0.0f}, // Non-emissive
+                .coat_color_power {0.0f},     // Clear coat for shine
             };
         case Voxel::Gold:
             return VoxelMaterial {
@@ -100,11 +98,10 @@ namespace voxel
                 .specular_color {0.628281, 0.555802, 0.366065, 1.0},
                 .diffuse_subsurface_weight {0.0},
                 .specular {51.28434f},
-                .roughness {0.0},
-                .metallic {0.0},
-                .emissive_color_power {},
-                .coat_color_power {},
-
+                .roughness {0.02},            // Polished gold
+                .metallic {1.0},              // Gold is metallic
+                .emissive_color_power {0.0f}, // Non-emissive
+                .coat_color_power {0.0f},     // Clear coat for enhanced reflectivity
             };
         case Voxel::Topaz:
             return VoxelMaterial {
@@ -113,23 +110,23 @@ namespace voxel
                 .specular_color {0.628, 0.556, 0.366, 1.0},
                 .diffuse_subsurface_weight {0.1f},
                 .specular {51.2f},
-                .roughness {0.05f},
-                .metallic {0.0},
-                .emissive_color_power {},
-                .coat_color_power {},
+                .roughness {0.05f},           // Slight roughness for gemstone
+                .metallic {0.0},              // Non-metallic
+                .emissive_color_power {0.0f}, // Non-emissive
+                .coat_color_power {0.0f},     // Small clear coat
             };
 
         case Voxel::Sapphire:
             return VoxelMaterial {
                 .ambient_color {0.00045, 0.00045, 0.20015, 1.0},
                 .diffuse_color {0.07085, 0.23568, 0.73554, 1.0},
-                .specular_color {0.77423, 0.77423, 0.99912, 1.0},
-                .diffuse_subsurface_weight {0.0842f},
-                .specular {76.81234f},
-                .roughness {0.045f},
-                .metallic {0.0f},
-                .emissive_color_power {},
-                .coat_color_power {},
+                .specular_color {0.71396, 0.77568, 0.78563, 1.0},
+                .diffuse_subsurface_weight {0.0},
+                .specular {51.32f},
+                .roughness {0.02f},           // Sapphire-like smoothness
+                .metallic {0.0},              // Non-metallic
+                .emissive_color_power {0.0f}, // Non-emissive
+                .coat_color_power {0.0f},     // Clear coat for gloss
             };
 
         case Voxel::Amethyst:

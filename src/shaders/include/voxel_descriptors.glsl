@@ -240,4 +240,19 @@ vec3 unpackNormalId(u32 id)
     return available_normals[id];
 }
 
+
+vec3 unpackBiNormalId(u32 id)
+{
+    const vec3 available_normals[6] = {
+        vec3(1.0, 0.0, 1.0),
+        vec3(1.0, -0.0, 1.0),
+        vec3(-0.0, 1.0, 1.0),
+        vec3(0.0, 1.0, 1.0),
+        vec3(1.0, 1.0, -0.0),
+        vec3(1.0, 1.0, 0.0),
+    };
+
+    return available_normals[id];
+}
+
 #endif // SRC_SHADERS_INCLUDE_VOXEL_DESCRIPTORS_GLSL

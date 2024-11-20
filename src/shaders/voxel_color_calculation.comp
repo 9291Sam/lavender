@@ -10,12 +10,12 @@ struct CalculatedLightPower {
     vec3 specular_strength;
 };
 
-CalculatedLightPower calculate_light_power(
+CalculatedLightPower oldLightPower(
     vec3 camera_position,
     vec3 voxel_position,
     vec3 voxel_normal,
     PointLight light,
-    float specular_power
+    VoxelMaterial material
 ) {
     vec3 to_light_vector = light.position.xyz - voxel_position;
     float to_light_distance = length(to_light_vector);
@@ -32,9 +32,56 @@ CalculatedLightPower calculate_light_power(
     
     // dot(voxel_normal, to_light_vector) * 0.5 + 0.5 half lambert
     vec3 diffuse_strength = max(dot(voxel_normal, to_light_vector), 0.0) * light.color_and_power.rgb * light.color_and_power.w * attenuation;
-    vec3 specular_strength = pow(max(dot(reflect_vector, view_vector), 0.0), specular_power) * light.color_and_power.rgb * light.color_and_power.w * attenuation;
+    vec3 specular_strength = pow(max(dot(reflect_vector, view_vector), 0.0), material.specular) * light.color_and_power.rgb * light.color_and_power.w * attenuation;
 
     return CalculatedLightPower(diffuse_strength, specular_strength);
+}
+
+
+CalculatedLightPower newLightPower(
+    vec3 camera_position,
+    vec3 voxel_position,
+    vec3 voxel_normal,
+    PointLight light,
+    VoxelMaterial material
+) {
+    
+    // Calculate vectors
+    vec3 light_dir = normalize(light.position.xyz - voxel_position);
+    vec3 view_dir = normalize(camera_position - voxel_position);
+    vec3 half_dir = normalize(light_dir + view_dir);
+
+    // Diffuse reflection (Lambertian)
+    float diffuse_factor = max(dot(voxel_normal, light_dir), 0.0);
+    vec3 diffuse = diffuse_factor * material.diffuse_color.xyz;
+
+    // Cook-Torrance specular reflection with roughness
+    float HdotN = max(dot(half_dir, voxel_normal), 0.0);
+    float D = (HdotN * HdotN) / (HdotN * HdotN * (material.roughness * material.roughness) + (1.0 - HdotN) * (1.0 - HdotN));
+    float specular_factor = D * pow(max(dot(voxel_normal, half_dir), 0.0), material.specular);
+    vec3 specular = specular_factor * material.specular_color.xyz;
+
+    // Metallic handling (adjust specular strength)
+    vec3 final_specular = mix(material.diffuse_color.xyz, material.specular_color.xyz, material.metallic);
+
+    // Clear coat reflection (additional specular layer)
+    vec3 clear_coat_specular = material.coat_color_power.xyz * specular_factor;
+    float clear_coat_factor = material.coat_color_power.w;  // optional intensity control
+
+    // Falloff of light
+    float distance = length(light.position.xyz - voxel_position);
+    float attenuation = 1.0 / (light.falloffs.x + light.falloffs.y * distance + light.falloffs.z * distance * distance);
+
+    // Light contribution
+    float light_intensity = light.color_and_power.w * attenuation;
+    vec3 light_color = light.color_and_power.xyz;
+
+    // Diffuse and specular strengths
+    CalculatedLightPower lightPower;
+    lightPower.diffuse_strength = diffuse * light_color * light_intensity;
+    lightPower.specular_strength = (final_specular + clear_coat_specular) * light_color * light_intensity;
+
+    return lightPower;
 }
 
 i32 moduloEuclideani32(i32 lhs, i32 rhs)
@@ -321,13 +368,28 @@ void main()
 
             if (!isFaceInShadow)
             {
-                CalculatedLightPower power = calculate_light_power(
-                    in_global_info.camera_position.xyz,
-                    sample_positon_world,
-                    unpackNormalId(normal), 
-                    in_point_lights.lights[i],
-                    this_material.specular
-                );
+                CalculatedLightPower power;
+
+                // if (brick_pointer % 2 == 0)
+                // {
+                    power = newLightPower(
+                        in_global_info.camera_position.xyz,
+                        sample_positon_world,
+                        unpackNormalId(normal), 
+                        in_point_lights.lights[i],
+                        this_material
+                    );
+                // }
+                // else
+                // {
+                //     power = oldLightPower(
+                //         in_global_info.camera_position.xyz,
+                //         sample_positon_world,
+                //         unpackNormalId(normal), 
+                //         in_point_lights.lights[i],
+                //         this_material
+                //     );
+                // }
 
                 sum_diffuse += power.diffuse_strength;
                 // #warning no specular
