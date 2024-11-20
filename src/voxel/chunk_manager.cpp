@@ -28,6 +28,7 @@
 #include "voxel/dense_bit_chunk.hpp"
 #include "voxel/material_manager.hpp"
 #include "voxel/opacity_brick.hpp"
+#include "voxel/visibility_brick.hpp"
 #include "voxel_face_direction.hpp"
 #include <algorithm>
 #include <bit>
@@ -505,6 +506,7 @@ namespace voxel
         std::memset(gpuChunksBufferPtr, -1, len);
 
         this->face_id_map.fillImmediate(FaceIdBrickHashMapStorage {.key {~0U}, .value {~0U}});
+        this->visibility_bricks.fillImmediate(VisibilityBrick {});
 
         this->renderer->getDevice()->getDevice().updateDescriptorSets(
             static_cast<u32>(writes.size()), writes.data(), 0, nullptr);
@@ -691,25 +693,21 @@ namespace voxel
             .render_pass {game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
             .pipeline {nullptr},
             .descriptors {},
-            .record_func {
-                [this, indirectCommands, indirectPayload](
-                    vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
-                {
-                    commandBuffer.fillBuffer(
-                        *this->visibility_bricks, 0, this->visibility_bricks.getSizeBytes(), 0);
+            .record_func {[this, indirectCommands, indirectPayload](
+                              vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                          {
+                              GlobalVoxelData data {
+                                  .number_of_visible_faces {},
+                                  .number_of_calculating_draws_x {},
+                                  .number_of_calculating_draws_y {},
+                                  .number_of_calculating_draws_z {},
+                                  .number_of_lights {
+                                      this->light_allocator.getUpperBoundOnAllocatedElements()},
+                              };
 
-                    GlobalVoxelData data {
-                        .number_of_visible_faces {},
-                        .number_of_calculating_draws_x {},
-                        .number_of_calculating_draws_y {},
-                        .number_of_calculating_draws_z {},
-                        .number_of_lights {
-                            this->light_allocator.getUpperBoundOnAllocatedElements()},
-                    };
-
-                    commandBuffer.updateBuffer(
-                        *this->global_voxel_data, 0, sizeof(GlobalVoxelData) - 4, &data);
-                }}};
+                              commandBuffer.updateBuffer(
+                                  *this->global_voxel_data, 0, sizeof(GlobalVoxelData) - 4, &data);
+                          }}};
 
         numberOfFacesVisible =
             this->global_voxel_data.getGpuDataNonCoherent()[0].readback_number_of_visible_faces;

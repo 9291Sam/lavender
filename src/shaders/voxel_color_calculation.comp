@@ -284,6 +284,10 @@ void main()
             face_number / 64
         );
 
+        in_visibility_bricks.brick[brick_pointer]
+            .view_dir[normal]
+            .data[face_number / 32] = 0;
+
         const u32 parent_chunk = bitfieldExtract(in_brick_parent_info.info[brick_pointer].data, 0, 16);
         const u32 brick_parent_number = bitfieldExtract(in_brick_parent_info.info[brick_pointer].data, 23, 9);
 

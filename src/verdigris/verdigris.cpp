@@ -90,7 +90,7 @@ namespace verdigris
                 32.0f * std ::sin(ddist(gen)) * ddist(gen)};
         };
 
-        for (int j = 0; j < 867; ++j)
+        for (int j = 0; j < 32; ++j)
         {
             ecs::UniqueEntity e = ecs::getGlobalECSManager()->createEntity();
 

@@ -9,6 +9,9 @@ voxel groups
 entity system
 physics
 LODs
+    Map<ChunkCorner, Chunk {Lod, BrickmapPtr}>
+    to find a chunk get a world position and then if its chunk doesnt exist
+    keep going up in LOD levels untill you find a chunk
 three tiered abstraction for voxel writes
 voxel::World
 voxel::***** // does synchronization, takes in lists in world space and then divvies it up by chunk
