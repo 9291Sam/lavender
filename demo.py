@@ -51,8 +51,8 @@ ax = fig.add_subplot(111, projection='3d')
 ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.6)
 
 for xi, yi, dx, dy in sampled_vectors:
-    zi = xi**2 + yi**2 + 3  
-    ax.quiver(xi, yi, zi, dx, dy, 0, color='orange', length=0.3, normalize=True)
+    zi = xi**2 + yi**2 
+    ax.quiver(xi, yi, zi, dx, dy, 0, color='orange', length=0.3, linewidth=5, normalize=True)
 
 
 ax.quiver(X, Y, Z, U, V, 0, color='purple', length=0.2, normalize=True)
@@ -60,9 +60,5 @@ ax.quiver(X, Y, Z, U, V, 0, color='purple', length=0.2, normalize=True)
 ax.set_xlim([-1.5, 1.5])
 ax.set_ylim([-1.5, 1.5])
 ax.set_zlim([0, 3])
-ax.set_xlabel('X-axis')
-ax.set_ylabel('Y-axis')
-ax.set_zlabel('Z-axis')
-ax.set_title('Real and Interpolated Vector Field on a Parabola')
 
 plt.show()
