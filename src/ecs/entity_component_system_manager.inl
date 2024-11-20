@@ -533,14 +533,14 @@ namespace ecs
     }
 
     template<class C>
-    void EntityComponentSystemManager::iterateComponents(
-        std::invocable<RawEntity, const C&> auto func) const
+    void
+    EntityComponentSystemManager::iterateComponents(std::invocable<RawEntity, C&> auto func) const
     {
         this->accessComponentStorage<C>(
             [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
             {
-                storage.cvisit_all(
-                    [&](const std::pair<u32, C>& pair)
+                storage.visit_all(
+                    [&](const std::pair<u32, C&>& pair)
                     {
                         return func(RawEntity {.id {pair.first}}, pair.second);
                     });
@@ -761,7 +761,7 @@ namespace ecs
     template<class Concrete>
     template<class C>
     void EntityComponentOperationsCRTPBase<Concrete>::iterateComponents(
-        std::invocable<RawEntity, const C&> auto func) const
+        std::invocable<RawEntity, C&> auto func) const
     {
         ecs::getGlobalECSManager()->iterateComponents<C>(*this, func);
     }

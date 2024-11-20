@@ -120,7 +120,7 @@ namespace voxel
         ChunkCoordinate cameraCoordinate =
             splitWorldPosition(WorldPosition {this->camera.getPosition()}).first;
 
-        int radius = 9;
+        int radius = 5;
 
         for (int i = -radius; i <= radius; ++i)
         {

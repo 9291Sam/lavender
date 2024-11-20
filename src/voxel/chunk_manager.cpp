@@ -937,9 +937,13 @@ namespace voxel
                 this->brick_maps.modify(c.id).data[bC.x][bC.y][bC.z] = maybeBrickPointer;
             }
 
-            // NOLINTNEXTLINE
-            this->material_bricks.modify(maybeBrickPointer.pointer).data[bP.x][bP.y][bP.z] =
-                w.voxel;
+            // TODO: fix material race | HACK: this just covers it up
+            if (w.voxel != Voxel::NullAirEmpty)
+            {
+                // NOLINTNEXTLINE
+                this->material_bricks.modify(maybeBrickPointer.pointer).data[bP.x][bP.y][bP.z] =
+                    w.voxel;
+            }
 
             if (w.voxel == Voxel::NullAirEmpty)
             {

@@ -1163,7 +1163,7 @@ namespace game
                             "Faces Visible {} / {} | {:.3f}%\n",
                             camera.getPosition().x,
                             camera.getPosition().y,
-                            camera.getPosition().x,
+                            camera.getPosition().z,
                             1.0f / deltaTime,
                             1000.0f * deltaTime,
                             0.0,

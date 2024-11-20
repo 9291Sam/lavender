@@ -69,4 +69,9 @@ namespace ecs
         return this->entities_guard->contains(e.id);
     }
 
+    [[nodiscard]] UniqueEntity createEntity()
+    {
+        return ecs::getGlobalECSManager()->createEntity();
+    }
+
 } // namespace ecs
