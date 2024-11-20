@@ -103,7 +103,7 @@ namespace verdigris
             this->triangles.push_back(std::move(e));
         }
 
-        for (int j = 0; j < 4096; ++j)
+        for (int j = 0; j < 4080; ++j)
         {
             ecs::UniqueEntity e = ecs::createEntity();
 
@@ -323,17 +323,48 @@ namespace verdigris
             {
                 const voxel::WorldPosition previous = c.position;
 
-                const i32 x = i % 64;
-                const i32 y = i / 64;
+                const i32 x = i % 80;
+                const i32 y = i / 80;
+
+                const voxel::Voxel newMaterial = [&]
+                {
+                    switch (y / (50 / 6))
+                    {
+                    case 0:
+                        return voxel::Voxel::Amethyst;
+                    case 1:
+                        return voxel::Voxel::Sapphire;
+                    case 2:
+                        return voxel::Voxel::Emerald;
+                    case 3:
+                        return voxel::Voxel::Gold;
+                    case 4:
+                        return voxel::Voxel::Topaz;
+                    case 5:
+                        return voxel::Voxel::Ruby;
+                    default:
+                        return voxel::Voxel::NullAirEmpty;
+                    }
+                }();
 
                 const voxel::WorldPosition newPosition {
                     {x,
                      y + 64,
-                     static_cast<i32>(-48.0 + 4.0 * std::sin(x / 8.0 + this->time_alive))}};
+                     static_cast<i32>(-48.0 + 5.0 * std::sin(x / 12.0 + this->time_alive))}};
+
+                if (i == 0)
+                {
+                    this->voxel_world.modifyPointLight(
+                        this->lights.back(),
+                        {66, 166, -33},
+                        {1.0, 1.0, 1.0, 384.0},
+                        {0.0, 0.0, 0.025, 0.0});
+                }
 
                 this->voxel_world.writeVoxel(c.position, voxel::Voxel::NullAirEmpty);
 
                 c.position = newPosition;
+                c.voxel    = newMaterial;
 
                 this->voxel_world.writeVoxel(c.position, c.voxel);
 

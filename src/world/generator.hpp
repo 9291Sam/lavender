@@ -20,7 +20,7 @@ namespace world
             , seed {seed_}
         {
             this->fractal->SetSource(this->simplex);
-            this->fractal->SetOctaveCount(3);
+            this->fractal->SetOctaveCount(1);
             this->fractal->SetGain(1.024f);
             this->fractal->SetLacunarity(2.534f);
 
@@ -242,9 +242,9 @@ namespace world
             mat.resize(64UZ * 64);
 
             this->fractal->GenUniformGrid2D(
-                res.data(), root.z, root.x, 64, 64, 0.002f, static_cast<int>(this->seed * 13437));
+                res.data(), root.z, root.x, 64, 64, 0.02f, static_cast<int>(this->seed * 13437));
             this->fractal->GenUniformGrid2D(
-                mat.data(), root.z, root.x, 64, 64, 0.002f, static_cast<int>(this->seed * 8594835));
+                mat.data(), root.z, root.x, 64, 64, 0.02f, static_cast<int>(this->seed * 8594835));
             const std::array<std::array<float, 64>, 64>* ptr =
                 reinterpret_cast<const std::array<std::array<float, 64>, 64>*>(res.data());
 
@@ -259,7 +259,7 @@ namespace world
                 for (std::size_t j = 0; j < 64; ++j)
                 {
                     u8 height =
-                        static_cast<u8>(std::clamp(2.0f * (*ptr)[i][j] + 4.0f, 0.0f, 64.0f));
+                        static_cast<u8>(std::clamp(4.0f * (*ptr)[i][j] + 8.0f, 0.0f, 64.0f));
 
                     for (u8 h = 0; h < 64; ++h)
                     {
@@ -278,7 +278,7 @@ namespace world
                         else if (h < height)
                         {
                             v = static_cast<voxel::Voxel>(
-                                util::map<float>((*matptr)[i][j], -1.0f, 1.0f, 1.0f, 9.0f));
+                                util::map<float>((*matptr)[i][j], -1.0f, 1.0f, 1.0f, 11.9f));
                         }
 
                         if (v != voxel::Voxel::NullAirEmpty)

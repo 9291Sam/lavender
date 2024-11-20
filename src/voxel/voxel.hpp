@@ -14,7 +14,10 @@ namespace voxel
         Brass,
         Chrome,
         Copper,
-        Gold
+        Gold,
+        Topaz,
+        Sapphire,
+        Amethyst
     };
 
     static_assert(Voxel {} == Voxel::NullAirEmpty);

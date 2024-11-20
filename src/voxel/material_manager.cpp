@@ -106,6 +106,44 @@ namespace voxel
                 .coat_color_power {},
 
             };
+        case Voxel::Topaz:
+            return VoxelMaterial {
+                .ambient_color {0.23125, 0.1425, 0.035, 1.0},
+                .diffuse_color {0.904, 0.493, 0.058, 1.0},
+                .specular_color {0.628, 0.556, 0.366, 1.0},
+                .diffuse_subsurface_weight {0.1f},
+                .specular {51.2f},
+                .roughness {0.05f},
+                .metallic {0.0},
+                .emissive_color_power {},
+                .coat_color_power {},
+            };
+
+        case Voxel::Sapphire:
+            return VoxelMaterial {
+                .ambient_color {0.00045, 0.00045, 0.20015, 1.0},
+                .diffuse_color {0.07085, 0.23568, 0.73554, 1.0},
+                .specular_color {0.77423, 0.77423, 0.99912, 1.0},
+                .diffuse_subsurface_weight {0.0842f},
+                .specular {76.81234f},
+                .roughness {0.045f},
+                .metallic {0.0f},
+                .emissive_color_power {},
+                .coat_color_power {},
+            };
+
+        case Voxel::Amethyst:
+            return VoxelMaterial {
+                .ambient_color {0.17258, 0.03144, 0.34571, 1.0},
+                .diffuse_color {0.58347, 0.39256, 0.79752, 1.0},
+                .specular_color {0.90584, 0.81946, 0.93425, 1.0},
+                .diffuse_subsurface_weight {0.1021f},
+                .specular {68.00452f},
+                .roughness {0.032f},
+                .metallic {0.0},
+                .emissive_color_power {},
+                .coat_color_power {},
+            };
         case Voxel::NullAirEmpty:
             [[fallthrough]];
         default:
