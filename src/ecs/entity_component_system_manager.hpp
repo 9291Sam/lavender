@@ -100,7 +100,9 @@ namespace ecs
 
         EntityComponentSystemManager()
             : entities_guard {std::make_unique<boost::unordered::concurrent_flat_set<u32>>()}
-            , component_storage {{}}
+            , component_storage {std::make_unique<boost::unordered::concurrent_flat_map<
+                  ctti::type_id_t,
+                  std::unique_ptr<ComponentStorageBase>>>()}
         {}
 
         ~EntityComponentSystemManager()
@@ -213,7 +215,9 @@ namespace ecs
         mutable std::atomic<u32> next_entity_id;
 
         std::unique_ptr<boost::unordered::concurrent_flat_set<u32>> entities_guard;
-        util::RwLock<std::unordered_map<ctti::type_id_t, std::unique_ptr<ComponentStorageBase>>>
+        std::unique_ptr<boost::unordered::concurrent_flat_map<
+            ctti::type_id_t,
+            std::unique_ptr<ComponentStorageBase>>>
             component_storage;
     };
 
@@ -229,5 +233,13 @@ namespace ecs
 
     [[nodiscard]] UniqueEntity createEntity();
 } // namespace ecs
+
+namespace ctti
+{
+    inline std::size_t hash_value(ctti::type_id_t v)
+    {
+        return v.hash();
+    }
+} // namespace ctti
 
 #include "entity_component_system_manager.inl"

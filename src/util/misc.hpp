@@ -26,8 +26,8 @@ using i32 = std::int32_t;
 using i64 = std::int64_t;
 // using I128 = __int128_t;
 
-using F32 = float;
-using F64 = double;
+using f32 = float;
+using f64 = double;
 
 namespace util
 {

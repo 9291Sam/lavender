@@ -117,7 +117,7 @@ namespace gfx::vulkan
 
         std::vector<vk::DeviceQueueCreateInfo> queuesToCreate {};
 
-        std::vector<F32> queuePriorities {};
+        std::vector<f32> queuePriorities {};
         queuePriorities.resize(1024, 1.0);
 
         u32 numberOfGraphicsQueues      = 0;

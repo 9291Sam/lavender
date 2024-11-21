@@ -10,8 +10,8 @@ namespace ecs
         ComponentStorageBase()          = default;
         virtual ~ComponentStorageBase() = default;
 
-        virtual void* getRawStorage()              = 0;
-        virtual void  clearAllComponentsForId(u32) = 0;
+        virtual void* getRawStorage()                    = 0;
+        virtual void  clearAllComponentsForId(u32) const = 0;
     };
 
     template<class C>
@@ -25,11 +25,11 @@ namespace ecs
             return &this->storage;
         }
 
-        void clearAllComponentsForId(u32 id) override
+        void clearAllComponentsForId(u32 id) const override
         {
             this->storage.erase(id);
         }
 
-        boost::unordered::concurrent_flat_map<u32, C> storage;
+        mutable boost::unordered::concurrent_flat_map<u32, C> storage;
     };
 } // namespace ecs

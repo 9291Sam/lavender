@@ -96,7 +96,7 @@ namespace ecs
     {
         u32 id = NullEntity;
 
-        RawEntity getRawEntity()
+        RawEntity getRawEntity() const
         {
             return *this;
         }

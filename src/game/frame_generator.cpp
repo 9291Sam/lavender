@@ -597,9 +597,9 @@ namespace game
 
         const vk::Viewport renderViewport {
             .x {0.0},
-            .y {static_cast<F32>(renderExtent.height)},
-            .width {static_cast<F32>(renderExtent.width)},
-            .height {static_cast<F32>(renderExtent.height) * -1.0f},
+            .y {static_cast<f32>(renderExtent.height)},
+            .width {static_cast<f32>(renderExtent.width)},
+            .height {static_cast<f32>(renderExtent.height) * -1.0f},
             .minDepth {0.0},
             .maxDepth {1.0},
         };

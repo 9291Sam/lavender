@@ -1,11 +1,13 @@
 #pragma once
 
+#include "ecs/component_storage.hpp"
 #include "ecs/raw_entity.hpp"
 #include "entity_component_system_manager.hpp"
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include <ctti/type_id.hpp>
 #include <expected>
+#include <memory>
 #include <optional>
 #include <source_location>
 #include <type_traits>
@@ -91,7 +93,7 @@ namespace ecs
                     {
                         storage.erase_if(
                             e.id,
-                            [&](const std::pair<u32, C>& c)
+                            [&](std::pair<u32, C>& c)
                             {
                                 removedComponent = std::move(c.second);
 
@@ -218,13 +220,16 @@ namespace ecs
     {
         std::size_t componentExists = 0;
 
+        util::logTrace("1");
         const std::size_t visited = this->entities_guard->cvisit(
             e.id,
             [&](const auto&)
             {
+                util::logTrace("2");
                 this->accessComponentStorage<C>(
                     [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
                     {
+                        util::logTrace("3");
                         componentExists = storage.cvisit(
                             e.id,
                             [&](const std::pair<u32, C>& pair)
@@ -549,40 +554,30 @@ namespace ecs
 
     template<class C>
     void EntityComponentSystemManager::accessComponentStorage(
-        std::invocable<boost::unordered::concurrent_flat_map<u32, C>&> auto func) const
+        std::invocable<::boost::unordered::concurrent_flat_map<u32, C>&> auto func) const
     {
-        const bool needsCreation = this->component_storage.readLock(
-            [&](const std::unordered_map<ctti::type_id_t, std::unique_ptr<ComponentStorageBase>>&
-                    erasedStorage)
-            {
-                auto it = erasedStorage.find(ctti::type_id<C>());
-
-                if (it != erasedStorage.cend())
-                {
-                    // NOLINTNEXTLINE
-                    func(*reinterpret_cast<boost::unordered::concurrent_flat_map<u32, C>*>(
-                        it->second->getRawStorage()));
-
-                    return false;
-                }
-                else
-                {
-                    return true;
-                }
-            });
-
-        if (needsCreation)
+        while (true)
         {
-            this->component_storage.writeLock(
-                [&](std::unordered_map<ctti::type_id_t, std::unique_ptr<ComponentStorageBase>>&
-                        erasedStorage)
+            std::size_t visited = this->component_storage->cvisit(
+                ctti::type_id<C>(),
+                [&](const std::pair<const ctti::type_id_t, std::unique_ptr<ComponentStorageBase>>&
+                        sto)
                 {
-                    // NOLINTNEXTLINE
-                    func(*reinterpret_cast<boost::unordered::concurrent_flat_map<u32, C>*>(
-                        erasedStorage
-                            .insert({ctti::type_id<C>(), std::make_unique<ComponentStorage<C>>()})
-                            .first->second->getRawStorage()));
+                    func(*reinterpret_cast<::boost::unordered::concurrent_flat_map<u32, C>*>(
+                        sto.second->getRawStorage()));
                 });
+
+            if (visited == 0)
+            {
+                this->component_storage->insert(
+                    {ctti::type_id<C>(), std::make_unique<ComponentStorage<C>>()});
+
+                continue;
+            }
+            else
+            {
+                break;
+            }
         }
     }
 

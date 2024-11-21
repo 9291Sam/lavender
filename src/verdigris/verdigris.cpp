@@ -18,7 +18,9 @@
 #include <FastNoise/FastNoise.h>
 #include <boost/container_hash/hash_fwd.hpp>
 #include <boost/unordered/concurrent_flat_map.hpp>
+#include <chrono>
 #include <glm/fwd.hpp>
+#include <iostream>
 #include <numbers>
 #include <numeric>
 #include <random>
@@ -90,7 +92,7 @@ namespace verdigris
                 32.0f * std ::sin(ddist(gen)) * ddist(gen)};
         };
 
-        for (int j = 0; j < 32; ++j)
+        for (int j = 0; j < 1000; ++j)
         {
             ecs::UniqueEntity e = ecs::getGlobalECSManager()->createEntity();
 
@@ -127,7 +129,7 @@ namespace verdigris
         for (int i = 0; i < 3; ++i)
         {
             this->lights.push_back(this->voxel_world.createPointLight(
-                {105, 37, 104}, {1.0, 1.0, 1.0, 384}, {0.0, 0.0, 0.025f, 0.0}));
+                {105, 37, 104}, {1.0, 1.0, 1.0, 84}, {0.0, 0.0, 0.025f, 0.0}));
         }
     }
 
@@ -186,7 +188,7 @@ namespace verdigris
             // util::logTrace("modify light2");
 
             this->voxel_world.modifyPointLight(
-                this->lights.front(), pos, {1.0, 1.0, 1.0, 512.0}, {0.0, 0.0, 0.025, 0.0});
+                this->lights.front(), pos, {1.0, 1.0, 1.0, 112.0}, {0.0, 0.0, 0.025, 0.0});
 
             this->triangle.mutateComponent<TriangleComponent>(
                 [&](TriangleComponent& t)
@@ -303,30 +305,21 @@ namespace verdigris
 
         std::vector<game::FrameGenerator::RecordObject> draws {};
 
-        std::normal_distribution<float> ddist {0.0, 1.14f};
+        // std::normal_distribution<float> ddist {0.0, 1.14f};
         // std::uniform_real_distribution<float> ddist {-1.0, 1.0};
-
-        auto genVec3 = [&]() -> glm::vec3
-        {
-            return glm::vec3 {
-                16.0f * std ::sin(ddist(gen)) * ddist(gen),
-                16.0f * std ::sin(ddist(gen)) * ddist(gen),
-                16.0f * std ::sin(ddist(gen)) * ddist(gen)};
-        };
 
         i32 i = 0;
 
-        const float offset = std::sin(this->time_alive) / 2 + 0.5f;
+        // const float offset = std::sin(this->time_alive) / 2 + 0.5f;
 
         ecs::getGlobalECSManager()->iterateComponents<VoxelComponent>(
             [&](ecs::RawEntity, VoxelComponent& c)
             {
-                const voxel::WorldPosition previous = c.position;
-
                 const i32 x = i % 80;
                 const i32 y = i / 80;
 
-                const voxel::Voxel newMaterial = [&]
+                const voxel::Voxel newMaterial = voxel::Voxel::Amethyst;
+                /* [&]
                 {
                     switch (y / (50 / 6))
                     {
@@ -345,12 +338,16 @@ namespace verdigris
                     default:
                         return voxel::Voxel::NullAirEmpty;
                     }
-                }();
+                }(); */
 
                 const voxel::WorldPosition newPosition {
                     {x,
                      y + 64,
-                     static_cast<i32>(-48.0 + 5.0 * std::sin(x / 12.0 + this->time_alive))}};
+                     static_cast<i32>(
+                         -48.0f
+                         + 4.0f
+                               * std::sin(
+                                   static_cast<float>(x) / 4.0f + this->time_alive * 4.0f))}};
 
                 if (i == 0)
                 {
@@ -371,9 +368,14 @@ namespace verdigris
                 i += 1;
             });
 
+#warning fix this deadlock
+        std::ignore = ecs::createEntity().tryAddComponent(int {});
+
         ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
-            [&](ecs::RawEntity, const TriangleComponent& c)
+            [&](ecs::RawEntity e, const TriangleComponent& c)
             {
+                std::ignore = e.tryAddComponent(int {});
+
                 draws.push_back(game::FrameGenerator::RecordObject {
                     .transform {c.transform},
                     .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},

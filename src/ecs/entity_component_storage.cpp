@@ -1,7 +1,10 @@
+#include "ecs/component_storage.hpp"
 #include "ecs/raw_entity.hpp"
 #include "entity.hpp"
 #include "entity_component_system_manager.hpp"
 #include "util/log.hpp"
+#include <ctti/type_id.hpp>
+#include <memory>
 
 namespace ecs
 {
@@ -42,13 +45,12 @@ namespace ecs
             e.id,
             [this](const auto& entityId)
             {
-                this->component_storage.readLock(
-                    [&](const auto& s)
+                this->component_storage->cvisit_all(
+                    [&](const std::pair<
+                        const ctti::type_id_t,
+                        std::unique_ptr<ComponentStorageBase>>& storage)
                     {
-                        for (const auto& [id, storage] : s)
-                        {
-                            storage->clearAllComponentsForId(entityId);
-                        }
+                        storage.second->clearAllComponentsForId(entityId);
                     });
 
                 return true;
