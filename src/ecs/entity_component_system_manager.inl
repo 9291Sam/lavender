@@ -36,15 +36,11 @@ namespace ecs
     {
         bool added = false;
 
-        const std::size_t visited = this->entities_guard->cvisit(
+        const std::size_t visited = this->entities_guard->visit(
             e.id,
-            [&](const auto&)
+            [&](auto&)
             {
-                this->accessComponentStorage<C>(
-                    [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
-                    {
-                        added = storage.insert({e.id, std::move(c)});
-                    });
+                added = this->accessComponentStorage<C>().insert({e.id, std::move(c)});
             });
 
         if (visited == 0)
@@ -84,21 +80,17 @@ namespace ecs
     {
         std::optional<C> removedComponent = std::nullopt;
 
-        const std::size_t visited = this->entities_guard->cvisit(
+        const std::size_t visited = this->entities_guard->visit(
             e.id,
-            [&](const auto&)
+            [&](auto&)
             {
-                this->accessComponentStorage<C>(
-                    [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
+                this->accessComponentStorage<C>().erase_if(
+                    e.id,
+                    [&](const std::pair<const u32, C&>& c)
                     {
-                        storage.erase_if(
-                            e.id,
-                            [&](std::pair<u32, C>& c)
-                            {
-                                removedComponent = std::move(c.second);
+                        removedComponent = std::move(c.second);
 
-                                return true;
-                            });
+                        return true;
                     });
             });
 
@@ -167,19 +159,15 @@ namespace ecs
     {
         std::size_t componentExists = 0;
 
-        const std::size_t visited = this->entities_guard->cvisit(
+        const std::size_t visited = this->entities_guard->visit(
             e.id,
-            [&](const auto&)
+            [&](auto&)
             {
-                this->accessComponentStorage<C>(
-                    [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
+                componentExists = this->accessComponentStorage<C>().visit(
+                    e.id,
+                    [&](const std::pair<u32, C&>& pair)
                     {
-                        componentExists = storage.visit(
-                            e.id,
-                            [&](const std::pair<u32, C&>& pair)
-                            {
-                                func(pair.second);
-                            });
+                        func(pair.second);
                     });
             });
 
@@ -220,22 +208,15 @@ namespace ecs
     {
         std::size_t componentExists = 0;
 
-        util::logTrace("1");
-        const std::size_t visited = this->entities_guard->cvisit(
+        const std::size_t visited = this->entities_guard->visit(
             e.id,
-            [&](const auto&)
+            [&](auto&)
             {
-                util::logTrace("2");
-                this->accessComponentStorage<C>(
-                    [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
+                componentExists = this->accessComponentStorage<C>().cvisit(
+                    e.id,
+                    [&](const std::pair<u32, C>& pair)
                     {
-                        util::logTrace("3");
-                        componentExists = storage.cvisit(
-                            e.id,
-                            [&](const std::pair<u32, C>& pair)
-                            {
-                                func(pair.second);
-                            });
+                        func(pair.second);
                     });
             });
 
@@ -275,15 +256,11 @@ namespace ecs
     {
         bool componentExists = false;
 
-        const std::size_t visited = this->entities_guard->cvisit(
+        const std::size_t visited = this->entities_guard->visit(
             e.id,
-            [&](const auto&)
+            [&](auto&)
             {
-                this->accessComponentStorage<C>(
-                    [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
-                    {
-                        componentExists = storage.contains();
-                    });
+                componentExists = this->accessComponentStorage<C>().contains();
             });
 
         if (visited == 0)
@@ -499,15 +476,11 @@ namespace ecs
     [[nodiscard]] auto EntityComponentSystemManager::trySetOrInsertComponent(
         RawEntity e, C cNew) const -> TrySetOrInsertComponentResult
     {
-        const std::size_t visited = this->entities_guard->cvisit(
+        const std::size_t visited = this->entities_guard->visit(
             e.id,
-            [&](const auto&)
+            [&](auto&)
             {
-                this->accessComponentStorage<C>(
-                    [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
-                    {
-                        storage.insert_or_assign(e.id, std::forward<C>(cNew));
-                    });
+                this->accessComponentStorage<C>().insert_or_assign(e.id, std::forward<C>(cNew));
             });
 
         if (visited == 0)
@@ -541,21 +514,19 @@ namespace ecs
     void
     EntityComponentSystemManager::iterateComponents(std::invocable<RawEntity, C&> auto func) const
     {
-        this->accessComponentStorage<C>(
-            [&](boost::unordered::concurrent_flat_map<u32, C>& storage)
+        this->accessComponentStorage<C>().visit_all(
+            [&](const std::pair<u32, C&>& pair)
             {
-                storage.visit_all(
-                    [&](const std::pair<u32, C&>& pair)
-                    {
-                        return func(RawEntity {.id {pair.first}}, pair.second);
-                    });
+                return func(RawEntity {.id {pair.first}}, pair.second);
             });
     }
 
     template<class C>
-    void EntityComponentSystemManager::accessComponentStorage(
-        std::invocable<::boost::unordered::concurrent_flat_map<u32, C>&> auto func) const
+    ::boost::unordered::concurrent_flat_map<u32, C>&
+    EntityComponentSystemManager::accessComponentStorage() const
     {
+        void* ptr = nullptr;
+
         while (true)
         {
             std::size_t visited = this->component_storage->cvisit(
@@ -563,8 +534,7 @@ namespace ecs
                 [&](const std::pair<const ctti::type_id_t, std::unique_ptr<ComponentStorageBase>>&
                         sto)
                 {
-                    func(*reinterpret_cast<::boost::unordered::concurrent_flat_map<u32, C>*>(
-                        sto.second->getRawStorage()));
+                    ptr = sto.second->getRawStorage();
                 });
 
             if (visited == 0)
@@ -579,6 +549,8 @@ namespace ecs
                 break;
             }
         }
+
+        return *reinterpret_cast<::boost::unordered::concurrent_flat_map<u32, C>*>(ptr);
     }
 
     template<class Concrete>

@@ -209,8 +209,7 @@ namespace ecs
         }
 
         template<class C>
-        void accessComponentStorage(
-            std::invocable<boost::unordered::concurrent_flat_map<u32, C>&> auto func) const;
+        boost::unordered::concurrent_flat_map<u32, C>& accessComponentStorage() const;
 
         mutable std::atomic<u32> next_entity_id;
 

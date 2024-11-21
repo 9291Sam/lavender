@@ -368,14 +368,9 @@ namespace verdigris
                 i += 1;
             });
 
-#warning fix this deadlock
-        std::ignore = ecs::createEntity().tryAddComponent(int {});
-
         ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
             [&](ecs::RawEntity e, const TriangleComponent& c)
             {
-                std::ignore = e.tryAddComponent(int {});
-
                 draws.push_back(game::FrameGenerator::RecordObject {
                     .transform {c.transform},
                     .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},
