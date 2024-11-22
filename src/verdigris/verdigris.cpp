@@ -175,15 +175,15 @@ namespace verdigris
         //     return glm::vec3 {pDist(gen), pDist(gen), pDist(gen)};
         // };
 
-        auto genSpiralPos = [](u32 f)
-        {
-            const float t = static_cast<float>(f) / 256.0f;
+        // auto genSpiralPos = [](u32 f)
+        // {
+        //     const float t = static_cast<float>(f) / 256.0f;
 
-            const float x = 32.0f * std::sin(t);
-            const float z = 32.0f * std::cos(t);
+        //     const float x = 32.0f * std::sin(t);
+        //     const float z = 32.0f * std::cos(t);
 
-            return glm::i32vec3 {static_cast<i32>(x), 66.0, static_cast<i32>(z)};
-        };
+        //     return glm::i32vec3 {static_cast<i32>(x), 66.0, static_cast<i32>(z)};
+        // };
 
         // const i32 frameNumber =
         // static_cast<i32>(this->game->getRenderer()->getFrameNumber());
@@ -373,23 +373,24 @@ namespace verdigris
 
                 const voxel::Voxel newMaterial = [&]
                 {
-                    switch (y / (50 / 6))
-                    {
-                    case 0:
-                        return voxel::Voxel::Amethyst;
-                    case 1:
-                        return voxel::Voxel::Sapphire;
-                    case 2:
-                        return voxel::Voxel::Emerald;
-                    case 3:
-                        return voxel::Voxel::Gold;
-                    case 4:
-                        return voxel::Voxel::Topaz;
-                    case 5:
-                        return voxel::Voxel::Ruby;
-                    default:
-                        return voxel::Voxel::NullAirEmpty;
-                    }
+                    //     switch (y / (50 / 6))
+                    //     {
+                    //     case 0:
+                    //         return voxel::Voxel::Amethyst;
+                    //     case 1:
+                    //         return voxel::Voxel::Sapphire;
+                    //     case 2:
+                    //         return voxel::Voxel::Emerald;
+                    //     case 3:
+                    //         return voxel::Voxel::Gold;
+                    //     case 4:
+                    //         return voxel::Voxel::Topaz;
+                    //     case 5:
+                    //         return voxel::Voxel::Ruby;
+                    //     default:
+                    //         return voxel::Voxel::NullAirEmpty;
+                    //     }
+                    return static_cast<voxel::Voxel>(y % 10 + 1);
                 }();
 
                 const voxel::WorldPosition newPosition {
@@ -414,8 +415,10 @@ namespace verdigris
         this->voxel_world.lock(
             [&](voxel::World& w)
             {
-                if (i == 0 && d == 0.0f)
+                if (d == 0.0f)
                 {
+                    util::logTrace("First iter!");
+
                     w.modifyPointLight(
                         this->lights.back(),
                         {66, 166, -33},

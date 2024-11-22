@@ -383,8 +383,8 @@ namespace gfx::vulkan
         CpuCachedBuffer& operator= (const CpuCachedBuffer&) = delete;
         CpuCachedBuffer(CpuCachedBuffer&& other) noexcept
             : WriteOnlyBuffer<T> {std::move(other)}
-            , flushes {std::move(other.flushes)}
             , cpu_buffer {std::move(other.cpu_buffer)}
+            , flushes {std::move(other.flushes)}
         {}
 
         std::span<const T> read(std::size_t offset, std::size_t size) const

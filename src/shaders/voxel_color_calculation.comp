@@ -37,15 +37,13 @@ CalculatedLightPower oldLightPower(
     return CalculatedLightPower(diffuse_strength, specular_strength);
 }
 
-
-CalculatedLightPower newLightPower(
+CalculatedLightPower cooktd(
     vec3 camera_position,
     vec3 voxel_position,
     vec3 voxel_normal,
     PointLight light,
     VoxelMaterial material
 ) {
-    
     // Calculate vectors
     vec3 light_dir = normalize(light.position.xyz - voxel_position);
     vec3 view_dir = normalize(camera_position - voxel_position);
@@ -53,23 +51,24 @@ CalculatedLightPower newLightPower(
 
     // Diffuse reflection (Lambertian)
     float diffuse_factor = max(dot(voxel_normal, light_dir), 0.0);
-    vec3 diffuse = diffuse_factor * material.diffuse_color.xyz;
+    vec3 diffuse = diffuse_factor * (1.0 - material.metallic) * material.diffuse_color.xyz;
 
-    // Cook-Torrance specular reflection with roughness
+    // Cook-Torrance specular reflection
+    float roughness_sq = material.roughness * material.roughness;
     float HdotN = max(dot(half_dir, voxel_normal), 0.0);
-    float D = (HdotN * HdotN) / (HdotN * HdotN * (material.roughness * material.roughness) + (1.0 - HdotN) * (1.0 - HdotN));
-    float specular_factor = D * pow(max(dot(voxel_normal, half_dir), 0.0), material.specular);
-    vec3 specular = specular_factor * material.specular_color.xyz;
+    float D = roughness_sq / (3.14159265358979323846264 * pow(HdotN * HdotN * (roughness_sq - 1.0) + 1.0, 2.0));
+    float NdotL = max(dot(voxel_normal, light_dir), 0.0);
+    float NdotV = max(dot(voxel_normal, view_dir), 0.0);
+    float G = min(1.0, 2.0 * HdotN * min(NdotL, NdotV) / max(NdotV, 0.001));
+    vec3 F = mix(vec3(0.04), material.specular_color.xyz, material.metallic);
+    vec3 specular = (D * G * F) / (4.0 * max(NdotL, 0.001) * max(NdotV, 0.001));
 
-    // Metallic handling (adjust specular strength)
-    vec3 final_specular = mix(material.diffuse_color.xyz, material.specular_color.xyz, material.metallic);
+    // Clear coat (optional improvement)
+    vec3 clear_coat_specular = material.coat_color_power.xyz * HdotN;
+    float clear_coat_factor = material.coat_color_power.w;
 
-    // Clear coat reflection (additional specular layer)
-    vec3 clear_coat_specular = material.coat_color_power.xyz * specular_factor;
-    float clear_coat_factor = material.coat_color_power.w;  // optional intensity control
-
-    // Falloff of light
-    float distance = length(light.position.xyz - voxel_position);
+    // Light attenuation
+    float distance = max(length(light.position.xyz - voxel_position), 0.001);
     float attenuation = 1.0 / (light.falloffs.x + light.falloffs.y * distance + light.falloffs.z * distance * distance);
 
     // Light contribution
@@ -79,10 +78,69 @@ CalculatedLightPower newLightPower(
     // Diffuse and specular strengths
     CalculatedLightPower lightPower;
     lightPower.diffuse_strength = diffuse * light_color * light_intensity;
-    lightPower.specular_strength = (final_specular + clear_coat_specular) * light_color * light_intensity;
+    lightPower.specular_strength = (specular + clear_coat_factor * clear_coat_specular) * light_color * light_intensity;
 
     return lightPower;
 }
+
+CalculatedLightPower newLightPower(
+    vec3 camera_position,
+    vec3 voxel_position,
+    vec3 voxel_normal,
+    PointLight light,
+    VoxelMaterial material
+) {
+    // Calculate vectors
+    vec3 light_dir = normalize(light.position.xyz - voxel_position); // Light direction
+    vec3 view_dir = normalize(camera_position - voxel_position);    // View direction
+    vec3 half_dir = normalize(light_dir + view_dir);                // Half vector
+
+    // Diffuse reflection (Lambertian)
+    float diffuse_factor = max(dot(voxel_normal, light_dir), 0.0);  // Ensure non-negative
+    vec3 diffuse = diffuse_factor * material.diffuse_color.xyz;
+
+    // GGX Normal Distribution Function (NDF)
+    float roughness_sq = material.roughness * material.roughness;
+    float HdotN = max(dot(half_dir, voxel_normal), 0.0);
+    float NDF = (roughness_sq) / 
+                (3.14159265358979323846264 * pow((HdotN * HdotN) * (roughness_sq - 1.0) + 1.0, 2.0));
+
+    // Fresnel (Schlick's approximation)
+    float VdotH = max(dot(view_dir, half_dir), 0.0);
+    vec3 F0 = mix(vec3(0.04), material.specular_color.xyz, material.metallic); // Dielectric/metal mix
+    vec3 Fresnel = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
+
+    // Geometry Term (Smith's method)
+    float NdotV = max(dot(voxel_normal, view_dir), 0.0);
+    float NdotL = max(dot(voxel_normal, light_dir), 0.0);
+    float G1 = NdotV / (NdotV * (1.0 - roughness_sq) + roughness_sq);
+    float G2 = NdotL / (NdotL * (1.0 - roughness_sq) + roughness_sq);
+    float Geometry = G1 * G2;
+
+    // Specular reflection
+    vec3 specular = (NDF * Fresnel * Geometry) / (4.0 * NdotV * NdotL + 0.001); // Add small bias to avoid division by zero
+
+    // Clear coat reflection (optional, extra specular layer)
+    vec3 clear_coat_specular = material.coat_color_power.xyz * specular;
+    float clear_coat_factor = material.coat_color_power.w; // Intensity control
+
+    // Light attenuation (inverse square falloff)
+    float distance = length(light.position.xyz - voxel_position);
+    float attenuation = 1.0 / (light.falloffs.x + light.falloffs.y * distance + light.falloffs.z * distance * distance);
+
+    // Final light contribution
+    float light_intensity = light.color_and_power.w * attenuation;
+    vec3 light_color = light.color_and_power.xyz;
+
+    // Combine diffuse and specular components
+    CalculatedLightPower lightPower;
+    lightPower.diffuse_strength = diffuse * light_color * light_intensity * NdotL; // Add NdotL to account for light direction
+    lightPower.specular_strength = (specular + clear_coat_specular * clear_coat_factor) * light_color * light_intensity;
+
+    return lightPower;
+}
+
+
 
 i32 moduloEuclideani32(i32 lhs, i32 rhs)
 {
@@ -375,7 +433,7 @@ void main()
             {
                 CalculatedLightPower power;
 
-                if (false) //(brick_pointer % 2 == 0)
+                if (true) //(brick_pointer % 2 == 0)
                 {
                     power = newLightPower(
                         in_global_info.camera_position.xyz,
