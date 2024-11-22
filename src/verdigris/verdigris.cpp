@@ -137,7 +137,7 @@ namespace verdigris
         // meshoperation (copy of everything)
         // once its done upload it to the gpu
 
-        this->camera.addPosition({79.606, 75.586, 16.78});
+        this->camera.addPosition({79.606, 375.586, 16.78});
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
     }
@@ -203,7 +203,7 @@ namespace verdigris
         const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
                                     gfx::Window::Action::PlayerSprint)
                                          ? 64.0f
-                                         : 16.0f;
+                                         : 36.0f;
         const float rotateSpeedScale = 6.0f;
 
         if (this->game->getRenderer()->getWindow()->isActionActive(
@@ -228,6 +228,17 @@ namespace verdigris
         {
             this->game->getRenderer()->getWindow()->toggleCursor();
         }
+
+        if (this->game->getRenderer()->getFrameNumber() == 4
+            || this->game->getRenderer()->getWindow()->isActionActive(
+                gfx::Window::Action::ResetPlayPosition))
+        {
+            this->camera.setPosition({79.606, 75.586, 16.78});
+        }
+
+        static float verticalVelocity = 0.0f;    // Initial velocity for gravity
+        const float  gravity          = -512.0f; // Gravitational acceleration (m/s²)
+        const float  maxFallSpeed     = -512.0f; // Terminal velocity
 
         glm::vec3 previousPosition = this->camera.getPosition();
 
@@ -259,15 +270,13 @@ namespace verdigris
         if (this->game->getRenderer()->getWindow()->isActionActive(
                 gfx::Window::Action::PlayerMoveUp))
         {
-            newPosition += game::Transform::UpVector * deltaTime * moveScale * 2.0f;
-        }
-        else if (this->game->getRenderer()->getWindow()->isActionActive(
-                     gfx::Window::Action::PlayerMoveDown))
-        {
-            newPosition -= game::Transform::UpVector * deltaTime * moveScale * 2.0f;
+            if (verticalVelocity == 0.0f)
+            {
+                verticalVelocity += 128.0f;
+            }
         }
 
-        newPosition.y -= 10.0f * deltaTime;
+        newPosition.y = previousPosition.y;
 
         this->voxel_world.lock(
             [&](voxel::World& w)
@@ -275,17 +284,19 @@ namespace verdigris
                 glm::vec3 currentPosition = this->camera.getPosition();
                 glm::vec3 displacement    = newPosition - currentPosition;
 
-                // Resolve each axis independently
+                verticalVelocity += gravity * deltaTime;
+                verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
+
+                displacement.y += verticalVelocity * deltaTime;
+
                 glm::vec3 resolvedPosition = currentPosition;
 
-                // Test X-axis movement
                 glm::vec3 testPositionX = resolvedPosition + glm::vec3(displacement.x, 0.0f, 0.0f);
                 if (!w.readVoxelOpacity(voxel::WorldPosition {glm::floor(testPositionX)}))
                 {
                     resolvedPosition.x += displacement.x;
                 }
 
-                // Test Y-axis movement
                 glm::vec3 testPositionY = resolvedPosition + glm::vec3(0.0f, displacement.y, 0.0f);
                 if (!w.readVoxelOpacity(voxel::WorldPosition {glm::floor(testPositionY)}))
                 {
@@ -293,7 +304,8 @@ namespace verdigris
                 }
                 else
                 {
-                    // Find the first unoccupied position above
+                    verticalVelocity = 0.0f;
+
                     glm::vec3 upwardPosition = glm::floor(newPosition);
                     bool      tooFar         = false;
 
@@ -301,7 +313,7 @@ namespace verdigris
                     while (!tooFar
                            && w.readVoxelOpacity(voxel::WorldPosition {glm::floor(upwardPosition)}))
                     {
-                        upwardPosition.y += 1.0f; // Move up by 1 voxel
+                        upwardPosition.y += 1.0f;
 
                         if (steps++ > 3)
                         {
@@ -314,14 +326,13 @@ namespace verdigris
                         resolvedPosition.y = upwardPosition.y;
                     }
                 }
-                // Test Z-axis movement
+
                 glm::vec3 testPositionZ = resolvedPosition + glm::vec3(0.0f, 0.0f, displacement.z);
                 if (!w.readVoxelOpacity(voxel::WorldPosition {glm::floor(testPositionZ)}))
                 {
                     resolvedPosition.z += displacement.z;
                 }
 
-                // Set the resolved position
                 this->camera.setPosition(resolvedPosition);
             });
 

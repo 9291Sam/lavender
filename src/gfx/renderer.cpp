@@ -55,6 +55,10 @@ namespace gfx
                      .key {GLFW_KEY_GRAVE_ACCENT},
                      .method {Window::InteractionMethod::SinglePress}}},
 
+                {Window::Action::ResetPlayPosition,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_R}, .method {Window::InteractionMethod::SinglePress}}},
+
                 {Window::Action::CloseWindow,
                  Window::ActionInformation {
                      .key {GLFW_KEY_ESCAPE}, .method {Window::InteractionMethod::SinglePress}}},

@@ -41,7 +41,8 @@ namespace gfx
             PlayerSprint           = 6,
             ToggleConsole          = 7,
             ToggleCursorAttachment = 8,
-            CloseWindow            = 9,
+            ResetPlayPosition      = 9,
+            CloseWindow            = 10,
             MaxActionValue         = 10,
         };
 

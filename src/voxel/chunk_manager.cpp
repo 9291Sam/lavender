@@ -600,7 +600,7 @@ namespace voxel
 
                 isChunkInFrustum |=
                     (glm::distance(c.getPosition(), thisChunkData.position.xyz())
-                     < ChunkEdgeLengthVoxels * 2);
+                     < ChunkEdgeLengthVoxels * 4);
 
                 isChunkInFrustum |=
                     (glm::all(glm::lessThan(
@@ -611,17 +611,17 @@ namespace voxel
 
                 for (auto x :
                      {thisChunkData.position.x,
-                      //   thisChunkData.position.x + ChunkEdgeLengthVoxels / 2.0f,
+                      thisChunkData.position.x + ChunkEdgeLengthVoxels / 2.0f,
                       thisChunkData.position.x + ChunkEdgeLengthVoxels})
                 {
                     for (auto y :
                          {thisChunkData.position.y,
-                          //   thisChunkData.position.y + ChunkEdgeLengthVoxels / 2.0f,
+                          thisChunkData.position.y + ChunkEdgeLengthVoxels / 2.0f,
                           thisChunkData.position.y + ChunkEdgeLengthVoxels})
                     {
                         for (auto z :
                              {thisChunkData.position.z,
-                              //   thisChunkData.position.z + ChunkEdgeLengthVoxels / 2.0f,
+                              thisChunkData.position.z + ChunkEdgeLengthVoxels / 2.0f,
                               thisChunkData.position.z + ChunkEdgeLengthVoxels})
                         {
                             glm::vec4 cornerPos {x, y, z, 1.0};
@@ -630,14 +630,16 @@ namespace voxel
                                            *game, game::Transform {.translation {cornerPos}})
                                      * glm::vec4 {0.0, 0.0, 0.0, 1.0};
 
-                            if (glm::all(glm::lessThan(res.xyz() / res.w, glm::vec3 {1.25}))
-                                && glm::all(glm::greaterThan(res.xyz() / res.w, glm::vec3 {-1.25})))
+                            if (glm::all(glm::lessThan(res.xyz() / res.w, glm::vec3 {1.5}))
+                                && glm::all(glm::greaterThan(res.xyz() / res.w, glm::vec3 {-1.5})))
                             {
                                 isChunkInFrustum = true;
+                                goto exit;
                             }
                         }
                     }
                 }
+            exit:
 
                 if (thisChunkData.face_data.has_value() && isChunkInFrustum)
                 {
