@@ -3,11 +3,16 @@
 #include "frame_generator.hpp"
 #include "util/static_filesystem.hpp"
 #include "util/threads.hpp"
+#include <atomic>
+#include <chrono>
+#include <functional>
+#include <future>
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/allocator.hpp>
 #include <gfx/vulkan/device.hpp>
 #include <gfx/window.hpp>
 #include <memory>
+#include <thread>
 #include <util/log.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
@@ -47,22 +52,81 @@ namespace game
     {
         this->renderer->getWindow()->attachCursor();
 
+        std::atomic<bool>                       shouldWorkerStop {false};
+        util::Mutex<std::function<void(float)>> tickFunc {};
+
+        std::future<void> tickWorker = std::async(
+            [&tickFunc, &shouldWorkerStop]
+            {
+                float deltaTime = 0.0f;
+                auto  start     = std::chrono::high_resolution_clock::now();
+
+                while (!shouldWorkerStop.load())
+                {
+                    f32TickDeltaTime.store(
+                        std::bit_cast<u32>(deltaTime), std::memory_order_relaxed);
+
+                    tickFunc.lock(
+                        [&](std::function<void(float)>& func)
+                        {
+                            if (func != nullptr)
+                            {
+                                func(deltaTime);
+                            }
+                        });
+
+                    auto end = std::chrono::high_resolution_clock::now();
+
+                    deltaTime = static_cast<float>((end - start).count()) / 1000000000.0f;
+                    start     = end;
+                }
+            });
+
+        bool isFirstIterationAfterGameStateChange = true;
+
         while (!this->renderer->shouldWindowClose() && !this->should_game_close.load())
         {
-            while (!this->renderer->shouldWindowClose() && this->should_game_keep_ticking.load()
-                   && !this->should_game_close.load())
-            {
-                const float deltaTime = this->renderer->getWindow()->getDeltaTimeSeconds();
-
-                this->active_game_state.lock(
-                    [&](std::unique_ptr<GameState>& state)
+            this->active_game_state.lock(
+                [&](std::unique_ptr<GameState>& state)
+                {
+                    if (!this->should_game_close.load())
                     {
+                        if (isFirstIterationAfterGameStateChange)
+                        {
+                            tickFunc.lock(
+                                [&](std::function<void(float)>& f)
+                                {
+                                    f = [&](float deltaTime)
+                                    {
+                                        state->onTick(deltaTime);
+                                    };
+                                });
+                        }
+                        const float deltaTime = this->renderer->getWindow()->getDeltaTimeSeconds();
+
                         const auto [camera, recordObjects] = state->onFrame(deltaTime);
 
                         this->frame_generator->generateFrame(camera, recordObjects);
-                    });
-            }
+
+                        isFirstIterationAfterGameStateChange = false;
+                    }
+                    else
+                    {
+                        // game state change
+                        tickFunc.lock(
+                            [&](std::function<void(float)>& f)
+                            {
+                                f = nullptr;
+                            });
+
+                        isFirstIterationAfterGameStateChange = true;
+                    }
+                });
         }
+
+        shouldWorkerStop = true;
+
+        tickWorker.get();
     }
 
     float Game::getFovXRadians() const noexcept

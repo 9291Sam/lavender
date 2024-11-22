@@ -5,6 +5,7 @@
 #include <atomic>
 #include <concepts>
 #include <memory>
+#include <type_traits>
 #include <util/threads.hpp>
 
 namespace gfx
@@ -39,7 +40,7 @@ namespace game
 
             [[nodiscard]] virtual std::pair<Camera, std::vector<FrameGenerator::RecordObject>>
                          onFrame(float) const = 0;
-            virtual void onTick() const       = 0;
+            virtual void onTick(float) const  = 0;
         };
 
     public:
@@ -61,6 +62,7 @@ namespace game
         vk::DescriptorSet getGlobalInfoDescriptorSet() const noexcept;
 
         template<std::derived_from<GameState> T>
+            requires std::is_constructible_v<T, Game*>
         void loadGameState()
         {
             this->should_game_keep_ticking.store(false);

@@ -22,6 +22,8 @@ extern std::atomic<u32> numberOfChunksPossible;  // NOLINT
 extern std::atomic<u32> numberOfBricksAllocated; // NOLINT
 extern std::atomic<u32> numberOfBricksPossible;  // NOLINT
 
+extern std::atomic<u32> f32TickDeltaTime; // NOLINT
+
 namespace gfx
 {
     class Renderer;

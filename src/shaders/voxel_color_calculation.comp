@@ -375,8 +375,8 @@ void main()
             {
                 CalculatedLightPower power;
 
-                // if (brick_pointer % 2 == 0)
-                // {
+                if (false) //(brick_pointer % 2 == 0)
+                {
                     power = newLightPower(
                         in_global_info.camera_position.xyz,
                         sample_positon_world,
@@ -384,17 +384,17 @@ void main()
                         in_point_lights.lights[i],
                         this_material
                     );
-                // }
-                // else
-                // {
-                //     power = oldLightPower(
-                //         in_global_info.camera_position.xyz,
-                //         sample_positon_world,
-                //         unpackNormalId(normal), 
-                //         in_point_lights.lights[i],
-                //         this_material
-                //     );
-                // }
+                }
+                else
+                {
+                    power = oldLightPower(
+                        in_global_info.camera_position.xyz,
+                        sample_positon_world,
+                        unpackNormalId(normal), 
+                        in_point_lights.lights[i],
+                        this_material
+                    );
+                }
 
                 sum_diffuse += power.diffuse_strength;
                 // #warning no specular

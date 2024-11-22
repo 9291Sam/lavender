@@ -308,18 +308,44 @@ namespace verdigris
         // std::normal_distribution<float> ddist {0.0, 1.14f};
         // std::uniform_real_distribution<float> ddist {-1.0, 1.0};
 
+        ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
+            [&](ecs::RawEntity, const TriangleComponent& c)
+            {
+                draws.push_back(game::FrameGenerator::RecordObject {
+                    .transform {c.transform},
+                    .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},
+                    .pipeline {this->triangle_pipeline},
+                    .descriptors {
+                        {this->game->getGlobalInfoDescriptorSet(), nullptr, nullptr, nullptr}},
+                    .record_func {
+                        [](vk::CommandBuffer commandBuffer, vk::PipelineLayout layout, u32 id)
+                        {
+                            commandBuffer.pushConstants(
+                                layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(u32), &id);
+
+                            commandBuffer.draw(3, 1, 0, 0);
+                        }},
+                });
+            });
+
+        this->voxel_world.setCamera(this->camera);
+
+        draws.append_range(
+            this->voxel_world.getRecordObjects(this->game, this->game->getRenderer()->getStager()));
+
+        return {this->camera, std::move(draws)};
+    }
+
+    void Verdigris::onTick(float d) const
+    {
         i32 i = 0;
-
-        // const float offset = std::sin(this->time_alive) / 2 + 0.5f;
-
         ecs::getGlobalECSManager()->iterateComponents<VoxelComponent>(
             [&](ecs::RawEntity, VoxelComponent& c)
             {
                 const i32 x = i % 80;
                 const i32 y = i / 80;
 
-                const voxel::Voxel newMaterial = voxel::Voxel::Amethyst;
-                /* [&]
+                const voxel::Voxel newMaterial = [&]
                 {
                     switch (y / (50 / 6))
                     {
@@ -338,7 +364,7 @@ namespace verdigris
                     default:
                         return voxel::Voxel::NullAirEmpty;
                     }
-                }(); */
+                }();
 
                 const voxel::WorldPosition newPosition {
                     {x,
@@ -367,33 +393,6 @@ namespace verdigris
 
                 i += 1;
             });
-
-        ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
-            [&](ecs::RawEntity e, const TriangleComponent& c)
-            {
-                draws.push_back(game::FrameGenerator::RecordObject {
-                    .transform {c.transform},
-                    .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},
-                    .pipeline {this->triangle_pipeline},
-                    .descriptors {
-                        {this->game->getGlobalInfoDescriptorSet(), nullptr, nullptr, nullptr}},
-                    .record_func {
-                        [](vk::CommandBuffer commandBuffer, vk::PipelineLayout layout, u32 id)
-                        {
-                            commandBuffer.pushConstants(
-                                layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(u32), &id);
-
-                            commandBuffer.draw(3, 1, 0, 0);
-                        }},
-                });
-            });
-
-        this->voxel_world.setCamera(this->camera);
-
-        draws.append_range(
-            this->voxel_world.getRecordObjects(this->game, this->game->getRenderer()->getStager()));
-
-        return {this->camera, std::move(draws)};
     }
 
 } // namespace verdigris

@@ -31,6 +31,6 @@ namespace verdigris
         std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
         onFrame(float deltaTime) const override;
 
-        void onTick() const override {}
+        void onTick(float deltaTime) const override;
     };
 } // namespace verdigris

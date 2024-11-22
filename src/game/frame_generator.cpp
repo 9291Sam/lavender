@@ -37,6 +37,8 @@ std::atomic<u32> numberOfChunksPossible  = 0; // NOLINT
 std::atomic<u32> numberOfBricksAllocated = 0; // NOLINT
 std::atomic<u32> numberOfBricksPossible  = 0; // NOLINT
 
+std::atomic<u32> f32TickDeltaTime = 0;
+
 namespace game
 {
     FrameGenerator::GlobalInfoDescriptors FrameGenerator::makeGlobalDescriptors(
@@ -1150,6 +1152,8 @@ namespace game
                         auto bricks         = numberOfBricksAllocated.load();
                         auto bricksPossible = numberOfBricksPossible.load();
 
+                        f32 tickDeltaTime = std::bit_cast<f32>(f32TickDeltaTime.load());
+
                         const std::string menuText = std::format(
                             "ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\n"
                             "Player position: {{{:.3f}, {:.3f}, {:.3f}}}\n"
@@ -1166,8 +1170,8 @@ namespace game
                             camera.getPosition().z,
                             1.0f / deltaTime,
                             1000.0f * deltaTime,
-                            0.0,
-                            0.0,
+                            1.0f / tickDeltaTime,
+                            1000.0f * tickDeltaTime,
                             util::bytesAsSiNamed(util::getMemoryUsage()),
                             util::bytesAsSiNamed(
                                 gfx::vulkan::bufferBytesAllocated.load(std::memory_order_relaxed)),
