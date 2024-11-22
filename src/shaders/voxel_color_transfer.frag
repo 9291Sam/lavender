@@ -34,7 +34,25 @@ void main()
         }
     }
 
-    if (in_face_brick_data == ~0u)
+
+    const ivec2 image_size = imageSize(visible_voxel_image);
+    const uvec2 center = image_size / 2;
+
+    bool shouldFlip = false;
+
+    const u32 crosshairWidth = 16;
+    const u32 girth = 2;
+
+    if (abs(floor(gl_FragCoord.x) - center.x) < girth && center.y - crosshairWidth < gl_FragCoord.y  && gl_FragCoord.y < center.y + crosshairWidth)
+    {
+        shouldFlip = true;
+    }
+    else if (abs(floor(gl_FragCoord.y) - center.y) < girth && center.x - crosshairWidth < gl_FragCoord.x  && gl_FragCoord.x < center.x + crosshairWidth)
+    {
+        shouldFlip = true;
+    }
+
+    if (in_face_brick_data == ~0u && !shouldFlip)
     {
         discard;
     }
@@ -56,5 +74,10 @@ void main()
     //         .dir[normal]
     //         .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
 
-    out_color = vec4(in_visible_face_data.data[face_id].color.xyz, 1.0);
+    out_color = vec4(
+        shouldFlip ? 
+            1.0 - in_visible_face_data.data[face_id].color.xyz :
+            in_visible_face_data.data[face_id].color.xyz
+        , 1.0
+    );
 }
