@@ -259,13 +259,15 @@ namespace verdigris
         if (this->game->getRenderer()->getWindow()->isActionActive(
                 gfx::Window::Action::PlayerMoveUp))
         {
-            newPosition += game::Transform::UpVector * deltaTime * moveScale;
+            newPosition += game::Transform::UpVector * deltaTime * moveScale * 2.0f;
         }
         else if (this->game->getRenderer()->getWindow()->isActionActive(
                      gfx::Window::Action::PlayerMoveDown))
         {
-            newPosition -= game::Transform::UpVector * deltaTime * moveScale;
+            newPosition -= game::Transform::UpVector * deltaTime * moveScale * 2.0f;
         }
+
+        newPosition.y -= 10.0f * deltaTime;
 
         this->voxel_world.lock(
             [&](voxel::World& w)
@@ -388,7 +390,10 @@ namespace verdigris
                     w.getRecordObjects(this->game, this->game->getRenderer()->getStager()));
             });
 
-        return {this->camera, std::move(draws)};
+        auto realCamera = this->camera;
+        realCamera.addPosition({0.0, 32.0f, 0.0});
+
+        return {realCamera, std::move(draws)};
     }
 
     void Verdigris::onTick(float) const
