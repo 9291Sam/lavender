@@ -2,12 +2,8 @@
 
 #include "ecs/entity.hpp"
 #include "game/game.hpp"
-#include "gfx/vulkan/buffer.hpp"
-#include "voxel/chunk.hpp"
-#include "voxel/chunk_manager.hpp"
 #include "voxel/world.hpp"
 #include <deque>
-#include <set>
 
 namespace verdigris
 {
@@ -24,7 +20,7 @@ namespace verdigris
         std::vector<ecs::UniqueEntity>         triangles;
         std::vector<ecs::UniqueEntity>         voxels;
 
-        explicit Verdigris(game::Game* game_);
+        explicit Verdigris(game::Game*);
 
         ~Verdigris() override;
 

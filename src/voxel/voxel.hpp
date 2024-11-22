@@ -17,7 +17,9 @@ namespace voxel
         Gold,
         Topaz,
         Sapphire,
-        Amethyst
+        Amethyst,
+        Jade,
+        Diamond
     };
 
     static_assert(Voxel {} == Voxel::NullAirEmpty);

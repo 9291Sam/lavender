@@ -118,7 +118,7 @@ CalculatedLightPower newLightPower(
     float Geometry = G1 * G2;
 
     // Specular reflection
-    vec3 specular = (NDF * Fresnel * Geometry) / (4.0 * NdotV * NdotL + 0.001); // Add small bias to avoid division by zero
+    vec3 specular = (NDF * Fresnel * Geometry) / (4.0 * NdotV * NdotL + 0.1); // Add small bias to avoid division by zero
 
     // Clear coat reflection (optional, extra specular layer)
     vec3 clear_coat_specular = material.coat_color_power.xyz * specular;
@@ -139,6 +139,80 @@ CalculatedLightPower newLightPower(
 
     return lightPower;
 }
+
+// CalculatedLightPower newest(
+//     vec3 camera_position,
+//     vec3 voxel_position,
+//     vec3 voxel_normal,
+//     PointLight light,
+//     NewVoxelMaterial material
+// ) {
+//     // Calculate vectors
+//     vec3 light_dir = normalize(light.position.xyz - voxel_position);
+//     vec3 view_dir = normalize(camera_position - voxel_position);
+//     vec3 half_dir = normalize(light_dir + view_dir);
+
+//     // Falloff of light
+//     float distance = length(light.position.xyz - voxel_position);
+//     float attenuation = 1.0 / (light.falloffs.x + light.falloffs.y * distance + light.falloffs.z * distance * distance);
+//     vec3 light_color = light.color_and_power.xyz;
+//     float light_intensity = light.color_and_power.w * attenuation;
+
+//     // Diffuse reflection
+//     float diffuse_factor = max(dot(voxel_normal, light_dir), 0.0);
+//     vec3 diffuse = material.base_color.rgb * diffuse_factor;
+
+//     // Specular reflection (Cook-Torrance)
+//     float NdotH = max(dot(voxel_normal, half_dir), 0.0);
+//     float NdotV = max(dot(voxel_normal, view_dir), 0.0);
+//     float NdotL = max(dot(voxel_normal, light_dir), 0.0);
+
+//     // Normal Distribution Function (NDF)
+//     float alpha = material.roughness * material.roughness;
+//     float alpha2 = alpha * alpha;
+//     float denom = (NdotH * NdotH) * (alpha2 - 1.0) + 1.0;
+//     float D = alpha2 / (3.14159265358979323846264 * denom * denom);
+
+//     // Geometry Function (Smith's method)
+//     float k = (material.roughness + 1.0) * (material.roughness + 1.0) / 8.0;
+//     float G_V = NdotV / (NdotV * (1.0 - k) + k);
+//     float G_L = NdotL / (NdotL * (1.0 - k) + k);
+//     float G = G_V * G_L;
+
+//     // Fresnel (Schlick's approximation)
+//     vec3 F0 = mix(vec3(0.04), material.base_color.rgb, material.metallic);
+//     vec3 F = F0 + (1.0 - F0) * pow(1.0 - NdotH, 5.0);
+
+//     // Specular contribution
+//     vec3 specular = (D * G * F) / (4.0 * NdotV * NdotL + 0.001);
+
+//     // Sheen contribution
+//     float sheen_reflection = material.sheen * pow(1.0 - NdotH, 2.0);
+
+//     // Clear coat layer
+//     float clearcoat_alpha = material.clearcoat_roughness * material.clearcoat_roughness;
+//     float clearcoat_D = clearcoat_alpha / (3.14159265358979323846264 * ((NdotH * NdotH) * (clearcoat_alpha - 1.0) + 1.0) * ((NdotH * NdotH) * (clearcoat_alpha - 1.0) + 1.0));
+//     float clearcoat_specular = material.clearcoat_strength * clearcoat_D * pow(NdotH, 5.0);
+
+//     // Subsurface scattering (approximation)
+//     vec3 subsurface = material.subsurface_strength * material.subsurface_color.rgb * diffuse_factor;
+
+//     // Combine all contributions
+//     vec3 final_diffuse = diffuse * (1.0 - material.metallic) + subsurface;
+//     vec3 final_specular = (specular + sheen_reflection + clearcoat_specular) * material.specular_weight;
+
+//     // Emissive contribution
+//     vec3 emissive = material.emissive_color.rgb * material.emissive_intensity;
+
+//     // Light contribution
+//     CalculatedLightPower lightPower;
+//     lightPower.diffuse_strength = final_diffuse * light_color * light_intensity;
+//     lightPower.specular_strength = final_specular * light_color * light_intensity;
+//     // lightPower.emission_strength = emissive;
+
+//     return lightPower;
+// }
+
 
 
 

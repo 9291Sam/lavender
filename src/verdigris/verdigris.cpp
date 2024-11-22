@@ -19,10 +19,7 @@
 #include <FastNoise/FastNoise.h>
 #include <boost/container_hash/hash_fwd.hpp>
 #include <boost/unordered/concurrent_flat_map.hpp>
-#include <chrono>
 #include <glm/fwd.hpp>
-#include <iostream>
-#include <numbers>
 #include <numeric>
 #include <random>
 #include <utility>
@@ -76,8 +73,6 @@ namespace verdigris
                         .name {"Triangle Pipeline Layout"}})},
                 .name {"Triangle Pipeline"}});
 
-        this->triangle.addComponent(TriangleComponent {});
-
         // auto genFunc = [](i32 x, i32 z) -> i32
         // {
         //     return static_cast<i32>(8 * std::sin(x / 24.0) + 8 * std::cos(z / 24.0) + 32.0) -
@@ -93,6 +88,24 @@ namespace verdigris
                 32.0f * std ::sin(ddist(gen)) * ddist(gen) + 80.0f,
                 32.0f * std ::sin(ddist(gen)) * ddist(gen)};
         };
+
+        voxel::PointLight eLight {};
+
+        this->voxel_world.lock(
+            [&](voxel::World& w)
+            {
+                this->lights.push_back(w.createPointLight(
+                    {66, 166, -33}, {1.0, 1.0, 1.0, 384.0}, {0.0, 0.0, 0.025, 0.0}));
+
+                this->lights.push_back(w.createPointLight(
+                    {105, 37, 104}, {1.0, 1.0, 1.0, 384}, {0.0, 0.0, 0.025f, 0.0}));
+
+                eLight = w.createPointLight(
+                    {105, 37, 104}, {1.0, 1.0, 1.0, 84}, {0.0, 0.0, 0.025f, 0.0});
+            });
+
+        this->triangle.addComponent(TriangleComponent {});
+        this->triangle.addComponent<voxel::PointLight>(std::move(eLight));
 
         for (int j = 0; j < 1000; ++j)
         {
@@ -127,16 +140,6 @@ namespace verdigris
         this->camera.addPosition({79.606, 75.586, 16.78});
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
-
-        this->voxel_world.lock(
-            [&](voxel::World& w)
-            {
-                for (int i = 0; i < 3; ++i)
-                {
-                    this->lights.push_back(w.createPointLight(
-                        {105, 37, 104}, {1.0, 1.0, 1.0, 84}, {0.0, 0.0, 0.025f, 0.0}));
-                }
-            });
     }
 
     Verdigris::~Verdigris()
@@ -144,6 +147,12 @@ namespace verdigris
         this->voxel_world.lock(
             [&](voxel::World& w)
             {
+                this->triangle.mutateComponent<voxel::PointLight>(
+                    [&](voxel::PointLight& l)
+                    {
+                        w.destroyPointLight(std::move(l));
+                    });
+
                 for (voxel::PointLight& l : this->lights)
                 {
                     w.destroyPointLight(std::move(l));
@@ -308,31 +317,23 @@ namespace verdigris
         this->voxel_world.lock(
             [&](voxel::World& w)
             {
-                if (!this->lights.empty())
-                {
-                    const glm::vec3 pos = glm::vec3 {
-                        78.0f * std::cos(this->time_alive),
-                        4.0f * std::sin(this->time_alive) + 122.0f,
-                        78.0f * std::sin(this->time_alive)};
+                const glm::vec3 pos = glm::vec3 {
+                    78.0f * std::cos(this->time_alive),
+                    4.0f * std::sin(this->time_alive) + 122.0f,
+                    78.0f * std::sin(this->time_alive)};
 
-                    // util::logTrace("modify light2");
-
-                    for (int i = 0; i < 3; ++i)
+                this->triangle.mutateComponent<TriangleComponent>(
+                    [&](TriangleComponent& t)
                     {
-                        w.modifyPointLight(
-                            this->lights.front(),
-                            pos,
-                            {1.0, 1.0, 1.0, 112.0},
-                            {0.0, 0.0, 0.025, 0.0});
-                    }
+                        t.transform.translation = pos;
+                        t.transform.scale       = glm::vec3 {4.0f};
+                    });
 
-                    this->triangle.mutateComponent<TriangleComponent>(
-                        [&](TriangleComponent& t)
-                        {
-                            t.transform.translation = pos;
-                            t.transform.scale       = glm::vec3 {4.0f};
-                        });
-                }
+                this->triangle.mutateComponent<voxel::PointLight>(
+                    [&](voxel::PointLight& l)
+                    {
+                        w.modifyPointLight(l, pos, {1.0, 1.0, 1.0, 1312.0}, {0.0, 0.0, 0.025, 0.0});
+                    });
 
                 // auto thisPos = genSpiralPos(this->game->getRenderer()->getFrameNumber());
                 // auto prevPos = genSpiralPos(this->game->getRenderer()->getFrameNumber() - 1);
@@ -359,7 +360,7 @@ namespace verdigris
         return {this->camera, std::move(draws)};
     }
 
-    void Verdigris::onTick(float d) const
+    void Verdigris::onTick(float) const
     {
         i32 i = 0;
 
@@ -390,7 +391,7 @@ namespace verdigris
                     //     default:
                     //         return voxel::Voxel::NullAirEmpty;
                     //     }
-                    return static_cast<voxel::Voxel>(y % 10 + 1);
+                    return static_cast<voxel::Voxel>(y % 12 + 1);
                 }();
 
                 const voxel::WorldPosition newPosition {
@@ -415,17 +416,6 @@ namespace verdigris
         this->voxel_world.lock(
             [&](voxel::World& w)
             {
-                if (d == 0.0f)
-                {
-                    util::logTrace("First iter!");
-
-                    w.modifyPointLight(
-                        this->lights.back(),
-                        {66, 166, -33},
-                        {1.0, 1.0, 1.0, 384.0},
-                        {0.0, 0.0, 0.025, 0.0});
-                }
-
                 w.writeVoxel(writes);
             });
     }

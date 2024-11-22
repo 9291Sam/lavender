@@ -1,10 +1,8 @@
 #pragma once
 
 #include "brick_map.hpp"
-#include "brick_pointer_allocator.hpp"
 #include "chunk.hpp"
 #include "dense_bit_chunk.hpp"
-#include "directional_face_id_brick.hpp"
 #include "game/camera.hpp"
 #include "game/frame_generator.hpp"
 #include "gfx/renderer.hpp"
@@ -25,8 +23,6 @@
 #include <glm/fwd.hpp>
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/string_cast.hpp>
-#include <source_location>
-#include <unordered_map>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
