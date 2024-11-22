@@ -42,8 +42,9 @@ namespace gfx
             ToggleConsole          = 7,
             ToggleCursorAttachment = 8,
             ResetPlayPosition      = 9,
-            CloseWindow            = 10,
-            MaxActionValue         = 10,
+            SpawnFlyer             = 10,
+            CloseWindow            = 11,
+            MaxActionValue         = 12,
         };
 
         enum class InteractionMethod

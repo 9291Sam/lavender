@@ -11,6 +11,7 @@
 #include "util/atomic.hpp"
 #include "util/misc.hpp"
 #include "util/static_filesystem.hpp"
+#include "verdigris/flyer.hpp"
 #include "voxel/constants.hpp"
 #include "voxel/point_light.hpp"
 #include "voxel/voxel.hpp"
@@ -177,7 +178,7 @@ namespace verdigris
         util::atomicAbaAdd(this->time_alive, deltaTime);
 
         std::mt19937_64                       gen {std::random_device {}()};
-        std::uniform_real_distribution<float> pDist {-1.0, 1.0};
+        std::uniform_real_distribution<float> pDist {8.0, 16.0};
 
         // auto genVec3 = [&]() -> glm::vec3
         // {
@@ -267,6 +268,15 @@ namespace verdigris
             newPosition += this->camera.getRightVector() * deltaTime * moveScale;
         }
 
+        if (this->game->getRenderer()->getWindow()->isActionActive(gfx::Window::Action::SpawnFlyer))
+        {
+            this->flyers.push_back(Flyer {
+                this->camera.getPosition() + glm::vec3 {0.0f, 32.0f, 0.0f},
+                this->camera.getForwardVector(),
+                pDist(gen),
+                static_cast<voxel::Voxel>(rand() % 12 + 1)});
+        }
+
         if (this->game->getRenderer()->getWindow()->isActionActive(
                 gfx::Window::Action::PlayerMoveUp))
         {
@@ -281,6 +291,12 @@ namespace verdigris
         this->voxel_world.lock(
             [&](voxel::World& w)
             {
+                for (Flyer& f : this->flyers)
+                {
+                    f.update(deltaTime);
+                    f.display(w);
+                }
+
                 glm::vec3 currentPosition = this->camera.getPosition();
                 glm::vec3 displacement    = newPosition - currentPosition;
 

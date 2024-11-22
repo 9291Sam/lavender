@@ -2,6 +2,7 @@
 
 #include "ecs/entity.hpp"
 #include "game/game.hpp"
+#include "verdigris/flyer.hpp"
 #include "voxel/world.hpp"
 #include <deque>
 
@@ -19,6 +20,7 @@ namespace verdigris
         ecs::UniqueEntity                      triangle;
         std::vector<ecs::UniqueEntity>         triangles;
         std::vector<ecs::UniqueEntity>         voxels;
+        mutable std::vector<Flyer>             flyers;
 
         explicit Verdigris(game::Game*);
 

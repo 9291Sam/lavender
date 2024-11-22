@@ -59,6 +59,10 @@ namespace gfx
                  Window::ActionInformation {
                      .key {GLFW_KEY_R}, .method {Window::InteractionMethod::SinglePress}}},
 
+                {Window::Action::SpawnFlyer,
+                 Window::ActionInformation {
+                     .key {GLFW_KEY_F}, .method {Window::InteractionMethod::SinglePress}}},
+
                 {Window::Action::CloseWindow,
                  Window::ActionInformation {
                      .key {GLFW_KEY_ESCAPE}, .method {Window::InteractionMethod::SinglePress}}},
