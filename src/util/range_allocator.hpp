@@ -33,10 +33,10 @@ namespace util
         RangeAllocator(u32 size, u32 maxAllocations);
         ~RangeAllocator();
 
-        RangeAllocator(const RangeAllocator&)                 = delete;
-        RangeAllocator(RangeAllocator&&) noexcept             = default;
-        RangeAllocator& operator= (const RangeAllocator&)     = delete;
-        RangeAllocator& operator= (RangeAllocator&&) noexcept = default;
+        RangeAllocator(const RangeAllocator&) = delete;
+        RangeAllocator(RangeAllocator&&) noexcept;
+        RangeAllocator& operator= (const RangeAllocator&) = delete;
+        RangeAllocator& operator= (RangeAllocator&&) noexcept;
 
         [[nodiscard]] RangeAllocation
         allocate(u32 size, std::source_location = std::source_location::current());

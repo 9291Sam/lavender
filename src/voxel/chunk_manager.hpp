@@ -47,9 +47,9 @@ namespace voxel
         ~ChunkManager();
 
         ChunkManager(const ChunkManager&)             = delete;
-        ChunkManager(ChunkManager&&)                  = delete;
+        ChunkManager(ChunkManager&&)                  = default;
         ChunkManager& operator= (const ChunkManager&) = delete;
-        ChunkManager& operator= (ChunkManager&&)      = delete;
+        ChunkManager& operator= (ChunkManager&&)      = default;
 
         [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
         makeRecordObject(const game::Game*, const gfx::vulkan::BufferStager&, game::Camera);

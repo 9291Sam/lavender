@@ -16,9 +16,9 @@ namespace verdigris
         mutable game::Camera                   camera;
         game::Game*                            game;
         std::shared_ptr<vk::UniquePipeline>    triangle_pipeline;
-        mutable voxel::World                   voxel_world;
+        util::Mutex<voxel::World>              voxel_world;
         mutable std::vector<voxel::PointLight> lights;
-        mutable float                          time_alive;
+        mutable std::atomic<float>             time_alive;
         mutable std::deque<float>              frame_times;
         ecs::UniqueEntity                      triangle;
         std::vector<ecs::UniqueEntity>         triangles;

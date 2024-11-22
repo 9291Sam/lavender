@@ -8,6 +8,7 @@
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/window.hpp"
 #include "triangle_component.hpp"
+#include "util/atomic.hpp"
 #include "util/misc.hpp"
 #include "util/static_filesystem.hpp"
 #include "voxel/constants.hpp"
@@ -30,7 +31,8 @@ namespace verdigris
 {
     Verdigris::Verdigris(game::Game* game_) // NOLINT
         : game {game_}
-        , voxel_world(std::make_unique<world::WorldChunkGenerator>(38484334), this->game)
+        , voxel_world {util::Mutex<voxel::World> {
+              voxel::World {std::make_unique<world::WorldChunkGenerator>(38484334), this->game}}}
         , triangle {ecs::createEntity()}
     {
         this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
@@ -126,19 +128,27 @@ namespace verdigris
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
 
-        for (int i = 0; i < 3; ++i)
-        {
-            this->lights.push_back(this->voxel_world.createPointLight(
-                {105, 37, 104}, {1.0, 1.0, 1.0, 84}, {0.0, 0.0, 0.025f, 0.0}));
-        }
+        this->voxel_world.lock(
+            [&](voxel::World& w)
+            {
+                for (int i = 0; i < 3; ++i)
+                {
+                    this->lights.push_back(w.createPointLight(
+                        {105, 37, 104}, {1.0, 1.0, 1.0, 84}, {0.0, 0.0, 0.025f, 0.0}));
+                }
+            });
     }
 
     Verdigris::~Verdigris()
     {
-        for (voxel::PointLight& l : this->lights)
-        {
-            this->voxel_world.destroyPointLight(std::move(l));
-        }
+        this->voxel_world.lock(
+            [&](voxel::World& w)
+            {
+                for (voxel::PointLight& l : this->lights)
+                {
+                    w.destroyPointLight(std::move(l));
+                }
+            });
     }
 
     std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
@@ -155,7 +165,8 @@ namespace verdigris
             std::accumulate(this->frame_times.cbegin(), this->frame_times.cend(), 0.0f)
             / static_cast<float>(this->frame_times.size());
 
-        this->time_alive += deltaTime;
+        util::atomicAbaAdd(this->time_alive, deltaTime);
+
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {-1.0, 1.0};
 
@@ -178,40 +189,6 @@ namespace verdigris
         // static_cast<i32>(this->game->getRenderer()->getFrameNumber());
 
         // util::logTrace("modify light");
-        if (!this->lights.empty())
-        {
-            const glm::vec3 pos = glm::vec3 {
-                78.0f * std::cos(this->time_alive),
-                4.0f * std::sin(this->time_alive) + 122.0f,
-                78.0f * std::sin(this->time_alive)};
-
-            // util::logTrace("modify light2");
-
-            this->voxel_world.modifyPointLight(
-                this->lights.front(), pos, {1.0, 1.0, 1.0, 112.0}, {0.0, 0.0, 0.025, 0.0});
-
-            this->triangle.mutateComponent<TriangleComponent>(
-                [&](TriangleComponent& t)
-                {
-                    t.transform.translation = pos;
-                    t.transform.scale       = glm::vec3 {4.0f};
-                });
-        }
-
-        auto thisPos = genSpiralPos(this->game->getRenderer()->getFrameNumber());
-        auto prevPos = genSpiralPos(this->game->getRenderer()->getFrameNumber() - 1);
-
-        if (thisPos != prevPos)
-        {
-            for (i32 j = 0; j < 32; ++j)
-            {
-                this->voxel_world.writeVoxel(
-                    voxel::WorldPosition {thisPos + glm::i32vec3 {0, j, 0}}, voxel::Voxel::Pearl);
-                this->voxel_world.writeVoxel(
-                    voxel::WorldPosition {prevPos + glm::i32vec3 {0, j, 0}},
-                    voxel::Voxel::NullAirEmpty);
-            }
-        }
 
         // TODO: moving diagonally is faster
         const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
@@ -328,10 +305,56 @@ namespace verdigris
                 });
             });
 
-        this->voxel_world.setCamera(this->camera);
+        this->voxel_world.lock(
+            [&](voxel::World& w)
+            {
+                if (!this->lights.empty())
+                {
+                    const glm::vec3 pos = glm::vec3 {
+                        78.0f * std::cos(this->time_alive),
+                        4.0f * std::sin(this->time_alive) + 122.0f,
+                        78.0f * std::sin(this->time_alive)};
 
-        draws.append_range(
-            this->voxel_world.getRecordObjects(this->game, this->game->getRenderer()->getStager()));
+                    // util::logTrace("modify light2");
+
+                    for (int i = 0; i < 3; ++i)
+                    {
+                        w.modifyPointLight(
+                            this->lights.front(),
+                            pos,
+                            {1.0, 1.0, 1.0, 112.0},
+                            {0.0, 0.0, 0.025, 0.0});
+                    }
+
+                    this->triangle.mutateComponent<TriangleComponent>(
+                        [&](TriangleComponent& t)
+                        {
+                            t.transform.translation = pos;
+                            t.transform.scale       = glm::vec3 {4.0f};
+                        });
+                }
+
+                // auto thisPos = genSpiralPos(this->game->getRenderer()->getFrameNumber());
+                // auto prevPos = genSpiralPos(this->game->getRenderer()->getFrameNumber() - 1);
+
+                // if (thisPos != prevPos)
+                // {
+                //     for (i32 j = 0; j < 32; ++j)
+                //     {
+                //         w.writeVoxel(
+                //             voxel::WorldPosition {thisPos + glm::i32vec3 {0, j, 0}},
+                //             voxel::Voxel::Pearl);
+                //         w.writeVoxel(
+                //             voxel::WorldPosition {prevPos + glm::i32vec3 {0, j, 0}},
+                //             voxel::Voxel::NullAirEmpty);
+                //     }
+                // }
+
+                w.setCamera(this->camera);
+
+                draws.append_range(
+                    w.getRecordObjects(this->game, this->game->getRenderer()->getStager()));
+            });
 
         return {this->camera, std::move(draws)};
     }
@@ -339,6 +362,9 @@ namespace verdigris
     void Verdigris::onTick(float d) const
     {
         i32 i = 0;
+
+        std::vector<voxel::World::VoxelWrite> writes {};
+
         ecs::getGlobalECSManager()->iterateComponents<VoxelComponent>(
             [&](ecs::RawEntity, VoxelComponent& c)
             {
@@ -375,23 +401,29 @@ namespace verdigris
                                * std::sin(
                                    static_cast<float>(x) / 4.0f + this->time_alive * 4.0f))}};
 
-                if (i == 0)
+                writes.push_back({c.position, voxel::Voxel::NullAirEmpty});
+
+                c.position = newPosition;
+                c.voxel    = newMaterial;
+
+                writes.push_back({c.position, c.voxel});
+
+                i += 1;
+            });
+
+        this->voxel_world.lock(
+            [&](voxel::World& w)
+            {
+                if (i == 0 && d == 0.0f)
                 {
-                    this->voxel_world.modifyPointLight(
+                    w.modifyPointLight(
                         this->lights.back(),
                         {66, 166, -33},
                         {1.0, 1.0, 1.0, 384.0},
                         {0.0, 0.0, 0.025, 0.0});
                 }
 
-                this->voxel_world.writeVoxel(c.position, voxel::Voxel::NullAirEmpty);
-
-                c.position = newPosition;
-                c.voxel    = newMaterial;
-
-                this->voxel_world.writeVoxel(c.position, c.voxel);
-
-                i += 1;
+                w.writeVoxel(writes);
             });
     }
 

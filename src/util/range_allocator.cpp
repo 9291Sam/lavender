@@ -20,6 +20,10 @@ namespace util
 
     RangeAllocator::~RangeAllocator() = default;
 
+    RangeAllocator::RangeAllocator(RangeAllocator&&) noexcept = default;
+
+    RangeAllocator& RangeAllocator::operator= (RangeAllocator&&) noexcept = default;
+
     RangeAllocation RangeAllocator::allocate(u32 size, std::source_location l)
     {
         std::expected<RangeAllocation, OutOfBlocks> result = this->tryAllocate(size);

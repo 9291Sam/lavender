@@ -54,6 +54,11 @@ namespace voxel
         explicit World(std::unique_ptr<ChunkGenerator>, const game::Game*);
         ~World();
 
+        World(const World&)                 = delete;
+        World(World&&) noexcept             = default;
+        World& operator= (const World&)     = delete;
+        World& operator= (World&&) noexcept = default;
+
         [[nodiscard]] Voxel              readVoxelMaterial(WorldPosition) const;
         [[nodiscard]] std::vector<Voxel> readVoxelMaterial(std::span<const WorldPosition>) const;
 

@@ -23,7 +23,7 @@ namespace util
         explicit Mutex()
             : mutex {std::make_unique<std::mutex>()}
         {}
-        explicit Mutex(T&&... t) // NOLINT
+        Mutex(T&&... t) // NOLINT
             : mutex {std::make_unique<std::mutex>()}
             , tuple {std::forward<T>(t)...}
         {}
