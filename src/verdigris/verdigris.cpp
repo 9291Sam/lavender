@@ -291,7 +291,16 @@ namespace verdigris
                 {
                     resolvedPosition.y += displacement.y;
                 }
-
+                else
+                {
+                    // Find the first unoccupied position above
+                    glm::vec3 upwardPosition = glm::floor(newPosition);
+                    while (w.readVoxelOpacity(voxel::WorldPosition {glm::floor(upwardPosition)}))
+                    {
+                        upwardPosition.y += 1.0f; // Move up by 1 voxel
+                    }
+                    resolvedPosition.y = upwardPosition.y;
+                }
                 // Test Z-axis movement
                 glm::vec3 testPositionZ = resolvedPosition + glm::vec3(0.0f, 0.0f, displacement.z);
                 if (!w.readVoxelOpacity(voxel::WorldPosition {glm::floor(testPositionZ)}))
