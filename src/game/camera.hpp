@@ -20,6 +20,7 @@ namespace game
         [[nodiscard]] glm::vec3 getUpVector() const;
         [[nodiscard]] glm::vec3 getPosition() const;
 
+        void setPosition(glm::vec3);
         void addPosition(glm::vec3);
         void addPitch(float);
         void addYaw(float);

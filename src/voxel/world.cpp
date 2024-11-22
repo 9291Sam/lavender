@@ -54,6 +54,26 @@ namespace voxel
         }
     }
 
+    bool World::readVoxelOpacity(WorldPosition position) const
+    {
+        const auto [coordinate, chunkLocalPosition] = splitWorldPosition(position);
+
+        const decltype(this->global_chunks)::const_iterator maybeChunkIt =
+            this->global_chunks.find(coordinate);
+
+        bool isOccupied = false;
+
+        if (maybeChunkIt != this->global_chunks.cend())
+        {
+            isOccupied =
+                this->chunk_manager
+                    .readVoxelFromChunkOpacity(maybeChunkIt->second, {&chunkLocalPosition, 1})
+                    .at(0);
+        }
+
+        return isOccupied;
+    }
+
     void World::writeVoxel(WorldPosition position, Voxel voxel) const
     {
         const auto [coordinate, chunkLocalPosition] = splitWorldPosition(position);

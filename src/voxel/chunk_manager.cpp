@@ -986,7 +986,7 @@ namespace voxel
         const Chunk& c, std::span<const ChunkLocalPosition> positions)
     {
         boost::dynamic_bitset<u64> out {};
-        out.reserve(positions.size());
+        out.resize(positions.size());
 
         for (std::size_t i = 0; i < positions.size(); ++i)
         {

@@ -229,47 +229,77 @@ namespace verdigris
             this->game->getRenderer()->getWindow()->toggleCursor();
         }
 
-        this->camera.addPosition(
-            this->camera.getForwardVector() * deltaTime * moveScale
-            * (this->game->getRenderer()->getWindow()->isActionActive(
-                   gfx::Window::Action::PlayerMoveForward)
-                   ? 1.0f
-                   : 0.0f));
+        glm::vec3 previousPosition = this->camera.getPosition();
 
-        this->camera.addPosition(
-            -this->camera.getForwardVector() * deltaTime * moveScale
-            * (this->game->getRenderer()->getWindow()->isActionActive(
-                   gfx::Window::Action::PlayerMoveBackward)
-                   ? 1.0f
-                   : 0.0f));
+        glm::vec3 newPosition = previousPosition;
 
-        this->camera.addPosition(
-            -this->camera.getRightVector() * deltaTime * moveScale
-            * (this->game->getRenderer()->getWindow()->isActionActive(
-                   gfx::Window::Action::PlayerMoveLeft)
-                   ? 1.0f
-                   : 0.0f));
+        // Adjust the new position based on input for movement directions
+        if (this->game->getRenderer()->getWindow()->isActionActive(
+                gfx::Window::Action::PlayerMoveForward))
+        {
+            newPosition += this->camera.getForwardVector() * deltaTime * moveScale;
+        }
+        else if (this->game->getRenderer()->getWindow()->isActionActive(
+                     gfx::Window::Action::PlayerMoveBackward))
+        {
+            newPosition -= this->camera.getForwardVector() * deltaTime * moveScale;
+        }
 
-        this->camera.addPosition(
-            this->camera.getRightVector() * deltaTime * moveScale
-            * (this->game->getRenderer()->getWindow()->isActionActive(
-                   gfx::Window::Action::PlayerMoveRight)
-                   ? 1.0f
-                   : 0.0f));
+        if (this->game->getRenderer()->getWindow()->isActionActive(
+                gfx::Window::Action::PlayerMoveLeft))
+        {
+            newPosition -= this->camera.getRightVector() * deltaTime * moveScale;
+        }
+        else if (this->game->getRenderer()->getWindow()->isActionActive(
+                     gfx::Window::Action::PlayerMoveRight))
+        {
+            newPosition += this->camera.getRightVector() * deltaTime * moveScale;
+        }
 
-        this->camera.addPosition(
-            game::Transform::UpVector * deltaTime * moveScale
-            * (this->game->getRenderer()->getWindow()->isActionActive(
-                   gfx::Window::Action::PlayerMoveUp)
-                   ? 1.0f
-                   : 0.0f));
+        if (this->game->getRenderer()->getWindow()->isActionActive(
+                gfx::Window::Action::PlayerMoveUp))
+        {
+            newPosition += game::Transform::UpVector * deltaTime * moveScale;
+        }
+        else if (this->game->getRenderer()->getWindow()->isActionActive(
+                     gfx::Window::Action::PlayerMoveDown))
+        {
+            newPosition -= game::Transform::UpVector * deltaTime * moveScale;
+        }
 
-        this->camera.addPosition(
-            -game::Transform::UpVector * deltaTime * moveScale
-            * (this->game->getRenderer()->getWindow()->isActionActive(
-                   gfx::Window::Action::PlayerMoveDown)
-                   ? 1.0f
-                   : 0.0f));
+        this->voxel_world.lock(
+            [&](voxel::World& w)
+            {
+                glm::vec3 currentPosition = this->camera.getPosition();
+                glm::vec3 displacement    = newPosition - currentPosition;
+
+                // Resolve each axis independently
+                glm::vec3 resolvedPosition = currentPosition;
+
+                // Test X-axis movement
+                glm::vec3 testPositionX = resolvedPosition + glm::vec3(displacement.x, 0.0f, 0.0f);
+                if (!w.readVoxelOpacity(voxel::WorldPosition {glm::floor(testPositionX)}))
+                {
+                    resolvedPosition.x += displacement.x;
+                }
+
+                // Test Y-axis movement
+                glm::vec3 testPositionY = resolvedPosition + glm::vec3(0.0f, displacement.y, 0.0f);
+                if (!w.readVoxelOpacity(voxel::WorldPosition {glm::floor(testPositionY)}))
+                {
+                    resolvedPosition.y += displacement.y;
+                }
+
+                // Test Z-axis movement
+                glm::vec3 testPositionZ = resolvedPosition + glm::vec3(0.0f, 0.0f, displacement.z);
+                if (!w.readVoxelOpacity(voxel::WorldPosition {glm::floor(testPositionZ)}))
+                {
+                    resolvedPosition.z += displacement.z;
+                }
+
+                // Set the resolved position
+                this->camera.setPosition(resolvedPosition);
+            });
 
         auto getMouseDeltaRadians = [&]
         {
@@ -336,7 +366,8 @@ namespace verdigris
                     });
 
                 // auto thisPos = genSpiralPos(this->game->getRenderer()->getFrameNumber());
-                // auto prevPos = genSpiralPos(this->game->getRenderer()->getFrameNumber() - 1);
+                // auto prevPos = genSpiralPos(this->game->getRenderer()->getFrameNumber() -
+                // 1);
 
                 // if (thisPos != prevPos)
                 // {

@@ -61,6 +61,11 @@ namespace game
         return this->transform.translation;
     }
 
+    void Camera::setPosition(glm::vec3 newPos)
+    {
+        this->transform.translation = newPos;
+    }
+
     void Camera::addPosition(glm::vec3 positionToAdd)
     {
         this->transform.translation += positionToAdd;
