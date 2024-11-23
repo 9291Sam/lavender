@@ -102,6 +102,12 @@ namespace gfx::vulkan
 
         for (const BufferTransfer& transfer : grabbedTransfers)
         {
+            if (transfer.size == 0)
+            {
+                util::logWarn("0 size transfer");
+
+                continue;
+            }
             copies[transfer.output_buffer].push_back(vk::BufferCopy {
                 .srcOffset {transfer.staging_allocation.offset},
                 .dstOffset {transfer.output_offset},
