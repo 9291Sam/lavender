@@ -1,6 +1,7 @@
 #include "buffer.hpp"
 #include "allocator.hpp"
 #include "frame_manager.hpp"
+#include "util/misc.hpp"
 #include "util/offsetAllocator.hpp"
 #include "util/range_allocator.hpp"
 #include <boost/container/small_vector.hpp>
@@ -104,7 +105,7 @@ namespace gfx::vulkan
         {
             if (transfer.size == 0)
             {
-                util::logWarn("0 size transfer");
+                util::debugBreak();
 
                 continue;
             }
