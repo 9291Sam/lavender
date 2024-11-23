@@ -203,7 +203,7 @@ namespace verdigris
         // TODO: moving diagonally is faster
         const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
                                     gfx::Window::Action::PlayerSprint)
-                                         ? 64.0f
+                                         ? 512.0f
                                          : 36.0f;
         const float rotateSpeedScale = 6.0f;
 
@@ -304,6 +304,12 @@ namespace verdigris
                 verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
 
                 displacement.y += verticalVelocity * deltaTime;
+
+                // HACK: just prevent it from mattering lol
+                if (glm::length(displacement) > 1.0f)
+                {
+                    displacement = glm::normalize(displacement) * 0.999999f;
+                }
 
                 glm::vec3 resolvedPosition = currentPosition;
 
