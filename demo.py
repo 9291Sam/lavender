@@ -1,90 +1,64 @@
-# import numpy as np
-# import matplotlib.pyplot as plt
-# from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
-# def lerpolated_vector_field(vectors, x, y):
-#     # inverse distance weighting
-#     epsilon = 1e-5 
-#     weights = []
-#     interpolated_vector = np.array([0.0, 0.0])
+def lerpolated_vector_field(vectors, x, y):
+    # inverse distance weighting
+    epsilon = 1e-5 
+    weights = []
+    interpolated_vector = np.array([0.0, 0.0])
     
-#     for px, py, dx, dy in vectors:
-#         distance = np.sqrt((x - px) ** 2 + (y - py) ** 2) + epsilon
-#         weight = 1 / distance 
-#         weights.append(weight)
+    for px, py, dx, dy in vectors:
+        distance = np.sqrt((x - px) ** 2 + (y - py) ** 2) + epsilon
+        weight = 1 / distance 
+        weights.append(weight)
         
-#         interpolated_vector += weight * np.array([dx, dy])
+        interpolated_vector += weight * np.array([dx, dy])
     
-#     total_weight = sum(weights)
-#     if total_weight > 0:
-#         interpolated_vector /= total_weight
+    total_weight = sum(weights)
+    if total_weight > 0:
+        interpolated_vector /= total_weight
     
-#     return tuple(interpolated_vector)
+    return tuple(interpolated_vector)
 
-# def real_vector_field(x, y):
-#     dx = 2 * x
-#     dy = 2 * y
-#     return dx, dy
+def real_vector_field(x, y):
+    dx = 2 * x
+    dy = 2 * y
+    return dx, dy
 
-# x = np.linspace(-1.5, 1.5, 20)
-# y = np.linspace(-1.5, 1.5, 20)
-# X, Y = np.meshgrid(x, y)
-# Z = X**2 + Y**2 
+x = np.linspace(-1.5, 1.5, 20)
+y = np.linspace(-1.5, 1.5, 20)
+X, Y = np.meshgrid(x, y)
+Z = X**2 + Y**2 
 
-# sampled_vectors = []
-# for i in range(1, X.shape[0], 12):
-#     for j in range(1, X.shape[1], 12):
-#         xi, yi = X[i, j], Y[i, j]
-#         dx, dy = real_vector_field(xi, yi)
-#         sampled_vectors.append((xi, yi, dx, dy))
+sampled_vectors = []
+for i in range(1, X.shape[0], 12):
+    for j in range(1, X.shape[1], 12):
+        xi, yi = X[i, j], Y[i, j]
+        dx, dy = real_vector_field(xi, yi)
+        sampled_vectors.append((xi, yi, dx, dy))
 
-# U, V = np.zeros_like(X), np.zeros_like(Y)
-# for i in range(X.shape[0]):
-#     for j in range(X.shape[1]):
-#         U[i, j], V[i, j] = lerpolated_vector_field(
-#             sampled_vectors, X[i, j], Y[i, j]
-#         )
+U, V = np.zeros_like(X), np.zeros_like(Y)
+for i in range(X.shape[0]):
+    for j in range(X.shape[1]):
+        U[i, j], V[i, j] = lerpolated_vector_field(
+            sampled_vectors, X[i, j], Y[i, j]
+        )
 
-# fig = plt.figure(figsize=(12, 8))
-# ax = fig.add_subplot(111, projection='3d')
+fig = plt.figure(figsize=(12, 8))
+ax = fig.add_subplot(111, projection='3d')
 
-# ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.6)
+ax.plot_surface(X, Y, Z, cmap='viridis', alpha=0.6)
 
-# for xi, yi, dx, dy in sampled_vectors:
-#     zi = xi**2 + yi**2 
-#     ax.quiver(xi, yi, zi, dx, dy, 0, color='orange', length=0.3, linewidth=5, normalize=True)
+for xi, yi, dx, dy in sampled_vectors:
+    zi = xi**2 + yi**2 
+    ax.quiver(xi, yi, zi, dx, dy, 0, color='orange', length=0.3, linewidth=5, normalize=True)
 
 
-# ax.quiver(X, Y, Z, U, V, 0, color='purple', length=0.2, normalize=True)
+ax.quiver(X, Y, Z, U, V, 0, color='purple', length=0.2, normalize=True)
 
-# ax.set_xlim([-1.5, 1.5])
-# ax.set_ylim([-1.5, 1.5])
-# ax.set_zlim([0, 3])
+ax.set_xlim([-1.5, 1.5])
+ax.set_ylim([-1.5, 1.5])
+ax.set_zlim([0, 3])
 
-# plt.show()
-
-def sum_numbers_in_file(file_path):
-    try:
-        with open(file_path, 'r') as file:
-            # Read the file content
-            content = file.read()
-        
-        # Extract numbers using a list comprehension
-        numbers = [float(num) for num in content.split() if num.replace('.', '', 1).isdigit()]
-        
-        # Sum the numbers
-        total = sum(numbers) / len(numbers)
-        return total
-    
-    except FileNotFoundError:
-        print(f"Error: The file at {file_path} was not found.")
-    except ValueError:
-        print("Error: Unable to process all contents into numbers.")
-    return None
-
-# Example usage:
-file_path = "build/file.txt"  # Replace with your file name
-result = sum_numbers_in_file(file_path)
-
-if result is not None:
-    print(f"The sum of all numbers in the file is: {result}")
+plt.show()

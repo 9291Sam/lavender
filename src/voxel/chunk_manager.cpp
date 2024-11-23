@@ -1,7 +1,6 @@
 #include "voxel/chunk_manager.hpp"
 #include "brick_map.hpp"
 #include "brick_pointer.hpp"
-#include "brick_pointer_allocator.hpp"
 #include "chunk.hpp"
 #include "chunk_manager.hpp"
 #include "constants.hpp"
@@ -22,7 +21,6 @@
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
 #include "util/static_filesystem.hpp"
-#include "util/timer.hpp"
 #include "voxel/brick_pointer.hpp"
 #include "voxel/constants.hpp"
 #include "voxel/dense_bit_chunk.hpp"
@@ -30,7 +28,6 @@
 #include "voxel/opacity_brick.hpp"
 #include "voxel/visibility_brick.hpp"
 #include "voxel_face_direction.hpp"
-#include <algorithm>
 #include <bit>
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 #include <cstddef>
@@ -41,8 +38,6 @@
 #include <memory>
 #include <optional>
 #include <ranges>
-#include <source_location>
-#include <unordered_map>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_handles.hpp>
@@ -705,6 +700,7 @@ namespace voxel
                                   .number_of_calculating_draws_z {},
                                   .number_of_lights {
                                       this->light_allocator.getUpperBoundOnAllocatedElements()},
+                                  .readback_number_of_visible_faces {},
                               };
 
                               commandBuffer.updateBuffer(
@@ -829,7 +825,10 @@ namespace voxel
                 coordinate.z * ChunkEdgeLengthVoxels,
                 0.0}},
             .face_data {std::nullopt},
-            .needs_remesh {true}};
+            .needs_remesh {true},
+            .is_remesh_in_progress {false},
+            .future_mesh {},
+        };
 
         this->brick_maps.write(thisChunkId, BrickMap {});
         this->gpu_chunk_data.write(

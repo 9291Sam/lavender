@@ -52,7 +52,14 @@ namespace util
     constexpr inline std::string formCallingLocation(std::source_location location)
     {
         constexpr std::array<std::string_view, 2> FolderIdentifiers {"/src/", "/inc/"};
-        const std::string                         rawFileName {location.file_name()};
+        std::string                               rawFileName {location.file_name()};
+        for (char& c : rawFileName)
+        {
+            if (c == '\\')
+            {
+                c = '/';
+            }
+        }
 
         std::size_t index = std::string::npos; // NOLINT
 
