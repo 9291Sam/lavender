@@ -22,6 +22,7 @@
 #include <boost/container_hash/hash_fwd.hpp>
 #include <boost/unordered/concurrent_flat_map.hpp>
 #include <glm/fwd.hpp>
+#include <glm/gtc/random.hpp>
 #include <numeric>
 #include <random>
 #include <utility>
@@ -405,6 +406,16 @@ namespace verdigris
         this->voxel_world.lock(
             [&](voxel::World& w)
             {
+                if (this->game->getRenderer()->getFrameNumber() == 0)
+                {
+                    for (int i = 0; i < 2048; ++i)
+                    {
+                        const glm::vec3 dir = glm::normalize(glm::ballRand(1.0f));
+
+                        this->flyers.push_back(Flyer {glm::vec3 {0.0, 32.0, 0.0}, dir, 10.0f});
+                    }
+                }
+
                 const glm::vec3 pos = glm::vec3 {
                     78.0f * std::cos(this->time_alive),
                     4.0f * std::sin(this->time_alive) + 122.0f,

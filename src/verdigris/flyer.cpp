@@ -1,4 +1,5 @@
 #include "flyer.hpp"
+#include "voxel/constants.hpp"
 #include "voxel/voxel.hpp"
 #include "voxel/world.hpp"
 
@@ -21,14 +22,28 @@ namespace verdigris
 
     void Flyer::update(f32 deltaTime)
     {
-        this->previous_position = this->current_position;
-        this->current_position  = {this->start + this->time_alive * this->dir * speed};
+        if (this->time_alive < 10.0f)
+        {
+            this->previous_position = this->current_position;
+            this->current_position  = {this->start + this->time_alive * this->dir * speed};
+        }
 
         this->time_alive += deltaTime;
     }
 
     void Flyer::display(voxel::World& w)
     {
+        if (this->time_alive > 10.0f)
+        {
+            if (this->previous_position != voxel::WorldPosition {})
+            {
+                w.writeVoxel(this->previous_position, voxel::Voxel::NullAirEmpty);
+                this->previous_position = voxel::WorldPosition {};
+            }
+
+            return;
+        }
+
         if (this->current_position != this->previous_position)
         {
             std::array<voxel::World::VoxelWrite, 2> writes {

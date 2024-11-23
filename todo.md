@@ -1,4 +1,10 @@
 
+
+
+
+
+Game ui
+breaking and placing of blocks in the world
 async chunk meshing  thread chunk remeshing https://x.com/FindingFortune1/status/1784419629827248131
 voxel transactrions
 animations
