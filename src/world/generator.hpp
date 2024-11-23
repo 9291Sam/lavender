@@ -234,8 +234,8 @@ namespace world
                 return {};
             }
 
-            util::logTrace(
-                "generation of {}", glm::to_string(static_cast<glm::i32vec3>(coordinate)));
+            // util::logTrace(
+            //     "generation of {}", glm::to_string(static_cast<glm::i32vec3>(coordinate)));
 
             voxel::WorldPosition root = voxel::getWorldPositionOfChunkCoordinate(coordinate);
 

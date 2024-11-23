@@ -9,6 +9,7 @@
 #include "gfx/window.hpp"
 #include "triangle_component.hpp"
 #include "util/atomic.hpp"
+#include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/static_filesystem.hpp"
 #include "verdigris/flyer.hpp"
@@ -203,7 +204,7 @@ namespace verdigris
         // TODO: moving diagonally is faster
         const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
                                     gfx::Window::Action::PlayerSprint)
-                                         ? 512.0f
+                                         ? 64.0f
                                          : 36.0f;
         const float rotateSpeedScale = 6.0f;
 
@@ -465,23 +466,23 @@ namespace verdigris
 
                 const voxel::Voxel newMaterial = [&]
                 {
-                    //     switch (y / (50 / 6))
-                    //     {
-                    //     case 0:
-                    //         return voxel::Voxel::Amethyst;
-                    //     case 1:
-                    //         return voxel::Voxel::Sapphire;
-                    //     case 2:
-                    //         return voxel::Voxel::Emerald;
-                    //     case 3:
-                    //         return voxel::Voxel::Gold;
-                    //     case 4:
-                    //         return voxel::Voxel::Topaz;
-                    //     case 5:
-                    //         return voxel::Voxel::Ruby;
-                    //     default:
-                    //         return voxel::Voxel::NullAirEmpty;
-                    //     }
+                    // switch (y / (50 / 6))
+                    // {
+                    // case 0:
+                    //     return voxel::Voxel::Amethyst;
+                    // case 1:
+                    //     return voxel::Voxel::Sapphire;
+                    // case 2:
+                    //     return voxel::Voxel::Emerald;
+                    // case 3:
+                    //     return voxel::Voxel::Gold;
+                    // case 4:
+                    //     return voxel::Voxel::Topaz;
+                    // case 5:
+                    //     return voxel::Voxel::Ruby;
+                    // default:
+                    //     return voxel::Voxel::NullAirEmpty;
+                    // }
                     return static_cast<voxel::Voxel>(y % 12 + 1);
                 }();
 
