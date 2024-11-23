@@ -40,6 +40,8 @@ your mission: track down who has wronged you and destroyed your life.
 its 1000s of years later
 
 
+[the game starts]
+explore the world
 
 
 Voxels
@@ -49,7 +51,6 @@ nanomachines magic system
 
 
 
-Larged forced cutscene at the beginnig
 Explore, fight, and try to decyper the strange world that you have found yourself
 in
 
@@ -110,6 +111,8 @@ you do need some type of monster to actually scare the player
 
 
 spells [space-rocks]
+space laser
+
 metor storm
 you hear it on top of the dungeon
 
