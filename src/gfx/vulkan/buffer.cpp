@@ -105,7 +105,7 @@ namespace gfx::vulkan
         {
             if (transfer.size == 0)
             {
-                util::debugBreak();
+                util::logWarn("zst transfer!");
 
                 continue;
             }

@@ -45,6 +45,7 @@ MVP tasks:
 	- At this point you should have a game. Show it off, ask others for their opinions. 
 
 
+COME UP WITH A MAGIC SYSTEM LOL
 
 wandering trader
 
