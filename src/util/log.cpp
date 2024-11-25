@@ -212,7 +212,7 @@ namespace util
             {
                 // NOLINTBEGIN
                 // I love not having proper string utilities :)
-                std::array<char, 32> buf {};
+                std::array<char, 128> buf {};
 
                 const std::time_t t = std::chrono::system_clock::to_time_t(time);
 
@@ -225,13 +225,14 @@ namespace util
                     std::localtime(&t)); // NOLINT
 #pragma clang diagnostic pop
 
-                std::array<char, 32> outBuffer {};
+                std::array<char, 128> outBuffer {};
 
-                const int milis =
+                const unsigned int milis = static_cast<unsigned int>(
                     std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch())
                         .count()
-                    % 1000;
-                const int micros = time.time_since_epoch().count() % 1000;
+                    % 1000);
+                const unsigned int micros =
+                    static_cast<unsigned int>(time.time_since_epoch().count() % 1000);
 
                 const std::size_t dateStringLength = static_cast<std::size_t>(std::snprintf(
                     outBuffer.data(), outBuffer.size(), "%s:%03u:%03u", buf.data(), milis, micros));
