@@ -71,7 +71,7 @@ namespace gfx::vulkan
 
             const VmaAllocationCreateInfo allocationCreateInfo {
                 .flags {VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT},
-                .usage {VMA_MEMORY_USAGE_AUTO},
+                .usage {VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE},
                 .requiredFlags {static_cast<VkMemoryPropertyFlags>(memoryPropertyFlags)},
                 .preferredFlags {},
                 .memoryTypeBits {},

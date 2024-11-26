@@ -63,13 +63,13 @@ namespace voxel
         , gpu_chunk_data(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
-              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
               MaxChunks,
               "Gpu Chunk Data Buffer")
         , brick_maps(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
-              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
               MaxChunks,
               "Brick Maps")
         , indirect_payload(
@@ -88,19 +88,19 @@ namespace voxel
         , brick_parent_info(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
-              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxBricks),
               "Brick Parent Info")
         , material_bricks(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
-              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxBricks),
               "Material Bricks")
         , opacity_bricks(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
-              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxBricks),
               "Opacity Bricks")
         , visibility_bricks(
@@ -119,7 +119,7 @@ namespace voxel
         , voxel_faces(
               this->renderer->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
-              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxFaces),
               "Voxel Faces")
         , material_buffer {voxel::generateVoxelMaterialBuffer(this->renderer)}
