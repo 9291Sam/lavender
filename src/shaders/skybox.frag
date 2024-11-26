@@ -1,6 +1,5 @@
 #version 460
 
-#include "global_descriptor_set.glsl"
 
 
 const float fTurbulence = 0.35;
@@ -58,7 +57,7 @@ float noise(vec3 p){
 
 vec4 render(in vec3 rd, in float iTime)
 {
-    float fSunSpeed = 0.0035 * iTime + 1.234;
+    float fSunSpeed = 0.35 * iTime;
     vec3 sundir = normalize( vec3(cos(fSunSpeed),sin(fSunSpeed),0.0) );
 	float sun = clamp( dot(sundir,rd), 0.0, 1.0 );
     
@@ -90,9 +89,9 @@ vec4 render(in vec3 rd, in float iTime)
     // atmosphere brighter near horizon
     // col -= 1.0; // rd.y; // clamp(rd.y, 0.0, 0.3);
     
-    // // draw sun
-	// col += 0.04 * vSunRimColor * pow( sun,    4.0 );
-	// col += 1.0 * vSunColor    * pow( sun, 2000.0 );
+    // draw sun
+	col += 0.04 * vSunRimColor * pow( sun,    4.0 );
+	col += 1.0 * vSunColor    * pow( sun, 2000.0 );
     
     // stars
     // float fStarSpeed = -fSunSpeed * 0.5;
@@ -107,14 +106,26 @@ vec4 render(in vec3 rd, in float iTime)
     return vec4( col, 1.0 );
 }
 
-layout(location = 0) in vec3 in_ray_direction;
+
+layout(push_constant) uniform PushConstants
+{
+    mat4 model_matrix;
+    vec4 camera_position;
+    vec4 camera_normal;
+    uint mvp_matricies_id;
+    uint draw_id;
+    float time_alive;
+} in_push_constants;
+
+layout(location = 0) in vec3 in_frag_position_world;
 
 layout(location = 0) out vec4 out_color;
 
 void main()
 {
-    const vec3 dir = normalize(in_ray_direction);
+    const vec3 dir = normalize(in_frag_position_world - in_push_constants.camera_position.xyz);
 
-    out_color = render(dir, in_global_info.time_alive);
+    // out_color = vec4((dir /2 + 0.5), 1.0);
+    out_color = render(dir, in_push_constants.time_alive);
     gl_FragDepth = 0.9999999;
 }

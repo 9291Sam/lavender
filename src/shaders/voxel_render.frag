@@ -13,7 +13,6 @@ layout(location = 0) out u32 out_face_data;
 
 void main()
 {
-
     const uvec3 chunk_local_position = uvec3(floor(in_chunk_local_position));
     
     const uvec3 brick_coordinate = chunk_local_position / 8;

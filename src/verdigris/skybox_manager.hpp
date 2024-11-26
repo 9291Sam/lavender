@@ -20,7 +20,8 @@ namespace verdigris
         SkyboxManager& operator= (const SkyboxManager&) = delete;
         SkyboxManager& operator= (SkyboxManager&&)      = delete;
 
-        [[nodiscard]] game::FrameGenerator::RecordObject getRecordObject() const;
+        [[nodiscard]] game::FrameGenerator::RecordObject
+        getRecordObject(game::Camera, f32 timeAlive) const;
 
     private:
         std::shared_ptr<vk::UniquePipeline> pipeline;

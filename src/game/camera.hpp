@@ -1,5 +1,6 @@
 #pragma once
 
+#include "game/transform.hpp"
 #include "transform.hpp"
 
 namespace game
@@ -20,6 +21,8 @@ namespace game
         [[nodiscard]] glm::vec3 getRightVector() const;
         [[nodiscard]] glm::vec3 getUpVector() const;
         [[nodiscard]] glm::vec3 getPosition() const;
+
+        [[nodiscard]] game::Transform getTransform() const;
 
         void setPosition(glm::vec3);
         void addPosition(glm::vec3);

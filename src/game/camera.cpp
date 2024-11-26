@@ -1,5 +1,6 @@
 #include "camera.hpp"
 #include "game.hpp"
+#include "game/transform.hpp"
 #include <format>
 #include <gfx/renderer.hpp>
 #include <util/log.hpp>
@@ -64,6 +65,11 @@ namespace game
     glm::vec3 Camera::getPosition() const
     {
         return this->transform.translation;
+    }
+
+    game::Transform Camera::getTransform() const
+    {
+        return this->transform;
     }
 
     void Camera::setPosition(glm::vec3 newPos)

@@ -8,7 +8,6 @@
 #include <boost/unordered/concurrent_flat_map.hpp>
 #include <cassert>
 #include <ctti/type_id.hpp>
-#include <entt/entt.hpp>
 #include <future>
 #include <glm/gtx/hash.hpp>
 #include <memory>

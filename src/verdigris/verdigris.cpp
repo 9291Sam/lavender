@@ -112,19 +112,6 @@ namespace verdigris
         this->triangle.addComponent(TriangleComponent {});
         this->triangle.addComponent<voxel::PointLight>(std::move(eLight));
 
-        for (int j = 0; j < 1000; ++j)
-        {
-            ecs::UniqueEntity e = ecs::getGlobalECSManager()->createEntity();
-
-            TriangleComponent t {};
-            t.transform.translation = genVec3();
-            t.transform.scale       = glm::vec3 {8.0f};
-
-            e.addComponent(t);
-
-            this->triangles.push_back(std::move(e));
-        }
-
         for (int j = 0; j < 4080; ++j)
         {
             ecs::UniqueEntity e = ecs::createEntity();
@@ -462,7 +449,7 @@ namespace verdigris
         auto realCamera = this->camera;
         realCamera.addPosition({0.0, 32.0f, 0.0});
 
-        draws.push_back(this->skybox.getRecordObject());
+        draws.push_back(this->skybox.getRecordObject(realCamera, this->time_alive));
 
         return {realCamera, std::move(draws)};
     }
