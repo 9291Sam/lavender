@@ -7,6 +7,7 @@
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/window.hpp"
+#include "skybox_manager.hpp"
 #include "triangle_component.hpp"
 #include "util/atomic.hpp"
 #include "util/log.hpp"
@@ -34,6 +35,7 @@ namespace verdigris
         , voxel_world {util::Mutex<voxel::World> {
               voxel::World {std::make_unique<world::WorldChunkGenerator>(38484334), this->game}}}
         , triangle {ecs::createEntity()}
+        , skybox {this->game}
     {
         this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
             gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
@@ -459,6 +461,8 @@ namespace verdigris
 
         auto realCamera = this->camera;
         realCamera.addPosition({0.0, 32.0f, 0.0});
+
+        draws.push_back(this->skybox.getRecordObject());
 
         return {realCamera, std::move(draws)};
     }

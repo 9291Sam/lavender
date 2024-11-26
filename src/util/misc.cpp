@@ -10,6 +10,7 @@
 
 #if defined(_WIN32)
 #include <Windows.h>
+#include <debugapi.h>
 //
 #include <Psapi.h>
 #elif defined(__APPLE__)
@@ -66,7 +67,6 @@ namespace util
 
     [[noreturn]] void debugBreak(std::source_location l)
     {
-        std::ignore = std::fputs("util::debugBreak()\n", stderr);
         util::logFatal<>("util::DebugBreak", l);
 
         std::this_thread::sleep_for(std::chrono::milliseconds {250});
@@ -74,7 +74,10 @@ namespace util
         if constexpr (isDebugBuild())
         {
 #ifdef _MSC_VER
-            __debugbreak();
+            if (::IsDebuggerPresent() != 0)
+            {
+                __debugbreak();
+            }
 #elif defined(__GNUC__) || defined(__clang__)
             __builtin_trap();
 #else

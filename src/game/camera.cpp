@@ -35,6 +35,11 @@ namespace game
         return projection * this->getViewMatrix() * transform_.asModelMatrix();
     }
 
+    glm::mat4 Camera::getModelMatrix() const
+    {
+        return this->transform.asModelMatrix();
+    }
+
     glm::mat4 Camera::getViewMatrix() const
     {
         return glm::inverse(

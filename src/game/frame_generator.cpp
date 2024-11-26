@@ -567,6 +567,7 @@ namespace game
             localMvpMatrices.data());
 
         GlobalFrameInfo thisFrameInfo {
+            .model_matrix {camera.getModelMatrix()},
             .camera_position {camera.getPosition().xyzz()},
             .frame_number {this->game->getRenderer()->getFrameNumber()},
             .time_alive {this->game->getRenderer()->getTimeAlive()}};

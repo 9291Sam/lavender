@@ -99,6 +99,7 @@ add_executable(lavender
 
     src/verdigris/verdigris.cpp
     src/verdigris/flyer.cpp
+    src/verdigris/skybox_manager.cpp
     
     src/voxel/brick_pointer_allocator.cpp
     src/voxel/chunk_manager.cpp
@@ -271,6 +272,8 @@ compile_shader(lavender
     src/shaders/voxel_color_transfer.frag
     src/shaders/menu_color_transfer.vert
     src/shaders/menu_color_transfer.frag
+    src/shaders/skybox.vert
+    src/shaders/skybox.frag
     src/shaders/voxel_render.vert
     src/shaders/voxel_render.frag
     src/shaders/voxel_visibility_detection.comp
@@ -287,6 +290,8 @@ cmrc_add_resource_library(
     build/src/shaders/voxel_color_transfer.frag.bin
     build/src/shaders/menu_color_transfer.vert.bin
     build/src/shaders/menu_color_transfer.frag.bin
+    build/src/shaders/skybox.vert.bin
+    build/src/shaders/skybox.frag.bin
     build/src/shaders/voxel_render.vert.bin
     build/src/shaders/voxel_render.frag.bin
     build/src/shaders/voxel_visibility_detection.comp.bin

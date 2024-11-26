@@ -92,6 +92,7 @@ namespace game
 
         struct GlobalFrameInfo
         {
+            glm::mat4 model_matrix;
             glm::vec4 camera_position;
             u32       frame_number;
             float     time_alive;

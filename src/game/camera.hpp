@@ -14,6 +14,7 @@ namespace game
         explicit Camera(glm::vec3 position);
 
         [[nodiscard]] glm::mat4 getPerspectiveMatrix(const Game&, const Transform&) const;
+        [[nodiscard]] glm::mat4 getModelMatrix() const;
         [[nodiscard]] glm::mat4 getViewMatrix() const;
         [[nodiscard]] glm::vec3 getForwardVector() const;
         [[nodiscard]] glm::vec3 getRightVector() const;
