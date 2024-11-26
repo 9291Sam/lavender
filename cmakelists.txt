@@ -234,6 +234,7 @@ find_package(Vulkan COMPONENTS glslc)
 find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
 if (APPLE)
     target_link_libraries(lavender PRIVATE "-framework Cocoa -framework IOKit")
+    set(CMAKE_CXX_FLAGS "--sysroot ${CMAKE_OSX_SYSROOT} ${CMAKE_CXX_FLAGS}")
 endif ()
 
 function(compile_shader target)
