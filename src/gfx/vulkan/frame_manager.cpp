@@ -2,6 +2,7 @@
 #include "device.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/frame_manager.hpp"
+#include "util/log.hpp"
 #include <expected>
 #include <optional>
 #include <vulkan/vulkan.hpp>
@@ -50,7 +51,8 @@ namespace gfx::vulkan
             this->device->getDevice().createSemaphoreUnique(semaphoreCreateInfo);
         this->render_finished =
             this->device->getDevice().createSemaphoreUnique(semaphoreCreateInfo);
-        this->frame_in_flight = this->device->getDevice().createFenceUnique(fenceCreateInfo);
+        this->frame_in_flight = std::make_shared<vk::UniqueFence>(
+            this->device->getDevice().createFenceUnique(fenceCreateInfo));
 
         if constexpr (util::isDebugBuild())
         {
@@ -82,7 +84,7 @@ namespace gfx::vulkan
                 .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
                 .pNext {nullptr},
                 .objectType {vk::ObjectType::eFence},
-                .objectHandle {std::bit_cast<u64>(*this->frame_in_flight)},
+                .objectHandle {std::bit_cast<u64>(**this->frame_in_flight)},
                 .pObjectName {frameInFlightName.c_str()},
             });
         }
@@ -120,7 +122,7 @@ namespace gfx::vulkan
             Device::QueueType::Graphics,
             [&](vk::Queue queue)
             {
-                this->device->getDevice().resetFences(*this->frame_in_flight);
+                this->device->getDevice().resetFences(**this->frame_in_flight);
                 this->device->getDevice().resetCommandPool(*this->command_pool);
 
                 // HACK: on nvidia, there's a driver bug where calling
@@ -154,7 +156,7 @@ namespace gfx::vulkan
                 this->command_buffer->begin(commandBufferBeginInfo);
 
                 // HACK: flush all buffers on this
-                stager.flushTransfers(*this->command_buffer, *this->frame_in_flight);
+                stager.flushTransfers(*this->command_buffer, this->frame_in_flight);
 
                 withCommandBuffer(*this->command_buffer, maybeNextImageIdx);
 
@@ -174,7 +176,7 @@ namespace gfx::vulkan
                     .pSignalSemaphores {&*this->render_finished},
                 };
 
-                queue.submit(queueSubmitInfo, *this->frame_in_flight);
+                queue.submit(queueSubmitInfo, **this->frame_in_flight);
 
                 if (previousFrameFence.has_value())
                 {
@@ -223,14 +225,14 @@ namespace gfx::vulkan
         }
     }
 
-    vk::Fence Frame::getFrameInFlightFence() const noexcept
+    std::shared_ptr<vk::UniqueFence> Frame::getFrameInFlightFence() const noexcept
     {
-        return *this->frame_in_flight;
+        return this->frame_in_flight;
     }
 
     FrameManager::FrameManager(const Device& device_, vk::SwapchainKHR swapchain)
         : device {device_.getDevice()}
-        , previous_frame_finished_fence {std::nullopt}
+        , nullable_previous_frame_finished_fence {nullptr}
         , flying_frames {Frame {device_, swapchain, 0}, Frame {device_, swapchain, 1}, Frame {device_, swapchain, 2}}
         , flying_frame_index {0}
     {}
@@ -244,17 +246,19 @@ namespace gfx::vulkan
         this->flying_frame_index += 1;
         this->flying_frame_index %= FramesInFlight;
 
-        auto result =
+        std::expected<void, Frame::ResizeNeeded> result =
             this->flying_frames.at(this->flying_frame_index)
                 .recordAndDisplay(
-                    this->previous_frame_finished_fence,
+                    this->nullable_previous_frame_finished_fence != nullptr
+                        ? std::optional {**this->nullable_previous_frame_finished_fence}
+                        : std::nullopt,
                     [&](vk::CommandBuffer commandBuffer, u32 swapchainIndex)
                     {
                         recordFunc(this->flying_frame_index, commandBuffer, swapchainIndex);
                     },
                     stager);
 
-        this->previous_frame_finished_fence =
+        this->nullable_previous_frame_finished_fence =
             this->flying_frames.at(this->flying_frame_index).getFrameInFlightFence();
 
         return result;

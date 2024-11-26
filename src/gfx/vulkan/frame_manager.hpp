@@ -38,12 +38,12 @@ namespace gfx::vulkan
             std::function<void(vk::CommandBuffer, u32)>,
             const BufferStager&);
 
-        [[nodiscard]] vk::Fence getFrameInFlightFence() const noexcept;
+        [[nodiscard]] std::shared_ptr<vk::UniqueFence> getFrameInFlightFence() const noexcept;
 
     private:
-        vk::UniqueSemaphore image_available;
-        vk::UniqueSemaphore render_finished;
-        vk::UniqueFence     frame_in_flight;
+        vk::UniqueSemaphore              image_available;
+        vk::UniqueSemaphore              render_finished;
+        std::shared_ptr<vk::UniqueFence> frame_in_flight;
 
         vk::UniqueCommandPool   command_pool;
         vk::UniqueCommandBuffer command_buffer;
@@ -70,7 +70,7 @@ namespace gfx::vulkan
             std::function<void(std::size_t, vk::CommandBuffer, u32)>, const BufferStager&);
     private:
         vk::Device                        device;
-        std::optional<vk::Fence>          previous_frame_finished_fence;
+        std::shared_ptr<vk::UniqueFence>  nullable_previous_frame_finished_fence;
         std::array<Frame, FramesInFlight> flying_frames;
         std::size_t                       flying_frame_index;
     };

@@ -471,7 +471,8 @@ namespace gfx::vulkan
                 std::span {reinterpret_cast<const std::byte*>(data.data()), data.size_bytes()});
         }
 
-        void flushTransfers(vk::CommandBuffer, vk::Fence flushFinishFence) const;
+        void
+        flushTransfers(vk::CommandBuffer, std::shared_ptr<vk::UniqueFence> flushFinishFence) const;
 
         std::pair<std::size_t, std::size_t> getUsage() const;
 
@@ -491,9 +492,11 @@ namespace gfx::vulkan
         const Allocator*                                allocator;
         mutable gfx::vulkan::WriteOnlyBuffer<std::byte> staging_buffer;
 
-        util::Mutex<util::RangeAllocator>                                       transfer_allocator;
-        util::Mutex<std::vector<BufferTransfer>>                                transfers;
-        util::Mutex<std::unordered_map<vk::Fence, std::vector<BufferTransfer>>> transfers_to_free;
+        util::Mutex<util::RangeAllocator>        transfer_allocator;
+        util::Mutex<std::vector<BufferTransfer>> transfers;
+        util::Mutex<
+            std::unordered_map<std::shared_ptr<vk::UniqueFence>, std::vector<BufferTransfer>>>
+            transfers_to_free;
     };
 
     template<class T>

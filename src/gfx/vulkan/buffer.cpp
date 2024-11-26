@@ -63,18 +63,20 @@ namespace gfx::vulkan
             });
     }
 
-    void
-    BufferStager::flushTransfers(vk::CommandBuffer commandBuffer, vk::Fence flushFinishFence) const
+    void BufferStager::flushTransfers(
+        vk::CommandBuffer commandBuffer, std::shared_ptr<vk::UniqueFence> flushFinishFence) const
     {
         // Free all allocations that have already completed.
         this->transfers_to_free.lock(
-            [&](std::unordered_map<vk::Fence, std::vector<BufferTransfer>>& toFreeMap)
+            [&](std::unordered_map<std::shared_ptr<vk::UniqueFence>, std::vector<BufferTransfer>>&
+                    toFreeMap)
             {
-                std::vector<vk::Fence> toRemove {};
+                std::vector<std::shared_ptr<vk::UniqueFence>> toRemove {};
 
                 for (const auto& [fence, allocations] : toFreeMap)
                 {
-                    if (this->allocator->getDevice().getFenceStatus(fence) == vk::Result::eSuccess)
+                    if (this->allocator->getDevice().getFenceStatus(**fence)
+                        == vk::Result::eSuccess)
                     {
                         toRemove.push_back(fence);
 
@@ -90,7 +92,7 @@ namespace gfx::vulkan
                     }
                 }
 
-                for (vk::Fence f : toRemove)
+                for (const std::shared_ptr<vk::UniqueFence>& f : toRemove)
                 {
                     toFreeMap.erase(f);
                 }
@@ -132,7 +134,8 @@ namespace gfx::vulkan
         this->staging_buffer.flush(stagingFlushes);
 
         this->transfers_to_free.lock(
-            [&](std::unordered_map<vk::Fence, std::vector<BufferTransfer>>& toFreeMap)
+            [&](std::unordered_map<std::shared_ptr<vk::UniqueFence>, std::vector<BufferTransfer>>&
+                    toFreeMap)
             {
                 toFreeMap[flushFinishFence].append_range(std::move(grabbedTransfers));
             });
