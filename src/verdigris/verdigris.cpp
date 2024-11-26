@@ -35,7 +35,7 @@ namespace verdigris
         , voxel_world {util::Mutex<voxel::World> {
               voxel::World {std::make_unique<world::WorldChunkGenerator>(38484334), this->game}}}
         , triangle {ecs::createEntity()}
-        , skybox {this->game}
+
     {
         this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
             gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
@@ -448,8 +448,6 @@ namespace verdigris
 
         auto realCamera = this->camera;
         realCamera.addPosition({0.0, 32.0f, 0.0});
-
-        draws.push_back(this->skybox.getRecordObject(realCamera, this->time_alive));
 
         return {realCamera, std::move(draws)};
     }

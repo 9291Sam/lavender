@@ -117,7 +117,7 @@ namespace game
             u32 swapchainImageIdx,
             const gfx::vulkan::Swapchain&,
             std::size_t flyingFrameIdx,
-            std::span<const RecordObject>);
+            std::vector<RecordObject>);
 
         static GlobalInfoDescriptors makeGlobalDescriptors(const gfx::Renderer*, vk::DescriptorSet);
 
@@ -131,6 +131,7 @@ namespace game
         GlobalInfoDescriptors               global_descriptors;
         ImFont*                             font;
         std::shared_ptr<vk::UniquePipeline> menu_transfer_pipeline;
+        std::shared_ptr<vk::UniquePipeline> skybox_pipeline;
     };
 
 } // namespace game

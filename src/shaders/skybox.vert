@@ -18,9 +18,9 @@ layout(location = 1) out vec3 out_camera_position;
 void main()
 {
     const vec4 modelspace_triangle_positions[3] = {
-        vec4(-1.0, -1.0, -0.999, 1.0),
-        vec4(3.0,  -1.0, -0.999, 1.0),
-        vec4(-1.0,  3.0, -0.999, 1.0)
+        vec4(-1.0, -1.0, -0.5, 1.0),
+        vec4(3.0,  -1.0, -0.5, 1.0),
+        vec4(-1.0,  3.0, -0.5, 1.0)
     };
 
     const vec3 modelspace_position = modelspace_triangle_positions[gl_VertexIndex].xyz;
@@ -28,6 +28,6 @@ void main()
     const vec3 world_position_fragment = world_position_fragment_intercalc.xyz / world_position_fragment_intercalc.w;
 
 
-    gl_Position =  vec4(modelspace_position * vec3(1.0, 1.0, -1.0), 1.0);
+    gl_Position = in_mvp_matrices.matrix[in_push_constants.mvp_matricies_id] * vec4(modelspace_position * vec3(1.0, 1.0, 1.0), 1.0);
     out_world_position =  world_position_fragment;
 }

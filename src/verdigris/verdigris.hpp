@@ -23,7 +23,7 @@ namespace verdigris
         std::vector<ecs::UniqueEntity>         triangles;
         std::vector<ecs::UniqueEntity>         voxels;
         mutable std::vector<Flyer>             flyers;
-        SkyboxManager                          skybox;
+        // SkyboxManager                          skybox;
 
         explicit Verdigris(game::Game*);
 

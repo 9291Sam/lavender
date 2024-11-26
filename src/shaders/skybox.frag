@@ -1,6 +1,6 @@
 #version 460
 
-
+#include "global_descriptor_set.glsl"
 
 const float fTurbulence = 0.35;
 
@@ -106,26 +106,15 @@ vec4 render(in vec3 rd, in float iTime)
     return vec4( col, 1.0 );
 }
 
-
-layout(push_constant) uniform PushConstants
-{
-    mat4 model_matrix;
-    vec4 camera_position;
-    vec4 camera_normal;
-    uint mvp_matricies_id;
-    uint draw_id;
-    float time_alive;
-} in_push_constants;
-
 layout(location = 0) in vec3 in_frag_position_world;
 
 layout(location = 0) out vec4 out_color;
 
 void main()
 {
-    const vec3 dir = normalize(in_frag_position_world - in_push_constants.camera_position.xyz);
+    const vec3 dir = normalize(in_frag_position_world - in_global_info.camera_position.xyz);
 
     // out_color = vec4((dir /2 + 0.5), 1.0);
-    out_color = render(dir, in_push_constants.time_alive);
+    out_color = render(dir, in_global_info.time_alive);
     gl_FragDepth = 0.9999999;
 }

@@ -371,6 +371,47 @@ namespace game
                           .push_constants {},
                           .name {"Menu Color Transfer Pipeline Layout"}})},
                   .name {"Menu Color Transfer Pipeline"}})}
+        , skybox_pipeline {game_->getRenderer()->getAllocator()->cachePipeline(
+              gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
+                  .stages {{
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eVertex},
+                          .shader {game_->getRenderer()->getAllocator()->cacheShaderModule(
+                              staticFilesystem::loadShader("skybox.vert"), "Skybox Vertex Shader")},
+                          .entry_point {"main"},
+                      },
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eFragment},
+                          .shader {game_->getRenderer()->getAllocator()->cacheShaderModule(
+                              staticFilesystem::loadShader("skybox.frag"),
+                              "Skybox Fragment Shader")},
+                          .entry_point {"main"},
+                      },
+                  }},
+                  .vertex_attributes {},
+                  .vertex_bindings {},
+                  .topology {vk::PrimitiveTopology::eTriangleList},
+                  .discard_enable {false},
+                  .polygon_mode {vk::PolygonMode::eFill},
+                  .cull_mode {vk::CullModeFlagBits::eNone},
+                  .front_face {vk::FrontFace::eClockwise},
+                  .depth_test_enable {true},
+                  .depth_write_enable {false},
+                  .depth_compare_op {vk::CompareOp::eLess},
+                  .color_format {gfx::Renderer::ColorFormat.format},
+                  .depth_format {gfx::Renderer::DepthFormat},
+                  .blend_enable {true},
+                  .layout {game_->getRenderer()->getAllocator()->cachePipelineLayout(
+                      gfx::vulkan::CacheablePipelineLayoutCreateInfo {
+                          .descriptors {{this->set_layout}},
+                          .push_constants {vk::PushConstantRange {
+                              .stageFlags {
+                                  vk::ShaderStageFlagBits::eVertex
+                                  | vk::ShaderStageFlagBits::eFragment},
+                              .offset {0},
+                              .size {128}}},
+                          .name {"Skybox Pipeline Layout"}})},
+                  .name {"Skybox Pipeline"}})}
     {
         ImGui::CreateContext();
 
@@ -513,13 +554,50 @@ namespace game
         u32                           swapchainImageIdx,
         const gfx::vulkan::Swapchain& swapchain,
         std::size_t,
-        std::span<const FrameGenerator::RecordObject> recordObjects)
+        std::vector<FrameGenerator::RecordObject> recordObjects)
     {
         std::array<
             std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>,
             static_cast<std::size_t>(
                 FrameGenerator::DynamicRenderingPass::DynamicRenderingPassMaxValue)>
             recordablesByPass;
+
+        game::FrameGenerator::RecordObject skyboxObj {
+            .transform {camera.getTransform()},
+            .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},
+            .pipeline {this->skybox_pipeline},
+            .descriptors {this->game->getGlobalInfoDescriptorSet(), nullptr, nullptr, nullptr},
+            .record_func {[this](vk::CommandBuffer cb, vk::PipelineLayout layout, u32 id)
+                          {
+                              struct PushConstants
+                              {
+                                  glm::mat4 model_matrix;
+                                  glm::vec4 camera_position;
+                                  glm::vec4 camera_normal;
+                                  u32       mvp_matricies_id;
+                                  u32       draw_id;
+                                  f32       time;
+                              };
+
+                              PushConstants pc {
+                                  .model_matrix {camera.getModelMatrix()},
+                                  .camera_position {glm::vec4 {camera.getPosition(), 0.0}},
+                                  .camera_normal {glm::vec4 {camera.getForwardVector(), 0.0}},
+                                  .mvp_matricies_id {id},
+                                  .draw_id {0},
+                                  .time {4.53f}};
+
+                              cb.pushConstants(
+                                  layout,
+                                  vk::ShaderStageFlagBits::eVertex
+                                      | vk::ShaderStageFlagBits::eFragment,
+                                  0,
+                                  sizeof(PushConstants),
+                                  &pc);
+
+                              cb.draw(3, 1, 0, 0);
+                          }}};
+        recordObjects.push_back(skyboxObj);
 
         std::vector<glm::mat4> localMvpMatrices {};
         u32                    nextFreeMvpMatrix = 0;
@@ -594,7 +672,7 @@ namespace game
         recordablesByPass[static_cast<std::size_t>(DynamicRenderingPass::SimpleColor)].push_back(
             {&menuObj, 0});
 
-        const vk::Extent2D renderExtent = swapchain.getExtent();
+        vk::Extent2D renderExtent = swapchain.getExtent();
 
         const vk::Rect2D scissor {.offset {vk::Offset2D {.x {0}, .y {0}}}, .extent {renderExtent}};
 
@@ -1335,7 +1413,12 @@ namespace game
                 std::size_t             flyingFrameIdx)
             {
                 this->internalGenerateFrame(
-                    commandBuffer, swapchainImageIdx, swapchain, flyingFrameIdx, recordObjects);
+                    commandBuffer,
+                    swapchainImageIdx,
+                    swapchain,
+                    flyingFrameIdx,
+                    // TODO:
+                    std::vector<RecordObject> {recordObjects.begin(), recordObjects.end()});
             });
 
         this->camera = newCamera;
