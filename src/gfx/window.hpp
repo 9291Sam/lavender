@@ -30,7 +30,7 @@ namespace gfx
 
         using GlfwKeyType = int;
 
-        enum class Action : std::size_t // bike shedding
+        enum class Action : std::uint8_t // bike shedding
         {
             PlayerMoveForward      = 0,
             PlayerMoveBackward     = 1,
@@ -47,7 +47,7 @@ namespace gfx
             MaxActionValue         = 12,
         };
 
-        enum class InteractionMethod
+        enum class InteractionMethod : std::uint8_t
         {
             /// Only fires for one frame, no matter how long you hold the button
             /// down for. Useful for a toggle switch,

@@ -196,12 +196,11 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Ap
         -Wno-switch-default
         -Wno-weak-vtables
         -Wno-incompatible-pointer-types
+        -Wno-nan-infinity-disabled
+        -Wno-documentation-unknown-command
     )
 
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 18.0)
-    target_compile_options(lavender PUBLIC 
-        -Wno-nan-infinity-disabled)
-    endif ()
+    target_compile_options(library_target PUBLIC -Wno-nan-infinity-disabled)
     
 
     if (CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")

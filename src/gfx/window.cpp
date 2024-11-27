@@ -51,8 +51,13 @@ namespace gfx
 
             util::assertFatal(this->window != nullptr, "Failed to create GLFW window!");
 
-            // move the window to the corner so I can see my debug logs
-            glfwSetWindowPos(this->window, 100, 100);
+// move the window to the corner so I can see my debug logs
+#ifdef _WIN32
+            if (util::isDebugBuild())
+            {
+                glfwSetWindowPos(this->window, 100, 100);
+            }
+#endif
         }
 
         // Populate Keybinds

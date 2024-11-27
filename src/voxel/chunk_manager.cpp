@@ -606,17 +606,17 @@ namespace voxel
 
                 for (auto x :
                      {thisChunkData.position.x,
-                      thisChunkData.position.x + ChunkEdgeLengthVoxels / 2.0f,
+                      thisChunkData.position.x + (ChunkEdgeLengthVoxels / 2.0f),
                       thisChunkData.position.x + ChunkEdgeLengthVoxels})
                 {
                     for (auto y :
                          {thisChunkData.position.y,
-                          thisChunkData.position.y + ChunkEdgeLengthVoxels / 2.0f,
+                          thisChunkData.position.y + (ChunkEdgeLengthVoxels / 2.0f),
                           thisChunkData.position.y + ChunkEdgeLengthVoxels})
                     {
                         for (auto z :
                              {thisChunkData.position.z,
-                              thisChunkData.position.z + ChunkEdgeLengthVoxels / 2.0f,
+                              thisChunkData.position.z + (ChunkEdgeLengthVoxels / 2.0f),
                               thisChunkData.position.z + ChunkEdgeLengthVoxels})
                         {
                             glm::vec4 cornerPos {x, y, z, 1.0};
@@ -924,7 +924,7 @@ namespace voxel
             if (maybeBrickPointer.isNull())
             {
                 const BrickPointer newBrickPointer =
-                    BrickPointer {this->brick_allocator.allocate().value()};
+                    BrickPointer {*this->brick_allocator.allocate()};
 
                 maybeBrickPointer = newBrickPointer;
 

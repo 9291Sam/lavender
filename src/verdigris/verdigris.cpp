@@ -83,16 +83,16 @@ namespace verdigris
         //     return static_cast<i32>(8 * std::sin(x / 24.0) + 8 * std::cos(z / 24.0) + 32.0) -
         //     128;
         // };
-        std::mt19937_64                       gen {std::random_device {}()};
-        std::uniform_real_distribution<float> ddist {-1.0, 1.0};
+        // std::mt19937_64                       gen {std::random_device {}()};
+        // std::uniform_real_distribution<float> dist {-1.0, 1.0};
 
-        auto genVec3 = [&]() -> glm::vec3
-        {
-            return glm::vec3 {
-                32.0f * std ::sin(ddist(gen)) * ddist(gen),
-                32.0f * std ::sin(ddist(gen)) * ddist(gen) + 80.0f,
-                32.0f * std ::sin(ddist(gen)) * ddist(gen)};
-        };
+        // auto genVec3 = [&]() -> glm::vec3
+        // {
+        //     return glm::vec3 {
+        //         32.0f * std ::sin(dist(gen)) * dist(gen),
+        //         (32.0f * std ::sin(dist(gen)) * dist(gen)) + 80.0f,
+        //         32.0f * std ::sin(dist(gen)) * dist(gen)};
+        // };
 
         voxel::PointLight eLight {};
 

@@ -12,6 +12,7 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <bit>
+#include <boost/range/algorithm/sort.hpp>
 #include <compare>
 #include <cstddef>
 #include <gfx/renderer.hpp>
@@ -21,7 +22,6 @@
 #include <glm/gtx/string_cast.hpp>
 #include <imgui.h>
 #include <misc/freetype/imgui_freetype.h>
-#include <random>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan_enums.hpp>
@@ -37,7 +37,7 @@ std::atomic<u32> numberOfChunksPossible  = 0; // NOLINT
 std::atomic<u32> numberOfBricksAllocated = 0; // NOLINT
 std::atomic<u32> numberOfBricksPossible  = 0; // NOLINT
 
-std::atomic<u32> f32TickDeltaTime = 0;
+std::atomic<u32> f32TickDeltaTime = 0; // NOLINT
 
 namespace game
 {
@@ -417,8 +417,7 @@ namespace game
 
         const vk::DynamicLoader& loader = this->game->getRenderer()->getInstance()->getLoader();
 
-        // whatever the fuck this is
-        // Absolute nastiness, thanks `@karnage`!
+        // Thank you karnage for this absolute nastiness
         auto getFn = [&loader](const char* name)
         {
             return loader.getProcAddress<PFN_vkVoidFunction>(name);
@@ -431,8 +430,7 @@ namespace game
 
             ptr = (*gf)(name);
 
-            // HACK: sometimes function ending in KHR are removed if they exist in core,
-            // pave over this
+            // HACK: sometimes function ending in KHR are removed if they exist in core, ignore
             if (std::string_view nameView {name}; ptr == nullptr && nameView.ends_with("KHR"))
             {
                 nameView.remove_suffix(3);
@@ -473,6 +471,7 @@ namespace game
                     .MSAASamples {VK_SAMPLE_COUNT_1_BIT},
                     .PipelineCache {this->game->getRenderer()->getAllocator()->getRawCache()},
                     .Subpass {0},
+                    .DescriptorPoolSize {0},
                     .UseDynamicRendering {true},
                     .PipelineRenderingCreateInfo {
                         .sType {VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO},
@@ -501,29 +500,32 @@ namespace game
                 io.LogFilename = nullptr;
 
                 {
-                    static ImWchar unifont_ranges[] = {0x0001, 0xFFFF, 0};
-                    ImFontConfig   fontConfigUnifont;
-                    fontConfigUnifont.OversampleH = fontConfigUnifont.OversampleV = 1;
-                    fontConfigUnifont.MergeMode                                   = false;
-                    fontConfigUnifont.SizePixels                                  = 64;
-                    fontConfigUnifont.FontDataOwnedByAtlas                        = false;
+                    static std::array<ImWchar, 3> unifontRanges {0x0001, 0xFFFF, 0};
+                    ImFontConfig                  fontConfigUnifont;
+                    fontConfigUnifont.OversampleH          = 1;
+                    fontConfigUnifont.OversampleV          = 1;
+                    fontConfigUnifont.MergeMode            = false;
+                    fontConfigUnifont.SizePixels           = 64;
+                    fontConfigUnifont.FontDataOwnedByAtlas = false;
 
                     std::span<const std::byte> unifont =
                         staticFilesystem::loadResource("res/unifont-16.0.01.otf");
 
                     this->font = io.Fonts->AddFontFromMemoryTTF(
-                        const_cast<std::byte*>(unifont.data()),
+                        const_cast<std::byte*>(unifont.data()), // NOLINT
                         static_cast<int>(unifont.size_bytes()),
                         16,
                         &fontConfigUnifont,
-                        unifont_ranges);
+                        unifontRanges.data());
                 }
 
                 {
-                    static ImWchar      ranges[] = {0x00001, 0x1FFFF, 0};
-                    static ImFontConfig cfg;
-                    cfg.OversampleH = cfg.OversampleV = 1;
-                    cfg.MergeMode                     = true;
+                    static std::array<ImWchar, 3> ranges {0x00001, 0x1FFFF, 0};
+                    static ImFontConfig           cfg;
+
+                    cfg.OversampleH = 1;
+                    cfg.OversampleV = 1;
+                    cfg.MergeMode   = true;
                     cfg.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
                     cfg.SizePixels = 64;
 
@@ -531,11 +533,11 @@ namespace game
                         staticFilesystem::loadResource("res/OpenMoji-color-colr1_svg.ttf");
 
                     this->font = io.Fonts->AddFontFromMemoryTTF(
-                        const_cast<std::byte*>(emojiFont.data()),
+                        const_cast<std::byte*>(emojiFont.data()), // NOLINT
                         static_cast<int>(emojiFont.size_bytes()),
                         22.0f,
                         &cfg,
-                        ranges);
+                        ranges.data());
                 }
 
                 io.Fonts->Build();
@@ -549,7 +551,7 @@ namespace game
         ImGui_ImplVulkan_Shutdown();
     }
 
-    void FrameGenerator::internalGenerateFrame(
+    void FrameGenerator::internalGenerateFrame( // NOLINT
         vk::CommandBuffer             commandBuffer,
         u32                           swapchainImageIdx,
         const gfx::vulkan::Swapchain& swapchain,
@@ -659,9 +661,8 @@ namespace game
         for (std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>& recordVec :
              recordablesByPass)
         {
-            std::sort(
-                recordVec.begin(),
-                recordVec.end(),
+            boost::range::sort(
+                recordVec,
                 [](const auto& l, const auto& r)
                 {
                     return *l.first < *r.first;
@@ -742,7 +743,7 @@ namespace game
 
         auto doRenderPass = [&](DynamicRenderingPass                   p,
                                 vk::RenderingInfo                      info,
-                                std::function<void(vk::CommandBuffer)> extraCommands = {})
+                                std::function<void(vk::CommandBuffer)> extraCommands = {}) // NOLINT
         {
             clearBindings();
 
@@ -771,7 +772,8 @@ namespace game
         {
             clearBindings();
 
-            for (const auto [o, matrixId] : recordablesByPass[static_cast<std::size_t>(p)])
+            for (const auto [o, matrixId] :
+                 recordablesByPass[static_cast<std::size_t>(p)]) // NOLINT
             {
                 updateBindings(*o);
 
@@ -781,7 +783,8 @@ namespace game
 
         auto doTransferPass = [&](DynamicRenderingPass p)
         {
-            for (const auto [o, matrixId] : recordablesByPass[static_cast<std::size_t>(p)])
+            for (const auto [o, matrixId] :
+                 recordablesByPass[static_cast<std::size_t>(p)]) // NOLINT
             {
                 o->record_func(commandBuffer, nullptr, 0);
             }
@@ -1269,7 +1272,7 @@ namespace game
                             facesPossible,
                             100.0f * static_cast<float>(faces) / static_cast<float>(facesPossible));
 
-                        ImGui::TextWrapped("%s", menuText.c_str());
+                        ImGui::TextWrapped("%s", menuText.c_str()); // NOLINT
 
                         ImGui::PopStyleVar();
                         ImGui::PopFont();

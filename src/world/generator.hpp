@@ -14,7 +14,7 @@ namespace world
     struct WorldChunkGenerator : public voxel::World::ChunkGenerator
     {
     public:
-        WorldChunkGenerator(std::size_t seed_)
+        explicit WorldChunkGenerator(std::size_t seed_) // NOLINT
             : simplex {FastNoise::New<FastNoise::Simplex>()}
             , fractal {FastNoise::New<FastNoise::FractalFBm>()}
             , seed {seed_}
@@ -249,10 +249,10 @@ namespace world
                 res.data(), root.z, root.x, 64, 64, 0.02f, static_cast<int>(this->seed * 13437));
             this->fractal->GenUniformGrid2D(
                 mat.data(), root.z, root.x, 64, 64, 0.02f, static_cast<int>(this->seed * 8594835));
-            const std::array<std::array<float, 64>, 64>* ptr =
+            const std::array<std::array<float, 64>, 64>* ptr = // NOLINTNEXTLINE
                 reinterpret_cast<const std::array<std::array<float, 64>, 64>*>(res.data());
 
-            const std::array<std::array<float, 64>, 64>* matptr =
+            const std::array<std::array<float, 64>, 64>* matptr = // NOLINTNEXTLINE
                 reinterpret_cast<const std::array<std::array<float, 64>, 64>*>(mat.data());
 
             std::vector<voxel::World::VoxelWrite> out {};
@@ -262,8 +262,8 @@ namespace world
             {
                 for (std::size_t j = 0; j < 64; ++j)
                 {
-                    u8 height =
-                        static_cast<u8>(std::clamp(4.0f * (*ptr)[i][j] + 8.0f, 0.0f, 64.0f));
+                    u8 height = static_cast<u8>(
+                        std::clamp((4.0f * (*ptr)[i][j]) + 8.0f, 0.0f, 64.0f)); // NOLINT
 
                     for (u8 h = 0; h < 64; ++h)
                     {
@@ -281,8 +281,8 @@ namespace world
                         }
                         else if (h < height)
                         {
-                            v = static_cast<voxel::Voxel>(
-                                util::map<float>((*matptr)[i][j], -1.0f, 1.0f, 1.0f, 11.9f));
+                            v = static_cast<voxel::Voxel>(util::map<float>(
+                                (*matptr)[i][j], -1.0f, 1.0f, 1.0f, 11.9f)); // NOLINT
                         }
 
                         if (v != voxel::Voxel::NullAirEmpty)
