@@ -212,6 +212,7 @@ namespace verdigris
                 deltaTime,
                 1.0f / deltaTime,
                 1.0f / averageFrameTime,
+
                 static_cast<std::string>(this->camera));
         }
 
