@@ -18,7 +18,7 @@ namespace ecs
     template<class T>
     void EntityComponentSystemManager::freeRawInherentEntity(T* ptr) const
     {
-        return ::delete ptr; // NOLINT
+        ::delete ptr; // NOLINT
     }
 
     template<class T, class... Args>
@@ -31,8 +31,8 @@ namespace ecs
     }
 
     template<class C>
-    auto
-    EntityComponentSystemManager::tryAddComponent(RawEntity e, C c) const -> TryAddComponentResult
+    auto EntityComponentSystemManager::tryAddComponent(RawEntity e, C c) const
+        -> TryAddComponentResult
     {
         bool added = false;
 
@@ -473,8 +473,9 @@ namespace ecs
     }
 
     template<class C>
-    [[nodiscard]] auto EntityComponentSystemManager::trySetOrInsertComponent(
-        RawEntity e, C cNew) const -> TrySetOrInsertComponentResult
+    [[nodiscard]] auto
+    EntityComponentSystemManager::trySetOrInsertComponent(RawEntity e, C cNew) const
+        -> TrySetOrInsertComponentResult
     {
         const std::size_t visited = this->entities_guard->visit(
             e.id,

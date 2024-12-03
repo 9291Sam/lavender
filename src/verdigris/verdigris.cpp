@@ -21,6 +21,7 @@
 #include "world/generator.hpp"
 #include <FastNoise/FastNoise.h>
 #include <boost/container_hash/hash_fwd.hpp>
+#include <boost/range/numeric.hpp>
 #include <boost/unordered/concurrent_flat_map.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtc/random.hpp>
@@ -162,9 +163,8 @@ namespace verdigris
             this->frame_times.pop_front();
         }
 
-        const float averageFrameTime =
-            std::accumulate(this->frame_times.cbegin(), this->frame_times.cend(), 0.0f)
-            / static_cast<float>(this->frame_times.size());
+        const float averageFrameTime = boost::accumulate(this->frame_times, 0.0f)
+                                     / static_cast<float>(this->frame_times.size());
 
         util::atomicAbaAdd(this->time_alive, deltaTime);
 
