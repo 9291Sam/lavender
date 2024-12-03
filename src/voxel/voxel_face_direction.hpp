@@ -7,7 +7,7 @@
 
 namespace voxel
 {
-    enum class VoxelFaceDirection
+    enum class VoxelFaceDirection : std::uint8_t
     {
         Top    = 0,
         Bottom = 1,
