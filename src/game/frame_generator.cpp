@@ -504,6 +504,7 @@ namespace game
                     ImFontConfig                  fontConfigUnifont;
                     fontConfigUnifont.OversampleH          = 1;
                     fontConfigUnifont.OversampleV          = 1;
+                    fontConfigUnifont.RasterizerDensity    = 2.0f;
                     fontConfigUnifont.MergeMode            = false;
                     fontConfigUnifont.SizePixels           = 64;
                     fontConfigUnifont.FontDataOwnedByAtlas = false;
@@ -523,9 +524,10 @@ namespace game
                     static std::array<ImWchar, 3> ranges {0x00001, 0x1FFFF, 0};
                     static ImFontConfig           cfg;
 
-                    cfg.OversampleH = 1;
-                    cfg.OversampleV = 1;
-                    cfg.MergeMode   = true;
+                    cfg.OversampleH       = 1;
+                    cfg.OversampleV       = 1;
+                    cfg.RasterizerDensity = 2.0f;
+                    cfg.MergeMode         = true;
                     cfg.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
                     cfg.SizePixels = 64;
 
@@ -535,7 +537,7 @@ namespace game
                     this->font = io.Fonts->AddFontFromMemoryTTF(
                         const_cast<std::byte*>(emojiFont.data()), // NOLINT
                         static_cast<int>(emojiFont.size_bytes()),
-                        22.0f,
+                        16.0f,
                         &cfg,
                         ranges.data());
                 }
@@ -1238,15 +1240,15 @@ namespace game
 
                         const std::string menuText = std::format(
                             "ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\n"
-                            "Player position: {{{:.3f}, {:.3f}, {:.3f}}}\n"
-                            "FPS / FrameTime: {:.3f} / {:.3f}ms\n"
-                            "TPS / TickTime: {} / {}ms\n"
-                            "Ram Usage: {}\n"
-                            "Vram Usage: {}\n"
+                            "Camera: {{{:.3f}, {:.3f}, {:.3f}}}\n"
+                            "FPS: {:.3f} / {:.3f}ms\n"
+                            "TPS: {} / {:.3f}ms\n"
+                            "Ram: {}\n"
+                            "Vram: {}\n"
                             "Staging Usage: {}\n"
-                            "Chunks Visible {} / {} | {:.3f}%\n"
-                            "Bricks Visible {} / {} | {:.3f}%\n"
-                            "Faces Visible {} / {} | {:.3f}%\n",
+                            "Chunks {} / {} | {:.3f}%\n"
+                            "Bricks {} / {} | {:.3f}%\n"
+                            "Faces {} / {} | {:.3f}%\n",
                             camera.getPosition().x,
                             camera.getPosition().y,
                             camera.getPosition().z,

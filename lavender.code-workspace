@@ -12,6 +12,7 @@
 		],
 		"cSpell.words": [
 			"cmrc",
+			"collidable",
 			"colr",
 			"concurrentqueue",
 			"ctad",
@@ -23,6 +24,7 @@
 			"fastnoise",
 			"Freetype",
 			"fsanitize",
+			"Gameplay",
 			"gdwarf",
 			"glfw",
 			"glldb",

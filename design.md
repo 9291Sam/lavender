@@ -24,7 +24,7 @@ that was half in myth was suddenly right in front of you, frothing.
 "Oh great [DRAGON_NAME] we've come with this offering of your greatness, in
 exchange would you please improve our magical abilities"
 
-'SHIT, they're exchanging me!' 
+'SHIT, they're sacrificing me!' 
 
 The dragon stops and stares for a few seconds before looking right at you and
 a golden hazy beam emits from between it's eyeballs. You brace for impact,
@@ -91,7 +91,19 @@ The general gameplay loop consists of the following elements, done as desired
     - this means that ancient magic things can be useful
 - How to balance other classes and things that aren't so heavily focused on magic. 
 
-Gameplay:
+## Gameplay:
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Background
 
@@ -116,6 +128,10 @@ so even if you made a magical rocket motor it would just fizzle out when you lea
 actually our own, long in the future
 
 
+## Current Goal:
+
+better world abstraction
+Editing abd placing blocks in shapes (sphere, cube, line, single)
 
 
 ## Random Miscellaneous Ideas
