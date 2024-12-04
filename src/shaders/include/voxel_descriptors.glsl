@@ -22,11 +22,26 @@ struct GreedyVoxelFace
 {
     u32 data;
 };
-u32 GreedyVoxelFace_x(GreedyVoxelFace self) { return bitfieldExtract(self.data, 0, 6); }
-u32 GreedyVoxelFace_y(GreedyVoxelFace self) { return bitfieldExtract(self.data, 6, 6); }
-u32 GreedyVoxelFace_z(GreedyVoxelFace self) { return bitfieldExtract(self.data, 12, 6); }
-u32 GreedyVoxelFace_width(GreedyVoxelFace self) { return bitfieldExtract(self.data, 18, 6); }
-u32 GreedyVoxelFace_height(GreedyVoxelFace self) { return bitfieldExtract(self.data, 24, 6); }
+u32 GreedyVoxelFace_x(GreedyVoxelFace self)
+{
+    return bitfieldExtract(self.data, 0, 6);
+}
+u32 GreedyVoxelFace_y(GreedyVoxelFace self)
+{
+    return bitfieldExtract(self.data, 6, 6);
+}
+u32 GreedyVoxelFace_z(GreedyVoxelFace self)
+{
+    return bitfieldExtract(self.data, 12, 6);
+}
+u32 GreedyVoxelFace_width(GreedyVoxelFace self)
+{
+    return bitfieldExtract(self.data, 18, 6);
+}
+u32 GreedyVoxelFace_height(GreedyVoxelFace self)
+{
+    return bitfieldExtract(self.data, 24, 6);
+}
 
 struct BrickMap
 {
@@ -68,7 +83,7 @@ struct VisibilityBrick
 
 struct VisibleFaceData
 {
-    u32 data;
+    u32  data;
     vec3 color;
 };
 
@@ -82,10 +97,11 @@ struct DirectionalFaceIdBricks
     FaceIdBrick dir[6];
 };
 
-struct PointLight {
+struct PointLight
+{
     vec4 position;
-    vec4 color_and_power;  // xyz = color, w = power
-    vec4 falloffs;         // x = constant, y = linear, z = quadratic, w = cubic
+    vec4 color_and_power; // xyz = color, w = power
+    vec4 falloffs;        // x = constant, y = linear, z = quadratic, w = cubic
 };
 
 float estimateLightEffectiveDistance(PointLight light)
@@ -101,32 +117,38 @@ struct GpuChunkData
 layout(set = 1, binding = 0) readonly buffer GpuChunkDataBuffer
 {
     GpuChunkData data[];
-} in_chunk_data;
+}
+in_chunk_data;
 
 layout(set = 1, binding = 1) readonly buffer BrickMapBuffer
 {
-   BrickMap map[];
-} in_brick_maps;
+    BrickMap map[];
+}
+in_brick_maps;
 
 layout(set = 1, binding = 2) readonly buffer BrickParentInfoBuffer
 {
     BrickParentInfo info[];
-} in_brick_parent_info;
+}
+in_brick_parent_info;
 
 layout(set = 1, binding = 3) readonly buffer MaterialBrickBuffer
 {
     MaterialBrick brick[];
-} in_material_bricks;
+}
+in_material_bricks;
 
 layout(set = 1, binding = 4) readonly buffer OpacityBrickBuffer
 {
     OpacityBrick brick[];
-} in_opacity_bricks;
+}
+in_opacity_bricks;
 
 layout(set = 1, binding = 5) buffer VisibilityBrickBuffer
 {
     VisibilityBrick brick[];
-} in_visibility_bricks;
+}
+in_visibility_bricks;
 
 struct HashMapNode32
 {
@@ -137,10 +159,11 @@ struct HashMapNode32
 layout(set = 1, binding = 6) buffer DirectionalFaceIdBrickBuffer
 {
     HashMapNode32 node[];
-} in_face_id_map;
+}
+in_face_id_map;
 
 const u32 kHashTableCapacity = 1U << 24U;
-const u32 kEmpty = ~0;
+const u32 kEmpty             = ~0;
 
 u32 integerHash(u32 h)
 {
@@ -168,8 +191,8 @@ void face_id_map_write(u32 key, u32 value)
             in_face_id_map.node[slot].value = value;
             break;
         }
-        
-        slot = (slot + 1) & (kHashTableCapacity-1);
+
+        slot = (slot + 1) & (kHashTableCapacity - 1);
     }
 }
 
@@ -194,12 +217,14 @@ u32 face_id_map_read(u32 key)
 layout(set = 1, binding = 7) readonly buffer GreedyVoxelFaces
 {
     GreedyVoxelFace face[];
-} in_greedy_voxel_faces;
+}
+in_greedy_voxel_faces;
 
 layout(set = 1, binding = 8) readonly buffer VoxelMaterialBuffer
 {
     VoxelMaterial material[];
-} in_voxel_materials;
+}
+in_voxel_materials;
 
 layout(set = 1, binding = 9) buffer GlobalVoxelDataBuffer
 {
@@ -209,22 +234,26 @@ layout(set = 1, binding = 9) buffer GlobalVoxelDataBuffer
     u32 number_of_indirect_dispatches_z;
     u32 number_of_lights;
     u32 readback_number_of_visible_faces;
-} in_global_voxel_data;
+}
+in_global_voxel_data;
 
-layout(set = 1, binding = 10)  buffer VisibleFaceDataBuffer
+layout(set = 1, binding = 10) buffer VisibleFaceDataBuffer
 {
     VisibleFaceData data[];
-} in_visible_face_data;
+}
+in_visible_face_data;
 
-layout(set = 1, binding = 11) buffer PointLightsBuffer
+layout(set = 1, binding = 11) readonly buffer PointLightsBuffer
 {
     PointLight lights[];
-} in_point_lights;
+}
+in_point_lights;
 
-layout(set = 1, binding = 12) buffer GlobalChunkBuffer
-{   
+layout(set = 1, binding = 12) readonly buffer GlobalChunkBuffer
+{
     u16 chunk[256][256][256];
-} in_global_chunks;
+}
+in_global_chunks;
 
 vec3 unpackNormalId(u32 id)
 {
@@ -239,7 +268,6 @@ vec3 unpackNormalId(u32 id)
 
     return available_normals[id];
 }
-
 
 vec3 unpackBiNormalId(u32 id)
 {
