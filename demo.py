@@ -27,13 +27,40 @@ class SampledPoint:
     def __eq__(self, other: object) -> bool:
         return np.array_equal(self.position, other.position) and np.array_equal(self.gradient, other.gradient)
 
-def f(x: float, y: float) -> float:
+    
+def quad_f(x: float, y: float) -> float:
+    return x**4 + y**4 + 2*x**2 + 2*y**2
+
+def quad_grad_f(position: np.ndarray) -> np.ndarray:
+    x, y = position
+    grad_x = 4 * x**3 + 4 * x
+    grad_y = 4 * y**3 + 4 * y
+    return np.array([grad_x, grad_y])
+
+def exp_par_f(x: float, y: float) -> float:
     return x**2 + y**2 + np.exp(x + y)
 
-def grad_f(position: np.ndarray) -> np.ndarray:
+def exp_par_grad_f(position: np.ndarray) -> np.ndarray:
     x, y = position
     common_term = np.exp(x + y)
     return np.array([2 * x + common_term, 2 * y + common_term])
+
+def nc_f(x: float, y: float) -> float:
+    return np.sin(x**2 + y**2) + (x**2 - y**2)**2
+
+def nc_grad_f(position: np.ndarray) -> np.ndarray:
+    x, y = position
+    grad_x = 2 * x * np.cos(x**2 + y**2) + 4 * x * (x**2 - y**2)
+    grad_y = 2 * y * np.cos(x**2 + y**2) - 4 * y * (x**2 - y**2)
+    return np.array([grad_x, grad_y])
+
+choice = 1;
+
+def f(x: float, y: float) -> float:
+    return [quad_f, exp_par_f, nc_f][choice](x, y)
+
+def grad_f(p: np.ndarray) -> np.ndarray:
+    return [quad_grad_f, exp_par_grad_f, nc_grad_f][choice](p)
 
 def inverse_distance_weighted_interpolated_vector_field_sample(points: List[SampledPoint], x: float, y: float) -> np.ndarray:
     epsilon: float = 1e-5
