@@ -11,6 +11,7 @@
 			120
 		],
 		"cSpell.words": [
+			"cmap",
 			"cmrc",
 			"collidable",
 			"colr",
@@ -22,6 +23,7 @@
 			"endforeach",
 			"endfunction",
 			"fastnoise",
+			"figsize",
 			"Freetype",
 			"fsanitize",
 			"Gameplay",
@@ -33,6 +35,7 @@
 			"karnage",
 			"Lacunarity",
 			"lerpolated",
+			"linalg",
 			"lldb",
 			"meshgrid",
 			"mfmt",
@@ -53,10 +56,14 @@
 			"underaligned",
 			"unifont",
 			"unspellable",
+			"viridis",
 			"vtables",
 			"WCHAR",
 			"Weverything",
-			"Wwindow"
+			"Wwindow",
+			"xlim",
+			"ylim",
+			"zlim"
 		]
 	}
 }
