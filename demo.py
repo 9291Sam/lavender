@@ -130,7 +130,6 @@ for point in added_samples:
 ax.set_xlim([-1.5, 1.5])
 ax.set_ylim([-1.5, 1.5])
 ax.set_zlim([0.75, 5])
-ax.set_title("Iterative Gradient Descent with Added Samples")
 ax.legend()
 
 plt.show()
