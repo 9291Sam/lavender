@@ -52,13 +52,16 @@ int main()
 
     try
     {
+        int f = 0;
+
         util::logLog(
-            "starting lavender {}.{}.{}.{}{}",
+            "starting lavender {}.{}.{}.{}{} {}",
             LAVENDER_VERSION_MAJOR,
             LAVENDER_VERSION_MINOR,
             LAVENDER_VERSION_PATCH,
             LAVENDER_VERSION_TWEAK,
-            util::isDebugBuild() ? " | Debug Build" : "");
+            util::isDebugBuild() ? " | Debug Build" : "",
+            f);
 
         game::Game game {};
 

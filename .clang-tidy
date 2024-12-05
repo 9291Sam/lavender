@@ -1,5 +1,6 @@
 Checks: >
   *,
+  misc-const-correctness,
   -llvmlibc-*,
   -modernize-use-trailing-return-type,
   -altera-unroll-loops,

@@ -26,16 +26,19 @@ namespace util
         {
             // Also has an implicit unique lock
 
-            const std::size_t numberOfElementsToFree = this->next_id.load();
+            std::size_t numberOfElementsDequeued = 0;
+
+            this->dequeueAllRacy(
+                [&](const auto&)
+                {
+                    numberOfElementsDequeued += 1;
+                });
 
             util::assertWarn(
-                numberOfElementsToFree == 0,
-                "Elements still inside of queue that were not dequeued");
-
-            for (std::size_t i = 0; i < numberOfElementsToFree; ++i)
-            {
-                reinterpret_cast<T*>(this->lock_free_buffer)[i]->~T(); // NOLINT
-            }
+                numberOfElementsDequeued == 0,
+                "{} elements still inside of queue that were not dequeued before calling "
+                "~SemiBoundedQueue()",
+                numberOfElementsDequeued);
 
             operator delete (
                 this->lock_free_buffer,
