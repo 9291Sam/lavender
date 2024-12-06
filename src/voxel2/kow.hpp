@@ -2,26 +2,94 @@
 
 #include "voxel/constants.hpp"
 #include "voxel/voxel.hpp"
+#include <span>
+
+namespace voxel2
+{
+    // TODO: Invisible Tracking Info for non voxel things
+    // TODO: Transparency & translucency & colored glass light color changing.
+
+    class GpuVoxelDataManager
+    {
+    public:
+        class ChunkUpdate
+        {
+        public:
+
+            enum class ShadowUpdate : std::uint8_t
+            {
+                ShadowCasting,
+                ShadowTransparent
+            };
+
+            struct VoxelUpdate
+            {
+                voxel::Voxel voxel;
+                ShadowUpdate shadow_update;
+            };
+
+        public:
+            ChunkUpdate(voxel::ChunkLocalPosition, std::optional<VoxelUpdate>);
+            ~ChunkUpdate() = default;
+
+            ChunkUpdate(const ChunkUpdate&)             = default;
+            ChunkUpdate(ChunkUpdate&&)                  = default;
+            ChunkUpdate& operator= (const ChunkUpdate&) = default;
+            ChunkUpdate& operator= (ChunkUpdate&&)      = default;
+
+            [[nodiscard]] std::tuple<voxel::ChunkLocalPosition, std::optional<VoxelUpdate>>
+            unpack() const;
+
+        private:
+            u8 pos_x              : 6;
+            u8 has_voxel_update   : 1;
+            u8 should_shadow_cast : 1;
+
+            u8 pos_y : 6;
+
+            u8 pos_z : 6;
+
+            u8 material_upper;
+            u8 material_lower;
+        };
+
+        struct Chunk
+        {};
+
+        [[nodiscard]] Chunk allocateChunk() const;
+        void                freeChunk() const;
+
+        void enqueueChunkUpdates(const Chunk&, std::vector<ChunkUpdate>) const;
+
+        void processChunkUpdates();
+    };
+
+    class High
+    {
+        // write to position.
+
+        // write and read from global positions
+
+        // TODO: transactions
+
+        VoxelTransaction createTransaction();
+
+        // transactions stack on top of one another
+        // have an order that is the order they were inserted into the chunk
+    };
+
+    class High
+    {};
+} // namespace voxel2
 
 class Low
 {
-    // allocates aligned chunks of a fixed size
+    // Primary Material Ray (makes things show up on screen)
+    // Secondary Material Ray (makes things have GI effects on the environment, implies shadow)
 
-    // Chunk allocateChunk(ChunkCoordinate);
-
-    // struct MaterialWrite
-    // {
-    //     voxel::Voxel material;
-    //     voxel::ChunkLocalPosition position
-    // };
-
-    enum class WriteType
-    {
-        InvisiblePhysicsWall,
-        InvisibleLightBlocker,
-        BothBlocker,
-        VoxelWoShadowOrPhysics,
-    };
+    // Primary / Secondary Ray distinction.
+    // Primary rays are what show up on the monitor
+    // Secondary rays are what are used to calculate shadows, GI effects etc.
 
     enum class ShadowBitUpdate : std::uint8_t
     {
@@ -37,44 +105,6 @@ class Low
         MakeInvisible,
     };
 
-    class ChunkUpdate
-    {
-        ChunkUpdate(
-            voxel::ChunkLocalPosition,
-            std::optional<voxel::Voxel> updateVoxel,
-            PrimaryRayUpdate,
-            ShadowBitUpdate);
-        ~ChunkUpdate() = default;
-
-        ChunkUpdate(const ChunkUpdate&)             = default;
-        ChunkUpdate(ChunkUpdate&&)                  = default;
-        ChunkUpdate& operator= (const ChunkUpdate&) = default;
-        ChunkUpdate& operator= (ChunkUpdate&&)      = default;
-
-        [[nodiscard]] std::tuple<
-            voxel::ChunkLocalPosition,
-            std::optional<voxel::ChunkLocalPosition>,
-            std::optional<voxel::Voxel>,
-            PrimaryRayUpdate,
-            ShadowBitUpdate>
-        unpack() const;
-
-    private:
-        u8 pos_x         : 6;
-        u8 shadow_ignore : 1;
-        u8 shadow_write  : 1;
-
-        u8 pos_y      : 6;
-        u8 ray_ignore : 1;
-        u8 ray_write  : 1;
-
-        u8 pos_z           : 6;
-        u8 ignore_material : 1;
-
-        u8 material_upper;
-        u8 material_lower;
-    };
-
     // physics is a higher level thing, doesnt need to be here
 
     // material buffer
@@ -86,6 +116,20 @@ class Low
 
     // shadow bit brick (raster buffer)
 
+    enum class VoxelState
+    {
+        Empty,
+        InvisibleWall,
+        NonShadowCastingVisible, // imagine grass on the ground
+        ShadowCastingVisible,    // normal
+        InvisibleTracker,        // a non world aligned entity that needs shadows and GI
+    };
+
+    // how to do transparent glass?
+    // you'd need to split it up into three bit maps per voxel
+    // is there something here (this is the one that is actually traced)
+    // is this transparent or translucent
+
     // normal
     // material shadow
     // 00 - empty
@@ -94,11 +138,12 @@ class Low
     // 11 - shadow casting voxel (normal)
 
     // tracking things
-    // 00
-    // 01 (covered by other)
-    // 10 - material is there but not
-    // invisible material (but material is there)
-    // tracking an object thats rendered somwhere else
+    // 00 - empty
+    // 01 - invisible wall (covered by other)
+    // 10 - material is there but not interactable (cant exist, how would GI effects happen if
+    they
+    // werent transparent to shadows) 11 - casts shadow, has gi effects, not visible invisible
+    // 11 material (but material is there) tracking an object thats rendered somwhere else
 
     // + material buffer
     // +
