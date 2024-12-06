@@ -76,8 +76,6 @@ namespace util
             requires std::is_nothrow_invocable_v<decltype(func), T&&>
         {
             // this function implicitly requires a unique lock on everything
-            std::atomic_thread_fence(std::memory_order_seq_cst);
-
             const std::size_t numberOfValidElements =
                 this->next_id.exchange(0, std::memory_order_acq_rel);
 
@@ -104,8 +102,6 @@ namespace util
                         overflow.shrink_to_fit();
                     }
                 });
-
-            std::atomic_thread_fence(std::memory_order_seq_cst);
         }
 
         mutable std::atomic<std::size_t> next_id;

@@ -522,7 +522,8 @@ namespace voxel
         std::vector<vk::DrawIndirectCommand>          indirectCommands {};
         std::vector<ChunkDrawIndirectInstancePayload> indirectPayload {};
 
-        u32 callNumber = 0;
+        u32 callNumber         = 0;
+        u32 numberOfTotalFaces = 0;
 
         this->chunk_id_allocator.iterateThroughAllocatedElements(
             [&, this](u32 chunkId)
@@ -642,8 +643,12 @@ namespace voxel
 
                     for (util::RangeAllocation a : *thisChunkData.face_data)
                     {
+                        const u32 numberOfFaces = this->voxel_face_allocator.getSizeOfAllocation(a);
+
+                        numberOfTotalFaces += numberOfFaces;
+
                         indirectCommands.push_back(vk::DrawIndirectCommand {
-                            .vertexCount {this->voxel_face_allocator.getSizeOfAllocation(a) * 6},
+                            .vertexCount {numberOfFaces * 6},
                             .instanceCount {1},
                             .firstVertex {a.offset * 6},
                             .firstInstance {callNumber},
@@ -709,7 +714,8 @@ namespace voxel
 
         numberOfFacesVisible =
             this->global_voxel_data.getGpuDataNonCoherent()[0].readback_number_of_visible_faces;
-        numberOfFacesPossible = MaxFaceIdMapNodes;
+        numberOfFacesPossible  = numberOfTotalFaces;
+        numberOfFacesAllocated = MaxFaceIdMapNodes;
 
         numberOfChunksAllocated = this->chunk_id_allocator.getNumberAllocated();
         numberOfChunksPossible  = MaxChunks;

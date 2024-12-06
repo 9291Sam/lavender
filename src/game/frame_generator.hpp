@@ -13,8 +13,9 @@
 #include <vulkan/vulkan_format_traits.hpp>
 #include <vulkan/vulkan_handles.hpp>
 
-extern std::atomic<u32> numberOfFacesVisible;  // NOLINT
-extern std::atomic<u32> numberOfFacesPossible; // NOLINT
+extern std::atomic<u32> numberOfFacesVisible;   // NOLINT
+extern std::atomic<u32> numberOfFacesPossible;  // NOLINT
+extern std::atomic<u32> numberOfFacesAllocated; // NOLINT
 
 extern std::atomic<u32> numberOfChunksAllocated; // NOLINT
 extern std::atomic<u32> numberOfChunksPossible;  // NOLINT

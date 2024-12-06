@@ -28,8 +28,9 @@
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
-std::atomic<u32> numberOfFacesVisible  = 0; // NOLINT
-std::atomic<u32> numberOfFacesPossible = 0; // NOLINT
+std::atomic<u32> numberOfFacesVisible   = 0; // NOLINT
+std::atomic<u32> numberOfFacesPossible  = 0; // NOLINT
+std::atomic<u32> numberOfFacesAllocated = 0; // NOLINT
 
 std::atomic<u32> numberOfChunksAllocated = 0; // NOLINT
 std::atomic<u32> numberOfChunksPossible  = 0; // NOLINT
@@ -502,9 +503,9 @@ namespace game
                 {
                     static std::array<ImWchar, 3> unifontRanges {0x0001, 0xFFFF, 0};
                     ImFontConfig                  fontConfigUnifont;
-                    fontConfigUnifont.OversampleH          = 1;
-                    fontConfigUnifont.OversampleV          = 1;
-                    fontConfigUnifont.RasterizerDensity    = 2.0f;
+                    fontConfigUnifont.OversampleH          = 2;
+                    fontConfigUnifont.OversampleV          = 2;
+                    fontConfigUnifont.RasterizerDensity    = 3.0f;
                     fontConfigUnifont.MergeMode            = false;
                     fontConfigUnifont.SizePixels           = 64;
                     fontConfigUnifont.FontDataOwnedByAtlas = false;
@@ -528,7 +529,7 @@ namespace game
                     cfg.OversampleV       = 1;
                     cfg.RasterizerDensity = 2.0f;
                     cfg.MergeMode         = true;
-                    cfg.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor;
+                    cfg.FontBuilderFlags |= ImGuiFreeTypeBuilderFlags_LoadColor; // NOLINT
                     cfg.SizePixels = 64;
 
                     std::span<const std::byte> emojiFont =
@@ -1227,8 +1228,9 @@ namespace game
                         const float deltaTime =
                             this->game->getRenderer()->getWindow()->getDeltaTimeSeconds();
 
-                        auto faces         = numberOfFacesVisible.load();
-                        auto facesPossible = numberOfFacesPossible.load();
+                        auto faces          = numberOfFacesVisible.load();
+                        auto facesPossible  = numberOfFacesPossible.load();
+                        auto facesAllocated = numberOfFacesAllocated.load();
 
                         auto chunks         = numberOfChunksAllocated.load();
                         auto chunksPossible = numberOfChunksPossible.load();
@@ -1248,7 +1250,7 @@ namespace game
                             "Staging Usage: {}\n"
                             "Chunks {} / {} | {:.3f}%\n"
                             "Bricks {} / {} | {:.3f}%\n"
-                            "Faces {} / {} | {:.3f}%\n",
+                            "Faces {} / {} / {} | {:.3f}%\n",
                             camera.getPosition().x,
                             camera.getPosition().y,
                             camera.getPosition().z,
@@ -1272,6 +1274,7 @@ namespace game
                                 / static_cast<float>(bricksPossible),
                             faces,
                             facesPossible,
+                            facesAllocated,
                             100.0f * static_cast<float>(faces) / static_cast<float>(facesPossible));
 
                         ImGui::TextWrapped("%s", menuText.c_str()); // NOLINT
