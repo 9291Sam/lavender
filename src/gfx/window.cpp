@@ -5,6 +5,7 @@
 #include <atomic>
 #include <backends/imgui_impl_glfw.h>
 #include <chrono>
+#include <cmath>
 #include <imgui.h>
 #include <thread>
 #include <util/log.hpp>
