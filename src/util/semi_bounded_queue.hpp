@@ -19,7 +19,7 @@ namespace util
             : next_id {0}
             , lock_free_elements_allocated {lockFreeBufferSize}
             , lock_free_buffer {static_cast<std::byte*>(operator new (
-                  lockFreeBufferSize, std::align_val_t {alignof(T)}))}
+                  lockFreeBufferSize * sizeof(T), std::align_val_t {alignof(T)}))}
             , overflow_buffer {{}}
         {}
         ~SemiBoundedQueue() noexcept
