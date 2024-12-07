@@ -505,7 +505,7 @@ namespace game
                     ImFontConfig                  fontConfigUnifont;
                     fontConfigUnifont.OversampleH          = 2;
                     fontConfigUnifont.OversampleV          = 2;
-                    fontConfigUnifont.RasterizerDensity    = 3.0f;
+                    fontConfigUnifont.RasterizerDensity    = 2.0f;
                     fontConfigUnifont.MergeMode            = false;
                     fontConfigUnifont.SizePixels           = 64;
                     fontConfigUnifont.FontDataOwnedByAtlas = false;

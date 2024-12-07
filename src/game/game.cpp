@@ -104,7 +104,16 @@ namespace game
                         }
                         const float deltaTime = this->renderer->getWindow()->getDeltaTimeSeconds();
 
+                        auto start                         = std::chrono::steady_clock::now();
                         const auto [camera, recordObjects] = state->onFrame(deltaTime);
+                        auto end                           = std::chrono::steady_clock::now();
+
+                        std::chrono::duration<float> diff = end - start;
+
+                        if (deltaTime < diff.count())
+                        {
+                            util::logTrace("{} {}", deltaTime, diff.count());
+                        }
 
                         this->frame_generator->generateFrame(camera, recordObjects);
 

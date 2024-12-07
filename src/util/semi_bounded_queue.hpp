@@ -110,4 +110,32 @@ namespace util
 
         util::Mutex<std::vector<T>> overflow_buffer;
     };
+
+    struct LCG
+    {
+        uint64_t state = 12345;
+        uint64_t a     = 1664525;
+        uint64_t c     = 1013904223;
+        uint64_t m     = 4294967296;
+
+        uint64_t advance()
+        {
+            state = (a * state + c) % m;
+            return state;
+        }
+    };
+
+    struct XorShift
+    {
+        uint32_t state;
+
+        uint32_t advance()
+        {
+            this->state ^= this->state << 13U;
+            this->state ^= this->state >> 17U;
+            this->state ^= this->state << 5U;
+
+            return this->state;
+        }
+    };
 } // namespace util
