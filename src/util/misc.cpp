@@ -224,6 +224,7 @@ namespace util
         case FP_NORMAL:
             [[fallthrough]];
         case FP_SUBNORMAL:
+            break;
         }
 
         const long double base  = std::log10(bytes) / std::log10(unit);

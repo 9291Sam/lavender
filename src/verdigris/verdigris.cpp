@@ -3,6 +3,7 @@
 #include "ecs/entity.hpp"
 #include "ecs/entity_component_system_manager.hpp"
 #include "ecs/raw_entity.hpp"
+#include "game/frame_generator.hpp"
 #include "game/game.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
@@ -443,8 +444,12 @@ namespace verdigris
 
                 w.setCamera(this->camera);
 
-                draws.append_range(
-                    w.getRecordObjects(this->game, this->game->getRenderer()->getStager()));
+                std::vector<game::FrameGenerator::RecordObject> worldRecordObjects =
+                    w.getRecordObjects(this->game, this->game->getRenderer()->getStager());
+                draws.insert(
+                    draws.begin(),
+                    std::make_move_iterator(worldRecordObjects.begin()),
+                    std::make_move_iterator(worldRecordObjects.end()));
             });
 
         auto realCamera = this->camera;

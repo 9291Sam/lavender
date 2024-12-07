@@ -131,7 +131,7 @@ namespace gfx::vulkan
         , view {std::move(other.view)}
     {
         other.allocator = nullptr;
-        other.extent    = {};
+        other.extent    = vk::Extent2D {};
         other.format    = {};
         other.aspect    = {};
         other.image     = nullptr;

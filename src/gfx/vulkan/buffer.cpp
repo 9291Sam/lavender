@@ -137,7 +137,10 @@ namespace gfx::vulkan
             [&](std::unordered_map<std::shared_ptr<vk::UniqueFence>, std::vector<BufferTransfer>>&
                     toFreeMap)
             {
-                toFreeMap[flushFinishFence].append_range(std::move(grabbedTransfers));
+                toFreeMap[flushFinishFence].insert(
+                    toFreeMap[flushFinishFence].begin(),
+                    std::make_move_iterator(grabbedTransfers.begin()),
+                    std::make_move_iterator(grabbedTransfers.end()));
             });
     }
 

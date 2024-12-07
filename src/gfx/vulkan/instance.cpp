@@ -83,7 +83,10 @@ namespace gfx::vulkan
 #ifdef __APPLE__
         extensions.push_back(vk::KHRPortabilityEnumerationExtensionName);
 #endif // __APPLE__
-        extensions.append_range(Window::getRequiredExtensions());
+        for (const char* e : Window::getRequiredExtensions())
+        {
+            extensions.push_back(e);
+        }
 
         if constexpr (util::isDebugBuild())
         {
