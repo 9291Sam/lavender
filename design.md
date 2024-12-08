@@ -237,3 +237,20 @@ MVP tasks:
 2. Add more biomes with a goal of around ~35 different ones
 3. ---- MVP Checkpoint ---- 
 	- At this point you should have a game. Show it off, ask others for their opinions. 
+
+
+
+ideas: mining in a cave && caveins
+
+ideas: ferry boat on foggy ocean
+
+protect a lantern?
+
+blood acrifice and rituals
+
+you want major diffuerences between mechanics
+
+
+
+The Caldera @ Ash Hollow
+advenrurrerer in the woods
