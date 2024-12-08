@@ -110,10 +110,10 @@ namespace game
 
                         std::chrono::duration<float> diff = end - start;
 
-                        if (deltaTime < diff.count())
-                        {
-                            util::logTrace("{} {}", deltaTime, diff.count());
-                        }
+                        // if (deltaTime < diff.count())
+                        // {
+                        //     util::logTrace("{} {}", deltaTime, diff.count());
+                        // }
 
                         this->frame_generator->generateFrame(camera, recordObjects);
 

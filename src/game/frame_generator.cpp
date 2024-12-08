@@ -1,4 +1,6 @@
 #include "frame_generator.hpp"
+#include "ImGuiProfilerRenderer.h"
+#include "ProfilerTask.h"
 #include "game.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer.hpp"
@@ -15,6 +17,7 @@
 #include <boost/range/algorithm/sort.hpp>
 #include <compare>
 #include <cstddef>
+#include <cstdlib>
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/instance.hpp>
 #include <gfx/vulkan/swapchain.hpp>
@@ -1209,6 +1212,9 @@ namespace game
                         ImVec2 {std::ceil(viewport->Size.x - desiredConsoleSize.x), 0});
                     ImGui::SetNextWindowSize(desiredConsoleSize);
 
+                    const float deltaTime =
+                        this->game->getRenderer()->getWindow()->getDeltaTimeSeconds();
+
                     if (ImGui::Begin(
                             "Console",
                             nullptr,
@@ -1224,9 +1230,6 @@ namespace game
                         ImGui::PushFont(this->font);
                         ImGui::PushStyleVar(
                             ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
-
-                        const float deltaTime =
-                            this->game->getRenderer()->getWindow()->getDeltaTimeSeconds();
 
                         auto faces          = numberOfFacesVisible.load();
                         auto facesPossible  = numberOfFacesPossible.load();
@@ -1278,6 +1281,28 @@ namespace game
                             100.0f * static_cast<float>(faces) / static_cast<float>(facesPossible));
 
                         ImGui::TextWrapped("%s", menuText.c_str()); // NOLINT
+
+                        static ImGuiUtils::ProfilerGraph g {512};
+
+                        std::vector<legit::ProfilerTask> tasks {};
+
+                        for (double i = 0; i < 1; i += 1.0 / 12)
+                        {
+                            tasks.push_back(legit::ProfilerTask {
+                                .startTime {i * deltaTime},
+                                .endTime {i * deltaTime + (1.0 / 12) * deltaTime},
+                                .name {std::format("{}", i)},
+                                .color {legit::Colors::colors.at(i * 12)}
+
+                            });
+                        }
+
+                        g.frameSpacing         = 0;
+                        g.frameWidth           = 1;
+                        g.useColoredLegendText = true;
+
+                        g.LoadFrameData(tasks.data(), tasks.size());
+                        g.RenderTimings(desiredConsoleSize.x - 3 * WindowPadding, 0, 256, 0);
 
                         ImGui::PopStyleVar();
                         ImGui::PopFont();
