@@ -675,6 +675,7 @@ namespace voxel
         this->brick_maps.flushViaStager(stager);
         this->brick_parent_info.flushViaStager(stager);
         this->material_bricks.flushViaStager(stager);
+
         this->voxel_faces.flushViaStager(stager);
         this->opacity_bricks.flushViaStager(stager);
         this->lights_buffer.flushViaStager(stager);
