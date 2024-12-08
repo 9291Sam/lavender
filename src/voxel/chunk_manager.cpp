@@ -8,6 +8,7 @@
 #include "game/frame_generator.hpp"
 #include "game/game.hpp"
 #include "game/transform.hpp"
+#include "gfx/profiler/profiler.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer.hpp"
@@ -517,7 +518,10 @@ namespace voxel
     std::vector<game::FrameGenerator::RecordObject>
     // NOLINTNEXTLINE
     ChunkManager::makeRecordObject(
-        const game::Game* game, const gfx::vulkan::BufferStager& stager, game::Camera c)
+        const game::Game*                game,
+        const gfx::vulkan::BufferStager& stager,
+        game::Camera                     c,
+        gfx::profiler::TaskGenerator&    profiler)
     {
         std::vector<vk::DrawIndirectCommand>          indirectCommands {};
         std::vector<ChunkDrawIndirectInstancePayload> indirectPayload {};
@@ -665,6 +669,8 @@ namespace voxel
                 }
             });
 
+        profiler.stamp("chunk iter", gfx::profiler::Orange);
+
         this->gpu_chunk_data.flushViaStager(stager);
         this->brick_maps.flushViaStager(stager);
         this->brick_parent_info.flushViaStager(stager);
@@ -689,6 +695,8 @@ namespace voxel
                 0,
                 std::span<const ChunkDrawIndirectInstancePayload> {indirectPayload});
         }
+
+        profiler.stamp("stager flush", gfx::profiler::BelizeHole);
 
         game::FrameGenerator::RecordObject update = game::FrameGenerator::RecordObject {
             .transform {},

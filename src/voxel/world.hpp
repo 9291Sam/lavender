@@ -3,6 +3,7 @@
 #include "chunk.hpp"
 #include "game/camera.hpp"
 #include "game/frame_generator.hpp"
+#include "gfx/profiler/task_generator.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "glm/gtx/hash.hpp"
 #include "point_light.hpp"
@@ -14,6 +15,11 @@
 #include <span>
 #include <unordered_map>
 #include <variant>
+
+namespace gfx::profiler
+{
+    struct TaskGenerator;
+} // namespace gfx::profiler
 
 namespace voxel
 {
@@ -83,8 +89,8 @@ namespace voxel
 
         void setCamera(game::Camera) const;
 
-        [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
-        getRecordObjects(const game::Game*, const gfx::vulkan::BufferStager&);
+        [[nodiscard]] std::vector<game::FrameGenerator::RecordObject> getRecordObjects(
+            const game::Game*, const gfx::vulkan::BufferStager&, gfx::profiler::TaskGenerator&);
 
     private:
 

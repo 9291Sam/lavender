@@ -2,6 +2,7 @@
 
 #include "frame_generator.hpp"
 #include "game/camera.hpp"
+#include "gfx/profiler/profiler.hpp"
 #include <atomic>
 #include <concepts>
 #include <memory>
@@ -30,6 +31,14 @@ namespace game
     public:
         struct GameState
         {
+        public:
+            struct OnFrameReturnData
+            {
+                Camera                                    main_scene_camera;
+                std::vector<FrameGenerator::RecordObject> record_objects;
+                std::vector<gfx::profiler::ProfilerTask>  profiler_timestamps;
+            };
+        public:
             GameState() = default;
             virtual ~GameState();
 
@@ -38,9 +47,8 @@ namespace game
             GameState& operator= (const GameState&) = delete;
             GameState& operator= (GameState&&)      = delete;
 
-            [[nodiscard]] virtual std::pair<Camera, std::vector<FrameGenerator::RecordObject>>
-                         onFrame(float) const = 0;
-            virtual void onTick(float) const  = 0;
+            [[nodiscard]] virtual OnFrameReturnData onFrame(float) const = 0;
+            virtual void                            onTick(float) const  = 0;
         };
 
     public:

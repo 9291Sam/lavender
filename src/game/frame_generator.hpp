@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game/camera.hpp"
+#include "gfx/profiler/profiler.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/swapchain.hpp"
 #include "transform.hpp"
@@ -28,6 +29,11 @@ extern std::atomic<u32> f32TickDeltaTime; // NOLINT
 namespace gfx
 {
     class Renderer;
+
+    namespace profiler
+    {
+        class ProfilerGraph;
+    } // namespace profiler
 
     namespace vulkan
     {
@@ -82,7 +88,8 @@ namespace game
         FrameGenerator& operator= (const FrameGenerator&) = delete;
         FrameGenerator& operator= (FrameGenerator&&)      = delete;
 
-        void generateFrame(Camera, std::span<const RecordObject>);
+        void generateFrame(
+            Camera, std::span<const RecordObject>, std::span<const gfx::profiler::ProfilerTask>);
 
         // lives as long as the program
         vk::DescriptorSet getGlobalInfoDescriptorSet() const;
@@ -118,7 +125,8 @@ namespace game
             u32 swapchainImageIdx,
             const gfx::vulkan::Swapchain&,
             std::size_t flyingFrameIdx,
-            std::vector<RecordObject>);
+            std::vector<RecordObject>,
+            std::span<const gfx::profiler::ProfilerTask>);
 
         static GlobalInfoDescriptors makeGlobalDescriptors(const gfx::Renderer*, vk::DescriptorSet);
 
@@ -128,11 +136,12 @@ namespace game
         std::shared_ptr<vk::UniqueDescriptorSetLayout> set_layout;
         vk::DescriptorSet                              global_info_descriptor_set;
 
-        Camera                              camera;
-        GlobalInfoDescriptors               global_descriptors;
-        ImFont*                             font;
-        std::shared_ptr<vk::UniquePipeline> menu_transfer_pipeline;
-        std::shared_ptr<vk::UniquePipeline> skybox_pipeline;
+        Camera                                        camera;
+        GlobalInfoDescriptors                         global_descriptors;
+        ImFont*                                       font;
+        std::unique_ptr<gfx::profiler::ProfilerGraph> tracing_graph;
+        std::shared_ptr<vk::UniquePipeline>           menu_transfer_pipeline;
+        std::shared_ptr<vk::UniquePipeline>           skybox_pipeline;
     };
 
 } // namespace game

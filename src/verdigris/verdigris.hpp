@@ -29,8 +29,7 @@ namespace verdigris
 
         ~Verdigris() override;
 
-        std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
-        onFrame(float deltaTime) const override;
+        game::Game::GameState::OnFrameReturnData onFrame(float deltaTime) const override;
 
         void onTick(float deltaTime) const override;
     };
