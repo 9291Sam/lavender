@@ -143,7 +143,8 @@ namespace gfx::profiler
             const ImVec2    screenPos = ImGui::GetCursorScreenPos();
             const glm::vec2 widgetPos {screenPos.x, screenPos.y};
 
-            this->renderGraph(drawList, widgetPos, glm::vec2(graphWidth, height), frameIndexOffset);
+            this->renderGraph(
+                drawList, widgetPos, glm::vec2(graphWidth - 5, height), frameIndexOffset);
 
             this->renderLegend(
                 drawList,
@@ -151,8 +152,9 @@ namespace gfx::profiler
                 glm::vec2(legendWidth, height + (16 * this->task_stats.size())), // Font spacing
                 frameIndexOffset);
 
-            ImGui::Dummy(
-                ImVec2(static_cast<float>(graphWidth + legendWidth), static_cast<float>(height)));
+            ImGui::Dummy(ImVec2(
+                static_cast<float>(graphWidth + legendWidth),
+                static_cast<float>(height + (16 * this->task_stats.size()))));
         }
 
     private:

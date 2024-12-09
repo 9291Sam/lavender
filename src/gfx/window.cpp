@@ -206,6 +206,7 @@ namespace gfx
         glfwSetInputMode(this->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
         this->is_cursor_attached.store(true, std::memory_order_release);
+        this->mouse_ignore_frames += 3;
     }
 
     void Window::detachCursor() const

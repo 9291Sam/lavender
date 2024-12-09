@@ -339,7 +339,7 @@ namespace game
                                               **this->set_layout, "Global Descriptor Set")}
         , global_descriptors {makeGlobalDescriptors(
               this->game->getRenderer(), this->global_info_descriptor_set)}
-        , tracing_graph {std::make_unique<gfx::profiler::ProfilerGraph>(512)}
+        , tracing_graph {std::make_unique<gfx::profiler::ProfilerGraph>(1024)}
         , menu_transfer_pipeline {this->game->getRenderer()->getAllocator()->cachePipeline(
               gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
                   .stages {{
@@ -1285,7 +1285,15 @@ namespace game
 
                         this->tracing_graph->loadFrameData(tasks);
                         this->tracing_graph->renderTimings(
-                            static_cast<std::size_t>(desiredConsoleSize.x), 0, 256, 0);
+                            static_cast<std::size_t>(desiredConsoleSize.x - (2 * WindowPadding)),
+                            0,
+                            256,
+                            0);
+
+                        if (ImGui::Button("Attach Cursor"))
+                        {
+                            this->game->getRenderer()->getWindow()->attachCursor();
+                        }
 
                         ImGui::PopStyleVar();
                         ImGui::PopFont();

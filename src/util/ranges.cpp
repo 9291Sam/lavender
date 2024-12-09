@@ -2,6 +2,7 @@
 #include "util/log.hpp"
 #include <algorithm>
 #include <boost/sort/block_indirect_sort/block_indirect_sort.hpp>
+#include <boost/sort/pdqsort/pdqsort.hpp>
 #include <limits>
 #include <optional>
 #include <ranges>
@@ -38,13 +39,7 @@ namespace util
             return ranges;
         }
 
-        boost::sort::block_indirect_sort(
-            ranges.begin(),
-            ranges.end(),
-            [](const InclusiveRange& l, const InclusiveRange& r)
-            {
-                return l.start < r.start;
-            });
+        boost::sort::block_indirect_sort(ranges.begin(), ranges.end());
 
         std::size_t numberOfValidRanges = ranges.size();
 

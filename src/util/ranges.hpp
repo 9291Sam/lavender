@@ -2,6 +2,7 @@
 
 #include "log.hpp"
 #include "misc.hpp"
+#include <compare>
 #include <vector>
 
 namespace util
@@ -10,6 +11,11 @@ namespace util
     {
         std::size_t start;
         std::size_t end;
+
+        constexpr std::strong_ordering operator<=> (const InclusiveRange& other) const
+        {
+            return this->start <=> other.start;
+        }
 
         [[nodiscard]] std::size_t size() const
         {

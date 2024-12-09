@@ -114,7 +114,7 @@ namespace gfx
         std::atomic<std::chrono::duration<float>>          last_frame_duration;
 
         std::array<std::atomic<bool>, 8> mouse_buttons_pressed_state; // NOLINT
-        std::atomic<std::size_t>         mouse_ignore_frames;
+        mutable std::atomic<std::size_t> mouse_ignore_frames;
         std::atomic<Delta>               previous_mouse_position;
         std::atomic<Delta>               mouse_delta_pixels;
         std::atomic<Delta>               screen_space_mouse_delta;
