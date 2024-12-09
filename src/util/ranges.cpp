@@ -96,6 +96,7 @@ namespace util
     std::vector<InclusiveRange>
     mergeDownRanges(std::vector<InclusiveRange> inputRanges, std::size_t numberOfRanges)
     {
+        util::logTrace("{} -> {}", inputRanges.size(), numberOfRanges);
         std::vector<InclusiveRange> mergedSortedRanges =
             mergeAndSortOverlappingRanges(std::move(inputRanges));
 

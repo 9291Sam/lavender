@@ -5,6 +5,7 @@
 #include "dense_bit_chunk.hpp"
 #include "game/camera.hpp"
 #include "game/frame_generator.hpp"
+#include "gfx/profiler/task_generator.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "greedy_voxel_face.hpp"
@@ -47,8 +48,11 @@ namespace voxel
         ChunkManager& operator= (const ChunkManager&) = delete;
         ChunkManager& operator= (ChunkManager&&)      = default;
 
-        [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
-        makeRecordObject(const game::Game*, const gfx::vulkan::BufferStager&, game::Camera);
+        [[nodiscard]] std::vector<game::FrameGenerator::RecordObject> makeRecordObject(
+            const game::Game*,
+            const gfx::vulkan::BufferStager&,
+            game::Camera,
+            gfx::profiler::TaskGenerator&);
 
         Chunk createChunk(ChunkCoordinate);
         void  destroyChunk(Chunk);

@@ -1,5 +1,6 @@
 #include "frame_generator.hpp"
 #include "game.hpp"
+#include "gfx/profiler/profiler.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/device.hpp"
@@ -15,6 +16,7 @@
 #include <boost/range/algorithm/sort.hpp>
 #include <compare>
 #include <cstddef>
+#include <cstdlib>
 #include <gfx/renderer.hpp>
 #include <gfx/vulkan/instance.hpp>
 #include <gfx/vulkan/swapchain.hpp>
@@ -337,6 +339,7 @@ namespace game
                                               **this->set_layout, "Global Descriptor Set")}
         , global_descriptors {makeGlobalDescriptors(
               this->game->getRenderer(), this->global_info_descriptor_set)}
+        , tracing_graph {std::make_unique<gfx::profiler::ProfilerGraph>(512)}
         , menu_transfer_pipeline {this->game->getRenderer()->getAllocator()->cachePipeline(
               gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
                   .stages {{
@@ -559,7 +562,8 @@ namespace game
         u32                           swapchainImageIdx,
         const gfx::vulkan::Swapchain& swapchain,
         std::size_t,
-        std::vector<FrameGenerator::RecordObject> recordObjects)
+        std::vector<FrameGenerator::RecordObject>    recordObjects,
+        std::span<const gfx::profiler::ProfilerTask> tasks)
     {
         std::array<
             std::vector<std::pair<const FrameGenerator::RecordObject*, u32>>,
@@ -1209,6 +1213,9 @@ namespace game
                         ImVec2 {std::ceil(viewport->Size.x - desiredConsoleSize.x), 0});
                     ImGui::SetNextWindowSize(desiredConsoleSize);
 
+                    const float deltaTime =
+                        this->game->getRenderer()->getWindow()->getDeltaTimeSeconds();
+
                     if (ImGui::Begin(
                             "Console",
                             nullptr,
@@ -1224,9 +1231,6 @@ namespace game
                         ImGui::PushFont(this->font);
                         ImGui::PushStyleVar(
                             ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
-
-                        const float deltaTime =
-                            this->game->getRenderer()->getWindow()->getDeltaTimeSeconds();
 
                         auto faces          = numberOfFacesVisible.load();
                         auto facesPossible  = numberOfFacesPossible.load();
@@ -1278,6 +1282,10 @@ namespace game
                             100.0f * static_cast<float>(faces) / static_cast<float>(facesPossible));
 
                         ImGui::TextWrapped("%s", menuText.c_str()); // NOLINT
+
+                        this->tracing_graph->loadFrameData(tasks);
+                        this->tracing_graph->renderTimings(
+                            static_cast<std::size_t>(desiredConsoleSize.x), 0, 256, 0);
 
                         ImGui::PopStyleVar();
                         ImGui::PopFont();
@@ -1411,8 +1419,10 @@ namespace game
             }});
     }
 
-    void
-    FrameGenerator::generateFrame(Camera newCamera, std::span<const RecordObject> recordObjects)
+    void FrameGenerator::generateFrame(
+        Camera                                       newCamera,
+        std::span<const RecordObject>                recordObjects,
+        std::span<const gfx::profiler::ProfilerTask> tasks)
     {
         this->has_resize_ocurred = this->game->getRenderer()->recordOnThread(
             [&](vk::CommandBuffer       commandBuffer,
@@ -1425,8 +1435,8 @@ namespace game
                     swapchainImageIdx,
                     swapchain,
                     flyingFrameIdx,
-                    // TODO:
-                    std::vector<RecordObject> {recordObjects.begin(), recordObjects.end()});
+                    std::vector<RecordObject> {recordObjects.begin(), recordObjects.end()},
+                    tasks);
             });
 
         this->camera = newCamera;

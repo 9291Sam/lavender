@@ -5,6 +5,8 @@
 #include "ecs/raw_entity.hpp"
 #include "game/frame_generator.hpp"
 #include "game/game.hpp"
+#include "gfx/profiler/profiler.hpp"
+#include "gfx/profiler/task_generator.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/window.hpp"
@@ -26,7 +28,6 @@
 #include <boost/unordered/concurrent_flat_map.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtc/random.hpp>
-#include <numeric>
 #include <random>
 #include <utility>
 
@@ -154,9 +155,10 @@ namespace verdigris
             });
     }
 
-    std::pair<game::Camera, std::vector<game::FrameGenerator::RecordObject>>
-    Verdigris::onFrame(float deltaTime) const
+    game::Game::GameState::OnFrameReturnData Verdigris::onFrame(float deltaTime) const
     {
+        gfx::profiler::TaskGenerator profilerTaskGenerator {};
+
         this->frame_times.push_back(deltaTime);
 
         if (this->frame_times.size() > 128)
@@ -171,26 +173,6 @@ namespace verdigris
 
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {8.0, 16.0};
-
-        // auto genVec3 = [&]() -> glm::vec3
-        // {
-        //     return glm::vec3 {pDist(gen), pDist(gen), pDist(gen)};
-        // };
-
-        // auto genSpiralPos = [](u32 f)
-        // {
-        //     const float t = static_cast<float>(f) / 256.0f;
-
-        //     const float x = 32.0f * std::sin(t);
-        //     const float z = 32.0f * std::cos(t);
-
-        //     return glm::i32vec3 {static_cast<i32>(x), 66.0, static_cast<i32>(z)};
-        // };
-
-        // const i32 frameNumber =
-        // static_cast<i32>(this->game->getRenderer()->getFrameNumber());
-
-        // util::logTrace("modify light");
 
         // TODO: moving diagonally is faster
         const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
@@ -281,6 +263,8 @@ namespace verdigris
 
         newPosition.y = previousPosition.y;
 
+        profilerTaskGenerator.stamp("Player Movement", gfx::profiler::Carrot);
+
         this->voxel_world.lock(
             [&](voxel::World& w)
             {
@@ -351,6 +335,8 @@ namespace verdigris
                 this->camera.setPosition(resolvedPosition);
             });
 
+        profilerTaskGenerator.stamp("Flyer Update & Apply Movement", gfx::profiler::BelizeHole);
+
         auto getMouseDeltaRadians = [&]
         {
             // each value from -1.0 -> 1.0 representing how much it moved
@@ -394,6 +380,8 @@ namespace verdigris
                 });
             });
 
+        profilerTaskGenerator.stamp("TriangleUpdate and enqueue", gfx::profiler::Wisteria);
+
         this->voxel_world.lock(
             [&](voxel::World& w)
             {
@@ -409,7 +397,7 @@ namespace verdigris
 
                 const glm::vec3 pos = glm::vec3 {
                     78.0f * std::cos(this->time_alive),
-                    4.0f * std::sin(this->time_alive) + 122.0f,
+                    (4.0f * std::sin(this->time_alive)) + 122.0f,
                     78.0f * std::sin(this->time_alive)};
 
                 this->triangle.mutateComponent<TriangleComponent>(
@@ -444,18 +432,29 @@ namespace verdigris
 
                 w.setCamera(this->camera);
 
+                profilerTaskGenerator.stamp("camera update", gfx::profiler::Nephritis);
+
                 std::vector<game::FrameGenerator::RecordObject> worldRecordObjects =
-                    w.getRecordObjects(this->game, this->game->getRenderer()->getStager());
+                    w.getRecordObjects(
+                        this->game, this->game->getRenderer()->getStager(), profilerTaskGenerator);
+
                 draws.insert(
                     draws.begin(),
                     std::make_move_iterator(worldRecordObjects.begin()),
                     std::make_move_iterator(worldRecordObjects.end()));
+
+                profilerTaskGenerator.stamp("get Record Objects", gfx::profiler::Silver);
             });
 
         auto realCamera = this->camera;
         realCamera.addPosition({0.0, 32.0f, 0.0});
 
-        return {realCamera, std::move(draws)};
+        return OnFrameReturnData {
+            .main_scene_camera {
+                realCamera,
+            },
+            .record_objects {std::move(draws)},
+            .profiler_timestamps {profilerTaskGenerator.getTasks()}};
     }
 
     void Verdigris::onTick(float) const
@@ -489,7 +488,7 @@ namespace verdigris
                     // default:
                     //     return voxel::Voxel::NullAirEmpty;
                     // }
-                    return static_cast<voxel::Voxel>(y % 12 + 1);
+                    return static_cast<voxel::Voxel>((y % 12) + 1);
                 }();
 
                 const voxel::WorldPosition newPosition {
@@ -497,9 +496,9 @@ namespace verdigris
                      y + 64,
                      static_cast<i32>(
                          -48.0f
-                         + 4.0f
-                               * std::sin(
-                                   static_cast<float>(x) / 4.0f + this->time_alive * 4.0f))}};
+                         + (4.0f
+                            * std::sin(
+                                (static_cast<float>(x) / 4.0f) + (this->time_alive * 4.0f))))}};
 
                 writes.push_back({c.position, voxel::Voxel::NullAirEmpty});
 

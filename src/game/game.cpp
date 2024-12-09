@@ -12,7 +12,6 @@
 #include <gfx/vulkan/device.hpp>
 #include <gfx/window.hpp>
 #include <memory>
-#include <thread>
 #include <util/log.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
@@ -104,18 +103,16 @@ namespace game
                         }
                         const float deltaTime = this->renderer->getWindow()->getDeltaTimeSeconds();
 
-                        auto start                         = std::chrono::steady_clock::now();
-                        const auto [camera, recordObjects] = state->onFrame(deltaTime);
-                        auto end                           = std::chrono::steady_clock::now();
+                        auto                               start = std::chrono::steady_clock::now();
+                        const GameState::OnFrameReturnData package = state->onFrame(deltaTime);
+                        auto                               end = std::chrono::steady_clock::now();
 
                         std::chrono::duration<float> diff = end - start;
 
-                        if (deltaTime < diff.count())
-                        {
-                            util::logTrace("{} {}", deltaTime, diff.count());
-                        }
-
-                        this->frame_generator->generateFrame(camera, recordObjects);
+                        this->frame_generator->generateFrame(
+                            package.main_scene_camera,
+                            std::move(package.record_objects),
+                            package.profiler_timestamps);
 
                         isFirstIterationAfterGameStateChange = false;
                     }

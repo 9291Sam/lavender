@@ -54,6 +54,8 @@ namespace gfx::vulkan
             , allocation {nullptr}
             , elements {elements_}
         {
+            util::assertFatal(!this->name.empty(), "Tried to create buffer with empty name!");
+
             util::assertFatal(
                 !(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eHostCoherent),
                 "Tried to create coherent buffer!");
@@ -429,6 +431,11 @@ namespace gfx::vulkan
         std::vector<FlushData> mergeFlushes()
         {
             std::vector<util::InclusiveRange> mergedRanges;
+
+            if (this->flushes.size() > 58000)
+            {
+                util::logTrace("{}", this->name);
+            }
 
             mergedRanges = util::mergeDownRanges(std::move(this->flushes), 128);
 

@@ -202,10 +202,12 @@ namespace voxel
         }
     }
 
-    std::vector<game::FrameGenerator::RecordObject>
-    World::getRecordObjects(const game::Game* game, const gfx::vulkan::BufferStager& stager)
+    std::vector<game::FrameGenerator::RecordObject> World::getRecordObjects(
+        const game::Game*                game,
+        const gfx::vulkan::BufferStager& stager,
+        gfx::profiler::TaskGenerator&    profiler)
     {
-        return this->chunk_manager.makeRecordObject(game, stager, this->camera);
+        return this->chunk_manager.makeRecordObject(game, stager, this->camera, profiler);
     }
 
     [[nodiscard]] PointLight
