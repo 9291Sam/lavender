@@ -263,7 +263,7 @@ namespace verdigris
 
         newPosition.y = previousPosition.y;
 
-        profilerTaskGenerator.stamp("Player Movement", gfx::profiler::Carrot);
+        profilerTaskGenerator.stamp("Player Movement");
 
         this->voxel_world.lock(
             [&](voxel::World& w)
@@ -335,7 +335,7 @@ namespace verdigris
                 this->camera.setPosition(resolvedPosition);
             });
 
-        profilerTaskGenerator.stamp("Flyer Update & Apply Movement", gfx::profiler::BelizeHole);
+        profilerTaskGenerator.stamp("Flyer Update & Apply Movement");
 
         auto getMouseDeltaRadians = [&]
         {
@@ -380,7 +380,7 @@ namespace verdigris
                 });
             });
 
-        profilerTaskGenerator.stamp("TriangleUpdate and enqueue", gfx::profiler::Wisteria);
+        profilerTaskGenerator.stamp("TriangleUpdate and enqueue");
 
         this->voxel_world.lock(
             [&](voxel::World& w)
@@ -432,7 +432,7 @@ namespace verdigris
 
                 w.setCamera(this->camera);
 
-                profilerTaskGenerator.stamp("camera update", gfx::profiler::Nephritis);
+                profilerTaskGenerator.stamp("camera update");
 
                 std::vector<game::FrameGenerator::RecordObject> worldRecordObjects =
                     w.getRecordObjects(
@@ -443,7 +443,7 @@ namespace verdigris
                     std::make_move_iterator(worldRecordObjects.begin()),
                     std::make_move_iterator(worldRecordObjects.end()));
 
-                profilerTaskGenerator.stamp("get Record Objects", gfx::profiler::Silver);
+                profilerTaskGenerator.stamp("get Record Objects");
             });
 
         auto realCamera = this->camera;

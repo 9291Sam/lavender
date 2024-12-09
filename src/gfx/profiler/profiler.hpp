@@ -40,20 +40,20 @@ namespace gfx::profiler
 
     static constexpr std::array<u32, 16> Colors = {
         Turquoise,
-        GreenSea,
         Emerald,
-        Nephritis,
         PeterRiver,
-        BelizeHole,
         Amethyst,
-        Wisteria,
         SunFlower,
-        Orange,
         Carrot,
-        Pumpkin,
         Alizarin,
-        Pomegranate,
         Clouds,
+        GreenSea,
+        Nephritis,
+        BelizeHole,
+        Wisteria,
+        Orange,
+        Pumpkin,
+        Pomegranate,
         Silver};
 
     struct ProfilerTask

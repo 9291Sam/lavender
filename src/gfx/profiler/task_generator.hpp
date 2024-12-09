@@ -11,7 +11,7 @@ namespace gfx::profiler
             , previous_stamp_end {this->start}
         {}
 
-        void stamp(std::string name, u32 color)
+        void stamp(std::string name)
         {
             const std::chrono::time_point<std::chrono::steady_clock> now =
                 std::chrono::steady_clock::now();
@@ -21,7 +21,8 @@ namespace gfx::profiler
                     std::chrono::duration<float> {this->previous_stamp_end - this->start}.count()},
                 .end_time {std::chrono::duration<float> {now - this->start}.count()},
                 .name {std::move(name)},
-                .color {color}});
+                .color {
+                    gfx::profiler::Colors.at(this->tasks.size() % gfx::profiler::Colors.size())}});
 
             this->previous_stamp_end = now;
         }

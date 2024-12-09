@@ -669,7 +669,7 @@ namespace voxel
                 }
             });
 
-        profiler.stamp("chunk iter", gfx::profiler::Orange);
+        profiler.stamp("chunk iter");
 
         this->gpu_chunk_data.flushViaStager(stager);
         this->brick_maps.flushViaStager(stager);
@@ -697,7 +697,7 @@ namespace voxel
                 std::span<const ChunkDrawIndirectInstancePayload> {indirectPayload});
         }
 
-        profiler.stamp("stager flush", gfx::profiler::BelizeHole);
+        profiler.stamp("stager flush");
 
         game::FrameGenerator::RecordObject update = game::FrameGenerator::RecordObject {
             .transform {},
