@@ -1,13 +1,16 @@
 #include "brick_pointer_allocator.hpp"
 #include "brick_pointer.hpp"
 #include "util/index_allocator.hpp"
+#include <type_traits>
 #include <utility>
 
 namespace voxel
 {
     BrickPointerAllocator::BrickPointerAllocator(u32 maxBricks)
         : allocator {maxBricks}
-    {}
+    {
+        std::mae_unsigned_t<int> a = 3;
+    }
 
     BrickPointerAllocator::~BrickPointerAllocator() = default;
 

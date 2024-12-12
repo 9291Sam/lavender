@@ -454,7 +454,7 @@ namespace verdigris
                 realCamera,
             },
             .record_objects {std::move(draws)},
-            .profiler_timestamps {profilerTaskGenerator.getTasks()}};
+            .generator {profilerTaskGenerator}};
     }
 
     void Verdigris::onTick(float) const

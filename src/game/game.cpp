@@ -103,16 +103,16 @@ namespace game
                         }
                         const float deltaTime = this->renderer->getWindow()->getDeltaTimeSeconds();
 
-                        auto                               start = std::chrono::steady_clock::now();
-                        const GameState::OnFrameReturnData package = state->onFrame(deltaTime);
-                        auto                               end = std::chrono::steady_clock::now();
+                        auto                         start   = std::chrono::steady_clock::now();
+                        GameState::OnFrameReturnData package = state->onFrame(deltaTime);
+                        auto                         end     = std::chrono::steady_clock::now();
 
                         std::chrono::duration<float> diff = end - start;
 
                         this->frame_generator->generateFrame(
                             package.main_scene_camera,
                             std::move(package.record_objects),
-                            package.profiler_timestamps);
+                            package.generator.getTasks());
 
                         isFirstIterationAfterGameStateChange = false;
                     }

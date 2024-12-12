@@ -3,6 +3,7 @@
 #include "frame_generator.hpp"
 #include "game/camera.hpp"
 #include "gfx/profiler/profiler.hpp"
+#include "gfx/profiler/task_generator.hpp"
 #include <atomic>
 #include <concepts>
 #include <memory>
@@ -36,7 +37,7 @@ namespace game
             {
                 Camera                                    main_scene_camera;
                 std::vector<FrameGenerator::RecordObject> record_objects;
-                std::vector<gfx::profiler::ProfilerTask>  profiler_timestamps;
+                gfx::profiler::TaskGenerator              generator;
             };
         public:
             GameState() = default;

@@ -4,83 +4,88 @@
 // #include "voxel/voxel.hpp"
 // #include <span>
 
-// namespace voxel2
-// {
-//     // TODO: Invisible Tracking Info for non voxel things
-//     // TODO: Transparency & translucency & colored glass light color changing.
+namespace voxel2
+{
+    // TODO: Invisible Tracking Info for non voxel things
+    // TODO: Transparency & translucency & colored glass light color changing.
 
-//     class GpuVoxelDataManager
-//     {
-//     public:
-//         class ChunkUpdate
-//         {
-//         public:
+    class GpuVoxelDataManager
+    {
+    public:
+        class ChunkUpdate
+        {
+        public:
 
-//             enum class ShadowUpdate : std::uint8_t
-//             {
-//                 ShadowCasting,
-//                 ShadowTransparent
-//             };
+            enum class ShadowUpdate : std::uint8_t
+            {
+                ShadowCasting,
+                ShadowTransparent
+            };
 
-//             struct VoxelUpdate
-//             {
-//                 voxel::Voxel voxel;
-//                 ShadowUpdate shadow_update;
-//             };
+            struct VoxelUpdate
+            {
+                voxel::Voxel voxel;
+                ShadowUpdate shadow_update;
+            };
 
-//         public:
-//             ChunkUpdate(voxel::ChunkLocalPosition, std::optional<VoxelUpdate>);
-//             ~ChunkUpdate() = default;
+        public:
+            ChunkUpdate(voxel::ChunkLocalPosition, std::optional<VoxelUpdate>);
+            ~ChunkUpdate() = default;
 
-//             ChunkUpdate(const ChunkUpdate&)             = default;
-//             ChunkUpdate(ChunkUpdate&&)                  = default;
-//             ChunkUpdate& operator= (const ChunkUpdate&) = default;
-//             ChunkUpdate& operator= (ChunkUpdate&&)      = default;
+            ChunkUpdate(const ChunkUpdate&)             = default;
+            ChunkUpdate(ChunkUpdate&&)                  = default;
+            ChunkUpdate& operator= (const ChunkUpdate&) = default;
+            ChunkUpdate& operator= (ChunkUpdate&&)      = default;
 
-//             [[nodiscard]] std::tuple<voxel::ChunkLocalPosition, std::optional<VoxelUpdate>>
-//             unpack() const;
+            [[nodiscard]] std::tuple<voxel::ChunkLocalPosition, std::optional<VoxelUpdate>>
+            unpack() const;
 
-//         private:
-//             u8 pos_x              : 6;
-//             u8 has_voxel_update   : 1;
-//             u8 should_shadow_cast : 1;
+        private:
+            u8 pos_x              : 6;
+            u8 has_voxel_update   : 1;
+            u8 should_shadow_cast : 1;
 
-//             u8 pos_y : 6;
+            u8 pos_y : 6;
 
-//             u8 pos_z : 6;
+            u8 pos_z : 6;
 
-//             u8 material_upper;
-//             u8 material_lower;
-//         };
+            u8 material_upper;
+            u8 material_lower;
+        };
 
-//         struct Chunk
-//         {};
+        struct Chunk
+        {};
 
-//         [[nodiscard]] Chunk allocateChunk() const;
-//         void                freeChunk() const;
+        [[nodiscard]] Chunk allocateChunk() const;
+        void                freeChunk() const;
 
-//         void enqueueChunkUpdates(const Chunk&, std::vector<ChunkUpdate>) const;
+        void enqueueChunkUpdates(const Chunk&, std::vector<ChunkUpdate>) const;
 
-//         void processChunkUpdates();
-//     };
+        void processChunkUpdates();
+    };
 
-//     class High
-//     {
-//         // write to position.
+    // enqueue updates
+    // create a mesh package
+    // mesh it
+    // upload to gpu
 
-//         // write and read from global positions
+    class High
+    {
+        // write to position.
 
-//         // TODO: transactions
+        // write and read from global positions
 
-//         VoxelTransaction createTransaction();
+        // TODO: transactions
 
-//         // transactions stack on top of one another
-//         // have an order that is the order they were inserted into the chunk
-//     };
+        VoxelTransaction createTransaction();
 
-//     class High
-//     {};
-// } // namespace voxel2
+        // transactions stack on top of one another
+        // have an order that is the order they were inserted into the chunk
+    };
+
+    class High
+    {};
+} // namespace voxel2
 
 // class Low
 // {
