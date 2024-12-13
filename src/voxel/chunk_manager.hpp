@@ -141,7 +141,6 @@ namespace voxel
         gfx::vulkan::CpuCachedBuffer<MaterialBrick>          material_bricks;
         gfx::vulkan::CpuCachedBuffer<OpacityBrick>           opacity_bricks;
         gfx::vulkan::WriteOnlyBuffer<VisibilityBrick>        visibility_bricks;
-        // gfx::vulkan::WriteOnlyBuffer<DirectionalFaceIdBrick> face_id_bricks;
 
         struct FaceIdBrickHashMapStorage
         {

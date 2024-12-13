@@ -1,13 +1,13 @@
-#include "chunk_render_manager.hpp"
-#include "voxel/greedy_voxel_face.hpp"
+// #include "chunk_render_manager.hpp"
+// #include "voxel/greedy_voxel_face.hpp"
 
-namespace
-{
+// namespace
+// {
 
-    struct AsyncChunkUpdateResult
-    {
-        std::vector<voxel::GreedyVoxelFace>
-    };
+//     struct AsyncChunkUpdateResult
+//     {
+//         std::vector<voxel::GreedyVoxelFace>
+//     };
 
-    std::future<AsyncChunkUpdateResult> doChunkUpdate()
-} // namespace
+//     std::future<AsyncChunkUpdateResult> doChunkUpdate()
+// } // namespace

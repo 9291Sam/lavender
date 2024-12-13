@@ -8,6 +8,7 @@ namespace voxel
 {
     struct BrickMap
     {
+        u32                                                            offset = 0;
         std::array<std::array<std::array<MaybeBrickPointer, 8>, 8>, 8> data;
 
         void iterateOverPointers(std::invocable<BrickCoordinate, MaybeBrickPointer> auto func) const

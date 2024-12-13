@@ -309,8 +309,7 @@ u32 getBrickOfWorldPosition(ivec3 pos)
     ivec3 brickCoordinate = positionWithinChunk / 8;
     ivec3 brickPosition   = positionWithinChunk % 8;
 
-    MaybeBrickPointer maybePtr =
-        in_brick_maps.map[chunk].data[brickCoordinate.x][brickCoordinate.y][brickCoordinate.z];
+    MaybeBrickPointer maybePtr = BrickMap_load(chunk, brickCoordinate);
 
     return maybePtr.pointer;
 }
@@ -339,8 +338,7 @@ bool isGlobalPositionOccupied(ivec3 pos)
     ivec3 brickCoordinate = positionWithinChunk / 8;
     ivec3 brickPosition   = positionWithinChunk % 8;
 
-    MaybeBrickPointer maybePtr =
-        in_brick_maps.map[chunk].data[brickCoordinate.x][brickCoordinate.y][brickCoordinate.z];
+    MaybeBrickPointer maybePtr = BrickMap_load(chunk, brickCoordinate);
 
     if (maybePtr.pointer == ~0u)
     {

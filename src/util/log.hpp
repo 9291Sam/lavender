@@ -113,7 +113,7 @@ namespace util
     template<class... Ts>
     struct panic // NOLINT: we want to lie and pretend this is a function
     {
-        panic( // NOLINT
+        [[noreturn]] panic( // NOLINT
             std::format_string<Ts...> fmt,
             Ts&&... args,
             const std::source_location& location = std::source_location::current())

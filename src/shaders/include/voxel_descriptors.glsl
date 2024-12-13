@@ -45,7 +45,8 @@ u32 GreedyVoxelFace_height(GreedyVoxelFace self)
 
 struct BrickMap
 {
-    MaybeBrickPointer data[8][8][8];
+    u32               _offset;
+    MaybeBrickPointer _data[8][8][8];
 };
 
 struct MaterialBrick
@@ -125,6 +126,20 @@ layout(set = 1, binding = 1) readonly buffer BrickMapBuffer
     BrickMap map[];
 }
 in_brick_maps;
+
+MaybeBrickPointer BrickMap_load(u32 chunkId, uvec3 coordinate)
+{
+    const MaybeBrickPointer localOffset =
+        in_brick_maps.map[chunkId]._data[coordinate.x][coordinate.y][coordinate.z];
+    const u32 globalOffset = in_brick_maps.map[chunkId]._offset;
+
+    if (localOffset.pointer != ~0u)
+    {
+        return MaybeBrickPointer(localOffset.pointer + globalOffset);
+    }
+
+    return MaybeBrickPointer(~0u);
+}
 
 layout(set = 1, binding = 2) readonly buffer BrickParentInfoBuffer
 {

@@ -8,9 +8,7 @@ namespace voxel
 {
     BrickPointerAllocator::BrickPointerAllocator(u32 maxBricks)
         : allocator {maxBricks}
-    {
-        std::mae_unsigned_t<int> a = 3;
-    }
+    {}
 
     BrickPointerAllocator::~BrickPointerAllocator() = default;
 
