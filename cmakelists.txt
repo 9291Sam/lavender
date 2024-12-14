@@ -246,12 +246,14 @@ function(compile_shader target)
                 $<$<BOOL:${arg_INCLUDE_DIRS}>:-I${CMAKE_SOURCE_DIR}/src/shaders/include>
                 -O
                 -g 
+                -matrix-layout-row-major
                 -o ${source}.${arg_FORMAT}
                 ${CMAKE_CURRENT_SOURCE_DIR}/${source}
         )
         target_sources(${target} PRIVATE ${source}.${arg_FORMAT})
     endforeach ()
 endfunction()
+
 
 compile_shader(lavender
     ENV vulkan1.2
