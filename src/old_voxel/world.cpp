@@ -1,13 +1,15 @@
 #include "world.hpp"
 #include "constants.hpp"
 #include "game/frame_generator.hpp"
+#include "game/game.hpp"
+#include "gfx/profiler/task_generator.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "voxel/chunk_manager.hpp"
 #include <glm/fwd.hpp>
 #include <glm/vector_relational.hpp>
 #include <numbers>
 
-namespace voxel
+namespace old_voxel
 {
     namespace
     {
@@ -86,17 +88,19 @@ namespace voxel
         this->chunk_manager.writeVoxelToChunk(chunkIt->second, {&write, 1});
     }
 
-    void World::writeVoxel(std::span<const VoxelWrite> writes) const
+    void World::writeVoxel(std::vector<VoxelWrite> writes) const
     {
-        this->writeVoxel(VoxelWriteOverlapBehavior::OverwriteOnOverlap, writes).leak();
+        this->writeVoxel(VoxelWriteOverlapBehavior::OverwriteOnOverlap, std::move(writes)).leak();
     }
 
     World::VoxelWriteTransaction World::writeVoxel(
-        VoxelWriteOverlapBehavior overlapBehavior, std::span<const VoxelWrite> writes) const
+        VoxelWriteOverlapBehavior overlapBehavior, std::vector<VoxelWrite> writes) const
     {
         std::unordered_map<ChunkCoordinate, std::vector<ChunkLocalPosition>> positionsPerChunk {};
         std::unordered_map<ChunkCoordinate, std::vector<ChunkManager::VoxelWrite>>
             writesPerChunk {};
+
+        util::Timer pp {"pp"};
 
         for (const VoxelWrite& w : writes)
         {
@@ -106,6 +110,11 @@ namespace voxel
             writesPerChunk[coordinate].push_back(
                 ChunkManager::VoxelWrite {.position {chunkLocalPosition}, .voxel {w.voxel}});
         }
+
+        pp.end();
+        // tg->stamp("collect");
+
+        util::Timer dump {"dump"};
 
         switch (overlapBehavior)
         {
@@ -130,10 +139,12 @@ namespace voxel
             }
         }
 
-        return {std::vector<VoxelWrite> {writes.begin(), writes.end()}};
+        // tg->stamp("dump");
+
+        return {std::move(writes)};
     }
 
-    void World::setCamera(game::Camera camera_) const
+    void World::setCamera(game::Camera camera_, gfx::profiler::TaskGenerator& stamper) const
     {
         this->camera = camera_;
 
@@ -173,6 +184,8 @@ namespace voxel
             }
         }
 
+        stamper.stamp("iterate");
+
         std::vector<ChunkCoordinate> deq {};
 
         for (auto& [coord, maybeWrites] : this->generator_writes)
@@ -184,6 +197,8 @@ namespace voxel
                 deq.push_back(coord);
             }
         }
+
+        stamper.stamp("writes slow");
 
         for (ChunkCoordinate c : deq)
         {
@@ -230,4 +245,4 @@ namespace voxel
     {
         this->chunk_manager.destroyPointLight(std::move(p));
     }
-} // namespace voxel
+} // namespace old_voxel

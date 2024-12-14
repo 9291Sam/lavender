@@ -2,7 +2,7 @@
 
 #include "voxel/constants.hpp"
 #include <type_traits>
-namespace voxel
+namespace old_voxel
 {
     struct GreedyVoxelFace
     {
@@ -15,4 +15,4 @@ namespace voxel
     };
     static_assert(std::is_trivially_copyable_v<GreedyVoxelFace>);
     static_assert(ChunkEdgeLengthVoxels == 64);
-} // namespace voxel
+} // namespace old_voxel

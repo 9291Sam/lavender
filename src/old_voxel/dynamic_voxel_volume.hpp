@@ -1,7 +1,7 @@
 #pragma once
 
-namespace voxel
+namespace old_voxel
 {
     class DynamicVoxelVolume
     {};
-} // namespace voxel
+} // namespace old_voxel

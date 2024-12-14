@@ -27,7 +27,7 @@
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
-namespace voxel
+namespace old_voxel
 {
 
     class ChunkManager
@@ -188,4 +188,4 @@ namespace voxel
         vk::DescriptorSet chunk_descriptor_set;
         vk::DescriptorSet global_descriptor_set;
     };
-} // namespace voxel
+} // namespace old_voxel

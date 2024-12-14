@@ -4,7 +4,7 @@
 #include "voxel/constants.hpp"
 #include <array>
 
-namespace voxel
+namespace old_voxel
 {
     struct BrickMap
     {
@@ -27,4 +27,4 @@ namespace voxel
             }
         }
     };
-} // namespace voxel
+} // namespace old_voxel

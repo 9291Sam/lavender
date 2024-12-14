@@ -8,7 +8,7 @@
 #include <glm/vector_relational.hpp>
 #include <optional>
 
-namespace voxel
+namespace old_voxel
 {
     static constexpr u8 ChunkEdgeLengthVoxels = 64;
     static constexpr u8 ChunkEdgeLengthBricks = 8;
@@ -167,7 +167,7 @@ namespace voxel
         return ChunkLocalPosition {glm::u8vec3 {c.x * 8, c.y * 8, c.z * 8} + p};
     }
 
-} // namespace voxel
+} // namespace old_voxel
 
 namespace std
 {

@@ -4,7 +4,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace voxel
+namespace old_voxel
 {
     BrickPointerAllocator::BrickPointerAllocator(u32 maxBricks)
         : allocator {maxBricks}
@@ -32,4 +32,4 @@ namespace voxel
     {
         this->allocator.free(pointer.pointer);
     }
-} // namespace voxel
+} // namespace old_voxel

@@ -6,7 +6,7 @@
 #include <array>
 #include <limits>
 
-namespace voxel
+namespace old_voxel
 {
     struct OpacityBrick
     {
@@ -67,4 +67,4 @@ namespace voxel
 
         std::array<u32, 16> data;
     };
-} // namespace voxel
+} // namespace old_voxel

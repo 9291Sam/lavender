@@ -7,7 +7,7 @@
 #include <limits>
 #include <vulkan/vulkan_enums.hpp>
 
-namespace voxel
+namespace old_voxel
 {
 
     struct VoxelMaterial
@@ -48,4 +48,4 @@ namespace voxel
         return buffer;
     }
 
-} // namespace voxel
+} // namespace old_voxel

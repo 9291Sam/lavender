@@ -2,7 +2,7 @@
 
 #include "util/misc.hpp"
 
-namespace voxel
+namespace old_voxel
 {
     enum class Voxel : u16
     {
@@ -23,4 +23,4 @@ namespace voxel
     };
 
     static_assert(Voxel {} == Voxel::NullAirEmpty);
-} // namespace voxel
+} // namespace old_voxel

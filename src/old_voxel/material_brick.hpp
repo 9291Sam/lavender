@@ -4,7 +4,7 @@
 #include "voxel/voxel.hpp"
 #include <array>
 
-namespace voxel
+namespace old_voxel
 {
     struct MaterialBrick
     {
@@ -45,4 +45,4 @@ namespace voxel
 
         std::array<std::array<std::array<Voxel, 8>, 8>, 8> data;
     };
-} // namespace voxel
+} // namespace old_voxel

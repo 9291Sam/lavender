@@ -7,7 +7,7 @@
 #include <glm/vec4.hpp>
 #include <util/misc.hpp>
 
-namespace voxel
+namespace old_voxel
 {
 
     struct InternalPointLight
@@ -87,4 +87,4 @@ namespace voxel
 
         u32 id;
     };
-} // namespace voxel
+} // namespace old_voxel

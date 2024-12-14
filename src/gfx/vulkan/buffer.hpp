@@ -427,6 +427,21 @@ namespace gfx::vulkan
         }
 
         void flushViaStager(const BufferStager& stager);
+        void flushCachedChangesImmediate()
+        {
+            std::vector<FlushData> localFlushes = this->mergeFlushes();
+            const std::span<T>     gpuData      = this->getGpuDataNonCoherent();
+
+            for (FlushData& f : localFlushes)
+            {
+                std::copy(
+                    this->cpu_buffer.begin() + f.offset_elements,
+                    this->cpu_buffer.begin() + f.offset_elements + f.size_elements,
+                    gpuData.begin() + f.offset_elements);
+            }
+
+            this->flush(std::move(localFlushes));
+        }
 
         std::vector<FlushData> mergeFlushes()
         {

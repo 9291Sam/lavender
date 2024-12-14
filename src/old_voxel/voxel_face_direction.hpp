@@ -5,7 +5,7 @@
 #include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
 
-namespace voxel
+namespace old_voxel
 {
     enum class VoxelFaceDirection : std::uint8_t
     {
@@ -77,4 +77,4 @@ namespace voxel
                 util::toUnderlying(dir));
         }
     }
-} // namespace voxel
+} // namespace old_voxel

@@ -44,7 +44,7 @@
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
-namespace voxel
+namespace old_voxel
 {
 
     std::array<std::vector<GreedyVoxelFace>, 6>
@@ -679,7 +679,7 @@ namespace voxel
         this->voxel_faces.flushViaStager(stager);
         this->opacity_bricks.flushViaStager(stager);
         this->lights_buffer.flushViaStager(stager);
-        this->global_chunks_buffer.flushViaStager(stager);
+        this->global_chunks_buffer.flushCachedChangesImmediate();
 
         if (!indirectCommands.empty())
         {
@@ -1204,4 +1204,4 @@ namespace voxel
         return outFaces;
     }
 
-} // namespace voxel
+} // namespace old_voxel

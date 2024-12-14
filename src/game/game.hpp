@@ -10,6 +10,8 @@
 #include <type_traits>
 #include <util/threads.hpp>
 
+static inline gfx::profiler::TaskGenerator* tg = nullptr;
+
 namespace gfx
 {
     class Renderer;

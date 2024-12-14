@@ -5,7 +5,7 @@
 #include <array>
 #include <glm/gtx/hash.hpp>
 
-namespace voxel
+namespace old_voxel
 {
     struct DenseBitChunk
     {
@@ -99,4 +99,4 @@ namespace voxel
             }
         }
     };
-} // namespace voxel
+} // namespace old_voxel

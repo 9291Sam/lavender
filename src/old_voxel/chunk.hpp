@@ -4,7 +4,7 @@
 #include <compare>
 #include <util/misc.hpp>
 
-namespace voxel
+namespace old_voxel
 {
 
     class Chunk
@@ -57,4 +57,4 @@ namespace voxel
 
         u32 id;
     };
-} // namespace voxel
+} // namespace old_voxel

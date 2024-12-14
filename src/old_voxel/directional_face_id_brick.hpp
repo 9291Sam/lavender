@@ -3,7 +3,7 @@
 #include "voxel/brick_pointer.hpp"
 #include <array>
 
-namespace voxel
+namespace old_voxel
 {
     struct FaceIdBrick
     {
@@ -14,4 +14,4 @@ namespace voxel
     {
         std::array<FaceIdBrick, 6> brick_directions;
     };
-} // namespace voxel
+} // namespace old_voxel

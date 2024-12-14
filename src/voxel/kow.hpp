@@ -4,7 +4,7 @@
 // #include "voxel/voxel.hpp"
 // #include <span>
 
-namespace voxel2
+namespace old_voxel2
 {
     // TODO: Invisible Tracking Info for non voxel things
     // TODO: Transparency & translucency & colored glass light color changing.
@@ -85,7 +85,7 @@ namespace voxel2
 
     class High
     {};
-} // namespace voxel2
+} // namespace old_voxel2
 
 // class Low
 // {

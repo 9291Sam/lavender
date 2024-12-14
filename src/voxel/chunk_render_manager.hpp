@@ -1,6 +1,7 @@
 // #pragma once
 
 // #include "util/misc.hpp"
+// #include "util/opaque_integer_handle.hpp"
 // #include "voxel/constants.hpp"
 // #include "voxel/point_light.hpp"
 // #include "voxel/voxel.hpp"
@@ -11,13 +12,16 @@
 //     class Game;
 // } // namespace game
 
-// namespace voxel
+// namespace old_voxel
 // {
 //     class ChunkRenderManager
 //     {
 //     public:
-//         class Chunk
-//         {};
+
+//         using Chunk =
+//             util::OpaqueHandle<"voxel::ChunkRenderManager::Chunk", u16, ChunkRenderManager>;
+//         using PointLight =
+//             util::OpaqueHandle<"voxel::ChunkRenderManager::PointLight", u8, ChunkRenderManager>;
 
 //         class ChunkLocalUpdate
 //         {
@@ -80,12 +84,12 @@
 
 //     private:
 //     };
-// } // namespace voxel
+// } // namespace old_voxel
 
-// // dump updates
-// // each frame
-// // step along cycle:
-// // collect updates -> process updates
-// // States:
-// // WaitingForUpdates
-// // ProcessingUpdates
+// // // dump updates
+// // // each frame
+// // // step along cycle:
+// // // collect updates -> process updates
+// // // States:
+// // // WaitingForUpdates
+// // // ProcessingUpdates

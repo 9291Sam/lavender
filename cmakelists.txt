@@ -97,13 +97,7 @@ add_executable(lavender
     src/util/timer.cpp
 
     src/verdigris/verdigris.cpp
-    src/verdigris/flyer.cpp
-    src/verdigris/skybox_manager.cpp
     
-    src/voxel/brick_pointer_allocator.cpp
-    src/voxel/chunk_manager.cpp
-    src/voxel/material_manager.cpp
-    src/voxel/world.cpp
 )
 target_include_directories(lavender PUBLIC src)
 target_include_directories(lavender SYSTEM PUBLIC ${vma_SOURCE_DIR}/include)
