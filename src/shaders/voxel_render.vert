@@ -4,31 +4,19 @@
 #include "types.glsl"
 #include "voxel_descriptors.glsl"
 
-const uvec3 TOP_FACE_POINTS[4] =
-    uvec3[4](uvec3(0, 1, 0), uvec3(0, 1, 1), uvec3(1, 1, 0), uvec3(1, 1, 1));
-
-const uvec3 BOTTOM_FACE_POINTS[4] =
-    uvec3[4](uvec3(0, 0, 1), uvec3(0, 0, 0), uvec3(1, 0, 1), uvec3(1, 0, 0));
-
-const uvec3 LEFT_FACE_POINTS[4] =
-    uvec3[4](uvec3(0, 0, 1), uvec3(0, 1, 1), uvec3(0, 0, 0), uvec3(0, 1, 0));
-
-const uvec3 RIGHT_FACE_POINTS[4] =
-    uvec3[4](uvec3(1, 0, 0), uvec3(1, 1, 0), uvec3(1, 0, 1), uvec3(1, 1, 1));
-
-const uvec3 FRONT_FACE_POINTS[4] =
-    uvec3[4](uvec3(0, 0, 0), uvec3(0, 1, 0), uvec3(1, 0, 0), uvec3(1, 1, 0));
-
-const uvec3 BACK_FACE_POINTS[4] =
-    uvec3[4](uvec3(1, 0, 1), uvec3(1, 1, 1), uvec3(0, 0, 1), uvec3(0, 1, 1));
-
-const uvec3 FACE_LOOKUP_TABLE[6][4] = uvec3[6][4](
-    TOP_FACE_POINTS,
-    BOTTOM_FACE_POINTS,
-    LEFT_FACE_POINTS,
-    RIGHT_FACE_POINTS,
-    FRONT_FACE_POINTS,
-    BACK_FACE_POINTS);
+const uvec3 FACE_LOOKUP_TABLE[6][4] = uvec3[4][6](
+    // Top
+    uvec3[4](uvec3(0, 1, 0), uvec3(0, 1, 1), uvec3(1, 1, 0), uvec3(1, 1, 1)),
+    // Bottom
+    uvec3[4](uvec3(0, 0, 1), uvec3(0, 0, 0), uvec3(1, 0, 1), uvec3(1, 0, 0)),
+    // Left
+    uvec3[4](uvec3(0, 0, 1), uvec3(0, 1, 1), uvec3(0, 0, 0), uvec3(0, 1, 0)),
+    // Right
+    uvec3[4](uvec3(1, 0, 0), uvec3(1, 1, 0), uvec3(1, 0, 1), uvec3(1, 1, 1)),
+    // Front
+    uvec3[4](uvec3(0, 0, 0), uvec3(0, 1, 0), uvec3(1, 0, 0), uvec3(1, 1, 0)),
+    // Back
+    uvec3[4](uvec3(1, 0, 1), uvec3(1, 1, 1), uvec3(0, 0, 1), uvec3(0, 1, 1)));
 
 const u32 IDX_TO_VTX_TABLE[6] = u32[6](0, 1, 2, 2, 1, 3);
 

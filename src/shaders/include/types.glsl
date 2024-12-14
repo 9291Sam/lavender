@@ -1,3 +1,6 @@
+#ifndef SRC_SHADERS_INCLUDE_TYPES_GLSL
+#define SRC_SHADERS_INCLUDE_TYPES_GLSL
+
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int8 : enable
 #extension GL_EXT_nonuniform_qualifier : require
@@ -13,3 +16,5 @@
 #define i16 int16_t
 #define i32 int
 #define i64 int64_t
+
+#endif // SRC_SHADERS_INCLUDE_TYPES_GLSL

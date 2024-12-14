@@ -227,6 +227,8 @@ u32 face_id_map_read(u32 key)
         }
         slot = (slot + 1) & (kHashTableCapacity - 1);
     }
+
+    return kEmpty;
 }
 
 layout(set = 1, binding = 7) readonly buffer GreedyVoxelFaces

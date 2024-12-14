@@ -23,11 +23,6 @@ namespace game
         const Game* globalGame = nullptr; // NOLINT
     } // namespace
 
-    // const Game* getGame()
-    // {
-    //     return globalGame;
-    // }
-
     Game::GameState::~GameState() = default;
 
     Game::Game()

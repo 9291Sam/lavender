@@ -494,7 +494,7 @@ void main()
             in_material_bricks.brick[brick_pointer]
                 .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
 
-        const VoxelMaterial this_material = in_voxel_materials.material[this_voxel.data];
+        const VoxelMaterial this_material = in_voxel_materials.material[int(this_voxel.data)];
 
         // TODO: shouldn't be 0.5 the normal should be removed from this
         const ivec3 voxel_corner_pos_world =

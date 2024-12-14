@@ -222,7 +222,11 @@ endif()
 
 
 find_package(Vulkan COMPONENTS glslc)
-find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
+
+if (VulkanHeaderVersion LESS 296)
+    message(FATAL_ERROR "A Vulkan sdk of version 296 or greater must be installed for slangc")
+endif()
+
 if (APPLE)
     target_link_libraries(lavender PRIVATE "-framework Cocoa -framework IOKit")
     set(CMAKE_CXX_FLAGS "--sysroot ${CMAKE_OSX_SYSROOT} ${CMAKE_CXX_FLAGS}")
@@ -236,14 +240,12 @@ function(compile_shader target)
                 DEPENDS ${source}
                 DEPFILE ${source}.d
                 COMMAND
-                ${glslc_executable}
-                $<$<BOOL:${arg_ENV}>:--target-env=${arg_ENV}>
-                $<$<BOOL:${arg_SPV}>:--target-spv=${arg_SPV}>
-                $<$<BOOL:${arg_FORMAT}>:-mfmt=${arg_FORMAT}>
+                slangc
+                -I "${CMAKE_SOURCE_DIR}/src/shaders/include"
+                -target spirv
                 $<$<BOOL:${arg_INCLUDE_DIRS}>:-I${CMAKE_SOURCE_DIR}/src/shaders/include>
                 -O
-                -g # enable opts & debug symbols
-                -MD -MF ${source}.d
+                -g 
                 -o ${source}.${arg_FORMAT}
                 ${CMAKE_CURRENT_SOURCE_DIR}/${source}
         )
@@ -255,7 +257,7 @@ compile_shader(lavender
     ENV vulkan1.2
     SPV spv1.6
     FORMAT bin
-    INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/src/shaders/include"
+    INCLUDE_DIRS 
     SOURCES
     src/shaders/triangle.vert
     src/shaders/triangle.frag
