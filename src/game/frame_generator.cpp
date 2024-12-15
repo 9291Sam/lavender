@@ -1246,7 +1246,7 @@ namespace game
 
                         const std::string menuText = std::format(
                             "ん✨ち🍋😍🐶🖨🖨🐱🦊🐼🐻🐘🦒🦋🌲🌸🌞🌈\n"
-                            "Camera: {{{:.3f}, {:.3f}, {:.3f}}}\n"
+                            "Camera: {{{:.3f}, {:.3f}, {:.3f}}} {:.3f} {:.3f}\n"
                             "FPS: {:.3f} / {:.3f}ms\n"
                             "TPS: {} / {:.3f}ms\n"
                             "Ram: {}\n"
@@ -1258,6 +1258,8 @@ namespace game
                             camera.getPosition().x,
                             camera.getPosition().y,
                             camera.getPosition().z,
+                            camera.getPitch(),
+                            camera.getYaw(),
                             1.0f / deltaTime,
                             1000.0f * deltaTime,
                             1.0f / tickDeltaTime,

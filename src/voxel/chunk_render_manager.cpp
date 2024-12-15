@@ -497,7 +497,7 @@ namespace voxel
             .world_offset_z {newChunkWorldPosition.z},
             .brick_allocation_offset {0},
             .data {}};
-        this->gpu_chunk_data.uploadImmediate(newChunkId, {&newChunkGpuData, 1});
+        this->gpu_chunk_data.write(newChunkId, newChunkGpuData);
 
         return Chunk {newChunkId};
     }
@@ -543,8 +543,9 @@ namespace voxel
 
                 if (!thisChunkData.updates.empty())
                 {
-                    const PerChunkGpuData oldGpuData        = this->gpu_chunk_data.read(chunkId);
-                    const std::size_t     oldBricksPerChunk = [&] -> std::size_t
+                    const PerChunkGpuData oldGpuData = this->gpu_chunk_data.read(chunkId);
+
+                    const std::size_t oldBricksPerChunk = [&] -> std::size_t
                     {
                         const std::optional<u16> maxValidOffset =
                             oldGpuData.data.getMaxValidOffset();
@@ -662,6 +663,10 @@ namespace voxel
                             .world_offset_z {oldGpuData.world_offset_z},
                             .brick_allocation_offset {newBrickAllocation.offset},
                             .data {newBrickMap}});
+
+                    util::logTrace("{}", oldGpuData.world_offset_y);
+
+                    this->material_bricks.write(newBrickAllocation.offset, newBricks);
 
                     std::array<util::RangeAllocation, 6> allocations {};
 

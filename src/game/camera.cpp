@@ -67,6 +67,16 @@ namespace game
         return this->transform.translation;
     }
 
+    float Camera::getPitch() const
+    {
+        return this->pitch;
+    }
+
+    float Camera::getYaw() const
+    {
+        return this->yaw;
+    }
+
     game::Transform Camera::getTransform() const
     {
         return this->transform;

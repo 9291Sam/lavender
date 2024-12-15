@@ -41,11 +41,10 @@ in_push_constants;
 layout(location = 0) in u32 in_normal_id;
 layout(location = 1) in u32 in_chunk_id;
 
-// layout(location = 0) out u32 out_chunk_id;
-// layout(location = 1) out vec3 out_chunk_local_position;
-// layout(location = 2) out u32 out_normal_id;
-// layout(location = 3) out vec3 out_frag_location_world;
-layout(location = 0) out vec4 out_color;
+layout(location = 0) out u32 out_chunk_id;
+layout(location = 1) out vec3 out_chunk_local_position;
+layout(location = 2) out u32 out_normal_id;
+layout(location = 3) out vec3 out_frag_location_world;
 
 void main()
 {
@@ -103,23 +102,8 @@ void main()
     const vec3 normal = unpackNormalId(in_normal_id);
 
     gl_Position = in_mvp_matrices.matrix[in_push_constants.matrix_id] * vec4(face_point_world, 1.0);
-    // out_chunk_local_position = point_within_chunk + -0.5 * normal;
-    // out_chunk_id             = in_chunk_id;
-    // out_normal_id            = in_normal_id;
-    // out_frag_location_world  = face_point_world;
-
-    const uvec3 chunk_local_position = uvec3(floor(point_within_chunk + -0.5 * normal));
-
-    const uvec3 brick_coordinate     = chunk_local_position / 8;
-    const uvec3 brick_local_position = chunk_local_position % 8;
-
-    const u32 this_brick_pointer = BrickMap_load(in_chunk_id, brick_coordinate);
-
-    const Voxel this_voxel =
-        in_material_bricks.brick[this_brick_pointer]
-            .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
-
-    const VoxelMaterial this_material = in_voxel_materials.material[int(this_voxel.data)];
-
-    out_color = vec4(this_material.diffuse_color.xyz, 1.0);
+    out_chunk_local_position = point_within_chunk + -0.5 * normal;
+    out_chunk_id             = in_chunk_id;
+    out_normal_id            = in_normal_id;
+    out_frag_location_world  = face_point_world;
 }

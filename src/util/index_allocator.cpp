@@ -40,7 +40,7 @@ namespace util
 
             ++this->next_available_block;
 
-            if (this->next_available_block >= this->max_number_of_blocks)
+            if (this->next_available_block > this->max_number_of_blocks)
             {
                 return std::unexpected(OutOfBlocks {});
             }

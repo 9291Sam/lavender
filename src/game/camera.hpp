@@ -21,6 +21,8 @@ namespace game
         [[nodiscard]] glm::vec3 getRightVector() const;
         [[nodiscard]] glm::vec3 getUpVector() const;
         [[nodiscard]] glm::vec3 getPosition() const;
+        [[nodiscard]] float     getPitch() const;
+        [[nodiscard]] float     getYaw() const;
 
         [[nodiscard]] game::Transform getTransform() const;
 
