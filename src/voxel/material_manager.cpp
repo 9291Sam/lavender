@@ -1,6 +1,6 @@
 #include "material_manager.hpp"
 
-namespace old_voxel
+namespace voxel
 {
 
     VoxelMaterial getMaterialFromVoxel(Voxel v)
@@ -158,4 +158,4 @@ namespace old_voxel
             };
         }
     }
-} // namespace old_voxel
+} // namespace voxel

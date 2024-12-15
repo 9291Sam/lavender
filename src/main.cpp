@@ -5,6 +5,7 @@
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "verdigris/verdigris.hpp"
+#include "voxel/structures.hpp"
 #include <boost/unordered/concurrent_flat_map.hpp>
 #include <cassert>
 #include <ctti/type_id.hpp>

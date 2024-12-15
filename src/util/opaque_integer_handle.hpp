@@ -28,8 +28,6 @@ namespace util
     struct OpaqueHandle
     {
     public:
-        static constexpr OpaqueHandle NullHandle {};
-    public:
         constexpr OpaqueHandle()
             : value {NullValue}
         {}
@@ -81,6 +79,8 @@ namespace util
         {
             return std::exchange(this->value, NullValue);
         }
+
+        friend FriendClass;
 
     private:
         I value;

@@ -2,12 +2,12 @@
 
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/buffer.hpp"
-#include "voxel/voxel.hpp"
+#include "structures.hpp"
 #include <glm/vec4.hpp>
 #include <limits>
 #include <vulkan/vulkan_enums.hpp>
 
-namespace old_voxel
+namespace voxel
 {
 
     struct VoxelMaterial
@@ -48,4 +48,4 @@ namespace old_voxel
         return buffer;
     }
 
-} // namespace old_voxel
+} // namespace voxel

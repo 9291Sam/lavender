@@ -69,7 +69,9 @@ namespace verdigris
                         .name {"Triangle Pipeline Layout"}})},
                 .name {"Triangle Pipeline"}});
 
-        this->triangle.addComponent(TriangleComponent {});
+        this->triangle.addComponent(TriangleComponent {
+            .transform {.scale {glm::vec3 {25.0f, 25.0f, 25.0f}}} // namespace verdigris
+        });
 
         // CpuMasterBuffer
         // meshoperation (copy of everything)
