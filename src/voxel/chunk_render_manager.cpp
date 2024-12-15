@@ -617,6 +617,7 @@ namespace voxel
                             maybeOffset =
                                 static_cast<u16>(newChunkOffsetAllocator.allocateOrPanic());
 
+                            newBrickMap.setOffset(coordinate, maybeOffset);
                             newBricks.push_back(MaterialBrick {});
                         }
                         newBricks[maybeOffset].write(local, updateVoxel);

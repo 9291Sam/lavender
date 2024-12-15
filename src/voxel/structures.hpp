@@ -32,7 +32,10 @@ namespace voxel
         explicit VoxelCoordinateBase(V v) // NOLINT
             : V {v}
         {
-            (*this) = VoxelCoordinateBase<Derived, V, Bound>::tryCreate(v).value();
+            if (v.x >= Bound || v.y >= Bound || v.z >= Bound)
+            {
+                util::panic("{} {} {} oops", v.x, v.y, v.z);
+            }
         }
 
         explicit VoxelCoordinateBase(V v, UncheckedInDebugTag) // NOLINT
@@ -51,7 +54,7 @@ namespace voxel
                 }
             }
 
-            return std::optional<Derived> {v};
+            return std::optional<Derived> {v, UncheckedInDebugTag {}};
         }
 
         static Derived fromLinearIndex(std::size_t linearIndex)

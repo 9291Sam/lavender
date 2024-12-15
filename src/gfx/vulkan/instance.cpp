@@ -29,7 +29,7 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 namespace gfx::vulkan
 {
     Instance::Instance()
-        : vulkan_api_version(vk::ApiVersion12)
+        : vulkan_api_version(vk::ApiVersion13)
     {
         util::assertFatal(
             this->vulkan_loader.success(),

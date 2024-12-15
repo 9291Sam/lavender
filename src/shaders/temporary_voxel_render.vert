@@ -4,19 +4,31 @@
 #include "new_voxel_descriptors.glsl"
 #include "types.glsl"
 
-const uvec3 FACE_LOOKUP_TABLE[6][4] = uvec3[4][6](
-    // Top
-    uvec3[4](uvec3(0, 1, 0), uvec3(0, 1, 1), uvec3(1, 1, 0), uvec3(1, 1, 1)),
-    // Bottom
-    uvec3[4](uvec3(0, 0, 1), uvec3(0, 0, 0), uvec3(1, 0, 1), uvec3(1, 0, 0)),
-    // Left
-    uvec3[4](uvec3(0, 0, 1), uvec3(0, 1, 1), uvec3(0, 0, 0), uvec3(0, 1, 0)),
-    // Right
-    uvec3[4](uvec3(1, 0, 0), uvec3(1, 1, 0), uvec3(1, 0, 1), uvec3(1, 1, 1)),
-    // Front
-    uvec3[4](uvec3(0, 0, 0), uvec3(0, 1, 0), uvec3(1, 0, 0), uvec3(1, 1, 0)),
-    // Back
-    uvec3[4](uvec3(1, 0, 1), uvec3(1, 1, 1), uvec3(0, 0, 1), uvec3(0, 1, 1)));
+const uvec3 TOP_FACE_POINTS[4] =
+    uvec3[4](uvec3(0, 1, 0), uvec3(0, 1, 1), uvec3(1, 1, 0), uvec3(1, 1, 1));
+
+const uvec3 BOTTOM_FACE_POINTS[4] =
+    uvec3[4](uvec3(0, 0, 1), uvec3(0, 0, 0), uvec3(1, 0, 1), uvec3(1, 0, 0));
+
+const uvec3 LEFT_FACE_POINTS[4] =
+    uvec3[4](uvec3(0, 0, 1), uvec3(0, 1, 1), uvec3(0, 0, 0), uvec3(0, 1, 0));
+
+const uvec3 RIGHT_FACE_POINTS[4] =
+    uvec3[4](uvec3(1, 0, 0), uvec3(1, 1, 0), uvec3(1, 0, 1), uvec3(1, 1, 1));
+
+const uvec3 FRONT_FACE_POINTS[4] =
+    uvec3[4](uvec3(0, 0, 0), uvec3(0, 1, 0), uvec3(1, 0, 0), uvec3(1, 1, 0));
+
+const uvec3 BACK_FACE_POINTS[4] =
+    uvec3[4](uvec3(1, 0, 1), uvec3(1, 1, 1), uvec3(0, 0, 1), uvec3(0, 1, 1));
+
+const uvec3 FACE_LOOKUP_TABLE[6][4] = uvec3[6][4](
+    TOP_FACE_POINTS,
+    BOTTOM_FACE_POINTS,
+    LEFT_FACE_POINTS,
+    RIGHT_FACE_POINTS,
+    FRONT_FACE_POINTS,
+    BACK_FACE_POINTS);
 
 const u32 IDX_TO_VTX_TABLE[6] = u32[6](0, 1, 2, 2, 1, 3);
 
@@ -29,10 +41,11 @@ in_push_constants;
 layout(location = 0) in u32 in_normal_id;
 layout(location = 1) in u32 in_chunk_id;
 
-layout(location = 0) out u32 out_chunk_id;
-layout(location = 1) out vec3 out_chunk_local_position;
-layout(location = 2) out u32 out_normal_id;
-layout(location = 3) out vec3 out_frag_location_world;
+// layout(location = 0) out u32 out_chunk_id;
+// layout(location = 1) out vec3 out_chunk_local_position;
+// layout(location = 2) out u32 out_normal_id;
+// layout(location = 3) out vec3 out_frag_location_world;
+layout(location = 0) out vec4 out_color;
 
 void main()
 {
@@ -90,8 +103,23 @@ void main()
     const vec3 normal = unpackNormalId(in_normal_id);
 
     gl_Position = in_mvp_matrices.matrix[in_push_constants.matrix_id] * vec4(face_point_world, 1.0);
-    out_chunk_local_position = point_within_chunk + -0.5 * normal;
-    out_chunk_id             = in_chunk_id;
-    out_normal_id            = in_normal_id;
-    out_frag_location_world  = face_point_world;
+    // out_chunk_local_position = point_within_chunk + -0.5 * normal;
+    // out_chunk_id             = in_chunk_id;
+    // out_normal_id            = in_normal_id;
+    // out_frag_location_world  = face_point_world;
+
+    const uvec3 chunk_local_position = uvec3(floor(point_within_chunk + -0.5 * normal));
+
+    const uvec3 brick_coordinate     = chunk_local_position / 8;
+    const uvec3 brick_local_position = chunk_local_position % 8;
+
+    const u32 this_brick_pointer = BrickMap_load(in_chunk_id, brick_coordinate);
+
+    const Voxel this_voxel =
+        in_material_bricks.brick[this_brick_pointer]
+            .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
+
+    const VoxelMaterial this_material = in_voxel_materials.material[int(this_voxel.data)];
+
+    out_color = vec4(this_material.diffuse_color.xyz, 1.0);
 }
