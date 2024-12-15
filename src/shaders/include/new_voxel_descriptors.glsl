@@ -25,7 +25,8 @@ in_gpu_chunk_data;
 
 u32 BrickMap_load(u32 chunk_id, uvec3 coord)
 {
-    return in_gpu_chunk_data.data[chunk_id].data.data[coord.x][coord.y][coord.z];
+    return in_gpu_chunk_data.data[chunk_id].data.data[coord.x][coord.y][coord.z]
+         + in_gpu_chunk_data.data[chunk_id].brick_allocation_offset;
 }
 
 struct Voxel

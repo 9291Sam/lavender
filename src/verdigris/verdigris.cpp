@@ -98,7 +98,7 @@ namespace verdigris
                          static_cast<u8>(
                              (8.0 * std::sin(i / 12.0)) + (8.0 * std::cos(j / 12.0)) + 17.0),
                          j}},
-                    static_cast<voxel::Voxel>((std::rand() % 12) + 1),
+                    static_cast<voxel::Voxel>((std::rand() % 11) + 1),
                     voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
                     voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
             }
@@ -107,9 +107,7 @@ namespace verdigris
         this->chunk_render_manager.updateChunk(this->chunks.front(), updates);
 
         this->chunks.push_back(
-            this->chunk_render_manager.createChunk(voxel::WorldPosition {{0, 64, 0}}));
-        // this->chunks.push_back(
-        //     this->chunk_render_manager.createChunk(voxel::WorldPosition {{64, 64, 0}}));
+            this->chunk_render_manager.createChunk(voxel::WorldPosition {{64, 64, 64}}));
         // this->chunks.push_back(
         //     this->chunk_render_manager.createChunk(voxel::WorldPosition {{64, 0, 0}}));
     }
@@ -126,25 +124,19 @@ namespace verdigris
     {
         gfx::profiler::TaskGenerator profilerTaskGenerator {};
 
-        for (const voxel::ChunkRenderManager::Chunk& c : this->chunks)
-        {
-            std::vector<voxel::ChunkLocalUpdate> us {};
+        std::vector<voxel::ChunkLocalUpdate> us {};
 
-            for (int i = 0; i < 64; ++i)
-            {
-                us.push_back(voxel::ChunkLocalUpdate {
-                    voxel::ChunkLocalPosition {{
-                        std::rand() % 64,
-                        std::rand() % 64,
-                        std::rand() % 64,
-                    }},
-                    static_cast<voxel::Voxel>((std::rand() % 11) + 1),
-                    voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
-                    voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
-            }
+        us.push_back(voxel::ChunkLocalUpdate {
+            voxel::ChunkLocalPosition {{
+                std::rand() % 64,
+                std::rand() % 64,
+                std::rand() % 64,
+            }},
+            static_cast<voxel::Voxel>((std::rand() % 11) + 1),
+            voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+            voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
 
-            this->chunk_render_manager.updateChunk(c, us);
-        }
+        this->chunk_render_manager.updateChunk(this->chunks.back(), us);
 
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {8.0, 16.0};
