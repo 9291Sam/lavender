@@ -17,4 +17,6 @@
 #define i32 int
 #define i64 int64_t
 
+#define f32 float
+
 #endif // SRC_SHADERS_INCLUDE_TYPES_GLSL

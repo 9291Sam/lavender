@@ -44,7 +44,8 @@ namespace voxel
 
         void updateChunk(const Chunk&, std::span<ChunkLocalUpdate>);
 
-        std::vector<game::FrameGenerator::RecordObject> processUpdatesAndGetDrawObjects();
+        std::vector<game::FrameGenerator::RecordObject>
+        processUpdatesAndGetDrawObjects(const gfx::vulkan::BufferStager&);
 
     private:
         // Per Chunk Data
@@ -54,12 +55,12 @@ namespace voxel
         static constexpr std::size_t VramOverheadPerChunk = sizeof(PerChunkGpuData);
 
         // Per Brick Data
-        util::RangeAllocator                                 brick_range_allocator;
-        gfx::vulkan::WriteOnlyBuffer<BrickParentInformation> per_brick_chunk_parent_info;
-        gfx::vulkan::CpuCachedBuffer<MaterialBrick>          material_bricks;
+        util::RangeAllocator                        brick_range_allocator;
+        // gfx::vulkan::WriteOnlyBuffer<BrickParentInformation> per_brick_chunk_parent_info;
+        gfx::vulkan::CpuCachedBuffer<MaterialBrick> material_bricks;
         // gfx::vulkan::CpuCachedBuffer<BitBrick>               shadow_bricks;
         // gfx::vulkan::WriteOnlyBuffer<VisibilityBrick>        visibility_bricks;
-        static constexpr std::size_t                         VramOverheadPerBrick =
+        static constexpr std::size_t                VramOverheadPerBrick =
             sizeof(BrickParentInformation) + sizeof(MaterialBrick) + sizeof(BitBrick)
             + sizeof(BitBrick) + sizeof(VisibilityBrick);
 
@@ -71,9 +72,8 @@ namespace voxel
 
         struct ChunkDrawIndirectInstancePayload
         {
-            glm::i32vec3 position;
-            u32          normal;
-            u32          chunk_id;
+            u32 normal;
+            u32 chunk_id;
         };
         gfx::vulkan::WriteOnlyBuffer<ChunkDrawIndirectInstancePayload> indirect_payload;
         gfx::vulkan::WriteOnlyBuffer<vk::DrawIndirectCommand>          indirect_commands;
@@ -82,7 +82,10 @@ namespace voxel
         gfx::vulkan::WriteOnlyBuffer<VoxelMaterial> materials;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> voxel_chunk_descriptor_set_layout;
-        std::shared_ptr<vk::UniquePipeline>            temporary_voxel_render_pipeline;
+        std::shared_ptr<vk::UniquePipeline>            temporary_voxel_chunk_render_pipeline;
+
+        vk::DescriptorSet global_descriptor_set;
+        vk::DescriptorSet voxel_chunk_descriptor_set;
     };
 } // namespace voxel
 

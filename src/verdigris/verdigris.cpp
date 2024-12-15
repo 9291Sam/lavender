@@ -12,6 +12,8 @@
 #include "triangle_component.hpp"
 #include "util/misc.hpp"
 #include "util/static_filesystem.hpp"
+#include "voxel/chunk_render_manager.hpp"
+#include "voxel/structures.hpp"
 #include <FastNoise/FastNoise.h>
 #include <boost/container_hash/hash_fwd.hpp>
 #include <boost/range/numeric.hpp>
@@ -26,7 +28,7 @@ namespace verdigris
     Verdigris::Verdigris(game::Game* game_) // NOLINT
         : game {game_}
         , triangle {ecs::createEntity()}
-
+        , chunk_render_manager {this->game}
     {
         this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
             gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
@@ -80,6 +82,24 @@ namespace verdigris
         this->camera.addPosition({79.606, 375.586, 16.78});
         this->camera.addPitch(-0.12f);
         this->camera.addYaw(4.87f);
+
+        this->chunk = this->chunk_render_manager.createChunk(voxel::WorldPosition {{0, 0, 0}});
+
+        std::vector<voxel::ChunkLocalUpdate> updates {};
+
+        for (int i = 0; i < 64; ++i)
+        {
+            for (int j = 0; j < 64; ++j)
+            {
+                updates.push_back(voxel::ChunkLocalUpdate {
+                    voxel::ChunkLocalPosition {{i, 0, j}},
+                    static_cast<voxel::Voxel>(std::rand() % 12 + 1),
+                    voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+                    voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
+            }
+        }
+
+        this->chunk_render_manager.updateChunk(this->chunk, updates);
     }
 
     Verdigris::~Verdigris() = default;
@@ -197,70 +217,19 @@ namespace verdigris
                 });
             });
 
+        for (game::FrameGenerator::RecordObject& o :
+             this->chunk_render_manager.processUpdatesAndGetDrawObjects(
+                 this->game->getRenderer()->getStager()))
+        {
+            draws.push_back(std::move(o));
+        }
+
         return OnFrameReturnData {
             .main_scene_camera {this->camera},
             .record_objects {std::move(draws)},
             .generator {profilerTaskGenerator}};
     }
 
-    void Verdigris::onTick(float) const
-    {
-        // i32 i = 0;
-
-        // std::vector<voxel::World::VoxelWrite> writes {};
-
-        // ecs::getGlobalECSManager()->iterateComponents<VoxelComponent>(
-        //     [&](ecs::RawEntity, VoxelComponent& c)
-        //     {
-        //         const i32 x = i % 80;
-        //         const i32 y = i / 80;
-
-        //         const voxel::Voxel newMaterial = [&]
-        //         {
-        //             // switch (y / (50 / 6))
-        //             // {
-        //             // case 0:
-        //             //     return voxel::Voxel::Amethyst;
-        //             // case 1:
-        //             //     return voxel::Voxel::Sapphire;
-        //             // case 2:
-        //             //     return voxel::Voxel::Emerald;
-        //             // case 3:
-        //             //     return voxel::Voxel::Gold;
-        //             // case 4:
-        //             //     return voxel::Voxel::Topaz;
-        //             // case 5:
-        //             //     return voxel::Voxel::Ruby;
-        //             // default:
-        //             //     return voxel::Voxel::NullAirEmpty;
-        //             // }
-        //             return static_cast<voxel::Voxel>((y % 12) + 1);
-        //         }();
-
-        //         const voxel::WorldPosition newPosition {
-        //             {x,
-        //              y + 64,
-        //              static_cast<i32>(
-        //                  -48.0f
-        //                  + (4.0f
-        //                     * std::sin(
-        //                         (static_cast<float>(x) / 4.0f) + (this->time_alive * 4.0f))))}};
-
-        //         writes.push_back({c.position, voxel::Voxel::NullAirEmpty});
-
-        //         c.position = newPosition;
-        //         c.voxel    = newMaterial;
-
-        //         writes.push_back({c.position, c.voxel});
-
-        //         i += 1;
-        //     });
-
-        // this->voxel_world.lock(
-        //     [&](voxel::World& w)
-        //     {
-        //         w.writeVoxel(writes);
-        //     });
-    }
+    void Verdigris::onTick(float) const {}
 
 } // namespace verdigris

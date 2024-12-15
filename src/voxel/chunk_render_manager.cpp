@@ -1,7 +1,15 @@
 #include "chunk_render_manager.hpp"
+#include "game/game.hpp"
+#include "gfx/renderer.hpp"
+#include "gfx/vulkan/buffer.hpp"
+#include "gfx/vulkan/device.hpp"
 #include "structures.hpp"
 #include "util/index_allocator.hpp"
+#include "util/range_allocator.hpp"
+#include "util/static_filesystem.hpp"
+#include "voxel/material_manager.hpp"
 #include <memory>
+#include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
 namespace voxel
@@ -275,6 +283,207 @@ namespace voxel
         // std::future<AsyncChunkUpdateResult> doChunkUpdate()
     } // namespace
 
+    static constexpr u32 MaxChunks          = 4096;
+    static constexpr u32 DirectionsPerChunk = 6;
+    static constexpr u32 MaxBricks          = 131072 * 8;
+    static constexpr u32 MaxFaces           = 1048576 * 4;
+    static constexpr u32 MaxLights          = 4096;
+    static constexpr u32 MaxFaceIdMapNodes  = 1U << 24U;
+
+    ChunkRenderManager::ChunkRenderManager(const game::Game* game)
+        : chunk_id_allocator {MaxChunks}
+        , gpu_chunk_data(
+              game->getRenderer()->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
+              MaxChunks,
+              "Gpu Chunk Data Buffer")
+        , brick_range_allocator(MaxBricks, MaxBricks * 2)
+        , material_bricks(
+              game->getRenderer()->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
+              static_cast<std::size_t>(MaxBricks),
+              "Material Bricks")
+        , voxel_face_allocator(MaxFaces, MaxChunks * 12)
+        , voxel_faces(
+              game->getRenderer()->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
+              static_cast<std::size_t>(MaxFaces),
+              "Voxel Faces")
+        , indirect_payload(
+              game->getRenderer()->getAllocator(),
+              vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
+              static_cast<std::size_t>(MaxChunks * DirectionsPerChunk),
+              "Indirect Payload")
+        , indirect_commands(
+              game->getRenderer()->getAllocator(),
+              vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
+              static_cast<std::size_t>(MaxChunks * DirectionsPerChunk),
+              "Indirect Commands")
+        , materials(generateVoxelMaterialBuffer(game->getRenderer()))
+        , voxel_chunk_descriptor_set_layout(
+              game->getRenderer()->getAllocator()->cacheDescriptorSetLayout(
+                  gfx::vulkan::CacheableDescriptorSetLayoutCreateInfo {
+                      .bindings {{
+                          // PerChunkGpuData
+                          vk::DescriptorSetLayoutBinding {
+                              .binding {0},
+                              .descriptorType {vk::DescriptorType::eStorageBuffer},
+                              .descriptorCount {1},
+                              .stageFlags {
+                                  vk::ShaderStageFlagBits::eVertex
+                                  | vk::ShaderStageFlagBits::eFragment
+                                  | vk::ShaderStageFlagBits::eCompute},
+                              .pImmutableSamplers {nullptr},
+                          },
+                          // MaterialBricks
+                          vk::DescriptorSetLayoutBinding {
+                              .binding {1},
+                              .descriptorType {vk::DescriptorType::eStorageBuffer},
+                              .descriptorCount {1},
+                              .stageFlags {
+                                  vk::ShaderStageFlagBits::eVertex
+                                  | vk::ShaderStageFlagBits::eFragment
+                                  | vk::ShaderStageFlagBits::eCompute},
+                              .pImmutableSamplers {nullptr},
+                          },
+                          // VoxelFaces
+                          vk::DescriptorSetLayoutBinding {
+                              .binding {2},
+                              .descriptorType {vk::DescriptorType::eStorageBuffer},
+                              .descriptorCount {1},
+                              .stageFlags {
+                                  vk::ShaderStageFlagBits::eVertex
+                                  | vk::ShaderStageFlagBits::eFragment
+                                  | vk::ShaderStageFlagBits::eCompute},
+                              .pImmutableSamplers {nullptr},
+                          },
+                          // Materials
+                          vk::DescriptorSetLayoutBinding {
+                              .binding {3},
+                              .descriptorType {vk::DescriptorType::eStorageBuffer},
+                              .descriptorCount {1},
+                              .stageFlags {
+                                  vk::ShaderStageFlagBits::eVertex
+                                  | vk::ShaderStageFlagBits::eFragment
+                                  | vk::ShaderStageFlagBits::eCompute},
+                              .pImmutableSamplers {nullptr},
+                          },
+                      }},
+                      .name {"Voxel Descriptor Set Layout"}}))
+        , temporary_voxel_chunk_render_pipeline {game->getRenderer()->getAllocator()->cachePipeline(
+              gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
+                  .stages {{
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eVertex},
+                          .shader {game->getRenderer()->getAllocator()->cacheShaderModule(
+                              staticFilesystem::loadShader("temporary_voxel_render.vert"),
+                              "Temporary Voxel Render Vertex Shader")},
+                          .entry_point {"main"}},
+                      gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                          .stage {vk::ShaderStageFlagBits::eFragment},
+                          .shader {game->getRenderer()->getAllocator()->cacheShaderModule(
+                              staticFilesystem::loadShader("temporary_voxel_render.frag"),
+                              "Temporary Voxel Render Fragment Shader")},
+                          .entry_point {"main"}},
+                  }},
+                  .vertex_attributes {{
+                      vk::VertexInputAttributeDescription {
+                          .location {0},
+                          .binding {0},
+                          .format {vk::Format::eR32Uint},
+                          .offset {offsetof(ChunkDrawIndirectInstancePayload, normal)}},
+                      vk::VertexInputAttributeDescription {
+                          .location {1},
+                          .binding {0},
+                          .format {vk::Format::eR32Uint},
+                          .offset {offsetof(ChunkDrawIndirectInstancePayload, chunk_id)}},
+                  }},
+                  .vertex_bindings {{vk::VertexInputBindingDescription {
+                      .binding {0},
+                      .stride {sizeof(ChunkDrawIndirectInstancePayload)},
+                      .inputRate {vk::VertexInputRate::eInstance}}}},
+                  .topology {vk::PrimitiveTopology::eTriangleList},
+                  .discard_enable {false},
+                  .polygon_mode {vk::PolygonMode::eFill},
+                  .cull_mode {vk::CullModeFlagBits::eBack},
+                  .front_face {vk::FrontFace::eCounterClockwise},
+                  .depth_test_enable {true},
+                  .depth_write_enable {true},
+                  .depth_compare_op {vk::CompareOp::eLess},
+                  .color_format {gfx::Renderer::ColorFormat.format},
+                  .depth_format {gfx::Renderer::DepthFormat},
+                  .blend_enable {false},
+                  .layout {game->getRenderer()->getAllocator()->cachePipelineLayout(
+                      gfx::vulkan::CacheablePipelineLayoutCreateInfo {
+                          .descriptors {
+                              {game->getGlobalInfoDescriptorSetLayout(),
+                               this->voxel_chunk_descriptor_set_layout}},
+                          .push_constants {vk::PushConstantRange {
+                              .stageFlags {vk::ShaderStageFlagBits::eVertex},
+                              .offset {0},
+                              .size {sizeof(u32)},
+                          }},
+                          .name {"Temporary Voxel Render Pipeline Layout"}})},
+                  .name {"Temporary Voxel Render Pipeline"}})}
+        , global_descriptor_set {game->getGlobalInfoDescriptorSet()}
+        , voxel_chunk_descriptor_set {game->getRenderer()->getAllocator()->allocateDescriptorSet(
+              **this->voxel_chunk_descriptor_set_layout, "Voxel Descriptor Set")}
+
+    {
+        const auto bufferInfo = {
+            vk::DescriptorBufferInfo {
+                .buffer {*this->gpu_chunk_data},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->material_bricks},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->voxel_faces},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->materials},
+                .offset {0},
+                .range {vk::WholeSize},
+            }};
+
+        std::vector<vk::WriteDescriptorSet> writes {};
+
+        u32 idx = 0;
+        for (const vk::DescriptorBufferInfo& i : bufferInfo)
+        {
+            writes.push_back(vk::WriteDescriptorSet {
+                .sType {vk::StructureType::eWriteDescriptorSet},
+                .pNext {nullptr},
+                .dstSet {this->voxel_chunk_descriptor_set},
+                .dstBinding {idx},
+                .dstArrayElement {0},
+                .descriptorCount {1},
+                .descriptorType {vk::DescriptorType::eStorageBuffer},
+                .pImageInfo {nullptr},
+                .pBufferInfo {&i},
+                .pTexelBufferView {nullptr},
+            });
+
+            idx += 1;
+        }
+
+        game->getRenderer()->getDevice()->getDevice().updateDescriptorSets(
+            static_cast<u32>(writes.size()), writes.data(), 0, nullptr);
+
+        this->cpu_chunk_data.resize(MaxChunks);
+    }
+
     ChunkRenderManager::~ChunkRenderManager() = default;
 
     ChunkRenderManager::Chunk ChunkRenderManager::createChunk(WorldPosition newChunkWorldPosition)
@@ -283,9 +492,9 @@ namespace voxel
 
         this->cpu_chunk_data[newChunkId] = CpuChunkData {};
         const PerChunkGpuData newChunkGpuData {
-            .world_offset_x {static_cast<f32>(newChunkWorldPosition.x)},
-            .world_offset_y {static_cast<f32>(newChunkWorldPosition.y)},
-            .world_offset_z {static_cast<f32>(newChunkWorldPosition.z)},
+            .world_offset_x {newChunkWorldPosition.x},
+            .world_offset_y {newChunkWorldPosition.y},
+            .world_offset_z {newChunkWorldPosition.z},
             .brick_allocation_offset {0},
             .data {}};
         this->gpu_chunk_data.uploadImmediate(newChunkId, {&newChunkGpuData, 1});
@@ -303,11 +512,6 @@ namespace voxel
         {
             this->brick_range_allocator.free(*allocation);
         }
-
-        if (thisCpuChunkData.meshing_operation.valid())
-        {
-            // thisCpuChunkData.meshing_operation.get()
-        }
     }
 
     void
@@ -324,10 +528,13 @@ namespace voxel
     }
 
     std::vector<game::FrameGenerator::RecordObject>
-    ChunkRenderManager::processUpdatesAndGetDrawObjects()
+    ChunkRenderManager::processUpdatesAndGetDrawObjects(const gfx::vulkan::BufferStager& stager)
     {
         std::vector<vk::DrawIndirectCommand>          indirectCommands {};
         std::vector<ChunkDrawIndirectInstancePayload> indirectPayload {};
+
+        u32 callNumber         = 0;
+        u32 numberOfTotalFaces = 0;
 
         this->chunk_id_allocator.iterateThroughAllocatedElements(
             [&](const u32 chunkId)
@@ -354,6 +561,21 @@ namespace voxel
 
                     const std::span<const MaterialBrick> oldBricks = this->material_bricks.read(
                         oldGpuData.brick_allocation_offset, oldBricksPerChunk);
+
+                    if (thisChunkData.active_brick_range_allocation.has_value())
+                    {
+                        this->brick_range_allocator.free(
+                            *thisChunkData.active_brick_range_allocation);
+                    }
+
+                    if (thisChunkData.active_draw_allocations.has_value())
+                    {
+                        for (util::RangeAllocation allocation :
+                             *thisChunkData.active_draw_allocations)
+                        {
+                            this->voxel_face_allocator.free(allocation);
+                        }
+                    }
 
                     util::IndexAllocator newChunkOffsetAllocator {
                         BricksPerChunkEdge * BricksPerChunkEdge * BricksPerChunkEdge};
@@ -386,19 +608,137 @@ namespace voxel
                             newUpdate.getShadowUpdate();
                         const ChunkLocalUpdate::CameraVisibleUpdate cameraVisibilityUpdate =
                             newUpdate.getCameraVisibility();
+
+                        const auto [coordinate, local] = splitChunkLocalPosition(updatePosition);
+
+                        u16 maybeOffset = newBrickMap.getOffset(coordinate);
+                        if (maybeOffset == ChunkBrickMap::NullOffset)
+                        {
+                            maybeOffset =
+                                static_cast<u16>(newChunkOffsetAllocator.allocateOrPanic());
+
+                            newBricks.push_back(MaterialBrick {});
+                        }
+                        newBricks[maybeOffset].write(local, updateVoxel);
                     }
 
-                    // iterate over old
-                    // add new
-                    // clear dense
-                    // repack
-                    // create allocations of bricks
-                    // do greedy mesh
-                    // dump to correct spots
+                    BrickList list {};
 
-                    // TODO: free old stuff
+                    newBrickMap.iterateOverBricks(
+                        [&](BrickCoordinate bC, u16 maybeOffset)
+                        {
+                            if (maybeOffset != ChunkBrickMap::NullOffset)
+                            {
+                                const MaterialBrick& materialBrick = newBricks[maybeOffset];
+                                BitBrick             bitBrick {};
+
+                                materialBrick.iterateOverVoxels(
+                                    [&](BrickLocalPosition bP, Voxel v)
+                                    {
+                                        if (v != Voxel::NullAirEmpty)
+                                        {
+                                            bitBrick.write(bP, true);
+                                        }
+                                    });
+
+                                list.data.push_back({bC, bitBrick});
+                            }
+                        });
+
+                    const std::array<std::vector<GreedyVoxelFace>, 6> newGreedyFaces =
+                        meshChunkGreedy(list.formDenseBitChunk());
+
+                    const util::RangeAllocation newBrickAllocation =
+                        this->brick_range_allocator.allocate(static_cast<u32>(newBricks.size()));
+
+                    thisChunkData.active_brick_range_allocation = newBrickAllocation;
+
+                    this->gpu_chunk_data.write(
+                        chunkId,
+                        PerChunkGpuData {
+                            .world_offset_x {oldGpuData.world_offset_x},
+                            .world_offset_y {oldGpuData.world_offset_y},
+                            .world_offset_z {oldGpuData.world_offset_z},
+                            .brick_allocation_offset {newBrickAllocation.offset},
+                            .data {newBrickMap}});
+
+                    std::array<util::RangeAllocation, 6> allocations {};
+
+                    for (auto [thisAllocation, faces] :
+                         std::views::zip(allocations, newGreedyFaces))
+                    {
+                        thisAllocation =
+                            this->voxel_face_allocator.allocate(static_cast<u32>(faces.size()));
+
+                        stager.enqueueTransfer(
+                            this->voxel_faces, thisAllocation.offset, {faces.data(), faces.size()});
+                    }
+
+                    thisChunkData.active_draw_allocations = allocations;
+                }
+
+                if (thisChunkData.active_draw_allocations.has_value())
+                {
+                    u32 normal = 0;
+
+                    for (util::RangeAllocation a : *thisChunkData.active_draw_allocations)
+                    {
+                        const u32 numberOfFaces = this->voxel_face_allocator.getSizeOfAllocation(a);
+
+                        indirectCommands.push_back(vk::DrawIndirectCommand {
+                            .vertexCount {numberOfFaces * 6},
+                            .instanceCount {1},
+                            .firstVertex {a.offset * 6},
+                            .firstInstance {callNumber},
+                        });
+
+                        indirectPayload.push_back(ChunkDrawIndirectInstancePayload {
+                            .normal {normal}, .chunk_id {chunkId}});
+
+                        callNumber += 1;
+                        normal += 1;
+                    }
                 }
             });
+
+        this->gpu_chunk_data.flushViaStager(stager);
+        this->material_bricks.flushViaStager(stager);
+
+        if (!indirectCommands.empty())
+        {
+            stager.enqueueTransfer(
+                this->indirect_commands,
+                0,
+                std::span<const vk::DrawIndirectCommand> {indirectCommands});
+        }
+
+        if (!indirectPayload.empty())
+        {
+            stager.enqueueTransfer(
+                this->indirect_payload,
+                0,
+                std::span<const ChunkDrawIndirectInstancePayload> {indirectPayload});
+        }
+
+        game::FrameGenerator::RecordObject chunkDraw = game::FrameGenerator::RecordObject {
+            .transform {game::Transform {}},
+            .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},
+            .pipeline {this->temporary_voxel_chunk_render_pipeline},
+            .descriptors {
+                {this->global_descriptor_set, this->voxel_chunk_descriptor_set, nullptr, nullptr}},
+            .record_func {[this, size = indirectCommands.size()](
+                              vk::CommandBuffer commandBuffer, vk::PipelineLayout layout, u32 id)
+                          {
+                              commandBuffer.bindVertexBuffers(0, {*this->indirect_payload}, {0});
+
+                              commandBuffer.pushConstants(
+                                  layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(u32), &id);
+
+                              commandBuffer.drawIndirect(
+                                  *this->indirect_commands, 0, static_cast<u32>(size), 16);
+                          }}};
+
+        return {chunkDraw};
     }
 
 } // namespace voxel

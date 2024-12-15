@@ -9,6 +9,7 @@
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <limits>
+#include <utility>
 
 namespace voxel
 {
@@ -31,7 +32,7 @@ namespace voxel
         explicit VoxelCoordinateBase(V v) // NOLINT
             : V {v}
         {
-            (*this) = VoxelCoordinateBase<Derived, V, Bound>::tryCreate(v);
+            (*this) = VoxelCoordinateBase<Derived, V, Bound>::tryCreate(v).value();
         }
 
         explicit VoxelCoordinateBase(V v, UncheckedInDebugTag) // NOLINT
@@ -40,7 +41,7 @@ namespace voxel
 
         static std::optional<Derived> tryCreate(V v)
         {
-            if constexpr (util::isDebugBuild() && Bound != static_Cast<std::size_t>(-1))
+            if constexpr (util::isDebugBuild() && Bound != static_cast<std::size_t>(-1))
             {
                 static_assert(V::length() == 3);
 
@@ -50,7 +51,7 @@ namespace voxel
                 }
             }
 
-            return v;
+            return std::optional<Derived> {v};
         }
 
         static Derived fromLinearIndex(std::size_t linearIndex)
@@ -116,6 +117,13 @@ namespace voxel
             glm::u8vec3 {
                 c.x * VoxelsPerBrickEdge, c.y * VoxelsPerBrickEdge, c.z * VoxelsPerBrickEdge}
             + p};
+    }
+
+    inline std::pair<BrickCoordinate, BrickLocalPosition>
+    splitChunkLocalPosition(ChunkLocalPosition p)
+    {
+        return {
+            BrickCoordinate {p / BricksPerChunkEdge}, BrickLocalPosition {p % BricksPerChunkEdge}};
     }
 
     enum class Voxel : u16 // NOLINT
@@ -306,6 +314,22 @@ namespace voxel
         {
             return this->data[p.x][p.y][p.z]; // NOLINT
         }
+
+        void iterateOverVoxels(std::invocable<BrickLocalPosition, T> auto func) const
+        {
+            for (int x = 0; x < VoxelsPerBrickEdge; ++x)
+            {
+                for (int y = 0; y < VoxelsPerBrickEdge; ++y)
+                {
+                    for (int z = 0; z < VoxelsPerBrickEdge; ++z)
+                    {
+                        const BrickLocalPosition p {glm::u8vec3 {x, y, z}};
+
+                        func(p, this->read(p));
+                    }
+                }
+            }
+        }
     };
 
     struct MaterialBrick : TypedBrick<Voxel>
@@ -352,7 +376,14 @@ namespace voxel
             CameraVisible   = 1,
         };
     public:
-        ChunkLocalUpdate(ChunkLocalPosition, Voxel, ShadowUpdate, CameraVisibleUpdate);
+        ChunkLocalUpdate(ChunkLocalPosition p, Voxel v, ShadowUpdate s, CameraVisibleUpdate c)
+            : pos_x {p.x}
+            , shadow_casting {std::to_underlying(s)}
+            , camera_visible {std::to_underlying(c)}
+            , pos_y {p.y}
+            , pos_z {p.z}
+            , material {std::bit_cast<std::array<u8, 2>>(v)}
+        {}
         ~ChunkLocalUpdate() = default;
 
         ChunkLocalUpdate(const ChunkLocalUpdate&)             = default;
@@ -360,10 +391,22 @@ namespace voxel
         ChunkLocalUpdate& operator= (const ChunkLocalUpdate&) = default;
         ChunkLocalUpdate& operator= (ChunkLocalUpdate&&)      = default;
 
-        [[nodiscard]] ChunkLocalPosition  getPosition() const noexcept;
-        [[nodiscard]] Voxel               getVoxel() const noexcept;
-        [[nodiscard]] ShadowUpdate        getShadowUpdate() const noexcept;
-        [[nodiscard]] CameraVisibleUpdate getCameraVisibility() const noexcept;
+        [[nodiscard]] ChunkLocalPosition getPosition() const noexcept
+        {
+            return ChunkLocalPosition {{this->pos_x, this->pos_y, this->pos_z}};
+        }
+        [[nodiscard]] Voxel getVoxel() const noexcept
+        {
+            return std::bit_cast<Voxel>(this->material);
+        }
+        [[nodiscard]] ShadowUpdate getShadowUpdate() const noexcept
+        {
+            return static_cast<ShadowUpdate>(this->shadow_casting);
+        }
+        [[nodiscard]] CameraVisibleUpdate getCameraVisibility() const noexcept
+        {
+            return static_cast<CameraVisibleUpdate>(this->camera_visible);
+        }
 
     private:
         u8 pos_x          : 6;
@@ -445,6 +488,11 @@ namespace voxel
             this->data[bC.x][bC.y][bC.z] = offset; // NOLINT
         }
 
+        u16 getOffset(BrickCoordinate bC)
+        {
+            return this->data[bC.x][bC.y][bC.z]; // NOLINT
+        }
+
         std::array<
             std::array<std::array<u16, BricksPerChunkEdge>, BricksPerChunkEdge>,
             BricksPerChunkEdge>
@@ -458,23 +506,20 @@ namespace voxel
 
     struct CpuChunkData
     {
-        std::optional<util::RangeAllocation> active_brick_range_allocation;
+        std::optional<util::RangeAllocation>                active_brick_range_allocation;
+        std::optional<std::array<util::RangeAllocation, 6>> active_draw_allocations;
 
         std::vector<ChunkLocalUpdate> updates;
-
-        std::future<std::unique_ptr<ChunkAsyncMesh>> meshing_operation;
     };
 
     struct PerChunkGpuData
     {
-        f32           world_offset_x          = 0.0f;
-        f32           world_offset_y          = 0.0f;
-        f32           world_offset_z          = 0.0f;
+        i32           world_offset_x          = 0;
+        i32           world_offset_y          = 0;
+        i32           world_offset_z          = 0;
         u32           brick_allocation_offset = 0;
         ChunkBrickMap data;
     };
-
-    static constexpr std::size_t MaxChunks = std::numeric_limits<u16>::max();
 
     struct BrickParentInformation
     {
