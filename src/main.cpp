@@ -13,7 +13,7 @@
 #include <string_view>
 #include <utility>
 
-class ConcreteEntity : DERIVE_INHERENT_ENTITY(ConcreteEntity, entity)
+class ConcreteEntity final : DERIVE_INHERENT_ENTITY(ConcreteEntity, entity)
 {
 public:
     explicit ConcreteEntity(ecs::UniqueEntity entity_, int health_ = 100)

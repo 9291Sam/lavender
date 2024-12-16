@@ -664,8 +664,6 @@ namespace voxel
                             .brick_allocation_offset {newBrickAllocation.offset},
                             .data {newBrickMap}});
 
-                    util::logTrace("{}", oldGpuData.world_offset_y);
-
                     this->material_bricks.write(newBrickAllocation.offset, newBricks);
 
                     std::array<util::RangeAllocation, 6> allocations {};

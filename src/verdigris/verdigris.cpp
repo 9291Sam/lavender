@@ -108,8 +108,12 @@ namespace verdigris
 
         this->chunks.push_back(
             this->chunk_render_manager.createChunk(voxel::WorldPosition {{64, 64, 64}}));
-        // this->chunks.push_back(
-        //     this->chunk_render_manager.createChunk(voxel::WorldPosition {{64, 0, 0}}));
+        this->chunks.push_back(
+            this->chunk_render_manager.createChunk(voxel::WorldPosition {{64, 0, 0}}));
+        this->chunks.push_back(
+            this->chunk_render_manager.createChunk(voxel::WorldPosition {{0, 0, 64}}));
+        this->chunks.push_back(
+            this->chunk_render_manager.createChunk(voxel::WorldPosition {{64, 0, 64}}));
     }
 
     Verdigris::~Verdigris()
@@ -124,19 +128,22 @@ namespace verdigris
     {
         gfx::profiler::TaskGenerator profilerTaskGenerator {};
 
-        std::vector<voxel::ChunkLocalUpdate> us {};
+        for (const voxel::ChunkRenderManager::Chunk& c : this->chunks)
+        {
+            std::vector<voxel::ChunkLocalUpdate> us {};
 
-        us.push_back(voxel::ChunkLocalUpdate {
-            voxel::ChunkLocalPosition {{
-                std::rand() % 64,
-                std::rand() % 64,
-                std::rand() % 64,
-            }},
-            static_cast<voxel::Voxel>((std::rand() % 11) + 1),
-            voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
-            voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
+            us.push_back(voxel::ChunkLocalUpdate {
+                voxel::ChunkLocalPosition {{
+                    std::rand() % 64,
+                    std::rand() % 64,
+                    std::rand() % 64,
+                }},
+                static_cast<voxel::Voxel>((std::rand() % 11) + 1),
+                voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+                voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
 
-        this->chunk_render_manager.updateChunk(this->chunks.back(), us);
+            this->chunk_render_manager.updateChunk(c, us);
+        }
 
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {8.0, 16.0};

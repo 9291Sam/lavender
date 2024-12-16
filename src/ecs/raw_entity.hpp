@@ -164,6 +164,7 @@ namespace ecs
             static_assert(                                                                         \
                 std::same_as<::ecs::UniqueEntity, decltype(T::name)>,                              \
                 "The field pointed to must be an instance of RawEntity");                          \
+            static_assert(std::is_final_v<T>, "Inherent Entities must be marked final");           \
             return offsetof(T, name);                                                              \
         }>
 
