@@ -288,6 +288,7 @@ namespace voxel
     static constexpr u32 DirectionsPerChunk = 6;
     static constexpr u32 MaxBricks          = 1U << 20U;
     static constexpr u32 MaxFaces           = 1U << 22U;
+    static constexpr u32 MaxFaceIdHashNodes = 1U << 23U;
     static constexpr u32 MaxLights          = 4096;
 
     ChunkRenderManager::ChunkRenderManager(const game::Game* game_)
@@ -342,7 +343,7 @@ namespace voxel
               game_->getRenderer()->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
               vk::MemoryPropertyFlagBits::eDeviceLocal,
-              static_cast<std::size_t>(MaxFaces * 2),
+              static_cast<std::size_t>(MaxFaceIdHashNodes),
               "Face Id Map")
         , visible_face_data(
               game_->getRenderer()->getAllocator(),
@@ -1019,7 +1020,7 @@ namespace voxel
                               commandBuffer.draw(3, 1, 0, 0);
                           }}};
 
-        return {chunkDraw};
+        return {chunkDraw, visibilityDraw, colorCalculation, colorTransfer};
     }
 
 } // namespace voxel

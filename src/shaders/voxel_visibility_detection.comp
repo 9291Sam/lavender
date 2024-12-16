@@ -50,11 +50,5 @@ void main()
         }
 
         face_id_map_write(in_face_brick_data, this_visible_face);
-
-        // in_face_id_bricks
-        //     .brick[brick_pointer]
-        //     .dir[normal]
-        //     .data[brick_local_position.x][brick_local_position.y][brick_local_position.z]
-        //     = this_visible_face;
     }
 }

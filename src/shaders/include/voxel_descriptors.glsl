@@ -132,7 +132,7 @@ layout(set = 1, binding = 7) buffer VisibleFaceIdBrickStorage
 }
 in_face_id_map;
 
-const u32 kHashTableCapacity = 1U << 24U;
+const u32 kHashTableCapacity = 1U << 23U;
 const u32 kEmpty             = ~0;
 
 u32 integerHash(u32 h)
