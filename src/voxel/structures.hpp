@@ -6,6 +6,7 @@
 #include "util/range_allocator.hpp"
 #include <ctti/nameof.hpp>
 #include <future>
+#include <glm/fwd.hpp>
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <limits>
@@ -23,18 +24,21 @@ namespace voxel
     struct UncheckedInDebugTag
     {};
 
-    template<class Derived, class V, std::size_t Bound = static_cast<std::size_t>(-1)>
+    template<class Derived, class V, V::value_type Bound = static_cast<V::value_type>(-1)>
     struct VoxelCoordinateBase : V
     {
-        using Base = VoxelCoordinateBase;
-        using V    = V; // NOLINT
+        using Base       = VoxelCoordinateBase;
+        using VectorType = V; // NOLINT
 
         explicit VoxelCoordinateBase(V v) // NOLINT
             : V {v}
         {
-            if (v.x >= Bound || v.y >= Bound || v.z >= Bound)
+            if constexpr (util::isDebugBuild() && Bound != static_cast<V::value_type>(-1))
             {
-                util::panic("{} {} {} oops", v.x, v.y, v.z);
+                if (v.x >= Bound || v.y >= Bound || v.z >= Bound)
+                {
+                    util::panic("{} {} {} oops", v.x, v.y, v.z);
+                }
             }
         }
 
@@ -82,7 +86,7 @@ namespace voxel
     /// Represents the position of a single voxel in world space
     struct WorldPosition : public VoxelCoordinateBase<WorldPosition, glm::i32vec3>
     {
-        explicit WorldPosition(Base::V v)
+        explicit WorldPosition(Base::VectorType v)
             : Base {v}
         {}
     };
@@ -91,7 +95,7 @@ namespace voxel
     struct ChunkLocalPosition
         : public VoxelCoordinateBase<ChunkLocalPosition, glm::u8vec3, VoxelsPerChunkEdge>
     {
-        explicit ChunkLocalPosition(Base::V v)
+        explicit ChunkLocalPosition(Base::VectorType v)
             : Base {v}
         {}
     };
@@ -100,7 +104,7 @@ namespace voxel
     struct BrickLocalPosition
         : public VoxelCoordinateBase<BrickLocalPosition, glm::u8vec3, VoxelsPerBrickEdge>
     {
-        explicit BrickLocalPosition(Base::V v)
+        explicit BrickLocalPosition(Base::VectorType v)
             : Base {v}
         {}
     };
@@ -109,7 +113,7 @@ namespace voxel
     struct BrickCoordinate
         : public VoxelCoordinateBase<BrickCoordinate, glm::u8vec3, BricksPerChunkEdge>
     {
-        explicit BrickCoordinate(Base::V v)
+        explicit BrickCoordinate(Base::VectorType v)
             : Base {v}
         {}
     };
@@ -251,11 +255,11 @@ namespace voxel
 
         void iterateOverVoxels(std::invocable<BrickLocalPosition, bool> auto func) const
         {
-            for (int x = 0; x < VoxelsPerBrickEdge; ++x)
+            for (std::size_t x = 0; x < VoxelsPerBrickEdge; ++x)
             {
-                for (int y = 0; y < VoxelsPerBrickEdge; ++y)
+                for (std::size_t y = 0; y < VoxelsPerBrickEdge; ++y)
                 {
-                    for (int z = 0; z < VoxelsPerBrickEdge; ++z)
+                    for (std::size_t z = 0; z < VoxelsPerBrickEdge; ++z)
                     {
                         const BrickLocalPosition p {glm::u8vec3 {x, y, z}};
 
@@ -320,11 +324,11 @@ namespace voxel
 
         void iterateOverVoxels(std::invocable<BrickLocalPosition, T> auto func) const
         {
-            for (int x = 0; x < VoxelsPerBrickEdge; ++x)
+            for (std::size_t x = 0; x < VoxelsPerBrickEdge; ++x)
             {
-                for (int y = 0; y < VoxelsPerBrickEdge; ++y)
+                for (std::size_t y = 0; y < VoxelsPerBrickEdge; ++y)
                 {
-                    for (int z = 0; z < VoxelsPerBrickEdge; ++z)
+                    for (std::size_t z = 0; z < VoxelsPerBrickEdge; ++z)
                     {
                         const BrickLocalPosition p {glm::u8vec3 {x, y, z}};
 
@@ -472,11 +476,11 @@ namespace voxel
 
         void iterateOverBricks(std::invocable<BrickCoordinate, u16> auto func) const
         {
-            for (int x = 0; x < BricksPerChunkEdge; ++x)
+            for (std::size_t x = 0; x < BricksPerChunkEdge; ++x)
             {
-                for (int y = 0; y < BricksPerChunkEdge; ++y)
+                for (std::size_t y = 0; y < BricksPerChunkEdge; ++y)
                 {
-                    for (int z = 0; z < BricksPerChunkEdge; ++z)
+                    for (std::size_t z = 0; z < BricksPerChunkEdge; ++z)
                     {
                         const BrickCoordinate p {glm::u8vec3 {x, y, z}};
 
@@ -534,6 +538,22 @@ namespace voxel
     {
         u32 key;
         u32 value;
+    };
+
+    struct VisibleFaceData
+    {
+        u32       data;
+        glm::vec3 calculated_color;
+    };
+
+    struct GlobalVoxelData
+    {
+        u32 number_of_visible_faces;
+        u32 number_of_calculating_draws_x;
+        u32 number_of_calculating_draws_y;
+        u32 number_of_calculating_draws_z;
+        u32 number_of_lights;
+        u32 readback_number_of_visible_faces;
     };
 
 } // namespace voxel

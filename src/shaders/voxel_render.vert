@@ -38,9 +38,8 @@ layout(push_constant) uniform PushConstants
 }
 in_push_constants;
 
-layout(location = 0) in vec4 in_chunk_position;
-layout(location = 1) in u32 in_normal_id;
-layout(location = 2) in u32 in_chunk_id;
+layout(location = 0) in u32 in_normal_id;
+layout(location = 1) in u32 in_chunk_id;
 
 layout(location = 0) out u32 out_chunk_id;
 layout(location = 1) out vec3 out_chunk_local_position;
@@ -93,7 +92,12 @@ void main()
 
     const vec3 point_within_chunk = pos_in_chunk + scaled_face_point_local;
 
-    const vec3 face_point_world = in_chunk_position.xyz + point_within_chunk;
+    const ivec3 in_chunk_position = ivec3(
+        in_gpu_chunk_data.data[in_chunk_id].world_offset_x,
+        in_gpu_chunk_data.data[in_chunk_id].world_offset_y,
+        in_gpu_chunk_data.data[in_chunk_id].world_offset_z);
+
+    const vec3 face_point_world = vec3(in_chunk_position.xyz) + point_within_chunk;
 
     const vec3 normal = unpackNormalId(in_normal_id);
 

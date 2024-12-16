@@ -1,22 +1,93 @@
-#ifndef SRC_SHADERS_INCLUDE_VOXEL_DESCRIPTORS_GLSL
-#define SRC_SHADERS_INCLUDE_VOXEL_DESCRIPTORS_GLSL
+#ifndef SRC_SHADERS_INCLUDE_NEW_VOXEL_DESCRIPTORS_GLSL
+#define SRC_SHADERS_INCLUDE_NEW_VOXEL_DESCRIPTORS_GLSL
 
 #include "types.glsl"
 
-struct MaybeBrickPointer
+layout(set = 1, binding = 0) buffer GlobalVoxelDataBuffer
 {
-    u32 pointer;
+    u32 number_of_visible_faces;
+    u32 number_of_indirect_dispatches_x;
+    u32 number_of_indirect_dispatches_y;
+    u32 number_of_indirect_dispatches_z;
+    u32 number_of_lights;
+    u32 readback_number_of_visible_faces;
+}
+in_global_voxel_data;
+
+struct ChunkBrickMap
+{
+    u16 data[8][8][8];
 };
 
-struct BrickPointer
+struct PerChunkGpuData
 {
-    u32 pointer;
+    i32           world_offset_x;
+    i32           world_offset_y;
+    i32           world_offset_z;
+    u32           brick_allocation_offset;
+    ChunkBrickMap data;
 };
+
+layout(set = 1, binding = 1) readonly buffer GpuChunkDataBuffer
+{
+    PerChunkGpuData data[];
+}
+in_gpu_chunk_data;
+
+u32 BrickMap_load(u32 chunk_id, uvec3 coord)
+{
+    return in_gpu_chunk_data.data[chunk_id].data.data[coord.x][coord.y][coord.z]
+         + in_gpu_chunk_data.data[chunk_id].brick_allocation_offset;
+}
+
+struct BrickParentInfo
+{
+    u32 data;
+};
+
+layout(set = 1, binding = 2) readonly buffer BrickParentInfoBuffer
+{
+    BrickParentInfo info[];
+}
+in_brick_parent_info;
 
 struct Voxel
 {
     u16 data;
 };
+
+struct MaterialBrick
+{
+    Voxel data[8][8][8];
+};
+
+layout(set = 1, binding = 3) readonly buffer MaterialBrickBuffer
+{
+    MaterialBrick brick[];
+}
+in_material_bricks;
+
+struct BitBrick
+{
+    u32 data[16];
+};
+
+layout(set = 1, binding = 4) readonly buffer ShadowBrickBuffer
+{
+    BitBrick brick[];
+}
+in_shadow_bricks;
+
+struct VisibilityBrick
+{
+    BitBrick view_dir[6];
+};
+
+layout(set = 1, binding = 5) buffer VisibilityBrickBuffer
+{
+    VisibilityBrick brick[];
+}
+in_visibility_bricks;
 
 struct GreedyVoxelFace
 {
@@ -43,127 +114,11 @@ u32 GreedyVoxelFace_height(GreedyVoxelFace self)
     return bitfieldExtract(self.data, 24, 6);
 }
 
-struct BrickMap
+layout(set = 1, binding = 6) readonly buffer GreedyVoxelFaces
 {
-    u32               _offset;
-    MaybeBrickPointer _data[8][8][8];
-};
-
-struct MaterialBrick
-{
-    Voxel data[8][8][8];
-};
-
-struct OpacityBrick
-{
-    u32 data[16];
-};
-
-struct VoxelMaterial
-{
-    vec4  ambient_color;
-    vec4  diffuse_color;
-    vec4  specular_color;
-    float diffuse_subsurface_weight;
-    float specular;
-    float roughness;
-    float metallic;
-    vec4  emissive_color_power;
-    vec4  coat_color_power;
-};
-
-struct BrickParentInfo
-{
-    u32 data;
-};
-
-struct VisibilityBrick
-{
-    OpacityBrick view_dir[6];
-};
-
-struct VisibleFaceData
-{
-    u32  data;
-    vec3 color;
-};
-
-struct FaceIdBrick
-{
-    u32 data[8][8][8];
-};
-
-struct DirectionalFaceIdBricks
-{
-    FaceIdBrick dir[6];
-};
-
-struct PointLight
-{
-    vec4 position;
-    vec4 color_and_power; // xyz = color, w = power
-    vec4 falloffs;        // x = constant, y = linear, z = quadratic, w = cubic
-};
-
-float estimateLightEffectiveDistance(PointLight light)
-{
-    return light.color_and_power.w / 256.0 * (sqrt(light.falloffs.z));
+    GreedyVoxelFace face[];
 }
-
-struct GpuChunkData
-{
-    ivec4 position;
-};
-
-layout(set = 1, binding = 0) readonly buffer GpuChunkDataBuffer
-{
-    GpuChunkData data[];
-}
-in_chunk_data;
-
-layout(set = 1, binding = 1) readonly buffer BrickMapBuffer
-{
-    BrickMap map[];
-}
-in_brick_maps;
-
-MaybeBrickPointer BrickMap_load(u32 chunkId, uvec3 coordinate)
-{
-    const MaybeBrickPointer localOffset =
-        in_brick_maps.map[chunkId]._data[coordinate.x][coordinate.y][coordinate.z];
-    const u32 globalOffset = in_brick_maps.map[chunkId]._offset;
-
-    if (localOffset.pointer != ~0u)
-    {
-        return MaybeBrickPointer(localOffset.pointer + globalOffset);
-    }
-
-    return MaybeBrickPointer(~0u);
-}
-
-layout(set = 1, binding = 2) readonly buffer BrickParentInfoBuffer
-{
-    BrickParentInfo info[];
-}
-in_brick_parent_info;
-
-layout(set = 1, binding = 3) readonly buffer MaterialBrickBuffer
-{
-    MaterialBrick brick[];
-}
-in_material_bricks;
-
-layout(set = 1, binding = 4) readonly buffer OpacityBrickBuffer
-{
-    OpacityBrick brick[];
-}
-in_opacity_bricks;
-
-layout(set = 1, binding = 5) buffer VisibilityBrickBuffer
-{
-    VisibilityBrick brick[];
-}
-in_visibility_bricks;
+in_greedy_voxel_faces;
 
 struct HashMapNode32
 {
@@ -171,7 +126,7 @@ struct HashMapNode32
     u32 value;
 };
 
-layout(set = 1, binding = 6) buffer DirectionalFaceIdBrickBuffer
+layout(set = 1, binding = 7) buffer VisibleFaceIdBrickStorage
 {
     HashMapNode32 node[];
 }
@@ -231,46 +186,36 @@ u32 face_id_map_read(u32 key)
     return kEmpty;
 }
 
-layout(set = 1, binding = 7) readonly buffer GreedyVoxelFaces
+struct VisibleFaceData
 {
-    GreedyVoxelFace face[];
-}
-in_greedy_voxel_faces;
+    u32  data;
+    vec3 color;
+};
 
-layout(set = 1, binding = 8) readonly buffer VoxelMaterialBuffer
-{
-    VoxelMaterial material[];
-}
-in_voxel_materials;
-
-layout(set = 1, binding = 9) buffer GlobalVoxelDataBuffer
-{
-    u32 number_of_visible_faces;
-    u32 number_of_indirect_dispatches_x;
-    u32 number_of_indirect_dispatches_y;
-    u32 number_of_indirect_dispatches_z;
-    u32 number_of_lights;
-    u32 readback_number_of_visible_faces;
-}
-in_global_voxel_data;
-
-layout(set = 1, binding = 10) buffer VisibleFaceDataBuffer
+layout(set = 1, binding = 8) buffer VisibleFaceDataBuffer
 {
     VisibleFaceData data[];
 }
 in_visible_face_data;
 
-layout(set = 1, binding = 11) readonly buffer PointLightsBuffer
+struct VoxelMaterial
 {
-    PointLight lights[];
-}
-in_point_lights;
+    vec4  ambient_color;
+    vec4  diffuse_color;
+    vec4  specular_color;
+    float diffuse_subsurface_weight;
+    float specular;
+    float roughness;
+    float metallic;
+    vec4  emissive_color_power;
+    vec4  coat_color_power;
+};
 
-layout(set = 1, binding = 12) readonly buffer GlobalChunkBuffer
+layout(set = 1, binding = 9) readonly buffer VoxelMaterialBuffer
 {
-    u16 chunk[256][256][256];
+    VoxelMaterial material[];
 }
-in_global_chunks;
+in_voxel_materials;
 
 vec3 unpackNormalId(u32 id)
 {
@@ -286,18 +231,4 @@ vec3 unpackNormalId(u32 id)
     return available_normals[id];
 }
 
-vec3 unpackBiNormalId(u32 id)
-{
-    const vec3 available_normals[6] = {
-        vec3(1.0, 0.0, 1.0),
-        vec3(1.0, -0.0, 1.0),
-        vec3(-0.0, 1.0, 1.0),
-        vec3(0.0, 1.0, 1.0),
-        vec3(1.0, 1.0, -0.0),
-        vec3(1.0, 1.0, 0.0),
-    };
-
-    return available_normals[id];
-}
-
-#endif // SRC_SHADERS_INCLUDE_VOXEL_DESCRIPTORS_GLSL
+#endif // SRC_SHADERS_INCLUDE_NEW_VOXEL_DESCRIPTORS_GLSL

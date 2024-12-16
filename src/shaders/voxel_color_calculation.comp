@@ -4,154 +4,160 @@
 #include "types.glsl"
 #include "voxel_descriptors.glsl"
 
-struct CalculatedLightPower
-{
-    vec3 diffuse_strength;
-    vec3 specular_strength;
-};
+// struct CalculatedLightPower
+// {
+//     vec3 diffuse_strength;
+//     vec3 specular_strength;
+// };
 
-CalculatedLightPower oldLightPower(
-    vec3          camera_position,
-    vec3          voxel_position,
-    vec3          voxel_normal,
-    PointLight    light,
-    VoxelMaterial material)
-{
-    vec3  to_light_vector   = light.position.xyz - voxel_position;
-    float to_light_distance = length(to_light_vector);
-    to_light_vector /= to_light_distance;
+// CalculatedLightPower oldLightPower(
+//     vec3          camera_position,
+//     vec3          voxel_position,
+//     vec3          voxel_normal,
+//     PointLight    light,
+//     VoxelMaterial material)
+// {
+//     vec3  to_light_vector   = light.position.xyz - voxel_position;
+//     float to_light_distance = length(to_light_vector);
+//     to_light_vector /= to_light_distance;
 
-    vec3 view_vector    = normalize(camera_position - voxel_position);
-    vec3 reflect_vector = 2.0 * dot(to_light_vector, voxel_normal) * voxel_normal - to_light_vector;
+//     vec3 view_vector    = normalize(camera_position - voxel_position);
+//     vec3 reflect_vector = 2.0 * dot(to_light_vector, voxel_normal) * voxel_normal -
+//     to_light_vector;
 
-    float attenuation =
-        1.0
-        / (light.falloffs.x + light.falloffs.y * to_light_distance
-           + light.falloffs.z * to_light_distance * to_light_distance
-           + light.falloffs.w * to_light_distance * to_light_distance * to_light_distance);
+//     float attenuation =
+//         1.0
+//         / (light.falloffs.x + light.falloffs.y * to_light_distance
+//            + light.falloffs.z * to_light_distance * to_light_distance
+//            + light.falloffs.w * to_light_distance * to_light_distance * to_light_distance);
 
-    // dot(voxel_normal, to_light_vector) * 0.5 + 0.5 half lambert
-    vec3 diffuse_strength = max(dot(voxel_normal, to_light_vector), 0.0) * light.color_and_power.rgb
-                          * light.color_and_power.w * attenuation;
-    vec3 specular_strength = pow(max(dot(reflect_vector, view_vector), 0.0), material.specular)
-                           * light.color_and_power.rgb * light.color_and_power.w * attenuation;
+//     // dot(voxel_normal, to_light_vector) * 0.5 + 0.5 half lambert
+//     vec3 diffuse_strength = max(dot(voxel_normal, to_light_vector), 0.0) *
+//     light.color_and_power.rgb
+//                           * light.color_and_power.w * attenuation;
+//     vec3 specular_strength = pow(max(dot(reflect_vector, view_vector), 0.0), material.specular)
+//                            * light.color_and_power.rgb * light.color_and_power.w * attenuation;
 
-    return CalculatedLightPower(diffuse_strength, specular_strength);
-}
+//     return CalculatedLightPower(diffuse_strength, specular_strength);
+// }
 
-CalculatedLightPower cooktd(
-    vec3          camera_position,
-    vec3          voxel_position,
-    vec3          voxel_normal,
-    PointLight    light,
-    VoxelMaterial material)
-{
-    // Calculate vectors
-    vec3 light_dir = normalize(light.position.xyz - voxel_position);
-    vec3 view_dir  = normalize(camera_position - voxel_position);
-    vec3 half_dir  = normalize(light_dir + view_dir);
+// CalculatedLightPower cooktd(
+//     vec3          camera_position,
+//     vec3          voxel_position,
+//     vec3          voxel_normal,
+//     PointLight    light,
+//     VoxelMaterial material)
+// {
+//     // Calculate vectors
+//     vec3 light_dir = normalize(light.position.xyz - voxel_position);
+//     vec3 view_dir  = normalize(camera_position - voxel_position);
+//     vec3 half_dir  = normalize(light_dir + view_dir);
 
-    // Diffuse reflection (Lambertian)
-    float diffuse_factor = max(dot(voxel_normal, light_dir), 0.0);
-    vec3  diffuse        = diffuse_factor * (1.0 - material.metallic) * material.diffuse_color.xyz;
+//     // Diffuse reflection (Lambertian)
+//     float diffuse_factor = max(dot(voxel_normal, light_dir), 0.0);
+//     vec3  diffuse        = diffuse_factor * (1.0 - material.metallic) *
+//     material.diffuse_color.xyz;
 
-    // Cook-Torrance specular reflection
-    float roughness_sq = material.roughness * material.roughness;
-    float HdotN        = max(dot(half_dir, voxel_normal), 0.0);
-    float D            = roughness_sq
-            / (3.14159265358979323846264 * pow(HdotN * HdotN * (roughness_sq - 1.0) + 1.0, 2.0));
-    float NdotL    = max(dot(voxel_normal, light_dir), 0.0);
-    float NdotV    = max(dot(voxel_normal, view_dir), 0.0);
-    float G        = min(1.0, 2.0 * HdotN * min(NdotL, NdotV) / max(NdotV, 0.001));
-    vec3  F        = mix(vec3(0.04), material.specular_color.xyz, material.metallic);
-    vec3  specular = (D * G * F) / (4.0 * max(NdotL, 0.001) * max(NdotV, 0.001));
+//     // Cook-Torrance specular reflection
+//     float roughness_sq = material.roughness * material.roughness;
+//     float HdotN        = max(dot(half_dir, voxel_normal), 0.0);
+//     float D            = roughness_sq
+//             / (3.14159265358979323846264 * pow(HdotN * HdotN * (roughness_sq - 1.0) + 1.0, 2.0));
+//     float NdotL    = max(dot(voxel_normal, light_dir), 0.0);
+//     float NdotV    = max(dot(voxel_normal, view_dir), 0.0);
+//     float G        = min(1.0, 2.0 * HdotN * min(NdotL, NdotV) / max(NdotV, 0.001));
+//     vec3  F        = mix(vec3(0.04), material.specular_color.xyz, material.metallic);
+//     vec3  specular = (D * G * F) / (4.0 * max(NdotL, 0.001) * max(NdotV, 0.001));
 
-    // Clear coat (optional improvement)
-    vec3  clear_coat_specular = material.coat_color_power.xyz * HdotN;
-    float clear_coat_factor   = material.coat_color_power.w;
+//     // Clear coat (optional improvement)
+//     vec3  clear_coat_specular = material.coat_color_power.xyz * HdotN;
+//     float clear_coat_factor   = material.coat_color_power.w;
 
-    // Light attenuation
-    float distance = max(length(light.position.xyz - voxel_position), 0.001);
-    float attenuation =
-        1.0
-        / (light.falloffs.x + light.falloffs.y * distance + light.falloffs.z * distance * distance);
+//     // Light attenuation
+//     float distance = max(length(light.position.xyz - voxel_position), 0.001);
+//     float attenuation =
+//         1.0
+//         / (light.falloffs.x + light.falloffs.y * distance + light.falloffs.z * distance *
+//         distance);
 
-    // Light contribution
-    float light_intensity = light.color_and_power.w * attenuation;
-    vec3  light_color     = light.color_and_power.xyz;
+//     // Light contribution
+//     float light_intensity = light.color_and_power.w * attenuation;
+//     vec3  light_color     = light.color_and_power.xyz;
 
-    // Diffuse and specular strengths
-    CalculatedLightPower lightPower;
-    lightPower.diffuse_strength = diffuse * light_color * light_intensity;
-    lightPower.specular_strength =
-        (specular + clear_coat_factor * clear_coat_specular) * light_color * light_intensity;
+//     // Diffuse and specular strengths
+//     CalculatedLightPower lightPower;
+//     lightPower.diffuse_strength = diffuse * light_color * light_intensity;
+//     lightPower.specular_strength =
+//         (specular + clear_coat_factor * clear_coat_specular) * light_color * light_intensity;
 
-    return lightPower;
-}
+//     return lightPower;
+// }
 
-CalculatedLightPower newLightPower(
-    vec3          camera_position,
-    vec3          voxel_position,
-    vec3          voxel_normal,
-    PointLight    light,
-    VoxelMaterial material)
-{
-    // Calculate vectors
-    vec3 light_dir = normalize(light.position.xyz - voxel_position); // Light direction
-    vec3 view_dir  = normalize(camera_position - voxel_position);    // View direction
-    vec3 half_dir  = normalize(light_dir + view_dir);                // Half vector
+// CalculatedLightPower newLightPower(
+//     vec3          camera_position,
+//     vec3          voxel_position,
+//     vec3          voxel_normal,
+//     PointLight    light,
+//     VoxelMaterial material)
+// {
+//     // Calculate vectors
+//     vec3 light_dir = normalize(light.position.xyz - voxel_position); // Light direction
+//     vec3 view_dir  = normalize(camera_position - voxel_position);    // View direction
+//     vec3 half_dir  = normalize(light_dir + view_dir);                // Half vector
 
-    // Diffuse reflection (Lambertian)
-    float diffuse_factor = max(dot(voxel_normal, light_dir), 0.0); // Ensure non-negative
-    vec3  diffuse        = diffuse_factor * material.diffuse_color.xyz;
+//     // Diffuse reflection (Lambertian)
+//     float diffuse_factor = max(dot(voxel_normal, light_dir), 0.0); // Ensure non-negative
+//     vec3  diffuse        = diffuse_factor * material.diffuse_color.xyz;
 
-    // GGX Normal Distribution Function (NDF)
-    float roughness_sq = material.roughness * material.roughness;
-    float HdotN        = max(dot(half_dir, voxel_normal), 0.0);
-    float NDF =
-        (roughness_sq)
-        / (3.14159265358979323846264 * pow((HdotN * HdotN) * (roughness_sq - 1.0) + 1.0, 2.0));
+//     // GGX Normal Distribution Function (NDF)
+//     float roughness_sq = material.roughness * material.roughness;
+//     float HdotN        = max(dot(half_dir, voxel_normal), 0.0);
+//     float NDF =
+//         (roughness_sq)
+//         / (3.14159265358979323846264 * pow((HdotN * HdotN) * (roughness_sq - 1.0) + 1.0, 2.0));
 
-    // Fresnel (Schlick's approximation)
-    float VdotH = max(dot(view_dir, half_dir), 0.0);
-    vec3  F0 =
-        mix(vec3(0.04), material.specular_color.xyz, material.metallic); // Dielectric/metal mix
-    vec3 Fresnel = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
+//     // Fresnel (Schlick's approximation)
+//     float VdotH = max(dot(view_dir, half_dir), 0.0);
+//     vec3  F0 =
+//         mix(vec3(0.04), material.specular_color.xyz, material.metallic); // Dielectric/metal mix
+//     vec3 Fresnel = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
 
-    // Geometry Term (Smith's method)
-    float NdotV    = max(dot(voxel_normal, view_dir), 0.0);
-    float NdotL    = max(dot(voxel_normal, light_dir), 0.0);
-    float G1       = NdotV / (NdotV * (1.0 - roughness_sq) + roughness_sq);
-    float G2       = NdotL / (NdotL * (1.0 - roughness_sq) + roughness_sq);
-    float Geometry = G1 * G2;
+//     // Geometry Term (Smith's method)
+//     float NdotV    = max(dot(voxel_normal, view_dir), 0.0);
+//     float NdotL    = max(dot(voxel_normal, light_dir), 0.0);
+//     float G1       = NdotV / (NdotV * (1.0 - roughness_sq) + roughness_sq);
+//     float G2       = NdotL / (NdotL * (1.0 - roughness_sq) + roughness_sq);
+//     float Geometry = G1 * G2;
 
-    // Specular reflection
-    vec3 specular = (NDF * Fresnel * Geometry)
-                  / (4.0 * NdotV * NdotL + 0.1); // Add small bias to avoid division by zero
+//     // Specular reflection
+//     vec3 specular = (NDF * Fresnel * Geometry)
+//                   / (4.0 * NdotV * NdotL + 0.1); // Add small bias to avoid division by zero
 
-    // Clear coat reflection (optional, extra specular layer)
-    vec3  clear_coat_specular = material.coat_color_power.xyz * specular;
-    float clear_coat_factor   = material.coat_color_power.w; // Intensity control
+//     // Clear coat reflection (optional, extra specular layer)
+//     vec3  clear_coat_specular = material.coat_color_power.xyz * specular;
+//     float clear_coat_factor   = material.coat_color_power.w; // Intensity control
 
-    // Light attenuation (inverse square falloff)
-    float distance = length(light.position.xyz - voxel_position);
-    float attenuation =
-        1.0
-        / (light.falloffs.x + light.falloffs.y * distance + light.falloffs.z * distance * distance);
+//     // Light attenuation (inverse square falloff)
+//     float distance = length(light.position.xyz - voxel_position);
+//     float attenuation =
+//         1.0
+//         / (light.falloffs.x + light.falloffs.y * distance + light.falloffs.z * distance *
+//         distance);
 
-    // Final light contribution
-    float light_intensity = light.color_and_power.w * attenuation;
-    vec3  light_color     = light.color_and_power.xyz;
+//     // Final light contribution
+//     float light_intensity = light.color_and_power.w * attenuation;
+//     vec3  light_color     = light.color_and_power.xyz;
 
-    // Combine diffuse and specular components
-    CalculatedLightPower lightPower;
-    lightPower.diffuse_strength =
-        diffuse * light_color * light_intensity * NdotL; // Add NdotL to account for light direction
-    lightPower.specular_strength =
-        (specular + clear_coat_specular * clear_coat_factor) * light_color * light_intensity;
+//     // Combine diffuse and specular components
+//     CalculatedLightPower lightPower;
+//     lightPower.diffuse_strength =
+//         diffuse * light_color * light_intensity * NdotL; // Add NdotL to account for light
+//         direction
+//     lightPower.specular_strength =
+//         (specular + clear_coat_specular * clear_coat_factor) * light_color * light_intensity;
 
-    return lightPower;
-}
+//     return lightPower;
+// }
 
 // CalculatedLightPower newest(
 //     vec3 camera_position,
@@ -229,226 +235,230 @@ CalculatedLightPower newLightPower(
 //     return lightPower;
 // }
 
-i32 moduloEuclideani32(i32 lhs, i32 rhs)
-{
-    if (lhs < 0)
-    {
-        // Offset lhs to ensure positive remainder
-        lhs += (-lhs / rhs + 1) * rhs;
-    }
+// i32 moduloEuclideani32(i32 lhs, i32 rhs)
+// {
+//     if (lhs < 0)
+//     {
+//         // Offset lhs to ensure positive remainder
+//         lhs += (-lhs / rhs + 1) * rhs;
+//     }
 
-    const i32 remainder = lhs % rhs;
-    if (remainder < 0)
-    {
-        return rhs > 0 ? remainder + rhs : remainder - rhs;
-    }
-    return remainder;
-}
+//     const i32 remainder = lhs % rhs;
+//     if (remainder < 0)
+//     {
+//         return rhs > 0 ? remainder + rhs : remainder - rhs;
+//     }
+//     return remainder;
+// }
 
-i32 divideEuclideani32(i32 lhs, i32 rhs)
-{
-    int quotient  = lhs / rhs;
-    int remainder = lhs % rhs;
+// i32 divideEuclideani32(i32 lhs, i32 rhs)
+// {
+//     int quotient  = lhs / rhs;
+//     int remainder = lhs % rhs;
 
-    // Adjust quotient for Euclidean behavior
-    if (remainder != 0 && ((rhs < 0) != (lhs < 0)))
-    {
-        quotient -= 1;
-    }
+//     // Adjust quotient for Euclidean behavior
+//     if (remainder != 0 && ((rhs < 0) != (lhs < 0)))
+//     {
+//         quotient -= 1;
+//     }
 
-    return quotient;
-}
+//     return quotient;
+// }
 
-struct GetIdxAndBitResult
-{
-    u32 idx;
-    u32 bit;
-};
+// struct GetIdxAndBitResult
+// {
+//     u32 idx;
+//     u32 bit;
+// };
 
-GetIdxAndBitResult getIdxAndBit(ivec3 p)
-{
-    const u32 linearIndex = p.x + p.z * 8 + p.y * 8 * 8;
+// GetIdxAndBitResult getIdxAndBit(ivec3 p)
+// {
+//     const u32 linearIndex = p.x + p.z * 8 + p.y * 8 * 8;
 
-    return GetIdxAndBitResult(linearIndex / 32, linearIndex % 32);
-}
+//     return GetIdxAndBitResult(linearIndex / 32, linearIndex % 32);
+// }
 
-bool OpactityBrick_readUnchecked(u32 ptr, ivec3 pos)
-{
-    GetIdxAndBitResult r = getIdxAndBit(pos);
+// bool OpactityBrick_readUnchecked(u32 ptr, ivec3 pos)
+// {
+//     GetIdxAndBitResult r = getIdxAndBit(pos);
 
-    if ((in_opacity_bricks.brick[ptr].data[r.idx] & (1u << r.bit)) == 0)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
-}
+//     if ((in_opacity_bricks.brick[ptr].data[r.idx] & (1u << r.bit)) == 0)
+//     {
+//         return false;
+//     }
+//     else
+//     {
+//         return true;
+//     }
+// }
 
-u32 getBrickOfWorldPosition(ivec3 pos)
-{
-    ivec3 globalChunkCoordinate = ivec3(
-        divideEuclideani32(pos.x, 64),
-        divideEuclideani32(pos.y, 64),
-        divideEuclideani32(pos.z, 64));
+// u32 getBrickOfWorldPosition(ivec3 pos)
+// {
+//     ivec3 globalChunkCoordinate = ivec3(
+//         divideEuclideani32(pos.x, 64),
+//         divideEuclideani32(pos.y, 64),
+//         divideEuclideani32(pos.z, 64));
 
-    ivec3 positionWithinChunk = ivec3(
-        moduloEuclideani32(pos.x, 64),
-        moduloEuclideani32(pos.y, 64),
-        moduloEuclideani32(pos.z, 64));
+//     ivec3 positionWithinChunk = ivec3(
+//         moduloEuclideani32(pos.x, 64),
+//         moduloEuclideani32(pos.y, 64),
+//         moduloEuclideani32(pos.z, 64));
 
-    u16 chunk = in_global_chunks.chunk[globalChunkCoordinate.x + 128][globalChunkCoordinate.y + 128]
-                                      [globalChunkCoordinate.z + 128];
+//     u16 chunk = in_global_chunks.chunk[globalChunkCoordinate.x + 128][globalChunkCoordinate.y +
+//     128]
+//                                       [globalChunkCoordinate.z + 128];
 
-    if (chunk == u16(-1))
-    {
-        return ~0u;
-    }
+//     if (chunk == u16(-1))
+//     {
+//         return ~0u;
+//     }
 
-    ivec3 brickCoordinate = positionWithinChunk / 8;
-    ivec3 brickPosition   = positionWithinChunk % 8;
+//     ivec3 brickCoordinate = positionWithinChunk / 8;
+//     ivec3 brickPosition   = positionWithinChunk % 8;
 
-    MaybeBrickPointer maybePtr = BrickMap_load(chunk, brickCoordinate);
+//     const u32 maybePtr = BrickMap_load(chunk, brickCoordinate);
 
-    return maybePtr.pointer;
-}
+//     return maybePtr;
+// }
 
-bool isGlobalPositionOccupied(ivec3 pos)
-{
-    // TODO: this isnt the right coordinate
-    ivec3 globalChunkCoordinate = ivec3(
-        divideEuclideani32(pos.x, 64),
-        divideEuclideani32(pos.y, 64),
-        divideEuclideani32(pos.z, 64));
+// bool isGlobalPositionOccupied(ivec3 pos)
+// {
+//     // TODO: this isnt the right coordinate
+//     ivec3 globalChunkCoordinate = ivec3(
+//         divideEuclideani32(pos.x, 64),
+//         divideEuclideani32(pos.y, 64),
+//         divideEuclideani32(pos.z, 64));
 
-    ivec3 positionWithinChunk = ivec3(
-        moduloEuclideani32(pos.x, 64),
-        moduloEuclideani32(pos.y, 64),
-        moduloEuclideani32(pos.z, 64));
+//     ivec3 positionWithinChunk = ivec3(
+//         moduloEuclideani32(pos.x, 64),
+//         moduloEuclideani32(pos.y, 64),
+//         moduloEuclideani32(pos.z, 64));
 
-    u16 chunk = in_global_chunks.chunk[globalChunkCoordinate.x + 128][globalChunkCoordinate.y + 128]
-                                      [globalChunkCoordinate.z + 128];
+//     u16 chunk = in_global_chunks.chunk[globalChunkCoordinate.x + 128][globalChunkCoordinate.y +
+//     128]
+//                                       [globalChunkCoordinate.z + 128];
 
-    if (chunk == u16(-1))
-    {
-        return false;
-    }
+//     if (chunk == u16(-1))
+//     {
+//         return false;
+//     }
 
-    ivec3 brickCoordinate = positionWithinChunk / 8;
-    ivec3 brickPosition   = positionWithinChunk % 8;
+//     ivec3 brickCoordinate = positionWithinChunk / 8;
+//     ivec3 brickPosition   = positionWithinChunk % 8;
 
-    MaybeBrickPointer maybePtr = BrickMap_load(chunk, brickCoordinate);
+//     MaybeBrickPointer maybePtr = BrickMap_load(chunk, brickCoordinate);
 
-    if (maybePtr.pointer == ~0u)
-    {
-        return false;
-    }
+//     if (maybePtr.pointer == ~0u)
+//     {
+//         return false;
+//     }
 
-    GetIdxAndBitResult r = getIdxAndBit(brickPosition);
+//     GetIdxAndBitResult r = getIdxAndBit(brickPosition);
 
-    if ((in_opacity_bricks.brick[maybePtr.pointer].data[r.idx] & (1u << r.bit)) == 0)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
-}
+//     if ((in_opacity_bricks.brick[maybePtr.pointer].data[r.idx] & (1u << r.bit)) == 0)
+//     {
+//         return false;
+//     }
+//     else
+//     {
+//         return true;
+//     }
+// }
 
-vec3 stepMask(vec3 sideDist)
-{
-    bvec3 mask;
-    bvec3 b1 = lessThan(sideDist.xyz, sideDist.yzx);
-    bvec3 b2 = lessThanEqual(sideDist.xyz, sideDist.zxy);
-    mask.z   = b1.z && b2.z;
-    mask.x   = b1.x && b2.x;
-    mask.y   = b1.y && b2.y;
-    if (!any(mask)) // Thank you Spalmer
-    {
-        mask.z = true;
-    }
+// vec3 stepMask(vec3 sideDist)
+// {
+//     bvec3 mask;
+//     bvec3 b1 = lessThan(sideDist.xyz, sideDist.yzx);
+//     bvec3 b2 = lessThanEqual(sideDist.xyz, sideDist.zxy);
+//     mask.z   = b1.z && b2.z;
+//     mask.x   = b1.x && b2.x;
+//     mask.y   = b1.y && b2.y;
+//     if (!any(mask)) // Thank you Spalmer
+//     {
+//         mask.z = true;
+//     }
 
-    return vec3(mask);
-}
+//     return vec3(mask);
+// }
 
-bool traceBlock(u32 brick, vec3 rayPos, vec3 rayDir, vec3 iMask, float max_dist)
-{
-    rayPos         = clamp(rayPos, vec3(0.0001), vec3(7.9999));
-    vec3 mapPos    = floor(rayPos);
-    vec3 raySign   = sign(rayDir);
-    vec3 deltaDist = 1.0 / rayDir;
-    vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
-    vec3 mask      = iMask;
+// bool traceBlock(u32 brick, vec3 rayPos, vec3 rayDir, vec3 iMask, float max_dist)
+// {
+//     rayPos         = clamp(rayPos, vec3(0.0001), vec3(7.9999));
+//     vec3 mapPos    = floor(rayPos);
+//     vec3 raySign   = sign(rayDir);
+//     vec3 deltaDist = 1.0 / rayDir;
+//     vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
+//     vec3 mask      = iMask;
 
-    for (int i = 0;
-         i < 27 && all(lessThanEqual(mapPos, vec3(7.0))) && all(greaterThanEqual(mapPos, vec3(0.0)))
-         && length(mapPos - rayPos) <= max_dist;
-         ++i)
-    {
-        if (OpactityBrick_readUnchecked(brick, ivec3(mapPos)))
-        {
-            return true;
-        }
+//     for (int i = 0;
+//          i < 27 && all(lessThanEqual(mapPos, vec3(7.0))) && all(greaterThanEqual(mapPos,
+//          vec3(0.0)))
+//          && length(mapPos - rayPos) <= max_dist;
+//          ++i)
+//     {
+//         if (OpactityBrick_readUnchecked(brick, ivec3(mapPos)))
+//         {
+//             return true;
+//         }
 
-        mask = stepMask(sideDist);
-        mapPos += mask * raySign;
-        sideDist += mask * raySign * deltaDist;
-    }
+//         mask = stepMask(sideDist);
+//         mapPos += mask * raySign;
+//         sideDist += mask * raySign * deltaDist;
+//     }
 
-    return false;
-}
+//     return false;
+// }
 
-bool traceWorld(vec3 rayPos, vec3 rayDir, float max_dist)
-{
-    vec3 mapPos    = floor(rayPos);
-    vec3 raySign   = sign(rayDir);
-    vec3 deltaDist = 1.0 / rayDir;
-    vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
-    vec3 mask      = stepMask(sideDist);
+// bool traceWorld(vec3 rayPos, vec3 rayDir, float max_dist)
+// {
+//     vec3 mapPos    = floor(rayPos);
+//     vec3 raySign   = sign(rayDir);
+//     vec3 deltaDist = 1.0 / rayDir;
+//     vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
+//     vec3 mask      = stepMask(sideDist);
 
-    for (int i = 0; i < 256 && length(mapPos - rayPos) < max_dist; i++)
-    {
-        u32 brick = getBrickOfWorldPosition(ivec3(mapPos * 8.0));
-        if (brick != ~0u)
-        {
-            vec3  mini      = ((mapPos - rayPos) + 0.5 - 0.5 * vec3(raySign)) * deltaDist;
-            float d         = max(mini.x, max(mini.y, mini.z));
-            vec3  intersect = rayPos + rayDir * d;
-            vec3  uv3d      = intersect - mapPos;
+//     for (int i = 0; i < 256 && length(mapPos - rayPos) < max_dist; i++)
+//     {
+//         u32 brick = getBrickOfWorldPosition(ivec3(mapPos * 8.0));
+//         if (brick != ~0u)
+//         {
+//             vec3  mini      = ((mapPos - rayPos) + 0.5 - 0.5 * vec3(raySign)) * deltaDist;
+//             float d         = max(mini.x, max(mini.y, mini.z));
+//             vec3  intersect = rayPos + rayDir * d;
+//             vec3  uv3d      = intersect - mapPos;
 
-            if (mapPos == floor(rayPos)) // Handle edge case where camera origin is inside of block
-            {
-                uv3d = rayPos - mapPos;
-            }
+//             if (mapPos == floor(rayPos)) // Handle edge case where camera origin is inside of
+//             block
+//             {
+//                 uv3d = rayPos - mapPos;
+//             }
 
-            bool hit = traceBlock(
-                brick, uv3d * 8.0, rayDir, mask, (max_dist - length(mapPos - rayPos)) * 8.0);
+//             bool hit = traceBlock(
+//                 brick, uv3d * 8.0, rayDir, mask, (max_dist - length(mapPos - rayPos)) * 8.0);
 
-            if (hit)
-            {
-                return true;
-            }
-        }
+//             if (hit)
+//             {
+//                 return true;
+//             }
+//         }
 
-        mask = stepMask(sideDist);
-        mapPos += mask * raySign;
-        sideDist += mask * raySign * deltaDist;
-    }
+//         mask = stepMask(sideDist);
+//         mapPos += mask * raySign;
+//         sideDist += mask * raySign * deltaDist;
+//     }
 
-    return false;
-}
+//     return false;
+// }
 
-bool traceDDARay(vec3 start, vec3 end)
-{
-    if (distance(end, start) > 512)
-    {
-        return true;
-    }
+// bool traceDDARay(vec3 start, vec3 end)
+// {
+//     if (distance(end, start) > 512)
+//     {
+//         return true;
+//     }
 
-    return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
-}
+//     return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
+// }
 
 vec3 exp_strength_falloff(vec3 strengths)
 {
@@ -496,64 +506,70 @@ void main()
 
         const VoxelMaterial this_material = in_voxel_materials.material[int(this_voxel.data)];
 
+        const ivec3 parent_chunk_world_position = ivec3(
+            in_gpu_chunk_data.data[parent_chunk].world_offset_x,
+            in_gpu_chunk_data.data[parent_chunk].world_offset_y,
+            in_gpu_chunk_data.data[parent_chunk].world_offset_z);
+
         // TODO: shouldn't be 0.5 the normal should be removed from this
         const ivec3 voxel_corner_pos_world =
-            in_chunk_data.data[parent_chunk].position.xyz + ivec3(chunk_local_position);
+            parent_chunk_world_position + ivec3(chunk_local_position);
         const vec3 sample_positon_world =
             vec3(voxel_corner_pos_world) + 0.5 + unpackNormalId(normal);
 
         vec3 sum_diffuse  = vec3(0.0);
         vec3 sum_specular = vec3(0.0);
 
-        for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
-        {
-            if (dot(unpackNormalId(normal),
-                    normalize(in_point_lights.lights[i].position.xyz - sample_positon_world))
-                < 0.0)
-            {
-                continue;
-            }
+        // for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
+        // {
+        //     if (dot(unpackNormalId(normal),
+        //             normalize(in_point_lights.lights[i].position.xyz - sample_positon_world))
+        //         < 0.0)
+        //     {
+        //         continue;
+        //     }
 
-            const bool isFaceInShadow =
-                traceDDARay(sample_positon_world, in_point_lights.lights[i].position.xyz);
+        // const bool isFaceInShadow =
+        //     traceDDARay(sample_positon_world, in_point_lights.lights[i].position.xyz);
 
-            if (!isFaceInShadow)
-            {
-                CalculatedLightPower power;
+        // if (!isFaceInShadow)
+        // {
+        // CalculatedLightPower power;
 
-                if (true) //(brick_pointer % 2 == 0)
-                {
-                    power = newLightPower(
-                        in_global_info.camera_position.xyz,
-                        sample_positon_world,
-                        unpackNormalId(normal),
-                        in_point_lights.lights[i],
-                        this_material);
-                }
-                else
-                {
-                    power = oldLightPower(
-                        in_global_info.camera_position.xyz,
-                        sample_positon_world,
-                        unpackNormalId(normal),
-                        in_point_lights.lights[i],
-                        this_material);
-                }
+        // if (true) //(brick_pointer % 2 == 0)
+        // {
+        //     power = newLightPower(
+        //         in_global_info.camera_position.xyz,
+        //         sample_positon_world,
+        //         unpackNormalId(normal),
+        //         in_point_lights.lights[i],
+        //         this_material);
+        // }
+        // else
+        // {
+        //     power = oldLightPower(
+        //         in_global_info.camera_position.xyz,
+        //         sample_positon_world,
+        //         unpackNormalId(normal),
+        //         in_point_lights.lights[i],
+        //         this_material);
+        // }
 
-                sum_diffuse += power.diffuse_strength;
-                // #warning no specular
-                sum_specular += power.specular_strength;
-            }
-        }
+        //     sum_diffuse += power.diffuse_strength;
+        //     // #warning no specular
+        //     sum_specular += power.specular_strength;
+        // }
+        // }
 
         sum_diffuse = clamp(sum_diffuse, 0.07, 1024.0);
 
-        vec3 realColor = clamp(
-            exp_strength_falloff(sum_diffuse) * this_material.diffuse_color.xyz
-                + exp_strength_falloff(sum_specular) * this_material.specular_color.xyz,
-            0.0,
-            1.0);
+        // vec3 realColor = clamp(
+        //     exp_strength_falloff(sum_diffuse) * this_material.diffuse_color.xyz
+        //         + exp_strength_falloff(sum_specular) * this_material.specular_color.xyz,
+        //     0.0,
+        //     1.0);
 
-        in_visible_face_data.data[global_invocation_index].color = realColor;
+        // in_visible_face_data.data[global_invocation_index].color = realColor;
+        in_visible_face_data.data[global_invocation_index].color = this_material.diffuse_color.xyz;
     }
 }

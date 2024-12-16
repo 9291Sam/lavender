@@ -1,9 +1,7 @@
 #pragma once
 
 #include "util/misc.hpp"
-#include "voxel/constants.hpp"
-#include "voxel/voxel.hpp"
-#include "voxel/world.hpp"
+#include "voxel/structures.hpp"
 #include <FastNoise/FastNoise.h>
 #include <boost/container/detail/destroyers.hpp>
 #include <random>
@@ -11,7 +9,7 @@
 
 namespace world
 {
-    struct WorldChunkGenerator : public voxel::World::ChunkGenerator
+    struct WorldChunkGenerator
     {
     public:
         explicit WorldChunkGenerator(std::size_t seed_) // NOLINT

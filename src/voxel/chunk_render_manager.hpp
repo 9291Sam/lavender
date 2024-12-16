@@ -48,6 +48,11 @@ namespace voxel
         processUpdatesAndGetDrawObjects(const gfx::vulkan::BufferStager&);
 
     private:
+        const game::Game* game;
+
+        // Global data
+        gfx::vulkan::WriteOnlyBuffer<GlobalVoxelData> global_voxel_data;
+
         // Per Chunk Data
         util::IndexAllocator                          chunk_id_allocator;
         std::vector<CpuChunkData>                     cpu_chunk_data;
@@ -55,18 +60,21 @@ namespace voxel
         static constexpr std::size_t VramOverheadPerChunk = sizeof(PerChunkGpuData);
 
         // Per Brick Data
-        util::RangeAllocator                        brick_range_allocator;
-        // gfx::vulkan::WriteOnlyBuffer<BrickParentInformation> per_brick_chunk_parent_info;
-        gfx::vulkan::CpuCachedBuffer<MaterialBrick> material_bricks;
-        // gfx::vulkan::CpuCachedBuffer<BitBrick>               shadow_bricks;
-        // gfx::vulkan::WriteOnlyBuffer<VisibilityBrick>        visibility_bricks;
-        static constexpr std::size_t                VramOverheadPerBrick =
+        util::RangeAllocator                                 brick_range_allocator;
+        gfx::vulkan::WriteOnlyBuffer<BrickParentInformation> per_brick_chunk_parent_info;
+        gfx::vulkan::CpuCachedBuffer<MaterialBrick>          material_bricks;
+        gfx::vulkan::CpuCachedBuffer<BitBrick>               shadow_bricks;
+        gfx::vulkan::WriteOnlyBuffer<VisibilityBrick>        visibility_bricks;
+        static constexpr std::size_t                         VramOverheadPerBrick =
             sizeof(BrickParentInformation) + sizeof(MaterialBrick) + sizeof(BitBrick)
             + sizeof(BitBrick) + sizeof(VisibilityBrick);
 
         // Greedily Meshed Voxel Data
         util::RangeAllocator                          voxel_face_allocator;
         gfx::vulkan::WriteOnlyBuffer<GreedyVoxelFace> voxel_faces;
+
+        gfx::vulkan::WriteOnlyBuffer<VisibleFaceIdBrickHashMapStorage> visible_face_id_map;
+        gfx::vulkan::WriteOnlyBuffer<VisibleFaceData>                  visible_face_data;
 
         // Actual Draw Data
 
@@ -78,11 +86,14 @@ namespace voxel
         gfx::vulkan::WriteOnlyBuffer<ChunkDrawIndirectInstancePayload> indirect_payload;
         gfx::vulkan::WriteOnlyBuffer<vk::DrawIndirectCommand>          indirect_commands;
 
-        // gfx::vulkan::WriteOnlyBuffer<VisibleFaceIdBrickHashMapStorage> visible_face_id_map;
         gfx::vulkan::WriteOnlyBuffer<VoxelMaterial> materials;
 
         std::shared_ptr<vk::UniqueDescriptorSetLayout> voxel_chunk_descriptor_set_layout;
-        std::shared_ptr<vk::UniquePipeline>            temporary_voxel_chunk_render_pipeline;
+
+        std::shared_ptr<vk::UniquePipeline> voxel_chunk_render_pipeline;
+        std::shared_ptr<vk::UniquePipeline> voxel_visibility_pipeline;
+        std::shared_ptr<vk::UniquePipeline> voxel_color_calculation_pipeline;
+        std::shared_ptr<vk::UniquePipeline> voxel_color_transfer_pipeline;
 
         vk::DescriptorSet global_descriptor_set;
         vk::DescriptorSet voxel_chunk_descriptor_set;
