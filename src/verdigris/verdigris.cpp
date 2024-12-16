@@ -128,22 +128,22 @@ namespace verdigris
     {
         gfx::profiler::TaskGenerator profilerTaskGenerator {};
 
-        for (const voxel::ChunkRenderManager::Chunk& c : this->chunks)
-        {
-            std::vector<voxel::ChunkLocalUpdate> us {};
+        // for (const voxel::ChunkRenderManager::Chunk& c : this->chunks)
+        // {
+        //     std::vector<voxel::ChunkLocalUpdate> us {};
 
-            us.push_back(voxel::ChunkLocalUpdate {
-                voxel::ChunkLocalPosition {{
-                    std::rand() % 64,
-                    std::rand() % 64,
-                    std::rand() % 64,
-                }},
-                static_cast<voxel::Voxel>((std::rand() % 11) + 1),
-                voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
-                voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
+        //     us.push_back(voxel::ChunkLocalUpdate {
+        //         voxel::ChunkLocalPosition {{
+        //             std::rand() % 64,
+        //             std::rand() % 64,
+        //             std::rand() % 64,
+        //         }},
+        //         static_cast<voxel::Voxel>((std::rand() % 11) + 1),
+        //         voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+        //         voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
 
-            this->chunk_render_manager.updateChunk(c, us);
-        }
+        //     this->chunk_render_manager.updateChunk(c, us);
+        // }
 
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {8.0, 16.0};

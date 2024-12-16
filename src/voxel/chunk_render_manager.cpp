@@ -963,6 +963,27 @@ namespace voxel
                 std::span<const ChunkDrawIndirectInstancePayload> {indirectPayload});
         }
 
+        game::FrameGenerator::RecordObject preFrameUpdate = game::FrameGenerator::RecordObject {
+            .transform {},
+            .render_pass {game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
+            .pipeline {nullptr},
+            .descriptors {},
+            .record_func {[this, indirectCommands, indirectPayload](
+                              vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                          {
+                              GlobalVoxelData data {
+                                  .number_of_visible_faces {},
+                                  .number_of_calculating_draws_x {},
+                                  .number_of_calculating_draws_y {},
+                                  .number_of_calculating_draws_z {},
+                                  .number_of_lights {0},
+                                  .readback_number_of_visible_faces {},
+                              };
+
+                              commandBuffer.updateBuffer(
+                                  *this->global_voxel_data, 0, sizeof(GlobalVoxelData) - 4, &data);
+                          }}};
+
         game::FrameGenerator::RecordObject chunkDraw = game::FrameGenerator::RecordObject {
             .transform {game::Transform {}},
             .render_pass {game::FrameGenerator::DynamicRenderingPass::VoxelRenderer},
@@ -1020,7 +1041,7 @@ namespace voxel
                               commandBuffer.draw(3, 1, 0, 0);
                           }}};
 
-        return {chunkDraw, visibilityDraw, colorCalculation, colorTransfer};
+        return {preFrameUpdate, chunkDraw, visibilityDraw, colorCalculation, colorTransfer};
     }
 
 } // namespace voxel
