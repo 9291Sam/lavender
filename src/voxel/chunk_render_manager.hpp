@@ -45,7 +45,7 @@ namespace voxel
         void updateChunk(const Chunk&, std::span<ChunkLocalUpdate>);
 
         std::vector<game::FrameGenerator::RecordObject>
-        processUpdatesAndGetDrawObjects(const gfx::vulkan::BufferStager&);
+        processUpdatesAndGetDrawObjects(const game::Camera&);
 
     private:
         const game::Game* game;

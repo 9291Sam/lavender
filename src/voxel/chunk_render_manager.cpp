@@ -1,4 +1,5 @@
 #include "chunk_render_manager.hpp"
+#include "game/frame_generator.hpp"
 #include "game/game.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/buffer.hpp"
@@ -9,6 +10,7 @@
 #include "util/range_allocator.hpp"
 #include "util/static_filesystem.hpp"
 #include "voxel/material_manager.hpp"
+#include <glm/geometric.hpp>
 #include <memory>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_structs.hpp>
@@ -45,18 +47,6 @@ namespace voxel
                         & (1ULL << static_cast<u64>(p.z)));
                 }
             }
-            // if its occupied, it removes it from the data structure
-            [[nodiscard]] bool isOccupiedClearing(glm::i8vec3 p)
-            {
-                const bool result = this->isOccupied(p);
-
-                if (result)
-                {
-                    this->write(p, false);
-                }
-
-                return result;
-            }
 
             [[nodiscard]] bool
             isEntireRangeOccupied(glm::i8vec3 base, glm::i8vec3 step, i8 range) const // NOLINT
@@ -75,16 +65,6 @@ namespace voxel
                 }
 
                 return isEntireRangeOccupied;
-            }
-
-            void clearEntireRange(glm::i8vec3 base, glm::i8vec3 step, i8 range)
-            {
-                for (i8 i = 0; i < range; ++i)
-                {
-                    glm::i8vec3 probe = base + step * i;
-
-                    this->write(probe, false);
-                }
             }
 
             void write(glm::i8vec3 p, bool filled)
@@ -284,11 +264,11 @@ namespace voxel
         // std::future<AsyncChunkUpdateResult> doChunkUpdate()
     } // namespace
 
-    static constexpr u32 MaxChunks          = 4096;
+    static constexpr u32 MaxChunks          = 4096; // max of u16
     static constexpr u32 DirectionsPerChunk = 6;
-    static constexpr u32 MaxBricks          = 1U << 20U;
-    static constexpr u32 MaxFaces           = 1U << 22U;
-    static constexpr u32 MaxFaceIdHashNodes = 1U << 23U;
+    static constexpr u32 MaxBricks          = 1U << 20U; // FIXED(shader bound)
+    static constexpr u32 MaxFaces           = 1U << 23U; // FIXED(shader bound)
+    static constexpr u32 MaxFaceIdHashNodes = 1U << 23U; // FIXED(shader bound)
     static constexpr u32 MaxLights          = 4096;
 
     ChunkRenderManager::ChunkRenderManager(const game::Game* game_)
@@ -332,7 +312,7 @@ namespace voxel
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxBricks),
               "Visibility Bricks")
-        , voxel_face_allocator(MaxFaces, MaxChunks * 12)
+        , voxel_face_allocator(MaxFaces, MaxChunks * 6)
         , voxel_faces(
               game_->getRenderer()->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
@@ -735,8 +715,10 @@ namespace voxel
     }
 
     std::vector<game::FrameGenerator::RecordObject>
-    ChunkRenderManager::processUpdatesAndGetDrawObjects(const gfx::vulkan::BufferStager& stager)
+    ChunkRenderManager::processUpdatesAndGetDrawObjects(const game::Camera& camera)
     {
+        const gfx::vulkan::BufferStager& stager = this->game->getRenderer()->getStager();
+
         std::vector<vk::DrawIndirectCommand>          indirectCommands {};
         std::vector<ChunkDrawIndirectInstancePayload> indirectPayload {};
 
@@ -747,6 +729,17 @@ namespace voxel
             [&](const u32 chunkId)
             {
                 CpuChunkData& thisChunkData = this->cpu_chunk_data[chunkId];
+
+                const glm::vec3 chunkPosition = [&]
+                {
+                    const PerChunkGpuData& gpuData = this->gpu_chunk_data.read(chunkId);
+
+                    return glm::vec3 {
+                        gpuData.world_offset_x,
+                        gpuData.world_offset_y,
+                        gpuData.world_offset_z,
+                    };
+                }();
 
                 if (!thisChunkData.updates.empty())
                 {
@@ -919,29 +912,107 @@ namespace voxel
                     thisChunkData.active_draw_allocations = allocations;
                 }
 
-                if (thisChunkData.active_draw_allocations.has_value())
+                // TODO: better opacity tests cpu-side culling
+                bool isChunkInFrustum = false;
+
+                isChunkInFrustum |=
+                    (glm::distance(camera.getPosition(), chunkPosition) < VoxelsPerChunkEdge * 4);
+
+                isChunkInFrustum |=
+                    (glm::all(glm::lessThan(
+                         camera.getPosition() - chunkPosition, glm::vec3 {VoxelsPerChunkEdge}))
+                     && glm::all(
+                         glm::greaterThan(camera.getPosition() - chunkPosition, glm::vec3 {0})));
+
+                for (auto x :
+                     {chunkPosition.x,
+                      chunkPosition.x + (VoxelsPerChunkEdge / 2.0f),
+                      chunkPosition.x + VoxelsPerChunkEdge})
                 {
+                    for (auto y :
+                         {chunkPosition.y,
+                          chunkPosition.y + (VoxelsPerChunkEdge / 2.0f),
+                          chunkPosition.y + VoxelsPerChunkEdge})
+                    {
+                        for (auto z :
+                             {chunkPosition.z,
+                              chunkPosition.z + (VoxelsPerChunkEdge / 2.0f),
+                              chunkPosition.z + VoxelsPerChunkEdge})
+                        {
+                            const glm::vec4 cornerPos {x, y, z, 1.0};
+
+                            const glm::vec4 res =
+                                camera.getPerspectiveMatrix(
+                                    *game, game::Transform {.translation {cornerPos}})
+                                * glm::vec4 {0.0, 0.0, 0.0, 1.0};
+
+                            if (glm::all(glm::lessThan(res.xyz() / res.w, glm::vec3 {1.5}))
+                                && glm::all(glm::greaterThan(res.xyz() / res.w, glm::vec3 {-1.5})))
+                            {
+                                isChunkInFrustum = true;
+                                goto exit;
+                            }
+                        }
+                    }
+                }
+            exit:
+
+                if (thisChunkData.active_draw_allocations.has_value() && isChunkInFrustum)
+                {
+                    const glm::vec3 chunkCenterPosition =
+                        chunkPosition + (VoxelsPerChunkEdge / 2.0f);
+
                     u32 normal = 0;
 
                     for (util::RangeAllocation a : *thisChunkData.active_draw_allocations)
                     {
                         const u32 numberOfFaces = this->voxel_face_allocator.getSizeOfAllocation(a);
 
-                        indirectCommands.push_back(vk::DrawIndirectCommand {
-                            .vertexCount {numberOfFaces * 6},
-                            .instanceCount {1},
-                            .firstVertex {a.offset * 6},
-                            .firstInstance {callNumber},
-                        });
+                        const glm::vec3 normalVector = static_cast<glm::vec3>(
+                            getDirFromDirection(static_cast<VoxelFaceDirection>(normal)));
+                        const glm::vec3 toChunkVector =
+                            glm::normalize(chunkCenterPosition - camera.getPosition());
+                        const glm::vec3 forwardVector = camera.getForwardVector();
 
-                        indirectPayload.push_back(ChunkDrawIndirectInstancePayload {
-                            .normal {normal}, .chunk_id {chunkId}});
+                        if ((glm::dot(forwardVector, toChunkVector) > 0.0f
+                             && glm::dot(toChunkVector, normalVector) < 0.0f)
+                            || (glm::distance(chunkCenterPosition, camera.getPosition())
+                                < VoxelsPerChunkEdge * 2.0f))
+                        {
+                            indirectCommands.push_back(vk::DrawIndirectCommand {
+                                .vertexCount {numberOfFaces * 6},
+                                .instanceCount {1},
+                                .firstVertex {a.offset * 6},
+                                .firstInstance {callNumber},
+                            });
 
-                        callNumber += 1;
+                            indirectPayload.push_back(ChunkDrawIndirectInstancePayload {
+                                .normal {normal}, .chunk_id {chunkId}});
+
+                            callNumber += 1;
+                            numberOfTotalFaces += numberOfFaces;
+                        }
                         normal += 1;
                     }
                 }
             });
+
+        // Update Debug Menu
+        ::numberOfChunksAllocated.store(this->chunk_id_allocator.getNumberAllocated());
+        ::numberOfChunksPossible.store(MaxChunks);
+
+        const auto [bricksAllocated, bricksPossible] = this->brick_range_allocator.getStorageInfo();
+        ::numberOfBricksAllocated.store(bricksAllocated);
+        ::numberOfBricksPossible.store(bricksPossible);
+
+        // this is just a data race but idc
+        const GlobalVoxelData* globalVoxelData =
+            this->global_voxel_data.getGpuDataNonCoherent().data();
+        ::numberOfFacesVisible.store(globalVoxelData->readback_number_of_visible_faces);
+        const auto [facesAllocated, facesPossible] = this->voxel_face_allocator.getStorageInfo();
+        ::numberOfFacesOnGpu.store(numberOfTotalFaces);
+        ::numberOfFacesAllocated.store(facesAllocated);
+        ::numberOfFacesPossible.store(facesPossible);
 
         this->gpu_chunk_data.flushViaStager(stager);
         this->material_bricks.flushViaStager(stager);

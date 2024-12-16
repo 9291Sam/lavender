@@ -31,8 +31,9 @@
 #include <vulkan/vulkan_structs.hpp>
 
 std::atomic<u32> numberOfFacesVisible   = 0; // NOLINT
-std::atomic<u32> numberOfFacesPossible  = 0; // NOLINT
+std::atomic<u32> numberOfFacesOnGpu     = 0; // NOLINT
 std::atomic<u32> numberOfFacesAllocated = 0; // NOLINT
+std::atomic<u32> numberOfFacesPossible  = 0; // NOLINT
 
 std::atomic<u32> numberOfChunksAllocated = 0; // NOLINT
 std::atomic<u32> numberOfChunksPossible  = 0; // NOLINT
@@ -1232,7 +1233,8 @@ namespace game
                         ImGui::PushStyleVar(
                             ImGuiStyleVar_WindowPadding, ImVec2(WindowPadding, WindowPadding));
 
-                        auto faces          = numberOfFacesVisible.load();
+                        auto facesVisible   = numberOfFacesVisible.load();
+                        auto facesOnGpu     = numberOfFacesOnGpu.load();
                         auto facesPossible  = numberOfFacesPossible.load();
                         auto facesAllocated = numberOfFacesAllocated.load();
 
@@ -1254,7 +1256,7 @@ namespace game
                             "Staging Usage: {}\n"
                             "Chunks {} / {} | {:.3f}%\n"
                             "Bricks {} / {} | {:.3f}%\n"
-                            "Faces {} / {} / {} | {:.3f}%\n",
+                            "Faces {} / {} / {} / {} | {:.3f}%\n",
                             camera.getPosition().x,
                             camera.getPosition().y,
                             camera.getPosition().z,
@@ -1278,10 +1280,12 @@ namespace game
                             bricksPossible,
                             100.0f * static_cast<float>(bricks)
                                 / static_cast<float>(bricksPossible),
-                            faces,
-                            facesPossible,
+                            facesVisible,
+                            facesOnGpu,
                             facesAllocated,
-                            100.0f * static_cast<float>(faces) / static_cast<float>(facesPossible));
+                            facesPossible,
+                            100.0f * static_cast<float>(facesVisible)
+                                / static_cast<float>(facesPossible));
 
                         ImGui::TextWrapped("%s", menuText.c_str()); // NOLINT
 

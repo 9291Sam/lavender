@@ -42,7 +42,8 @@ namespace util
         allocate(u32 size, std::source_location = std::source_location::current());
         [[nodiscard]] std::expected<RangeAllocation, OutOfBlocks> tryAllocate(u32 size);
 
-        [[nodiscard]] u32 getSizeOfAllocation(RangeAllocation) const;
+        [[nodiscard]] u32                 getSizeOfAllocation(RangeAllocation) const;
+        [[nodiscard]] std::pair<u32, u32> getStorageInfo() const;
 
         void free(RangeAllocation);
 

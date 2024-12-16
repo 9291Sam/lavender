@@ -15,6 +15,7 @@
 #include <vulkan/vulkan_handles.hpp>
 
 extern std::atomic<u32> numberOfFacesVisible;   // NOLINT
+extern std::atomic<u32> numberOfFacesOnGpu;     // NOLINT
 extern std::atomic<u32> numberOfFacesPossible;  // NOLINT
 extern std::atomic<u32> numberOfFacesAllocated; // NOLINT
 

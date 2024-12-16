@@ -60,6 +60,11 @@ namespace util
             .offset {allocation.offset}, .metadata {allocation.metadata}});
     }
 
+    std::pair<u32, u32> RangeAllocator::getStorageInfo() const
+    {
+        return this->internal_allocator->getUsedAndTotal();
+    }
+
     void RangeAllocator::free(RangeAllocation allocation)
     {
         this->internal_allocator->free(OffsetAllocator::Allocation {

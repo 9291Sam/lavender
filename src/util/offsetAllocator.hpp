@@ -1,5 +1,8 @@
+#pragma once
 // (C) Sebastian Aaltonen 2023
 // MIT License (see file: LICENSE)
+
+#include <tuple>
 
 // #define USE_16_BIT_OFFSETS
 
@@ -62,6 +65,10 @@ namespace OffsetAllocator
         uint32            allocationSize(Allocation allocation) const;
         StorageReport     storageReport() const;
         StorageReportFull storageReportFull() const;
+        [[nodiscard]] std::pair<std::uint32_t, std::uint32_t> getUsedAndTotal() const
+        {
+            return {this->m_size - this->storageReport().totalFreeSpace, this->m_size};
+        }
 
     private:
         uint32 insertNodeIntoBin(uint32 size, uint32 dataOffset);

@@ -83,37 +83,59 @@ namespace verdigris
         this->camera.addPitch(0.397f);
         this->camera.addYaw(3.87f);
 
-        this->chunks.push_back(
-            this->chunk_render_manager.createChunk(voxel::WorldPosition {{0, 0, 0}}));
+        // this->chunks.push_back(
+        //     this->chunk_render_manager.createChunk(voxel::WorldPosition {{0, 0, 0}}));
 
-        std::vector<voxel::ChunkLocalUpdate> updates {};
+        // std::vector<voxel::ChunkLocalUpdate> updates {};
 
-        for (int i = 0; i < 64; ++i)
+        // // for (int i = 0; i < 64; ++i)
+        // // {
+        // //     for (int j = 0; j < 64; ++j)
+        // //     {
+        // //         updates.push_back(voxel::ChunkLocalUpdate {
+        // //             voxel::ChunkLocalPosition {
+        // //                 {i,
+        // //                  static_cast<u8>(
+        // //                      (8.0 * std::sin(i / 12.0)) + (8.0 * std::cos(j / 12.0)) + 17.0),
+        // //                  j}},
+        // //             static_cast<voxel::Voxel>((std::rand() % 11) + 1),
+        // //             voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+        // //             voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
+        // //     }
+        // // }
+
+        // this->chunk_render_manager.updateChunk(this->chunks.front(), updates);
+
+        int radius = 4;
+
+        for (int x = -radius; x <= radius; ++x)
         {
-            for (int j = 0; j < 64; ++j)
+            for (int z = -radius; z <= radius; ++z)
             {
-                updates.push_back(voxel::ChunkLocalUpdate {
-                    voxel::ChunkLocalPosition {
-                        {i,
-                         static_cast<u8>(
-                             (8.0 * std::sin(i / 12.0)) + (8.0 * std::cos(j / 12.0)) + 17.0),
-                         j}},
+                this->chunks.push_back(this->chunk_render_manager.createChunk(
+                    voxel::WorldPosition {{64 * x, 0, 64 * z}}));
+            }
+        }
+
+        for (const voxel::ChunkRenderManager::Chunk& c : this->chunks)
+        {
+            std::vector<voxel::ChunkLocalUpdate> us {};
+
+            for (int i = 0; i < 8192; ++i)
+            {
+                us.push_back(voxel::ChunkLocalUpdate {
+                    voxel::ChunkLocalPosition {{
+                        std::rand() % 64,
+                        std::rand() % 64,
+                        std::rand() % 64,
+                    }},
                     static_cast<voxel::Voxel>((std::rand() % 11) + 1),
                     voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
                     voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
             }
+
+            this->chunk_render_manager.updateChunk(c, us);
         }
-
-        this->chunk_render_manager.updateChunk(this->chunks.front(), updates);
-
-        this->chunks.push_back(
-            this->chunk_render_manager.createChunk(voxel::WorldPosition {{64, 64, 64}}));
-        this->chunks.push_back(
-            this->chunk_render_manager.createChunk(voxel::WorldPosition {{64, 0, 0}}));
-        this->chunks.push_back(
-            this->chunk_render_manager.createChunk(voxel::WorldPosition {{0, 0, 64}}));
-        this->chunks.push_back(
-            this->chunk_render_manager.createChunk(voxel::WorldPosition {{64, 0, 64}}));
     }
 
     Verdigris::~Verdigris()
@@ -127,23 +149,6 @@ namespace verdigris
     game::Game::GameState::OnFrameReturnData Verdigris::onFrame(float deltaTime) const
     {
         gfx::profiler::TaskGenerator profilerTaskGenerator {};
-
-        // for (const voxel::ChunkRenderManager::Chunk& c : this->chunks)
-        // {
-        //     std::vector<voxel::ChunkLocalUpdate> us {};
-
-        //     us.push_back(voxel::ChunkLocalUpdate {
-        //         voxel::ChunkLocalPosition {{
-        //             std::rand() % 64,
-        //             std::rand() % 64,
-        //             std::rand() % 64,
-        //         }},
-        //         static_cast<voxel::Voxel>((std::rand() % 11) + 1),
-        //         voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
-        //         voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
-
-        //     this->chunk_render_manager.updateChunk(c, us);
-        // }
 
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {8.0, 16.0};
@@ -255,8 +260,7 @@ namespace verdigris
             });
 
         for (game::FrameGenerator::RecordObject& o :
-             this->chunk_render_manager.processUpdatesAndGetDrawObjects(
-                 this->game->getRenderer()->getStager()))
+             this->chunk_render_manager.processUpdatesAndGetDrawObjects(this->camera))
         {
             draws.push_back(std::move(o));
         }

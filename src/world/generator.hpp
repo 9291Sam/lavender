@@ -222,7 +222,7 @@ namespace world
             util::logTrace("modify list of {}", this->modify_list.size());
         }
 
-        ~WorldChunkGenerator() override = default;
+        ~WorldChunkGenerator() = default;
 
         std::vector<voxel::World::VoxelWrite>
         generateChunk(voxel::ChunkCoordinate coordinate) override
