@@ -49,7 +49,7 @@ namespace util
         return static_cast<std::underlying_type_t<T>>(t);
     }
 
-    constexpr inline std::string formCallingLocation(std::source_location location)
+    inline std::string formCallingLocation(std::source_location location)
     {
         constexpr std::array<std::string_view, 2> FolderIdentifiers {"/src/", "/inc/"};
         std::string                               rawFileName {location.file_name()};

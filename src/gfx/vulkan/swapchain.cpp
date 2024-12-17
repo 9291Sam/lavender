@@ -149,6 +149,8 @@ namespace gfx::vulkan
 
             idx += 1;
         }
+
+        util::logTrace("Created swapchain");
     }
 
     std::span<const vk::ImageView> Swapchain::getViews() const noexcept

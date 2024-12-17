@@ -304,6 +304,8 @@ namespace gfx::vulkan
             std::move(asyncComputeQueues);
         this->queues[static_cast<std::size_t>(QueueType::AsyncTransfer)] =
             std::move(asyncTransferQueues);
+
+        util::logTrace("Created device");
     }
 
     std::optional<u32> Device::getFamilyOfQueueType(QueueType t) const noexcept

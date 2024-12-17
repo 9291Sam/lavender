@@ -10,14 +10,16 @@
 
 namespace util
 {
+    static constexpr std::size_t MaxSizeT = std::numeric_limits<std::size_t>::max();
+
     InclusiveRange makeInvalidIterant()
     {
-        return InclusiveRange {~0UZ, ~0UZ};
+        return InclusiveRange {MaxSizeT, MaxSizeT};
     }
 
     bool isIterantInvalid(InclusiveRange r)
     {
-        return r.start == ~0UZ && r.end == ~0UZ;
+        return r.start == MaxSizeT && r.end == MaxSizeT;
     }
 
     // std::string formatVectorRanges(const std::vector<InclusiveRange>& r)
@@ -167,7 +169,7 @@ namespace util
 
         for (std::size_t& b : nonMonotonicBuckets)
         {
-            if (b == ~0UZ)
+            if (b == MaxSizeT)
             {
                 b = nextBucket++;
             }
@@ -187,7 +189,7 @@ namespace util
         std::vector<InclusiveRange> output {};
         output.resize(
             nextBucket,
-            InclusiveRange {.start {std::numeric_limits<std::size_t>::max()}, .end {0UZ}});
+            InclusiveRange {.start {std::numeric_limits<std::size_t>::max()}, .end {0}});
 
         for (std::size_t i = 0; i < mergedSortedRanges.size(); ++i)
         {

@@ -77,6 +77,7 @@ namespace game
             requires std::is_constructible_v<T, Game*>
         void loadGameState()
         {
+            util::logLog("Loading new GameState: {}", ctti::nameof<T>().cppstring());
             this->should_game_keep_ticking.store(false);
 
             this->active_game_state.lock(
@@ -88,7 +89,8 @@ namespace game
                 });
 
             this->should_game_keep_ticking.store(true);
-            util::logLog("Loading new GameState: {}", ctti::nameof<T>().cppstring());
+
+            util::logLog("Loaded new GameState: {}", ctti::nameof<T>().cppstring());
         }
         void terminateGame();
         void run();

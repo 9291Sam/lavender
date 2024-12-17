@@ -33,7 +33,7 @@ namespace world
 
             this->modify_list.reserve(1024 * 1024);
 
-            auto genVoxel = [&] -> voxel::Voxel
+            auto genVoxel = [&]
             {
                 return static_cast<voxel::Voxel>(pDist(gen));
             };
@@ -230,10 +230,10 @@ namespace world
             //     "generation of {}", glm::to_string(static_cast<glm::i32vec3>(coordinate)));
 
             std::vector<float> res {};
-            res.resize(64UZ * 64);
+            res.resize(64 * 64);
 
             std::vector<float> mat {};
-            mat.resize(64UZ * 64);
+            mat.resize(64 * 64);
 
             this->fractal->GenUniformGrid2D(
                 res.data(), root.z, root.x, 64, 64, 0.02f, static_cast<int>(this->seed * 13437));

@@ -186,6 +186,8 @@ namespace gfx::vulkan
             this->debug_messenger =
                 this->instance->createDebugUtilsMessengerEXTUnique(debugMessengerCreateInfo);
         }
+
+        util::logTrace("Created instance");
     }
 
     vk::Instance Instance::operator* () const noexcept

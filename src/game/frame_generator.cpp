@@ -418,6 +418,7 @@ namespace game
                           .name {"Skybox Pipeline Layout"}})},
                   .name {"Skybox Pipeline"}})}
     {
+        util::Timer t {"create FrameGenerator"};
         ImGui::CreateContext();
 
         const vk::DynamicLoader& loader = this->game->getRenderer()->getInstance()->getLoader();
@@ -453,6 +454,7 @@ namespace game
 
         this->game->getRenderer()->getWindow()->initializeImgui();
 
+        util::Timer tt {"acquire queue"};
         this->game->getRenderer()->getDevice()->acquireQueue(
             gfx::vulkan::Device::QueueType::Graphics,
             [&](vk::Queue q)
@@ -495,7 +497,7 @@ namespace game
                                               "Imgui ResultCheckFailed {}",
                                               vk::to_string(vk::Result {err}));
                                       }},
-                    .MinAllocationSize {1024UZ * 1024}};
+                    .MinAllocationSize {1024 * 1024}};
 
                 ImGui_ImplVulkan_Init(&initInfo);
 

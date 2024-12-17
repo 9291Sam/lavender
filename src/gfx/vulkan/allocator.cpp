@@ -93,6 +93,8 @@ namespace gfx::vulkan
             .flags {},
             .initialDataSize {0},
             .pInitialData {nullptr}});
+
+        util::logTrace("Created allocator");
     }
 
     Allocator::~Allocator()

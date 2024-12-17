@@ -700,7 +700,7 @@ namespace voxel
                 {
                     const PerChunkGpuData oldGpuData = this->gpu_chunk_data.read(chunkId);
 
-                    const std::size_t oldBricksPerChunk = [&] -> std::size_t
+                    const std::size_t oldBricksPerChunk = [&]
                     {
                         const std::optional<u16> maxValidOffset =
                             oldGpuData.data.getMaxValidOffset();

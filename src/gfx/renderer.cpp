@@ -82,6 +82,8 @@ namespace gfx
 
         this->critical_section = util::Mutex {
             Renderer::makeCriticalSection(*this->device, *this->surface, *this->window)};
+
+        util::logTrace("Created renderer");
     }
 
     Renderer::~Renderer() noexcept

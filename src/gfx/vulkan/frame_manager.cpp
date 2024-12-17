@@ -235,7 +235,9 @@ namespace gfx::vulkan
         , nullable_previous_frame_finished_fence {nullptr}
         , flying_frames {Frame {device_, swapchain, 0}, Frame {device_, swapchain, 1}, Frame {device_, swapchain, 2}}
         , flying_frame_index {0}
-    {}
+    {
+        util::logTrace("Created Frame Manager");
+    }
 
     FrameManager::~FrameManager() noexcept = default;
 
