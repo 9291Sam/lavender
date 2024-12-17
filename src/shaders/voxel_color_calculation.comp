@@ -139,13 +139,22 @@ CalculatedLightPower newLightPower(
     float clear_coat_factor   = material.coat_color_power.w; // Intensity control
 
     // Light attenuation (inverse square falloff)
-    float distance    = length(light.position_and_max_distance.xyz - voxel_position);
-    float attenuation = 1.0 / (light.position_and_max_distance.w - distance);
-    attenuation       = max(attenuation, 0.0);
+    float       dist        = length(light.position_and_max_distance.xyz - voxel_position);
+    const float maxDistance = light.position_and_max_distance.w;
+    const float light_power = light.color_and_power.w;
 
-    // Final light contribution
-    float light_intensity = light.color_and_power.w * attenuation;
-    vec3  light_color     = light.color_and_power.xyz;
+    // linear falloff
+    float light_intensity = light_power - (light_power / maxDistance) * dist;
+
+    // quadratic falloff
+    // float light_intensity = (dist * dist) / (maxDistance * maxDistance) + 1;
+
+    light_intensity = max(light_intensity, 0.0);
+    if (dist > maxDistance)
+    {
+        light_intensity = 0.0;
+    }
+    vec3 light_color = light.color_and_power.xyz;
 
     // Combine diffuse and specular components
     CalculatedLightPower lightPower;
@@ -547,15 +556,15 @@ void main()
             }
         }
 
-        sum_diffuse = clamp(sum_diffuse, 0.07, 1024.0);
+        sum_diffuse = clamp(sum_diffuse, 0.00, 1024.0);
 
-        vec3 realColor = clamp(
-            exp_strength_falloff(sum_diffuse) * this_material.diffuse_color.xyz
-                + exp_strength_falloff(sum_specular) * this_material.specular_color.xyz,
-            0.0,
-            1.0);
+        // vec3 realColor = clamp(
+        //     exp_strength_falloff(sum_diffuse) * this_material.diffuse_color.xyz
+        //         + exp_strength_falloff(sum_specular) * this_material.specular_color.xyz,
+        //     0.0,
+        //     1.0);
 
-        in_visible_face_data.data[global_invocation_index].color = realColor;
+        in_visible_face_data.data[global_invocation_index].color = sum_diffuse;
         // in_visible_face_data.data[global_invocation_index].color =
         // this_material.diffuse_color.xyz;
     }

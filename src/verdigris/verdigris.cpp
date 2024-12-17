@@ -144,24 +144,19 @@ namespace verdigris
         std::mt19937_64                     gen {73847375}; // NOLINT
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
 
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < 128; ++i)
         {
             this->raytraced_lights.push_back(
                 this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
                     .position_and_max_distance {
-                        glm::vec4 {// dist(gen) * 64,
-                                   // dist(gen) * 64,
-                                   // dist(gen) * 64,
-                                   // dist(gen) * 64,
-
-                                   32.0f,
-                                   32.0f,
-                                   32.0f,
-                                   64.0f},
+                        glm::vec4 {
+                            util::map(dist(gen), 0.0f, 1.0f, -256.0f, 256.0f),
+                            dist(gen) * 64,
+                            util::map(dist(gen), 0.0f, 1.0f, -256.0f, 256.0f),
+                            util::map(dist(gen), 0.0f, 1.0f, 0.0f, 256.0f),
+                        },
                     },
-                    // .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), dist(gen) *
-                    // 64}},
-                    .color_and_power {1.0f, 1.0f, 1.0f, 32.0f},
+                    .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), dist(gen)}},
                 }));
         }
     }

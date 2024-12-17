@@ -24,7 +24,7 @@ void main()
         sum += int(vert != ~0u);
         sum += int(diag != ~0u);
 
-        if (sum > 2)
+        if (sum > 0)
         {
             // ok, we are a gap, there's a chance that this is a false gap
             if (horz != ~0u)
