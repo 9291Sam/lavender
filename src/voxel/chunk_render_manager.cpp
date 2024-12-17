@@ -289,13 +289,13 @@ namespace voxel
         , indirect_payload(
               game_->getRenderer()->getAllocator(),
               vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxChunks * DirectionsPerChunk),
               "Indirect Payload")
         , indirect_commands(
               game_->getRenderer()->getAllocator(),
               vk::BufferUsageFlagBits::eIndirectBuffer | vk::BufferUsageFlagBits::eTransferDst,
-              vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostVisible,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxChunks * DirectionsPerChunk),
               "Indirect Commands")
         , materials(generateVoxelMaterialBuffer(game_->getRenderer()))
@@ -630,25 +630,27 @@ namespace voxel
 
     ChunkRenderManager::Chunk ChunkRenderManager::createChunk(WorldPosition newChunkWorldPosition)
     {
-        const u32 newChunkId = this->chunk_id_allocator.allocateOrPanic();
+        Chunk     newChunk = this->chunk_id_allocator.allocateOrPanic();
+        const u16 chunkId  = this->chunk_id_allocator.getValueOfHandle(newChunk);
 
-        this->cpu_chunk_data[newChunkId] = CpuChunkData {};
+        this->cpu_chunk_data[chunkId] = CpuChunkData {};
         const PerChunkGpuData newChunkGpuData {
             .world_offset_x {newChunkWorldPosition.x},
             .world_offset_y {newChunkWorldPosition.y},
             .world_offset_z {newChunkWorldPosition.z},
             .brick_allocation_offset {0},
             .data {}};
-        this->gpu_chunk_data.write(newChunkId, newChunkGpuData);
+        this->gpu_chunk_data.write(chunkId, newChunkGpuData);
 
-        return Chunk {newChunkId};
+        return newChunk;
     }
 
     void ChunkRenderManager::destroyChunk(Chunk chunk)
     {
-        const u32 chunkId = chunk.release();
+        CpuChunkData& thisCpuChunkData =
+            this->cpu_chunk_data[this->chunk_id_allocator.getValueOfHandle(chunk)];
 
-        CpuChunkData& thisCpuChunkData = this->cpu_chunk_data[chunkId];
+        this->chunk_id_allocator.free(std::move(chunk));
 
         if (std::optional allocation = thisCpuChunkData.active_brick_range_allocation)
         {
@@ -659,9 +661,8 @@ namespace voxel
     void ChunkRenderManager::updateChunk(
         const Chunk& chunk, std::span<const ChunkLocalUpdate> chunkUpdates)
     {
-        const u32 chunkId = chunk.value;
-
-        std::vector<ChunkLocalUpdate>& updatesQueue = this->cpu_chunk_data[chunkId].updates;
+        std::vector<ChunkLocalUpdate>& updatesQueue =
+            this->cpu_chunk_data[this->chunk_id_allocator.getValueOfHandle(chunk)].updates;
 
         for (const ChunkLocalUpdate& update : chunkUpdates)
         {
@@ -681,7 +682,7 @@ namespace voxel
         u32 numberOfTotalFaces = 0;
 
         this->chunk_id_allocator.iterateThroughAllocatedElements(
-            [&](const u32 chunkId)
+            [&](const u16 chunkId)
             {
                 CpuChunkData& thisChunkData = this->cpu_chunk_data[chunkId];
 
@@ -700,7 +701,7 @@ namespace voxel
                 {
                     const PerChunkGpuData oldGpuData = this->gpu_chunk_data.read(chunkId);
 
-                    const std::size_t oldBricksPerChunk = [&]
+                    const std::size_t oldBricksPerChunk = [&]() -> std::size_t
                     {
                         const std::optional<u16> maxValidOffset =
                             oldGpuData.data.getMaxValidOffset();

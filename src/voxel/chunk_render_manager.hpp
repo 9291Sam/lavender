@@ -21,10 +21,9 @@ namespace voxel
     class ChunkRenderManager
     {
     public:
-        using Chunk =
-            util::OpaqueHandle<"voxel::ChunkRenderManager::Chunk", u32, ChunkRenderManager>;
-        using PointLight =
-            util::OpaqueHandle<"voxel::ChunkRenderManager::PointLight", u16, ChunkRenderManager>;
+        // TODO: opaque handle allocator
+        using Chunk          = util::OpaqueHandle<"voxel::ChunkRenderManager::Chunk", u16>;
+        using RaytracedLight = util::OpaqueHandle<"voxel::ChunkRenderManager::RaytracedLight", u16>;
     public:
         explicit ChunkRenderManager(const game::Game*);
         ~ChunkRenderManager();
@@ -38,7 +37,7 @@ namespace voxel
         [[nodiscard]] Chunk createChunk(WorldPosition);
         void                destroyChunk(Chunk);
 
-        // PointLight
+        // RaytracedLight
         //      createPointLight(glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs);
         // void destroyPointLight(PointLight);
 
@@ -53,8 +52,13 @@ namespace voxel
         // Global data
         gfx::vulkan::WriteOnlyBuffer<GlobalVoxelData> global_voxel_data;
 
+        // RayTracedLights
+        // util::OpaqueHandleAllocator<RaytracedLight> raytraced_light_allocator;
+        // util::IndexAllocator                            raytraced_light_allocator;
+        // gfx::vulkan::WriteOnlyBuffer<GpuRaytracedLight> raytraced_lights;
+
         // Per Chunk Data
-        util::IndexAllocator                          chunk_id_allocator;
+        util::OpaqueHandleAllocator<Chunk>            chunk_id_allocator;
         std::vector<CpuChunkData>                     cpu_chunk_data;
         gfx::vulkan::CpuCachedBuffer<PerChunkGpuData> gpu_chunk_data;
         static constexpr std::size_t VramOverheadPerChunk = sizeof(PerChunkGpuData);

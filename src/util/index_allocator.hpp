@@ -72,7 +72,7 @@ namespace util
 
         void iterateThroughAllocatedElements(std::invocable<IndexType> auto func)
         {
-            for (u32 i = 0; i < this->next_available_block; ++i)
+            for (IndexType i = 0; i < this->next_available_block; ++i)
             {
                 if (!this->free_block_list.contains(i))
                 {

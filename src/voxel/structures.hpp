@@ -562,6 +562,12 @@ namespace voxel
         u32 readback_number_of_visible_faces;
     };
 
+    struct GpuRaytracedLight
+    {
+        glm::vec4 position_and_max_distance;
+        glm::vec4 color;
+    };
+
 } // namespace voxel
 
 template<>
