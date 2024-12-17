@@ -174,8 +174,7 @@ namespace verdigris
                 }
             });
 
-        std::mt19937_64                       gen {std::random_device {}()};
-        std::uniform_real_distribution<float> pDist {8.0, 16.0};
+        profilerTaskGenerator.stamp("Chunk Update");
 
         // TODO: moving diagonally is faster
         const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
@@ -261,6 +260,8 @@ namespace verdigris
         this->camera.addYaw(xDelta * rotateSpeedScale);
         this->camera.addPitch(yDelta * rotateSpeedScale);
 
+        profilerTaskGenerator.stamp("Camera Update");
+
         std::vector<game::FrameGenerator::RecordObject> draws {};
 
         ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
@@ -282,12 +283,14 @@ namespace verdigris
                         }},
                 });
             });
+        profilerTaskGenerator.stamp("triangle update");
 
         for (game::FrameGenerator::RecordObject& o :
              this->chunk_render_manager.processUpdatesAndGetDrawObjects(this->camera))
         {
             draws.push_back(std::move(o));
         }
+        profilerTaskGenerator.stamp("chunk render manager update");
 
         return OnFrameReturnData {
             .main_scene_camera {this->camera},
