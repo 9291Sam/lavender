@@ -42,7 +42,7 @@ namespace voxel
         //      createPointLight(glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs);
         // void destroyPointLight(PointLight);
 
-        void updateChunk(const Chunk&, std::span<ChunkLocalUpdate>);
+        void updateChunk(const Chunk&, std::span<const ChunkLocalUpdate>);
 
         std::vector<game::FrameGenerator::RecordObject>
         processUpdatesAndGetDrawObjects(const game::Camera&);

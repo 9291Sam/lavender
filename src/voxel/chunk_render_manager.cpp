@@ -47,51 +47,6 @@ namespace voxel
                         & (1ULL << static_cast<u64>(p.z)));
                 }
             }
-
-            [[nodiscard]] bool
-            isEntireRangeOccupied(glm::i8vec3 base, glm::i8vec3 step, i8 range) const // NOLINT
-            {
-                bool isEntireRangeOccupied = true;
-
-                for (i8 i = 0; i < range; ++i)
-                {
-                    glm::i8vec3 probe = base + step * i;
-
-                    if (!this->isOccupied(probe))
-                    {
-                        isEntireRangeOccupied = false;
-                        break;
-                    }
-                }
-
-                return isEntireRangeOccupied;
-            }
-
-            void write(glm::i8vec3 p, bool filled)
-            {
-                if constexpr (util::isDebugBuild())
-                {
-                    util::assertFatal(
-                        p.x >= 0 && p.x < 64 && p.y >= 0 && p.y < 64 && p.z >= 0 && p.z < 64,
-                        "{} {} {}",
-                        p.x,
-                        p.y,
-                        p.z);
-                }
-
-                if (filled)
-                {
-                    // NOLINTNEXTLINE
-                    this->data[static_cast<std::size_t>(p.x)][static_cast<std::size_t>(p.y)] |=
-                        (u64 {1} << static_cast<u64>(p.z));
-                }
-                else
-                {
-                    // NOLINTNEXTLINE
-                    this->data[static_cast<std::size_t>(p.x)][static_cast<std::size_t>(p.y)] &=
-                        ~(u64 {1} << static_cast<u64>(p.z));
-                }
-            }
         };
 
         struct BrickList
@@ -701,8 +656,8 @@ namespace voxel
         }
     }
 
-    void
-    ChunkRenderManager::updateChunk(const Chunk& chunk, std::span<ChunkLocalUpdate> chunkUpdates)
+    void ChunkRenderManager::updateChunk(
+        const Chunk& chunk, std::span<const ChunkLocalUpdate> chunkUpdates)
     {
         const u32 chunkId = chunk.value;
 
@@ -912,7 +867,6 @@ namespace voxel
                     thisChunkData.active_draw_allocations = allocations;
                 }
 
-                // TODO: better opacity tests cpu-side culling
                 bool isChunkInFrustum = false;
 
                 isChunkInFrustum |=
@@ -977,7 +931,7 @@ namespace voxel
                         if ((glm::dot(forwardVector, toChunkVector) > 0.0f
                              && glm::dot(toChunkVector, normalVector) < 0.0f)
                             || (glm::distance(chunkCenterPosition, camera.getPosition())
-                                < VoxelsPerChunkEdge * 2.0f))
+                                < VoxelsPerChunkEdge * 3.0f))
                         {
                             indirectCommands.push_back(vk::DrawIndirectCommand {
                                 .vertexCount {numberOfFaces * 6},

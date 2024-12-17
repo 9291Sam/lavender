@@ -4,6 +4,7 @@
 #include "util/misc.hpp"
 #include "util/opaque_integer_handle.hpp"
 #include "util/range_allocator.hpp"
+#include <compare>
 #include <ctti/nameof.hpp>
 #include <future>
 #include <glm/fwd.hpp>
@@ -80,6 +81,11 @@ namespace voxel
         [[nodiscard]] std::size_t asLinearIndex() const noexcept
         {
             return this->x + (Bound * this->y) + (Bound * Bound * this->z);
+        }
+
+        constexpr std::strong_ordering operator<=> (const VoxelCoordinateBase& other) const
+        {
+            return std::tie(this->x, this->y, this->z) <=> std::tie(other.x, other.y, other.z);
         }
     };
 
@@ -557,3 +563,13 @@ namespace voxel
     };
 
 } // namespace voxel
+
+template<>
+struct std::hash<voxel::WorldPosition> // NOLINT
+{
+    std::size_t operator() (const voxel::WorldPosition& c) const
+    {
+        return std::hash<voxel::WorldPosition::VectorType> {}(
+            static_cast<voxel::WorldPosition::VectorType>(c));
+    }
+};

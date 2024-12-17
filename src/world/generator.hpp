@@ -22,8 +22,6 @@ namespace world
             this->fractal->SetGain(1.024f);
             this->fractal->SetLacunarity(2.534f);
 
-            std::vector<voxel::World::VoxelWrite> writeList {};
-
             auto insertVoxelAt = [&](glm::i32vec3 p, voxel::Voxel v) mutable
             {
                 this->modify_list[{voxel::WorldPosition {p}}] = v;
@@ -32,6 +30,8 @@ namespace world
             std::mt19937_64                    gen {std::random_device {}()};
             std::normal_distribution<float>    realDist {64, 3};
             std::uniform_int_distribution<u16> pDist {1, 8};
+
+            this->modify_list.reserve(1024 * 1024);
 
             auto genVoxel = [&] -> voxel::Voxel
             {
@@ -224,18 +224,10 @@ namespace world
 
         ~WorldChunkGenerator() = default;
 
-        std::vector<voxel::World::VoxelWrite>
-        generateChunk(voxel::ChunkCoordinate coordinate) override
+        std::vector<voxel::ChunkLocalUpdate> generateChunk(voxel::WorldPosition root)
         {
-            if (coordinate.y != 0)
-            {
-                return {};
-            }
-
             // util::logTrace(
             //     "generation of {}", glm::to_string(static_cast<glm::i32vec3>(coordinate)));
-
-            voxel::WorldPosition root = voxel::getWorldPositionOfChunkCoordinate(coordinate);
 
             std::vector<float> res {};
             res.resize(64UZ * 64);
@@ -253,7 +245,7 @@ namespace world
             const std::array<std::array<float, 64>, 64>* matptr = // NOLINTNEXTLINE
                 reinterpret_cast<const std::array<std::array<float, 64>, 64>*>(mat.data());
 
-            std::vector<voxel::World::VoxelWrite> out {};
+            std::vector<voxel::ChunkLocalUpdate> out {};
             out.reserve(4096);
 
             for (std::size_t i = 0; i < 64; ++i)
@@ -265,8 +257,8 @@ namespace world
 
                     for (u8 h = 0; h < 64; ++h)
                     {
-                        voxel::WorldPosition worldPosition = voxel::assembleWorldPosition(
-                            coordinate, voxel::ChunkLocalPosition {{i, h, j}});
+                        voxel::WorldPosition worldPosition =
+                            voxel::WorldPosition {{root + glm::ivec3 {i, h, j}}};
 
                         decltype(this->modify_list)::const_iterator maybeIt =
                             this->modify_list.find(worldPosition);
@@ -285,8 +277,11 @@ namespace world
 
                         if (v != voxel::Voxel::NullAirEmpty)
                         {
-                            out.push_back(
-                                voxel::World::VoxelWrite {.position {worldPosition}, .voxel {v}});
+                            out.push_back(voxel::ChunkLocalUpdate {
+                                voxel::ChunkLocalPosition {{i, h, j}},
+                                v,
+                                voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+                                voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
                         }
                     }
                 }

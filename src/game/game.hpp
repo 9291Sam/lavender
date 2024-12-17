@@ -6,6 +6,7 @@
 #include "gfx/profiler/task_generator.hpp"
 #include <atomic>
 #include <concepts>
+#include <ctti/nameof.hpp>
 #include <memory>
 #include <type_traits>
 #include <util/threads.hpp>
@@ -87,6 +88,7 @@ namespace game
                 });
 
             this->should_game_keep_ticking.store(true);
+            util::logLog("Loading new GameState: {}", ctti::nameof<T>().cppstring());
         }
         void terminateGame();
         void run();

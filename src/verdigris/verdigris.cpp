@@ -14,6 +14,7 @@
 #include "util/static_filesystem.hpp"
 #include "voxel/chunk_render_manager.hpp"
 #include "voxel/structures.hpp"
+#include "world/generator.hpp"
 #include <FastNoise/FastNoise.h>
 #include <boost/container_hash/hash_fwd.hpp>
 #include <boost/range/numeric.hpp>
@@ -106,49 +107,72 @@ namespace verdigris
 
         // this->chunk_render_manager.updateChunk(this->chunks.front(), updates);
 
-        int radius = 4;
+        this->chunks =
+            std::async(
+                [this]
+                {
+                    world::WorldChunkGenerator gen {789123};
 
-        for (int x = -radius; x <= radius; ++x)
-        {
-            for (int z = -radius; z <= radius; ++z)
-            {
-                this->chunks.push_back(this->chunk_render_manager.createChunk(
-                    voxel::WorldPosition {{64 * x, 0, 64 * z}}));
-            }
-        }
+                    const std::int64_t radius = 4;
 
-        for (const voxel::ChunkRenderManager::Chunk& c : this->chunks)
-        {
-            std::vector<voxel::ChunkLocalUpdate> us {};
+                    std::vector<voxel::ChunkRenderManager::Chunk> threadChunks {};
+                    threadChunks.reserve(radius * 2 * radius * 3);
 
-            for (int i = 0; i < 8192; ++i)
-            {
-                us.push_back(voxel::ChunkLocalUpdate {
-                    voxel::ChunkLocalPosition {{
-                        std::rand() % 64,
-                        std::rand() % 64,
-                        std::rand() % 64,
-                    }},
-                    static_cast<voxel::Voxel>((std::rand() % 11) + 1),
-                    voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
-                    voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
-            }
+                    for (int x = -radius; x <= radius; ++x)
+                    {
+                        for (int z = -radius; z <= radius; ++z)
+                        {
+                            const voxel::WorldPosition pos {{64 * x, 0, 64 * z}};
 
-            this->chunk_render_manager.updateChunk(c, us);
-        }
+                            threadChunks.push_back(this->chunk_render_manager.createChunk(pos));
+
+                            std::vector<voxel::ChunkLocalUpdate> slowUpdates =
+                                gen.generateChunk(pos);
+
+                            this->updates.lock(
+                                [&](std::vector<std::pair<
+                                        const voxel::ChunkRenderManager::Chunk*,
+                                        std::vector<voxel::ChunkLocalUpdate>>>& lockedUpdates)
+                                {
+                                    lockedUpdates.push_back(
+                                        {&*threadChunks.crbegin(), slowUpdates});
+                                });
+                        }
+                    }
+
+                    return threadChunks;
+                })
+                .share();
     }
 
     Verdigris::~Verdigris()
     {
-        for (voxel::ChunkRenderManager::Chunk& c : this->chunks)
+        for (const voxel::ChunkRenderManager::Chunk& c : this->chunks.get())
         {
-            this->chunk_render_manager.destroyChunk(std::move(c));
+            this->chunk_render_manager.destroyChunk(
+                std::move(const_cast<voxel::ChunkRenderManager::Chunk&>(c)));
         }
     }
 
     game::Game::GameState::OnFrameReturnData Verdigris::onFrame(float deltaTime) const
     {
         gfx::profiler::TaskGenerator profilerTaskGenerator {};
+
+        this->updates.lock(
+            [&](std::vector<std::pair<
+                    const voxel::ChunkRenderManager::Chunk*,
+                    std::vector<voxel::ChunkLocalUpdate>>>& lockedUpdates)
+            {
+                if (!lockedUpdates.empty())
+                {
+                    const auto it                       = lockedUpdates.crbegin();
+                    const auto [chunkPtr, localUpdates] = *it;
+
+                    this->chunk_render_manager.updateChunk(*chunkPtr, localUpdates);
+
+                    lockedUpdates.pop_back();
+                }
+            });
 
         std::mt19937_64                       gen {std::random_device {}()};
         std::uniform_real_distribution<float> pDist {8.0, 16.0};

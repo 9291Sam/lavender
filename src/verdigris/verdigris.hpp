@@ -3,18 +3,24 @@
 #include "ecs/entity.hpp"
 #include "game/game.hpp"
 #include "voxel/chunk_render_manager.hpp"
+#include "voxel/structures.hpp"
+#include "world/generator.hpp"
 #include <vulkan/vulkan_handles.hpp>
 
 namespace verdigris
 {
     struct Verdigris : public game::Game::GameState
     {
-        mutable game::Camera                          camera;
-        game::Game*                                   game;
-        std::shared_ptr<vk::UniquePipeline>           triangle_pipeline;
-        ecs::UniqueEntity                             triangle;
-        mutable voxel::ChunkRenderManager             chunk_render_manager;
-        std::vector<voxel::ChunkRenderManager::Chunk> chunks;
+        mutable game::Camera                                              camera;
+        game::Game*                                                       game;
+        std::shared_ptr<vk::UniquePipeline>                               triangle_pipeline;
+        ecs::UniqueEntity                                                 triangle;
+        mutable voxel::ChunkRenderManager                                 chunk_render_manager;
+        std::shared_future<std::vector<voxel::ChunkRenderManager::Chunk>> chunks;
+        util::Mutex<std::vector<std::pair<
+            const voxel::ChunkRenderManager::Chunk*,
+            std::vector<voxel::ChunkLocalUpdate>>>>
+            updates;
 
         explicit Verdigris(game::Game*);
 
