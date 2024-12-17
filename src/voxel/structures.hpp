@@ -64,7 +64,7 @@ namespace voxel
 
         static Derived fromLinearIndex(std::size_t linearIndex)
         {
-            static_assert(Bound != -1);
+            static_assert(Bound != static_cast<V::value_type>(-1));
 
             const typename V::type z = static_cast<V::type>(linearIndex / (Bound * Bound));
             const typename V::type y = (linearIndex / Bound) % Bound;

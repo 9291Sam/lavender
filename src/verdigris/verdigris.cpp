@@ -5,6 +5,7 @@
 #include "ecs/raw_entity.hpp"
 #include "game/frame_generator.hpp"
 #include "game/game.hpp"
+#include "game/transform.hpp"
 #include "gfx/profiler/task_generator.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
@@ -107,47 +108,43 @@ namespace verdigris
 
         // this->chunk_render_manager.updateChunk(this->chunks.front(), updates);
 
-        this->chunks =
-            std::async(
-                [this]
+        this->chunks = std::async(
+            [this]
+            {
+                world::WorldChunkGenerator gen {789123};
+
+                const std::int64_t radius = 4;
+
+                std::vector<voxel::ChunkRenderManager::Chunk> threadChunks {};
+                threadChunks.reserve(radius * 2 * radius * 3);
+
+                for (int x = -radius; x <= radius; ++x)
                 {
-                    world::WorldChunkGenerator gen {789123};
-
-                    const std::int64_t radius = 4;
-
-                    std::vector<voxel::ChunkRenderManager::Chunk> threadChunks {};
-                    threadChunks.reserve(radius * 2 * radius * 3);
-
-                    for (int x = -radius; x <= radius; ++x)
+                    for (int z = -radius; z <= radius; ++z)
                     {
-                        for (int z = -radius; z <= radius; ++z)
-                        {
-                            const voxel::WorldPosition pos {{64 * x, 0, 64 * z}};
+                        const voxel::WorldPosition pos {{64 * x, 0, 64 * z}};
 
-                            threadChunks.push_back(this->chunk_render_manager.createChunk(pos));
+                        threadChunks.push_back(this->chunk_render_manager.createChunk(pos));
 
-                            std::vector<voxel::ChunkLocalUpdate> slowUpdates =
-                                gen.generateChunk(pos);
+                        std::vector<voxel::ChunkLocalUpdate> slowUpdates = gen.generateChunk(pos);
 
-                            this->updates.lock(
-                                [&](std::vector<std::pair<
-                                        const voxel::ChunkRenderManager::Chunk*,
-                                        std::vector<voxel::ChunkLocalUpdate>>>& lockedUpdates)
-                                {
-                                    lockedUpdates.push_back(
-                                        {&*threadChunks.crbegin(), slowUpdates});
-                                });
-                        }
+                        this->updates.lock(
+                            [&](std::vector<std::pair<
+                                    const voxel::ChunkRenderManager::Chunk*,
+                                    std::vector<voxel::ChunkLocalUpdate>>>& lockedUpdates)
+                            {
+                                lockedUpdates.push_back({&*threadChunks.crbegin(), slowUpdates});
+                            });
                     }
+                }
 
-                    return threadChunks;
-                })
-                .share();
+                return threadChunks;
+            });
 
         std::mt19937_64                     gen {73847375}; // NOLINT
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
 
-        for (int i = 0; i < 8; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             this->raytraced_lights.push_back(
                 this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
@@ -171,10 +168,14 @@ namespace verdigris
 
     Verdigris::~Verdigris()
     {
-        for (const voxel::ChunkRenderManager::Chunk& c : this->chunks.get())
+        for (voxel::ChunkRenderManager::Chunk& c : this->chunks.get())
         {
-            this->chunk_render_manager.destroyChunk(
-                std::move(const_cast<voxel::ChunkRenderManager::Chunk&>(c)));
+            this->chunk_render_manager.destroyChunk(std::move(c));
+        }
+
+        for (voxel::ChunkRenderManager::RaytracedLight& l : this->raytraced_lights)
+        {
+            this->chunk_render_manager.destroyRaytracedLight(std::move(l));
         }
     }
 
@@ -256,12 +257,12 @@ namespace verdigris
         if (this->game->getRenderer()->getWindow()->isActionActive(
                 gfx::Window::Action::PlayerMoveUp))
         {
-            newPosition += this->camera.getUpVector() * deltaTime * moveScale;
+            newPosition += game::Transform::UpVector * deltaTime * moveScale;
         }
         else if (this->game->getRenderer()->getWindow()->isActionActive(
                      gfx::Window::Action::PlayerMoveDown))
         {
-            newPosition -= this->camera.getUpVector() * deltaTime * moveScale;
+            newPosition -= game::Transform::UpVector * deltaTime * moveScale;
         }
 
         this->camera.setPosition(newPosition);

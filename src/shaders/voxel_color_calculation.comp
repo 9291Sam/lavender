@@ -491,7 +491,7 @@ void main()
         const u32 parent_chunk =
             bitfieldExtract(in_brick_parent_info.info[brick_pointer].data, 0, 16);
         const u32 brick_parent_number =
-            bitfieldExtract(in_brick_parent_info.info[brick_pointer].data, 23, 9);
+            bitfieldExtract(in_brick_parent_info.info[brick_pointer].data, 16, 9);
 
         const uvec3 brick_coordinate = uvec3(
             brick_parent_number % 8, (brick_parent_number % 64) / 8, brick_parent_number / 64);
@@ -528,35 +528,23 @@ void main()
                 continue;
             }
 
-            // const bool isFaceInShadow =
-            //     traceDDARay(sample_positon_world, in_raytraced_lights.lights[i].position.xyz);
+            // const bool isFaceInShadow = traceDDARay(
+            //     sample_positon_world, in_raytraced_lights.data[i].position_and_max_distance.xyz);
 
             // if (!isFaceInShadow)
-            // {
-            CalculatedLightPower power;
+            {
+                CalculatedLightPower power = newLightPower(
+                    in_global_info.camera_position.xyz,
+                    sample_positon_world,
+                    unpackNormalId(normal),
+                    in_raytraced_lights.data[i],
+                    this_material);
 
-            // if (true) //(brick_pointer % 2 == 0)
-            // {
-            power = newLightPower(
-                in_global_info.camera_position.xyz,
-                sample_positon_world,
-                unpackNormalId(normal),
-                in_raytraced_lights.data[i],
-                this_material);
-            // }
-            // else
-            // {
-            //     power = oldLightPower(
-            //         in_global_info.camera_position.xyz,
-            //         sample_positon_world,
-            //         unpackNormalId(normal),
-            //         in_raytraced_lights.lights[i],
-            //         this_material);
-            // }
+                sum_diffuse += power.diffuse_strength;
+                // #warning no specular
 
-            sum_diffuse += power.diffuse_strength;
-            // #warning no specular
-            sum_specular += power.specular_strength;
+                sum_specular += power.specular_strength;
+            }
         }
 
         sum_diffuse = clamp(sum_diffuse, 0.07, 1024.0);
