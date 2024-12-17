@@ -143,6 +143,30 @@ namespace verdigris
                     return threadChunks;
                 })
                 .share();
+
+        std::mt19937_64                     gen {73847375}; // NOLINT
+        std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
+
+        for (int i = 0; i < 8; ++i)
+        {
+            this->raytraced_lights.push_back(
+                this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
+                    .position_and_max_distance {
+                        glm::vec4 {// dist(gen) * 64,
+                                   // dist(gen) * 64,
+                                   // dist(gen) * 64,
+                                   // dist(gen) * 64,
+
+                                   32.0f,
+                                   32.0f,
+                                   32.0f,
+                                   64.0f},
+                    },
+                    // .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), dist(gen) *
+                    // 64}},
+                    .color_and_power {1.0f, 1.0f, 1.0f, 32.0f},
+                }));
+        }
     }
 
     Verdigris::~Verdigris()

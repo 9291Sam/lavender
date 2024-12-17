@@ -235,6 +235,13 @@ namespace voxel
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               1,
               "Global Voxel Data")
+        , raytraced_light_allocator {MaxLights}
+        , raytraced_lights(
+              game_->getRenderer()->getAllocator(),
+              vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
+              vk::MemoryPropertyFlagBits::eDeviceLocal,
+              MaxLights,
+              "Gpy Raytraced Lights Buffer")
         , chunk_id_allocator {MaxChunks}
         , gpu_chunk_data(
               game_->getRenderer()->getAllocator(),
@@ -314,7 +321,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // PerChunkGpuData
+                          // RaytracedLights
                           vk::DescriptorSetLayoutBinding {
                               .binding {1},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -325,7 +332,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // PerBrickChunkParentInfo
+                          // PerChunkGpuData
                           vk::DescriptorSetLayoutBinding {
                               .binding {2},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -336,7 +343,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // MaterialBricks
+                          // PerBrickChunkParentInfo
                           vk::DescriptorSetLayoutBinding {
                               .binding {3},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -347,7 +354,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // ShadowBricks
+                          // MaterialBricks
                           vk::DescriptorSetLayoutBinding {
                               .binding {4},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -358,7 +365,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // VisibilityBricks
+                          // ShadowBricks
                           vk::DescriptorSetLayoutBinding {
                               .binding {5},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -369,7 +376,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // VoxelFaces
+                          // VisibilityBricks
                           vk::DescriptorSetLayoutBinding {
                               .binding {6},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -380,7 +387,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // VisibleFaceIdMap
+                          // VoxelFaces
                           vk::DescriptorSetLayoutBinding {
                               .binding {7},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -391,7 +398,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // VisibleFaceData
+                          // VisibleFaceIdMap
                           vk::DescriptorSetLayoutBinding {
                               .binding {8},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -402,9 +409,20 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // Materials
+                          // VisibleFaceData
                           vk::DescriptorSetLayoutBinding {
                               .binding {9},
+                              .descriptorType {vk::DescriptorType::eStorageBuffer},
+                              .descriptorCount {1},
+                              .stageFlags {
+                                  vk::ShaderStageFlagBits::eVertex
+                                  | vk::ShaderStageFlagBits::eFragment
+                                  | vk::ShaderStageFlagBits::eCompute},
+                              .pImmutableSamplers {nullptr},
+                          },
+                          // Materials
+                          vk::DescriptorSetLayoutBinding {
+                              .binding {10},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
                               .descriptorCount {1},
                               .stageFlags {
@@ -551,6 +569,11 @@ namespace voxel
                 .range {vk::WholeSize},
             },
             vk::DescriptorBufferInfo {
+                .buffer {*this->raytraced_lights},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
                 .buffer {*this->gpu_chunk_data},
                 .offset {0},
                 .range {vk::WholeSize},
@@ -658,6 +681,25 @@ namespace voxel
         }
     }
 
+    ChunkRenderManager::RaytracedLight
+    ChunkRenderManager::createRaytracedLight(GpuRaytracedLight rawLight)
+    {
+        RaytracedLight newRaytracedLight = this->raytraced_light_allocator.allocateOrPanic();
+
+        this->raytraced_lights.write(
+            this->raytraced_light_allocator.getValueOfHandle(newRaytracedLight), rawLight);
+
+        return newRaytracedLight;
+    }
+
+    void ChunkRenderManager::destroyRaytracedLight(RaytracedLight light)
+    {
+        this->raytraced_lights.write(
+            this->raytraced_light_allocator.getValueOfHandle(light), GpuRaytracedLight {});
+
+        this->raytraced_light_allocator.free(std::move(light));
+    }
+
     void ChunkRenderManager::updateChunk(
         const Chunk& chunk, std::span<const ChunkLocalUpdate> chunkUpdates)
     {
@@ -671,7 +713,7 @@ namespace voxel
     }
 
     std::vector<game::FrameGenerator::RecordObject>
-    ChunkRenderManager::processUpdatesAndGetDrawObjects(const game::Camera& camera)
+    ChunkRenderManager::processUpdatesAndGetDrawObjects(const game::Camera& camera) // NOLINT
     {
         const gfx::vulkan::BufferStager& stager = this->game->getRenderer()->getStager();
 
@@ -682,7 +724,7 @@ namespace voxel
         u32 numberOfTotalFaces = 0;
 
         this->chunk_id_allocator.iterateThroughAllocatedElements(
-            [&](const u16 chunkId)
+            [&](const u16 chunkId) // NOLINT
             {
                 CpuChunkData& thisChunkData = this->cpu_chunk_data[chunkId];
 
@@ -969,6 +1011,7 @@ namespace voxel
         ::numberOfFacesAllocated.store(facesAllocated);
         ::numberOfFacesPossible.store(facesPossible);
 
+        this->raytraced_lights.flushViaStager(stager);
         this->gpu_chunk_data.flushViaStager(stager);
         this->material_bricks.flushViaStager(stager);
         this->shadow_bricks.flushViaStager(stager);
@@ -994,21 +1037,23 @@ namespace voxel
             .render_pass {game::FrameGenerator::DynamicRenderingPass::PreFrameUpdate},
             .pipeline {nullptr},
             .descriptors {},
-            .record_func {[this, indirectCommands, indirectPayload](
-                              vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
-                          {
-                              GlobalVoxelData data {
-                                  .number_of_visible_faces {},
-                                  .number_of_calculating_draws_x {},
-                                  .number_of_calculating_draws_y {},
-                                  .number_of_calculating_draws_z {},
-                                  .number_of_lights {0},
-                                  .readback_number_of_visible_faces {},
-                              };
+            .record_func {
+                [this, indirectCommands, indirectPayload](
+                    vk::CommandBuffer commandBuffer, vk::PipelineLayout, u32)
+                {
+                    GlobalVoxelData data {
+                        .number_of_visible_faces {},
+                        .number_of_calculating_draws_x {},
+                        .number_of_calculating_draws_y {},
+                        .number_of_calculating_draws_z {},
+                        .number_of_lights {
+                            this->raytraced_light_allocator.getUpperBoundOnAllocatedElements()},
+                        .readback_number_of_visible_faces {},
+                    };
 
-                              commandBuffer.updateBuffer(
-                                  *this->global_voxel_data, 0, sizeof(GlobalVoxelData) - 4, &data);
-                          }}};
+                    commandBuffer.updateBuffer(
+                        *this->global_voxel_data, 0, sizeof(GlobalVoxelData) - 4, &data);
+                }}};
 
         game::FrameGenerator::RecordObject chunkDraw = game::FrameGenerator::RecordObject {
             .transform {game::Transform {}},

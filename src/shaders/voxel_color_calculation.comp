@@ -4,11 +4,11 @@
 #include "types.glsl"
 #include "voxel_descriptors.glsl"
 
-// struct CalculatedLightPower
-// {
-//     vec3 diffuse_strength;
-//     vec3 specular_strength;
-// };
+struct CalculatedLightPower
+{
+    vec3 diffuse_strength;
+    vec3 specular_strength;
+};
 
 // CalculatedLightPower oldLightPower(
 //     vec3          camera_position,
@@ -93,71 +93,69 @@
 //     return lightPower;
 // }
 
-// CalculatedLightPower newLightPower(
-//     vec3          camera_position,
-//     vec3          voxel_position,
-//     vec3          voxel_normal,
-//     PointLight    light,
-//     VoxelMaterial material)
-// {
-//     // Calculate vectors
-//     vec3 light_dir = normalize(light.position.xyz - voxel_position); // Light direction
-//     vec3 view_dir  = normalize(camera_position - voxel_position);    // View direction
-//     vec3 half_dir  = normalize(light_dir + view_dir);                // Half vector
+CalculatedLightPower newLightPower(
+    vec3              camera_position,
+    vec3              voxel_position,
+    vec3              voxel_normal,
+    GpuRaytracedLight light,
+    VoxelMaterial     material)
+{
+    // Calculate vectors
+    vec3 light_dir =
+        normalize(light.position_and_max_distance.xyz - voxel_position); // Light direction
+    vec3 view_dir = normalize(camera_position - voxel_position);         // View direction
+    vec3 half_dir = normalize(light_dir + view_dir);                     // Half vector
 
-//     // Diffuse reflection (Lambertian)
-//     float diffuse_factor = max(dot(voxel_normal, light_dir), 0.0); // Ensure non-negative
-//     vec3  diffuse        = diffuse_factor * material.diffuse_color.xyz;
+    // Diffuse reflection (Lambertian)
+    float diffuse_factor = max(dot(voxel_normal, light_dir), 0.0); // Ensure non-negative
+    vec3  diffuse        = diffuse_factor * material.diffuse_color.xyz;
 
-//     // GGX Normal Distribution Function (NDF)
-//     float roughness_sq = material.roughness * material.roughness;
-//     float HdotN        = max(dot(half_dir, voxel_normal), 0.0);
-//     float NDF =
-//         (roughness_sq)
-//         / (3.14159265358979323846264 * pow((HdotN * HdotN) * (roughness_sq - 1.0) + 1.0, 2.0));
+    // GGX Normal Distribution Function (NDF)
+    float roughness_sq = material.roughness * material.roughness;
+    float HdotN        = max(dot(half_dir, voxel_normal), 0.0);
+    float NDF =
+        (roughness_sq)
+        / (3.14159265358979323846264 * pow((HdotN * HdotN) * (roughness_sq - 1.0) + 1.0, 2.0));
 
-//     // Fresnel (Schlick's approximation)
-//     float VdotH = max(dot(view_dir, half_dir), 0.0);
-//     vec3  F0 =
-//         mix(vec3(0.04), material.specular_color.xyz, material.metallic); // Dielectric/metal mix
-//     vec3 Fresnel = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
+    // Fresnel (Schlick's approximation)
+    float VdotH = max(dot(view_dir, half_dir), 0.0);
+    vec3  F0 =
+        mix(vec3(0.04), material.specular_color.xyz, material.metallic); // Dielectric/metal mix
+    vec3 Fresnel = F0 + (1.0 - F0) * pow(1.0 - VdotH, 5.0);
 
-//     // Geometry Term (Smith's method)
-//     float NdotV    = max(dot(voxel_normal, view_dir), 0.0);
-//     float NdotL    = max(dot(voxel_normal, light_dir), 0.0);
-//     float G1       = NdotV / (NdotV * (1.0 - roughness_sq) + roughness_sq);
-//     float G2       = NdotL / (NdotL * (1.0 - roughness_sq) + roughness_sq);
-//     float Geometry = G1 * G2;
+    // Geometry Term (Smith's method)
+    float NdotV    = max(dot(voxel_normal, view_dir), 0.0);
+    float NdotL    = max(dot(voxel_normal, light_dir), 0.0);
+    float G1       = NdotV / (NdotV * (1.0 - roughness_sq) + roughness_sq);
+    float G2       = NdotL / (NdotL * (1.0 - roughness_sq) + roughness_sq);
+    float Geometry = G1 * G2;
 
-//     // Specular reflection
-//     vec3 specular = (NDF * Fresnel * Geometry)
-//                   / (4.0 * NdotV * NdotL + 0.1); // Add small bias to avoid division by zero
+    // Specular reflection
+    vec3 specular = (NDF * Fresnel * Geometry)
+                  / (4.0 * NdotV * NdotL + 0.1); // Add small bias to avoid division by zero
 
-//     // Clear coat reflection (optional, extra specular layer)
-//     vec3  clear_coat_specular = material.coat_color_power.xyz * specular;
-//     float clear_coat_factor   = material.coat_color_power.w; // Intensity control
+    // Clear coat reflection (optional, extra specular layer)
+    vec3  clear_coat_specular = material.coat_color_power.xyz * specular;
+    float clear_coat_factor   = material.coat_color_power.w; // Intensity control
 
-//     // Light attenuation (inverse square falloff)
-//     float distance = length(light.position.xyz - voxel_position);
-//     float attenuation =
-//         1.0
-//         / (light.falloffs.x + light.falloffs.y * distance + light.falloffs.z * distance *
-//         distance);
+    // Light attenuation (inverse square falloff)
+    float distance    = length(light.position_and_max_distance.xyz - voxel_position);
+    float attenuation = 1.0 / (light.position_and_max_distance.w - distance);
+    attenuation       = max(attenuation, 0.0);
 
-//     // Final light contribution
-//     float light_intensity = light.color_and_power.w * attenuation;
-//     vec3  light_color     = light.color_and_power.xyz;
+    // Final light contribution
+    float light_intensity = light.color_and_power.w * attenuation;
+    vec3  light_color     = light.color_and_power.xyz;
 
-//     // Combine diffuse and specular components
-//     CalculatedLightPower lightPower;
-//     lightPower.diffuse_strength =
-//         diffuse * light_color * light_intensity * NdotL; // Add NdotL to account for light
-//         direction
-//     lightPower.specular_strength =
-//         (specular + clear_coat_specular * clear_coat_factor) * light_color * light_intensity;
+    // Combine diffuse and specular components
+    CalculatedLightPower lightPower;
+    lightPower.diffuse_strength =
+        diffuse * light_color * light_intensity * NdotL; // Add NdotL to account for light direction
+    lightPower.specular_strength =
+        (specular + clear_coat_specular * clear_coat_factor) * light_color * light_intensity;
 
-//     return lightPower;
-// }
+    return lightPower;
+}
 
 // CalculatedLightPower newest(
 //     vec3 camera_position,
@@ -520,56 +518,57 @@ void main()
         vec3 sum_diffuse  = vec3(0.0);
         vec3 sum_specular = vec3(0.0);
 
-        // for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
-        // {
-        //     if (dot(unpackNormalId(normal),
-        //             normalize(in_point_lights.lights[i].position.xyz - sample_positon_world))
-        //         < 0.0)
-        //     {
-        //         continue;
-        //     }
+        for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
+        {
+            const vec3 toLightVector =
+                in_raytraced_lights.data[i].position_and_max_distance.xyz - sample_positon_world;
 
-        // const bool isFaceInShadow =
-        //     traceDDARay(sample_positon_world, in_point_lights.lights[i].position.xyz);
+            if (dot(unpackNormalId(normal), normalize(toLightVector)) < 0.0)
+            {
+                continue;
+            }
 
-        // if (!isFaceInShadow)
-        // {
-        // CalculatedLightPower power;
+            // const bool isFaceInShadow =
+            //     traceDDARay(sample_positon_world, in_raytraced_lights.lights[i].position.xyz);
 
-        // if (true) //(brick_pointer % 2 == 0)
-        // {
-        //     power = newLightPower(
-        //         in_global_info.camera_position.xyz,
-        //         sample_positon_world,
-        //         unpackNormalId(normal),
-        //         in_point_lights.lights[i],
-        //         this_material);
-        // }
-        // else
-        // {
-        //     power = oldLightPower(
-        //         in_global_info.camera_position.xyz,
-        //         sample_positon_world,
-        //         unpackNormalId(normal),
-        //         in_point_lights.lights[i],
-        //         this_material);
-        // }
+            // if (!isFaceInShadow)
+            // {
+            CalculatedLightPower power;
 
-        //     sum_diffuse += power.diffuse_strength;
-        //     // #warning no specular
-        //     sum_specular += power.specular_strength;
-        // }
-        // }
+            // if (true) //(brick_pointer % 2 == 0)
+            // {
+            power = newLightPower(
+                in_global_info.camera_position.xyz,
+                sample_positon_world,
+                unpackNormalId(normal),
+                in_raytraced_lights.data[i],
+                this_material);
+            // }
+            // else
+            // {
+            //     power = oldLightPower(
+            //         in_global_info.camera_position.xyz,
+            //         sample_positon_world,
+            //         unpackNormalId(normal),
+            //         in_raytraced_lights.lights[i],
+            //         this_material);
+            // }
+
+            sum_diffuse += power.diffuse_strength;
+            // #warning no specular
+            sum_specular += power.specular_strength;
+        }
 
         sum_diffuse = clamp(sum_diffuse, 0.07, 1024.0);
 
-        // vec3 realColor = clamp(
-        //     exp_strength_falloff(sum_diffuse) * this_material.diffuse_color.xyz
-        //         + exp_strength_falloff(sum_specular) * this_material.specular_color.xyz,
-        //     0.0,
-        //     1.0);
+        vec3 realColor = clamp(
+            exp_strength_falloff(sum_diffuse) * this_material.diffuse_color.xyz
+                + exp_strength_falloff(sum_specular) * this_material.specular_color.xyz,
+            0.0,
+            1.0);
 
-        // in_visible_face_data.data[global_invocation_index].color = realColor;
-        in_visible_face_data.data[global_invocation_index].color = this_material.diffuse_color.xyz;
+        in_visible_face_data.data[global_invocation_index].color = realColor;
+        // in_visible_face_data.data[global_invocation_index].color =
+        // this_material.diffuse_color.xyz;
     }
 }

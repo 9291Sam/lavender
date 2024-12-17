@@ -14,6 +14,18 @@ layout(set = 1, binding = 0) buffer GlobalVoxelDataBuffer
 }
 in_global_voxel_data;
 
+struct GpuRaytracedLight
+{
+    vec4 position_and_max_distance;
+    vec4 color_and_power;
+};
+
+layout(set = 1, binding = 1) readonly buffer RaytracedLightDataBuffer
+{
+    GpuRaytracedLight data[];
+}
+in_raytraced_lights;
+
 struct ChunkBrickMap
 {
     u16 data[8][8][8];
@@ -28,7 +40,7 @@ struct PerChunkGpuData
     ChunkBrickMap data;
 };
 
-layout(set = 1, binding = 1) readonly buffer GpuChunkDataBuffer
+layout(set = 1, binding = 2) readonly buffer GpuChunkDataBuffer
 {
     PerChunkGpuData data[];
 }
@@ -45,7 +57,7 @@ struct BrickParentInfo
     u32 data;
 };
 
-layout(set = 1, binding = 2) readonly buffer BrickParentInfoBuffer
+layout(set = 1, binding = 3) readonly buffer BrickParentInfoBuffer
 {
     BrickParentInfo info[];
 }
@@ -61,7 +73,7 @@ struct MaterialBrick
     Voxel data[8][8][8];
 };
 
-layout(set = 1, binding = 3) readonly buffer MaterialBrickBuffer
+layout(set = 1, binding = 4) readonly buffer MaterialBrickBuffer
 {
     MaterialBrick brick[];
 }
@@ -72,7 +84,7 @@ struct BitBrick
     u32 data[16];
 };
 
-layout(set = 1, binding = 4) readonly buffer ShadowBrickBuffer
+layout(set = 1, binding = 5) readonly buffer ShadowBrickBuffer
 {
     BitBrick brick[];
 }
@@ -83,7 +95,7 @@ struct VisibilityBrick
     BitBrick view_dir[6];
 };
 
-layout(set = 1, binding = 5) buffer VisibilityBrickBuffer
+layout(set = 1, binding = 6) buffer VisibilityBrickBuffer
 {
     VisibilityBrick brick[];
 }
@@ -114,7 +126,7 @@ u32 GreedyVoxelFace_height(GreedyVoxelFace self)
     return bitfieldExtract(self.data, 24, 6);
 }
 
-layout(set = 1, binding = 6) readonly buffer GreedyVoxelFaces
+layout(set = 1, binding = 7) readonly buffer GreedyVoxelFaces
 {
     GreedyVoxelFace face[];
 }
@@ -126,7 +138,7 @@ struct HashMapNode32
     u32 value;
 };
 
-layout(set = 1, binding = 7) buffer VisibleFaceIdBrickStorage
+layout(set = 1, binding = 8) buffer VisibleFaceIdBrickStorage
 {
     HashMapNode32 node[];
 }
@@ -192,7 +204,7 @@ struct VisibleFaceData
     vec3 color;
 };
 
-layout(set = 1, binding = 8) buffer VisibleFaceDataBuffer
+layout(set = 1, binding = 9) buffer VisibleFaceDataBuffer
 {
     VisibleFaceData data[];
 }
@@ -211,7 +223,7 @@ struct VoxelMaterial
     vec4  coat_color_power;
 };
 
-layout(set = 1, binding = 9) readonly buffer VoxelMaterialBuffer
+layout(set = 1, binding = 10) readonly buffer VoxelMaterialBuffer
 {
     VoxelMaterial material[];
 }

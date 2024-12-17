@@ -158,6 +158,12 @@ namespace util
                 });
         }
 
+        Handle::IndexType getUpperBoundOnAllocatedElements() const
+        {
+            return static_cast<Handle::IndexType>(
+                this->allocator.getUpperBoundOnAllocatedElements());
+        }
+
     private:
         util::IndexAllocator allocator;
     };

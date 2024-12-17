@@ -37,9 +37,8 @@ namespace voxel
         [[nodiscard]] Chunk createChunk(WorldPosition);
         void                destroyChunk(Chunk);
 
-        // RaytracedLight
-        //      createPointLight(glm::vec3 position, glm::vec4 colorAndPower, glm::vec4 falloffs);
-        // void destroyPointLight(PointLight);
+        RaytracedLight createRaytracedLight(GpuRaytracedLight);
+        void           destroyRaytracedLight(RaytracedLight);
 
         void updateChunk(const Chunk&, std::span<const ChunkLocalUpdate>);
 
@@ -53,9 +52,8 @@ namespace voxel
         gfx::vulkan::WriteOnlyBuffer<GlobalVoxelData> global_voxel_data;
 
         // RayTracedLights
-        // util::OpaqueHandleAllocator<RaytracedLight> raytraced_light_allocator;
-        // util::IndexAllocator                            raytraced_light_allocator;
-        // gfx::vulkan::WriteOnlyBuffer<GpuRaytracedLight> raytraced_lights;
+        util::OpaqueHandleAllocator<RaytracedLight>     raytraced_light_allocator;
+        gfx::vulkan::CpuCachedBuffer<GpuRaytracedLight> raytraced_lights;
 
         // Per Chunk Data
         util::OpaqueHandleAllocator<Chunk>            chunk_id_allocator;
