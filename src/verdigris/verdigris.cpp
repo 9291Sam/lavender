@@ -144,7 +144,7 @@ namespace verdigris
         std::mt19937_64                     gen {73847375}; // NOLINT
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
 
-        for (int i = 0; i < 128; ++i)
+        for (int i = 0; i < 512; ++i)
         {
             this->raytraced_lights.push_back(
                 this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {

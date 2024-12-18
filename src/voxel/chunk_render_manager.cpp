@@ -971,10 +971,12 @@ namespace voxel
                             glm::normalize(chunkCenterPosition - camera.getPosition());
                         const glm::vec3 forwardVector = camera.getForwardVector();
 
-                        if ((glm::dot(forwardVector, toChunkVector) > 0.0f
-                             && glm::dot(toChunkVector, normalVector) < 0.0f)
-                            || (glm::distance(chunkCenterPosition, camera.getPosition())
-                                < VoxelsPerChunkEdge * 3.0f))
+                        // if ((glm::dot(forwardVector, toChunkVector) > 0.0f
+                        //      && glm::dot(toChunkVector, normalVector) < 0.0f)
+                        //     || (glm::distance(chunkCenterPosition, camera.getPosition())
+                        //         < VoxelsPerChunkEdge * 3.0f)
+
+                        // )
                         {
                             indirectCommands.push_back(vk::DrawIndirectCommand {
                                 .vertexCount {numberOfFaces * 6},
