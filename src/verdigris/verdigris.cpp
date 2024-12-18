@@ -146,18 +146,18 @@ namespace verdigris
 
         for (int i = 0; i < 128; ++i)
         {
+            auto p = glm::vec4 {
+                util::map(dist(gen), 0.0f, 1.0f, -256.0f, 256.0f),
+                dist(gen) * 64,
+                util::map(dist(gen), 0.0f, 1.0f, -256.0f, 256.0f),
+                0.0};
             this->raytraced_lights.push_back(
                 this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
-                    .position_and_max_distance {
-                        glm::vec4 {
-                            util::map(dist(gen), 0.0f, 1.0f, -256.0f, 256.0f),
-                            dist(gen) * 64,
-                            util::map(dist(gen), 0.0f, 1.0f, -256.0f, 256.0f),
-                            util::map(dist(gen), 0.0f, 1.0f, 0.0f, 256.0f),
-                        },
+                    .position {
+                        p,
                     },
-                    .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), dist(gen)}},
-                }));
+                    .color {glm::vec4 {1.0, 1.0, 1.0, 1.0}},
+                    .power_half_full_distances {glm::vec4 {32.0f, 6.0f, 64.0f, 0.0f}}}));
         }
     }
 
