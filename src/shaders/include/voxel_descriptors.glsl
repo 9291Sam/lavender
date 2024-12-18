@@ -16,9 +16,8 @@ in_global_voxel_data;
 
 struct GpuRaytracedLight
 {
-    vec4 position;
-    vec4 color;
-    vec4 power_half_full_distances;
+    vec4 position_and_half_intensity_distance;
+    vec4 color_and_power;
 };
 
 layout(set = 1, binding = 1) readonly buffer RaytracedLightDataBuffer

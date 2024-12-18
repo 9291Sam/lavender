@@ -564,9 +564,8 @@ namespace voxel
 
     struct GpuRaytracedLight
     {
-        glm::vec4 position;
-        glm::vec4 color;
-        glm::vec4 power_half_full_distances;
+        glm::vec4 position_and_half_intensity_distance;
+        glm::vec4 color_and_power;
     };
 
 } // namespace voxel
