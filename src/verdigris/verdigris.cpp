@@ -149,12 +149,18 @@ namespace verdigris
             this->raytraced_lights.push_back(
                 this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
                     .position_and_half_intensity_distance {glm::vec4 {
-                        util::map(dist(gen), 0.0f, 1.0f, -256.0f, 256.0f),
-                        util::map(dist(gen), 0.0f, 1.0f, 12.0f, 52.0f),
-                        util::map(dist(gen), 0.0f, 1.0f, -256.0f, 256.0f),
-                        4.0f}},
-                    .color_and_power {glm::vec4 {1.0, 1.0, 1.0, 32.0f}}}));
+                        util::map(dist(gen), 0.0f, 1.0f, -384.0f, 384.0f),
+                        util::map(dist(gen), 0.0f, 1.0f, 12.0f, 84.0f),
+                        util::map(dist(gen), 0.0f, 1.0f, -384.0f, 384.0f),
+                        3.0f}},
+                    .color_and_power {
+                        glm::vec4 {dist(gen), dist(gen), dist(gen), dist(gen) * 64}}}));
         }
+
+        // this->raytraced_lights.push_back(
+        //     this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
+        //         .position_and_half_intensity_distance {32.0f, 32.0f, 32.0f, 4.0f},
+        //         .color_and_power {1.0f, 1.0f, 1.0f, 1024.0f}}));
     }
 
     Verdigris::~Verdigris()
