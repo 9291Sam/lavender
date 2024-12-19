@@ -111,7 +111,7 @@ namespace verdigris
         this->chunks = std::async(
             [this]
             {
-                world::WorldChunkGenerator gen {789123};
+                world::WorldGenerator gen {789123};
 
                 const std::int64_t radius = 4;
 
@@ -133,7 +133,8 @@ namespace verdigris
                                     const voxel::ChunkRenderManager::Chunk*,
                                     std::vector<voxel::ChunkLocalUpdate>>>& lockedUpdates)
                             {
-                                lockedUpdates.push_back({&*threadChunks.crbegin(), slowUpdates});
+                                lockedUpdates.push_back(
+                                    {&*threadChunks.crbegin(), std::move(slowUpdates)});
                             });
                     }
                 }
