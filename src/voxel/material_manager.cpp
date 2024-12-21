@@ -141,6 +141,66 @@ namespace voxel
                 .emissive_color_power {},
                 .coat_color_power {},
             };
+        case Voxel::Diamond:
+            return VoxelMaterial {
+                .ambient_color {0.25f, 0.25f, 0.25f, 1.0},
+                .diffuse_color {0.9f, 0.9f, 0.9f, 1.0},
+                .specular_color {0.774597f, 0.774597f, 0.774597f, 1.0},
+                .diffuse_subsurface_weight {0.3f},
+                .specular {76.8f},
+                .roughness {0.028f},
+                .metallic {0.0},
+                .emissive_color_power {},
+                .coat_color_power {},
+            };
+        case Voxel::Marble:
+            return VoxelMaterial {
+                .ambient_color {0.19125f, 0.19125f, 0.19125f, 1.0},
+                .diffuse_color {0.85f, 0.85f, 0.85f, 1.0},
+                .specular_color {0.332741f, 0.332741f, 0.332741f, 1.0},
+                .diffuse_subsurface_weight {0.15f},
+                .specular {11.264f},
+                .roughness {0.092f},
+                .metallic {0.0},
+                .emissive_color_power {},
+                .coat_color_power {},
+            };
+        case Voxel::Granite:
+            return VoxelMaterial {
+                .ambient_color {0.2175f, 0.2175f, 0.2175f, 1.0},
+                .diffuse_color {0.78f, 0.73f, 0.71f, 1.0},
+                .specular_color {0.245455f, 0.245455f, 0.245455f, 1.0},
+                .diffuse_subsurface_weight {0.0},
+                .specular {9.846f},
+                .roughness {0.116f},
+                .metallic {0.0},
+                .emissive_color_power {},
+                .coat_color_power {},
+            };
+        case Voxel::Basalt:
+            return VoxelMaterial {
+                .ambient_color {0.11f, 0.11f, 0.11f, 1.0},
+                .diffuse_color {0.23f, 0.23f, 0.23f, 1.0},
+                .specular_color {0.282723f, 0.282723f, 0.282723f, 1.0},
+                .diffuse_subsurface_weight {0.0},
+                .specular {8.932f},
+                .roughness {0.148f},
+                .metallic {0.0},
+                .emissive_color_power {},
+                .coat_color_power {},
+            };
+        case Voxel::Limestone:
+            return VoxelMaterial {
+                .ambient_color {0.19225f, 0.19225f, 0.17225f, 1.0},
+                .diffuse_color {0.78f, 0.78f, 0.74f, 1.0},
+                .specular_color {0.296648f, 0.296648f, 0.296648f, 1.0},
+                .diffuse_subsurface_weight {0.05f},
+                .specular {10.234f},
+                .roughness {0.128f},
+                .metallic {0.0},
+                .emissive_color_power {},
+                .coat_color_power {},
+            };
         case Voxel::NullAirEmpty:
             [[fallthrough]];
         default:

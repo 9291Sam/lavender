@@ -115,27 +115,31 @@ namespace verdigris
 
                 const std::int64_t radius = 4;
 
-                std::vector<voxel::ChunkRenderManager::Chunk> threadChunks {};
-                threadChunks.reserve(radius * 2 * radius * 3);
-
+                std::vector<std::unique_ptr<voxel::ChunkRenderManager::Chunk>> threadChunks {};
                 for (int x = -radius; x <= radius; ++x)
                 {
-                    for (int z = -radius; z <= radius; ++z)
+                    for (int y = -1; y <= 0; ++y)
                     {
-                        const voxel::WorldPosition pos {{64 * x, 0, 64 * z}};
+                        for (int z = -radius; z <= radius; ++z)
+                        {
+                            const voxel::WorldPosition pos {{64 * x, 64 * y, 64 * z}};
 
-                        threadChunks.push_back(this->chunk_render_manager.createChunk(pos));
+                            threadChunks.emplace_back(
+                                std::make_unique<voxel::ChunkRenderManager::Chunk>(
+                                    this->chunk_render_manager.createChunk(pos)));
 
-                        std::vector<voxel::ChunkLocalUpdate> slowUpdates = gen.generateChunk(pos);
+                            std::vector<voxel::ChunkLocalUpdate> slowUpdates =
+                                gen.generateChunk(pos);
 
-                        this->updates.lock(
-                            [&](std::vector<std::pair<
-                                    const voxel::ChunkRenderManager::Chunk*,
-                                    std::vector<voxel::ChunkLocalUpdate>>>& lockedUpdates)
-                            {
-                                lockedUpdates.push_back(
-                                    {&*threadChunks.crbegin(), std::move(slowUpdates)});
-                            });
+                            this->updates.lock(
+                                [&](std::vector<std::pair<
+                                        const voxel::ChunkRenderManager::Chunk*,
+                                        std::vector<voxel::ChunkLocalUpdate>>>& lockedUpdates)
+                                {
+                                    lockedUpdates.push_back(
+                                        {threadChunks.back().get(), std::move(slowUpdates)});
+                                });
+                        }
                     }
                 }
 
@@ -145,17 +149,16 @@ namespace verdigris
         std::mt19937_64                     gen {73847375}; // NOLINT
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
 
-        for (int i = 0; i < 4096; ++i)
+        for (int i = 0; i < 128; ++i)
         {
             this->raytraced_lights.push_back(
                 this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
                     .position_and_half_intensity_distance {glm::vec4 {
-                        util::map(dist(gen), 0.0f, 1.0f, -384.0f, 384.0f),
-                        util::map(dist(gen), 0.0f, 1.0f, 12.0f, 84.0f),
-                        util::map(dist(gen), 0.0f, 1.0f, -384.0f, 384.0f),
-                        3.0f}},
-                    .color_and_power {
-                        glm::vec4 {dist(gen), dist(gen), dist(gen), dist(gen) * 64}}}));
+                        util::map(dist(gen), 0.0f, 1.0f, -384.0f, 384.0f) + 32.0f,
+                        util::map(dist(gen), 0.0f, 1.0f, 64.0f, 184.0f),
+                        util::map(dist(gen), 0.0f, 1.0f, -384.0f, 384.0f) + 32.0f,
+                        16.0f}},
+                    .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 96}}}));
         }
 
         // this->raytraced_lights.push_back(
@@ -166,9 +169,9 @@ namespace verdigris
 
     Verdigris::~Verdigris()
     {
-        for (voxel::ChunkRenderManager::Chunk& c : this->chunks.get())
+        for (std::unique_ptr<voxel::ChunkRenderManager::Chunk>& c : this->chunks.get())
         {
-            this->chunk_render_manager.destroyChunk(std::move(c));
+            this->chunk_render_manager.destroyChunk(std::move(*c));
         }
 
         for (voxel::ChunkRenderManager::RaytracedLight& l : this->raytraced_lights)
@@ -186,7 +189,9 @@ namespace verdigris
                     const voxel::ChunkRenderManager::Chunk*,
                     std::vector<voxel::ChunkLocalUpdate>>>& lockedUpdates)
             {
-                if (!lockedUpdates.empty())
+                int updates = 0;
+
+                while (!lockedUpdates.empty() && updates++ < 1)
                 {
                     const auto it                       = lockedUpdates.crbegin();
                     const auto [chunkPtr, localUpdates] = *it;

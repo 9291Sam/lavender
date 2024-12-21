@@ -647,6 +647,8 @@ namespace voxel
         this->visible_face_id_map.fillImmediate(
             VisibleFaceIdBrickHashMapStorage {.key {~0U}, .value {~0U}});
         this->visibility_bricks.fillImmediate(VisibilityBrick {});
+
+        util::logTrace("Constructed Chunk Render Manager");
     }
 
     ChunkRenderManager::~ChunkRenderManager() = default;

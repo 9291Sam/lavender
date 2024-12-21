@@ -154,7 +154,11 @@ namespace voxel
         Sapphire,
         Amethyst,
         Jade,
-        Diamond
+        Diamond,
+        Marble,
+        Granite,
+        Basalt,
+        Limestone,
     };
 
     enum class VoxelFaceDirection : std::uint8_t
