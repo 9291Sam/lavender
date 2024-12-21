@@ -14,15 +14,12 @@
 #include "util/misc.hpp"
 #include "util/static_filesystem.hpp"
 #include "voxel/chunk_render_manager.hpp"
-#include "voxel/structures.hpp"
-#include "world/generator.hpp"
 #include <FastNoise/FastNoise.h>
 #include <boost/container_hash/hash_fwd.hpp>
 #include <boost/range/numeric.hpp>
 #include <boost/unordered/concurrent_flat_map.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtc/random.hpp>
-#include <random>
 #include <utility>
 
 namespace verdigris
@@ -30,7 +27,7 @@ namespace verdigris
     Verdigris::Verdigris(game::Game* game_) // NOLINT
         : game {game_}
         , triangle {ecs::createEntity()}
-        , chunk_render_manager {this->game}
+        , voxel_world {this->game}
     {
         this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
             gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
@@ -77,132 +74,18 @@ namespace verdigris
             .transform {.scale {glm::vec3 {25.0f, 25.0f, 25.0f}}} // namespace verdigris
         });
 
-        // CpuMasterBuffer
-        // meshoperation (copy of everything)
-        // once its done upload it to the gpu
-
         this->camera.addPosition({79.606, 42.586, -9.784});
         this->camera.addPitch(0.397f);
         this->camera.addYaw(3.87f);
-
-        // this->chunks.push_back(
-        //     this->chunk_render_manager.createChunk(voxel::WorldPosition {{0, 0, 0}}));
-
-        // std::vector<voxel::ChunkLocalUpdate> updates {};
-
-        // // for (int i = 0; i < 64; ++i)
-        // // {
-        // //     for (int j = 0; j < 64; ++j)
-        // //     {
-        // //         updates.push_back(voxel::ChunkLocalUpdate {
-        // //             voxel::ChunkLocalPosition {
-        // //                 {i,
-        // //                  static_cast<u8>(
-        // //                      (8.0 * std::sin(i / 12.0)) + (8.0 * std::cos(j / 12.0)) + 17.0),
-        // //                  j}},
-        // //             static_cast<voxel::Voxel>((std::rand() % 11) + 1),
-        // //             voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
-        // //             voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
-        // //     }
-        // // }
-
-        // this->chunk_render_manager.updateChunk(this->chunks.front(), updates);
-
-        this->chunks = std::async(
-            [this]
-            {
-                world::WorldGenerator gen {789123};
-
-                const std::int64_t radius = 4;
-
-                std::vector<std::unique_ptr<voxel::ChunkRenderManager::Chunk>> threadChunks {};
-                for (int x = -radius; x <= radius; ++x)
-                {
-                    for (int y = -1; y <= 0; ++y)
-                    {
-                        for (int z = -radius; z <= radius; ++z)
-                        {
-                            const voxel::WorldPosition pos {{64 * x, 64 * y, 64 * z}};
-
-                            threadChunks.emplace_back(
-                                std::make_unique<voxel::ChunkRenderManager::Chunk>(
-                                    this->chunk_render_manager.createChunk(pos)));
-
-                            std::vector<voxel::ChunkLocalUpdate> slowUpdates =
-                                gen.generateChunk(pos);
-
-                            this->updates.lock(
-                                [&](std::vector<std::pair<
-                                        const voxel::ChunkRenderManager::Chunk*,
-                                        std::vector<voxel::ChunkLocalUpdate>>>& lockedUpdates)
-                                {
-                                    lockedUpdates.push_back(
-                                        {threadChunks.back().get(), std::move(slowUpdates)});
-                                });
-                        }
-                    }
-                }
-
-                return threadChunks;
-            });
-
-        std::mt19937_64                     gen {73847375}; // NOLINT
-        std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
-
-        for (int i = 0; i < 128; ++i)
-        {
-            this->raytraced_lights.push_back(
-                this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
-                    .position_and_half_intensity_distance {glm::vec4 {
-                        util::map(dist(gen), 0.0f, 1.0f, -384.0f, 384.0f) + 32.0f,
-                        util::map(dist(gen), 0.0f, 1.0f, 64.0f, 184.0f),
-                        util::map(dist(gen), 0.0f, 1.0f, -384.0f, 384.0f) + 32.0f,
-                        16.0f}},
-                    .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 96}}}));
-        }
-
-        // this->raytraced_lights.push_back(
-        //     this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
-        //         .position_and_half_intensity_distance {32.0f, 32.0f, 32.0f, 4.0f},
-        //         .color_and_power {1.0f, 1.0f, 1.0f, 1024.0f}}));
     }
 
-    Verdigris::~Verdigris()
-    {
-        for (std::unique_ptr<voxel::ChunkRenderManager::Chunk>& c : this->chunks.get())
-        {
-            this->chunk_render_manager.destroyChunk(std::move(*c));
-        }
-
-        for (voxel::ChunkRenderManager::RaytracedLight& l : this->raytraced_lights)
-        {
-            this->chunk_render_manager.destroyRaytracedLight(std::move(l));
-        }
-    }
+    Verdigris::~Verdigris() = default;
 
     game::Game::GameState::OnFrameReturnData Verdigris::onFrame(float deltaTime) const
     {
         gfx::profiler::TaskGenerator profilerTaskGenerator {};
 
-        this->updates.lock(
-            [&](std::vector<std::pair<
-                    const voxel::ChunkRenderManager::Chunk*,
-                    std::vector<voxel::ChunkLocalUpdate>>>& lockedUpdates)
-            {
-                int updates = 0;
-
-                while (!lockedUpdates.empty() && updates++ < 1)
-                {
-                    const auto it                       = lockedUpdates.crbegin();
-                    const auto [chunkPtr, localUpdates] = *it;
-
-                    this->chunk_render_manager.updateChunk(*chunkPtr, localUpdates);
-
-                    lockedUpdates.pop_back();
-                }
-            });
-
-        profilerTaskGenerator.stamp("Chunk Update");
+        profilerTaskGenerator.stamp("Camera Update");
 
         // TODO: moving diagonally is faster
         const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
@@ -288,9 +171,8 @@ namespace verdigris
         this->camera.addYaw(xDelta * rotateSpeedScale);
         this->camera.addPitch(yDelta * rotateSpeedScale);
 
-        profilerTaskGenerator.stamp("Camera Update");
-
-        std::vector<game::FrameGenerator::RecordObject> draws {};
+        std::vector<game::FrameGenerator::RecordObject> draws {
+            this->voxel_world.onFrameUpdate(this->camera)};
 
         ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
             [&](ecs::RawEntity, const TriangleComponent& c)
@@ -311,14 +193,6 @@ namespace verdigris
                         }},
                 });
             });
-        profilerTaskGenerator.stamp("triangle update");
-
-        for (game::FrameGenerator::RecordObject& o :
-             this->chunk_render_manager.processUpdatesAndGetDrawObjects(this->camera))
-        {
-            draws.push_back(std::move(o));
-        }
-        profilerTaskGenerator.stamp("chunk render manager update");
 
         return OnFrameReturnData {
             .main_scene_camera {this->camera},

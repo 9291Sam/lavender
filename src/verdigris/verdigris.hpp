@@ -2,9 +2,7 @@
 
 #include "ecs/entity.hpp"
 #include "game/game.hpp"
-#include "voxel/chunk_render_manager.hpp"
-#include "voxel/structures.hpp"
-#include "world/generator.hpp"
+#include "voxel/world_manager.hpp"
 #include <vulkan/vulkan_handles.hpp>
 
 namespace verdigris
@@ -15,16 +13,9 @@ namespace verdigris
         game::Game*                         game;
         std::shared_ptr<vk::UniquePipeline> triangle_pipeline;
         ecs::UniqueEntity                   triangle;
-        mutable voxel::ChunkRenderManager   chunk_render_manager;
-        std::future<std::vector<std::unique_ptr<voxel::ChunkRenderManager::Chunk>>> chunks;
-        std::vector<voxel::ChunkRenderManager::RaytracedLight> raytraced_lights;
-        util::Mutex<std::vector<std::pair<
-            const voxel::ChunkRenderManager::Chunk*,
-            std::vector<voxel::ChunkLocalUpdate>>>>
-            updates;
+        mutable voxel::WorldManager         voxel_world;
 
         explicit Verdigris(game::Game*);
-
         ~Verdigris() override;
 
         game::Game::GameState::OnFrameReturnData onFrame(float deltaTime) const override;

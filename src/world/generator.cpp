@@ -38,22 +38,22 @@ namespace world
             static_cast<int>(this->seed * 8594835));
 
         std::vector<voxel::ChunkLocalUpdate> out {};
-        out.reserve(4096 * 8);
+        out.reserve(32768);
 
-        for (i32 i = 0; i < 64; ++i)
+        for (u8 i = 0; i < 64; ++i)
         {
-            for (i32 j = 0; j < 64; ++j)
+            for (u8 j = 0; j < 64; ++j)
             {
                 const float worldHeight = std::exp(4.0f * res[i][j]); // NOLINT
 
                 for (u8 h = 0; h < 64; ++h)
                 {
-                    if (h + root.y < worldHeight)
+                    if (h + root.y < static_cast<i32>(worldHeight))
                     {
                         out.push_back(voxel::ChunkLocalUpdate {
                             voxel::ChunkLocalPosition {{i, h, j}},
-                            static_cast<voxel::Voxel>(
-                                util::map<float>(mat[i][j], -1.0f, 1.0f, 1.0f, 17.9f)),
+                            static_cast<voxel::Voxel>(util::map<float>(
+                                static_cast<float>(mat[i][j]), -1.0f, 1.0f, 1.0f, 17.9f)), // NOLINT
                             voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
                             voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
                     }

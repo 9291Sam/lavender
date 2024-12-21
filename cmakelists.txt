@@ -99,7 +99,7 @@ add_executable(lavender
 
     src/voxel/chunk_render_manager.cpp
     src/voxel/material_manager.cpp
-
+    src/voxel/world_manager.cpp
     src/world/generator.cpp
     
 )
