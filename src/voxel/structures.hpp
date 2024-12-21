@@ -139,6 +139,19 @@ namespace voxel
             BrickCoordinate {p / BricksPerChunkEdge}, BrickLocalPosition {p % BricksPerChunkEdge}};
     }
 
+    inline std::pair<WorldPosition, ChunkLocalPosition> splitWorldPosition(WorldPosition p)
+    {
+        return {
+            WorldPosition {
+                {util::divideEuclidean(p.x, static_cast<i32>(VoxelsPerChunkEdge)),
+                 util::divideEuclidean(p.y, static_cast<i32>(VoxelsPerChunkEdge)),
+                 util::divideEuclidean(p.z, static_cast<i32>(VoxelsPerChunkEdge))}},
+            ChunkLocalPosition {
+                {util::moduloEuclidean(p.x, static_cast<i32>(VoxelsPerChunkEdge)),
+                 util::moduloEuclidean(p.y, static_cast<i32>(VoxelsPerChunkEdge)),
+                 util::moduloEuclidean(p.z, static_cast<i32>(VoxelsPerChunkEdge))}}};
+    }
+
     enum class Voxel : u16 // NOLINT
     {
         NullAirEmpty = 0,

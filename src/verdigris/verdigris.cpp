@@ -85,8 +85,6 @@ namespace verdigris
     {
         gfx::profiler::TaskGenerator profilerTaskGenerator {};
 
-        profilerTaskGenerator.stamp("Camera Update");
-
         // TODO: moving diagonally is faster
         const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
                                     gfx::Window::Action::PlayerSprint)
@@ -171,8 +169,12 @@ namespace verdigris
         this->camera.addYaw(xDelta * rotateSpeedScale);
         this->camera.addPitch(yDelta * rotateSpeedScale);
 
+        profilerTaskGenerator.stamp("Camera Update");
+
         std::vector<game::FrameGenerator::RecordObject> draws {
             this->voxel_world.onFrameUpdate(this->camera)};
+
+        profilerTaskGenerator.stamp("World Update");
 
         ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
             [&](ecs::RawEntity, const TriangleComponent& c)
@@ -193,6 +195,8 @@ namespace verdigris
                         }},
                 });
             });
+
+        profilerTaskGenerator.stamp("Triangle Propagation");
 
         return OnFrameReturnData {
             .main_scene_camera {this->camera},

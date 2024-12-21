@@ -6,6 +6,7 @@
 #include <chrono>
 #include <cstdint>
 #include <format>
+#include <future>
 #include <queue>
 #include <source_location>
 #include <string>
@@ -31,6 +32,39 @@ using f64 = double;
 
 namespace util
 {
+    template<class I>
+        requires std::is_signed_v<I>
+    inline I divideEuclidean(I lhs, I rhs)
+    {
+        int quotient  = lhs / rhs;
+        int remainder = lhs % rhs;
+
+        if (remainder != 0 && ((rhs < 0) != (lhs < 0)))
+        {
+            quotient -= 1;
+        }
+
+        return quotient;
+    }
+
+    template<class I>
+        requires std::is_signed_v<I>
+    I moduloEuclidean(I lhs, I rhs)
+    {
+        if (lhs < 0)
+        {
+            // Offset lhs to ensure positive remainder
+            lhs += (-lhs / rhs + 1) * rhs;
+        }
+
+        const i32 remainder = lhs % rhs;
+        if (remainder < 0)
+        {
+            return rhs > 0 ? remainder + rhs : remainder - rhs;
+        }
+        return remainder;
+    }
+
     std::size_t getMemoryUsage();
 
     template<class T>
@@ -132,4 +166,66 @@ namespace util
 
     std::string bytesAsSiNamed(std::size_t, SuffixType = SuffixType::Full);
     std::string bytesAsSiNamed(long double bytes, SuffixType = SuffixType::Full);
+
+    template<class T>
+        requires std::is_move_constructible_v<T> && std::is_move_assignable_v<T>
+    struct Lazy
+    {
+        explicit Lazy(std::future<T> future_)
+            : future {std::move(future_)}
+        {}
+        ~Lazy();
+
+        Lazy(const Lazy&)             = delete;
+        Lazy(Lazy&&)                  = default;
+        Lazy& operator= (const Lazy&) = delete;
+        Lazy& operator= (Lazy&&)      = default;
+
+        std::optional<T&> access()
+        {
+            this->propagateUpdates();
+
+            if (this->maybe_t != nullptr)
+            {
+                return std::ref(*this->maybe_t);
+            }
+            else
+            {
+                return std::nullopt;
+            }
+        }
+        std::optional<T> tryMove()
+        {
+            this->propagateUpdates();
+
+            if (this->maybe_t != nullptr)
+            {
+                return std::move(*this->maybe_t);
+            }
+            else
+            {
+                return std::nullopt;
+            }
+        }
+
+        T move()
+        {
+            this->propagateUpdates(true);
+
+            return std::move(*this->maybe_t);
+        }
+
+    private:
+
+        void propagateUpdates(bool shouldWait = false)
+        {
+            if (this->future != nullptr && (shouldWait || this->future.valid()))
+            {
+                this->maybe_t = std::make_unique<T>(this->future.get());
+            }
+        }
+
+        std::future<T>     future;
+        std::unique_ptr<T> maybe_t;
+    };
 } // namespace util

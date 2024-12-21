@@ -4,6 +4,7 @@
 #include "game/game.hpp"
 #include "util/log.hpp"
 #include "util/misc.hpp"
+#include "util/thread_pool.hpp"
 #include "verdigris/verdigris.hpp"
 #include "voxel/structures.hpp"
 #include <boost/unordered/concurrent_flat_map.hpp>
@@ -49,6 +50,7 @@ private:
 int main()
 {
     util::installGlobalLoggerRacy();
+    util::installGlobalThreadPoolRacy();
     ecs::installGlobalECSManagerRacy();
 
     try
@@ -82,6 +84,7 @@ int main()
     util::logLog("lavender exited successfully!");
 
     ecs::removeGlobalECSManagerRacy();
+    util::removeGlobalThreadPoolRacy();
     util::removeGlobalLoggerRacy();
 
     return EXIT_SUCCESS;

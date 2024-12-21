@@ -93,6 +93,7 @@ add_executable(lavender
     src/util/range_allocator.cpp
     src/util/ranges.cpp
     src/util/static_filesystem.cpp
+    src/util/thread_pool.cpp
     src/util/timer.cpp
 
     src/verdigris/verdigris.cpp

@@ -4,6 +4,8 @@
 #include "game/frame_generator.hpp"
 #include "structures.hpp"
 #include "util/opaque_integer_handle.hpp"
+#include "voxel/chunk_render_manager.hpp"
+#include "world/generator.hpp"
 
 namespace voxel
 {
@@ -33,11 +35,24 @@ namespace voxel
         onFrameUpdate(const game::Camera&);
 
     private:
-        ChunkRenderManager                                                   chunk_render_manager;
-        std::future<std::vector<std::unique_ptr<ChunkRenderManager::Chunk>>> chunks;
+
+        ChunkRenderManager    chunk_render_manager;
+        world::WorldGenerator world_generator;
+
+        struct VoxelObjectTrackingData
+        {
+            LinearVoxelVolume    volume {};
+            voxel::WorldPosition position {{0, 0, 0}};
+        };
+
+        util::OpaqueHandleAllocator<VoxelObject> voxel_object_allocator;
+        std::vector<VoxelObjectTrackingData>     voxel_object_tracking_data;
+
+        std::unordered_map<voxel::WorldPosition, ChunkRenderManager::Chunk> chunks;
         util::Mutex<
             std::vector<std::pair<const ChunkRenderManager::Chunk*, std::vector<ChunkLocalUpdate>>>>
-                                                        updates;
+            updates;
+
         std::vector<ChunkRenderManager::RaytracedLight> raytraced_lights;
     };
 } // namespace voxel
