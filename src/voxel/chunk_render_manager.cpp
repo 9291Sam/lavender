@@ -214,10 +214,6 @@ namespace voxel
             return outFaces;
         }
 
-        struct AsyncChunkUpdateResult
-        {};
-
-        // std::future<AsyncChunkUpdateResult> doChunkUpdate()
     } // namespace
 
     static constexpr u32 MaxChunks          = 4096; // max of u16
