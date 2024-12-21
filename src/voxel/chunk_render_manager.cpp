@@ -12,6 +12,7 @@
 #include "voxel/material_manager.hpp"
 #include <glm/geometric.hpp>
 #include <memory>
+#include <ranges>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
@@ -681,6 +682,16 @@ namespace voxel
         {
             this->brick_range_allocator.free(*allocation);
         }
+
+        if (std::optional faces = thisCpuChunkData.active_draw_allocations)
+        {
+            for (util::RangeAllocation a : *faces)
+            {
+                this->voxel_face_allocator.free(a);
+            }
+        }
+
+        thisCpuChunkData = {};
     }
 
     ChunkRenderManager::RaytracedLight

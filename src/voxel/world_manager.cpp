@@ -4,7 +4,9 @@
 #include "structures.hpp"
 #include "voxel/chunk_render_manager.hpp"
 #include "world/generator.hpp"
+#include <glm/gtc/quaternion.hpp>
 #include <random>
+#include <vector>
 
 namespace voxel
 {
@@ -56,7 +58,7 @@ namespace voxel
             {
                 int numberOfUpdates = 0;
 
-                while (!lockedUpdates.empty() && numberOfUpdates++ < 4)
+                while (!lockedUpdates.empty() && numberOfUpdates++ < 1)
                 {
                     const auto it                       = lockedUpdates.crbegin();
                     const auto [chunkPtr, localUpdates] = *it;
@@ -71,21 +73,19 @@ namespace voxel
                     "Too many chunk updates! {} remaining",
                     lockedUpdates.size());
 
-                const std::int64_t radius           = 4;
-                int                chunkGenerations = 0;
-                const auto [cameraChunkBase, _]     = splitWorldPosition(
+                const i32 radius                = 4;
+                const auto [cameraChunkBase, _] = splitWorldPosition(
                     WorldPosition {static_cast<glm::i32vec3>(camera.getPosition())});
+                const glm::i32vec3 chunkRangeBase = cameraChunkBase - radius;
+                const glm::i32vec3 chunkRangePeak = cameraChunkBase + radius;
 
-                for (int x = -radius; x <= radius; ++x)
+                for (int x = chunkRangeBase.x; x <= chunkRangePeak.x; ++x)
                 {
-                    for (int y = -radius / 2; y <= radius / 2; ++y)
+                    for (int y = chunkRangeBase.y; y <= chunkRangePeak.y; ++y)
                     {
-                        for (int z = -radius; z <= radius; ++z)
+                        for (int z = chunkRangeBase.z; z <= chunkRangePeak.z; ++z)
                         {
-                            const voxel::WorldPosition pos {
-                                {(64 * x) + (64 * cameraChunkBase.x),
-                                 (64 * y) + (64 * cameraChunkBase.y),
-                                 (64 * z) + (64 * cameraChunkBase.z)}};
+                            const voxel::WorldPosition pos {{(64 * x), (64 * y), (64 * z)}};
 
                             const decltype(this->chunks)::const_iterator maybeIt =
                                 this->chunks.find(pos);
@@ -100,16 +100,31 @@ namespace voxel
 
                                 lockedUpdates.push_back({&realIt->second, std::move(slowUpdates)});
 
-                                chunkGenerations += 1;
-
-                                if (chunkGenerations > 1)
-                                {
-                                    goto exit;
-                                }
+                                goto exit;
                             }
                         }
                     }
                 }
+
+                std::erase_if(
+                    this->chunks,
+                    [&](decltype(this->chunks)::value_type& item)
+                    {
+                        auto& [pos, chunk] = item;
+
+                        if (glm::all(glm::lessThanEqual(pos, chunkRangePeak * 64))
+                            && glm::all(glm::greaterThanEqual(pos, chunkRangeBase * 64)))
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            this->chunk_render_manager.destroyChunk(std::move(chunk));
+
+                            return true;
+                        }
+                    });
+
             exit:
             });
 
