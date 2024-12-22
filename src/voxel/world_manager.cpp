@@ -176,22 +176,11 @@ namespace voxel
                 }
             });
 
-        if (!changes.empty())
-        {
-            const WorldPosition newPosition = changes.front().new_position;
-            const auto [base, local]        = splitWorldPosition(newPosition);
-            util::logTrace(
-                "{} {} {} ",
-                glm::to_string(static_cast<glm::i32vec3>(newPosition)),
-                glm::to_string(static_cast<glm::i32vec3>(base)),
-                glm::to_string(static_cast<glm::i32vec3>(local)));
-        }
-
         for (WorldChange w : changes)
         {
             const auto [chunkBase, chunkLocal] = splitWorldPosition(w.new_position);
             const decltype(this->chunks)::const_iterator maybeChunkIt =
-                this->chunks.find(chunkBase);
+                this->chunks.find(voxel::WorldPosition {chunkBase * 64});
 
             if (maybeChunkIt != this->chunks.cend())
             {

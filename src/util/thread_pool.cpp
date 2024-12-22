@@ -23,15 +23,17 @@ namespace util
             t.join();
         }
 
-        std::atomic_thread_fence(std::memory_order_seq_cst);
-
         std::function<void()> localFunction {};
 
-        while (this->function_queue.try_dequeue(localFunction))
+        for (int i = 0; i < 64; ++i)
         {
-            localFunction();
+            std::atomic_thread_fence(std::memory_order_seq_cst);
+            while (this->function_queue.try_dequeue(localFunction))
+            {
+                localFunction();
 
-            localFunction = nullptr;
+                localFunction = nullptr;
+            }
         }
     }
 

@@ -360,6 +360,22 @@ namespace voxel
                 }
             }
         }
+
+        void modifyOverVoxels(std::invocable<BrickLocalPosition, T&> auto func)
+        {
+            for (std::size_t x = 0; x < VoxelsPerBrickEdge; ++x)
+            {
+                for (std::size_t y = 0; y < VoxelsPerBrickEdge; ++y)
+                {
+                    for (std::size_t z = 0; z < VoxelsPerBrickEdge; ++z)
+                    {
+                        const BrickLocalPosition p {glm::u8vec3 {x, y, z}};
+
+                        func(p, this->modify(p));
+                    }
+                }
+            }
+        }
     };
 
     struct MaterialBrick : TypedBrick<Voxel>

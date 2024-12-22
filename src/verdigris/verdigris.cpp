@@ -22,6 +22,7 @@
 #include <boost/unordered/concurrent_flat_map.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtc/random.hpp>
+#include <random>
 #include <utility>
 
 namespace verdigris
@@ -82,10 +83,27 @@ namespace verdigris
 
         voxel::MaterialBrick brick {};
 
-        brick.fill(voxel::Voxel::Marble);
+        std::mt19937_64                     gen {73847375}; // NOLINT
+        std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
+        std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
 
-        this->cube_object = this->voxel_world.createVoxelObject(
-            voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}});
+        for (int i = 0; i < 4; ++i)
+        {
+            brick.modifyOverVoxels(
+                [&](auto, voxel::Voxel& v)
+                {
+                    v = static_cast<voxel::Voxel>(dist(gen) * 17.99f);
+                });
+
+            this->cubes.push_back(
+                {glm::vec3 {
+                     distN(gen) * 64.0f,
+                     (distN(gen) * 16.0f) + 32.0f,
+                     distN(gen) * 64.0f,
+                 },
+                 this->voxel_world.createVoxelObject(
+                     voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
+        }
     }
 
     Verdigris::~Verdigris() = default;
@@ -187,11 +205,13 @@ namespace verdigris
 
         this->time_alive += deltaTime;
 
-        const f32 x = 32.0f * std::sin(this->time_alive * 2.0f);
-        const f32 z = 32.0f * std::cos(this->time_alive * 2.0f);
+        for (const auto& [pos, o] : this->cubes)
+        {
+            const f32 x = (32.0f * std::sin(this->time_alive * 2.0f)) + pos.x;
+            const f32 z = (32.0f * std::cos(this->time_alive * 2.0f)) + pos.z;
 
-        this->voxel_world.setVoxelObjectPosition(
-            this->cube_object, voxel::WorldPosition {{x, 32, z}});
+            this->voxel_world.setVoxelObjectPosition(o, voxel::WorldPosition {{x, pos.y, z}});
+        }
 
         profilerTaskGenerator.stamp("update block");
 

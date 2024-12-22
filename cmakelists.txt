@@ -97,6 +97,7 @@ add_executable(lavender
     src/util/timer.cpp
 
     src/verdigris/verdigris.cpp
+    src/verdigris/flyer.cpp
 
     src/voxel/chunk_render_manager.cpp
     src/voxel/material_manager.cpp
