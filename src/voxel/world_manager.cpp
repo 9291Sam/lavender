@@ -6,6 +6,7 @@
 #include "world/generator.hpp"
 #include <glm/gtc/quaternion.hpp>
 #include <random>
+#include <unordered_map>
 #include <vector>
 
 namespace voxel
@@ -48,85 +49,164 @@ namespace voxel
         }
     }
 
+    WorldManager::VoxelObject
+    WorldManager::createVoxelObject(LinearVoxelVolume volume, voxel::WorldPosition position)
+    {
+        VoxelObject newObject = this->voxel_object_allocator.allocateOrPanic();
+
+        this->voxel_object_tracking_data[this->voxel_object_allocator.getValueOfHandle(newObject)] =
+            VoxelObjectTrackingData {
+                .volume {std::move(volume)}, .next_position {position}, .current_position {}};
+
+        return newObject;
+    }
+
+    void
+    WorldManager::setVoxelObjectPosition(const VoxelObject& voxelObject, WorldPosition newPosition)
+    {
+        this->voxel_object_tracking_data[this->voxel_object_allocator.getValueOfHandle(voxelObject)]
+            .next_position = newPosition;
+    }
+
     std::vector<game::FrameGenerator::RecordObject>
     WorldManager::onFrameUpdate(const game::Camera& camera)
     {
-        this->updates.lock(
-            [&](std::vector<std::pair<
-                    const voxel::ChunkRenderManager::Chunk*,
-                    std::vector<voxel::ChunkLocalUpdate>>>& lockedUpdates)
+        std::unordered_map<const ChunkRenderManager::Chunk*, std::vector<voxel::ChunkLocalUpdate>>
+            perChunkUpdates {};
+
+        const i32 radius = 4;
+        const auto [cameraChunkBase, _] =
+            splitWorldPosition(WorldPosition {static_cast<glm::i32vec3>(camera.getPosition())});
+        const glm::i32vec3 chunkRangeBase = cameraChunkBase - radius;
+        const glm::i32vec3 chunkRangePeak = cameraChunkBase + radius;
+
+        for (int x = chunkRangeBase.x; x <= chunkRangePeak.x; ++x)
+        {
+            for (int y = chunkRangeBase.y; y <= chunkRangePeak.y; ++y)
             {
-                int numberOfUpdates = 0;
-
-                while (!lockedUpdates.empty() && numberOfUpdates++ < 1)
+                for (int z = chunkRangeBase.z; z <= chunkRangePeak.z; ++z)
                 {
-                    const auto it                       = lockedUpdates.crbegin();
-                    const auto [chunkPtr, localUpdates] = *it;
+                    const voxel::WorldPosition pos {{(64 * x), (64 * y), (64 * z)}};
 
-                    this->chunk_render_manager.updateChunk(*chunkPtr, localUpdates);
+                    const decltype(this->chunks)::const_iterator maybeIt = this->chunks.find(pos);
 
-                    lockedUpdates.pop_back();
-                }
-
-                util::assertWarn(
-                    lockedUpdates.empty(),
-                    "Too many chunk updates! {} remaining",
-                    lockedUpdates.size());
-
-                const i32 radius                = 4;
-                const auto [cameraChunkBase, _] = splitWorldPosition(
-                    WorldPosition {static_cast<glm::i32vec3>(camera.getPosition())});
-                const glm::i32vec3 chunkRangeBase = cameraChunkBase - radius;
-                const glm::i32vec3 chunkRangePeak = cameraChunkBase + radius;
-
-                for (int x = chunkRangeBase.x; x <= chunkRangePeak.x; ++x)
-                {
-                    for (int y = chunkRangeBase.y; y <= chunkRangePeak.y; ++y)
+                    if (maybeIt == this->chunks.cend())
                     {
-                        for (int z = chunkRangeBase.z; z <= chunkRangePeak.z; ++z)
-                        {
-                            const voxel::WorldPosition pos {{(64 * x), (64 * y), (64 * z)}};
+                        const auto [realIt, _] =
+                            this->chunks.insert({pos, this->chunk_render_manager.createChunk(pos)});
 
-                            const decltype(this->chunks)::const_iterator maybeIt =
-                                this->chunks.find(pos);
+                        std::vector<voxel::ChunkLocalUpdate> slowUpdates =
+                            this->world_generator.generateChunk(pos);
 
-                            if (maybeIt == this->chunks.cend())
-                            {
-                                const auto [realIt, _] = this->chunks.insert(
-                                    {pos, this->chunk_render_manager.createChunk(pos)});
+                        perChunkUpdates[&realIt->second] = std::move(slowUpdates);
 
-                                std::vector<voxel::ChunkLocalUpdate> slowUpdates =
-                                    this->world_generator.generateChunk(pos);
-
-                                lockedUpdates.push_back({&realIt->second, std::move(slowUpdates)});
-
-                                goto exit;
-                            }
-                        }
+                        goto exit;
                     }
                 }
+            }
+        }
+    exit:
 
-                std::erase_if(
-                    this->chunks,
-                    [&](decltype(this->chunks)::value_type& item)
-                    {
-                        auto& [pos, chunk] = item;
+        // Erase chunks that are too far
+        std::erase_if(
+            this->chunks,
+            [&](decltype(this->chunks)::value_type& item)
+            {
+                auto& [pos, chunk] = item;
 
-                        if (glm::all(glm::lessThanEqual(pos, chunkRangePeak * 64))
-                            && glm::all(glm::greaterThanEqual(pos, chunkRangeBase * 64)))
-                        {
-                            return false;
-                        }
-                        else
-                        {
-                            this->chunk_render_manager.destroyChunk(std::move(chunk));
+                if (glm::all(glm::lessThanEqual(pos, chunkRangePeak * 64))
+                    && glm::all(glm::greaterThanEqual(pos, chunkRangeBase * 64)))
+                {
+                    return false;
+                }
+                else
+                {
+                    this->chunk_render_manager.destroyChunk(std::move(chunk));
 
-                            return true;
-                        }
-                    });
-
-            exit:
+                    return true;
+                }
             });
+
+        struct WorldChange
+        {
+            Voxel         new_voxel;
+            WorldPosition new_position;
+        };
+
+        std::vector<WorldChange> changes;
+
+        // Handle VoxelObjects
+        this->voxel_object_allocator.iterateThroughAllocatedElements(
+            [&](const u32 voxelObjectId)
+            {
+                VoxelObjectTrackingData& thisData = this->voxel_object_tracking_data[voxelObjectId];
+
+                if (thisData.current_position != thisData.next_position)
+                {
+                    if (thisData.current_position.has_value())
+                    {
+                        thisData.volume.temp_data.iterateOverVoxels(
+                            [&](const BrickLocalPosition localPos, const Voxel v)
+                            {
+                                if (v != Voxel::NullAirEmpty)
+                                {
+                                    changes.push_back(WorldChange {
+                                        .new_voxel {Voxel::NullAirEmpty},
+                                        .new_position {
+                                            static_cast<glm::i32vec3>(localPos)
+                                            + *thisData.current_position}});
+                                }
+                            });
+                    }
+
+                    thisData.volume.temp_data.iterateOverVoxels(
+                        [&](const BrickLocalPosition localPos, const Voxel v)
+                        {
+                            if (v != Voxel::NullAirEmpty)
+                            {
+                                changes.push_back(WorldChange {
+                                    .new_voxel {v},
+                                    .new_position {
+                                        static_cast<glm::i32vec3>(localPos)
+                                        + thisData.next_position}});
+                            }
+                        });
+
+                    thisData.current_position = thisData.next_position;
+                }
+            });
+
+        if (!changes.empty())
+        {
+            const WorldPosition newPosition = changes.front().new_position;
+            const auto [base, local]        = splitWorldPosition(newPosition);
+            util::logTrace(
+                "{} {} {} ",
+                glm::to_string(static_cast<glm::i32vec3>(newPosition)),
+                glm::to_string(static_cast<glm::i32vec3>(base)),
+                glm::to_string(static_cast<glm::i32vec3>(local)));
+        }
+
+        for (WorldChange w : changes)
+        {
+            const auto [chunkBase, chunkLocal] = splitWorldPosition(w.new_position);
+            const decltype(this->chunks)::const_iterator maybeChunkIt =
+                this->chunks.find(chunkBase);
+
+            if (maybeChunkIt != this->chunks.cend())
+            {
+                perChunkUpdates[&maybeChunkIt->second].push_back(ChunkLocalUpdate {
+                    chunkLocal,
+                    w.new_voxel,
+                    ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+                    ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
+            }
+        }
+
+        for (auto& [chunkPtr, localUpdates] : perChunkUpdates)
+        {
+            this->chunk_render_manager.updateChunk(*chunkPtr, localUpdates);
+        }
 
         return this->chunk_render_manager.processUpdatesAndGetDrawObjects(camera);
     }

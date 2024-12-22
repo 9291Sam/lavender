@@ -27,9 +27,9 @@ namespace voxel
         WorldManager& operator= (const WorldManager&) = delete;
         WorldManager& operator= (WorldManager&&)      = delete;
 
-        // VoxelObject createVoxelObject(LinearVoxelVolume);
-        // void        setVoxelObjectPosition(voxel::WorldPosition);
-        // void        destroyVoxelObject(VoxelObject);
+        VoxelObject createVoxelObject(LinearVoxelVolume, WorldPosition);
+        void        setVoxelObjectPosition(const VoxelObject&, WorldPosition);
+        void        destroyVoxelObject(VoxelObject);
 
         [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
         onFrameUpdate(const game::Camera&);
@@ -41,8 +41,9 @@ namespace voxel
 
         struct VoxelObjectTrackingData
         {
-            LinearVoxelVolume    volume {};
-            voxel::WorldPosition position {{0, 0, 0}};
+            LinearVoxelVolume                   volume {};
+            voxel::WorldPosition                next_position {{0, 0, 0}};
+            std::optional<voxel::WorldPosition> current_position;
         };
 
         util::OpaqueHandleAllocator<VoxelObject> voxel_object_allocator;

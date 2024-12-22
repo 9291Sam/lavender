@@ -14,6 +14,8 @@ namespace verdigris
         std::shared_ptr<vk::UniquePipeline> triangle_pipeline;
         ecs::UniqueEntity                   triangle;
         mutable voxel::WorldManager         voxel_world;
+        voxel::WorldManager::VoxelObject    cube_object;
+        mutable float                       time_alive;
 
         explicit Verdigris(game::Game*);
         ~Verdigris() override;

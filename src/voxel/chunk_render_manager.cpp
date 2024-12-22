@@ -712,6 +712,9 @@ namespace voxel
     void ChunkRenderManager::updateChunk(
         const Chunk& chunk, std::span<const ChunkLocalUpdate> chunkUpdates)
     {
+        util::assertFatal(!chunk.isNull(), "Tried to update null chunk!");
+        // util::assertWarn(!chunkUpdates.empty(), "Tried to do zero updates to a chunk!");
+
         std::vector<ChunkLocalUpdate>& updatesQueue =
             this->cpu_chunk_data[this->chunk_id_allocator.getValueOfHandle(chunk)].updates;
 

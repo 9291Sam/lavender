@@ -14,6 +14,8 @@
 #include "util/misc.hpp"
 #include "util/static_filesystem.hpp"
 #include "voxel/chunk_render_manager.hpp"
+#include "voxel/structures.hpp"
+#include "voxel/world_manager.hpp"
 #include <FastNoise/FastNoise.h>
 #include <boost/container_hash/hash_fwd.hpp>
 #include <boost/range/numeric.hpp>
@@ -77,6 +79,13 @@ namespace verdigris
         this->camera.addPosition({79.606, 42.586, -9.784});
         this->camera.addPitch(0.397f);
         this->camera.addYaw(3.87f);
+
+        voxel::MaterialBrick brick {};
+
+        brick.fill(voxel::Voxel::Marble);
+
+        this->cube_object = this->voxel_world.createVoxelObject(
+            voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}});
     }
 
     Verdigris::~Verdigris() = default;
@@ -175,6 +184,16 @@ namespace verdigris
             this->voxel_world.onFrameUpdate(this->camera)};
 
         profilerTaskGenerator.stamp("World Update");
+
+        this->time_alive += deltaTime;
+
+        const f32 x = 32.0f * std::sin(this->time_alive * 2.0f);
+        const f32 z = 32.0f * std::cos(this->time_alive * 2.0f);
+
+        this->voxel_world.setVoxelObjectPosition(
+            this->cube_object, voxel::WorldPosition {{x, 32, z}});
+
+        profilerTaskGenerator.stamp("update block");
 
         ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
             [&](ecs::RawEntity, const TriangleComponent& c)
