@@ -28,6 +28,8 @@ namespace verdigris
         void update(f32 deltaTime);
 
     private:
+        void free();
+
         voxel::WorldManager*             world_manager;
         glm::vec3                        start;
         glm::vec3                        dir;

@@ -54,7 +54,9 @@ namespace util
         }                                                                                          \
     };                                                                                             \
     template<class... Ts>                                                                          \
-    log##LEVEL(std::format_string<Ts...>, Ts&&...)->log##LEVEL<Ts...>;
+    log##LEVEL(std::format_string<Ts...>, Ts&&...)->log##LEVEL<Ts...>;                             \
+    template<class... J>                                                                           \
+    log##LEVEL(std::format_string<J...>, J&&..., std::source_location)->log##LEVEL<J...>;
 
     MAKE_LOGGER(Trace)
     MAKE_LOGGER(Debug)
@@ -100,7 +102,10 @@ namespace util
         }                                                                                          \
     };                                                                                             \
     template<class... J>                                                                           \
-    assert##LEVEL(bool, std::format_string<J...>, J&&...)->assert##LEVEL<J...>;
+    assert##LEVEL(bool, std::format_string<J...>, J&&...)->assert##LEVEL<J...>;                    \
+    template<class... J>                                                                           \
+    assert##LEVEL(bool, std::format_string<J...>, J&&..., std::source_location)                    \
+        ->assert##LEVEL<J...>;
 
     MAKE_ASSERT(Trace, false) // NOLINT: We want implicit conversions
     MAKE_ASSERT(Debug, false) // NOLINT: We want implicit conversions
@@ -120,7 +125,7 @@ namespace util
         {
             using enum LoggingLevel;
             using namespace std::chrono_literals;
-            std::string message = std::format(fmt, std::forward<Ts>(args)...);
+            std::string message = std::format<Ts...>(fmt, std::forward<Ts>(args)...);
 
             asynchronouslyLog(
                 message, LoggingLevel::Panic, location, std::chrono::system_clock::now());
@@ -132,5 +137,7 @@ namespace util
     };
     template<class... J>
     panic(std::format_string<J...>, J&&...) -> panic<J...>;
+    template<class... J>
+    panic(std::format_string<J...>, J&&..., std::source_location) -> panic<J...>;
 
 } // namespace util

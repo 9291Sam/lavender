@@ -29,10 +29,7 @@ namespace verdigris
 
     Flyer::~Flyer()
     {
-        if (!this->voxel_object.isNull())
-        {
-            this->world_manager->destroyVoxelObject(std::move(this->voxel_object));
-        }
+        this->free();
     }
 
     void Flyer::update(f32 deltaTime)
@@ -43,7 +40,19 @@ namespace verdigris
                 voxel::WorldPosition {this->start + this->time_alive * this->dir * speed};
             this->world_manager->setVoxelObjectPosition(this->voxel_object, this->current_position);
         }
+        else
+        {
+            this->free();
+        }
 
         this->time_alive += deltaTime;
+    }
+
+    void Flyer::free()
+    {
+        if (!this->voxel_object.isNull())
+        {
+            this->world_manager->destroyVoxelObject(std::move(this->voxel_object));
+        }
     }
 } // namespace verdigris

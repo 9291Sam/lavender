@@ -47,6 +47,11 @@ namespace voxel
         {
             this->chunk_render_manager.destroyRaytracedLight(std::move(l));
         }
+
+        for (VoxelObject& o : this->voxel_object_deletion_queue)
+        {
+            this->voxel_object_allocator.free(std::move(o));
+        }
     }
 
     WorldManager::VoxelObject

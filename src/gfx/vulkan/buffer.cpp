@@ -6,6 +6,7 @@
 #include "util/range_allocator.hpp"
 #include <boost/container/small_vector.hpp>
 #include <limits>
+#include <source_location>
 #include <type_traits>
 #include <vulkan/vulkan_enums.hpp>
 
@@ -28,12 +29,21 @@ namespace gfx::vulkan
     {}
 
     void BufferStager::enqueueByteTransfer(
-        vk::Buffer buffer, u32 offset, std::span<const std::byte> dataToWrite) const
+        vk::Buffer                 buffer,
+        u32                        offset,
+        std::span<const std::byte> dataToWrite,
+        std::source_location       location) const
     {
         util::assertFatal(
             dataToWrite.size_bytes() < std::numeric_limits<u32>::max(),
             "Buffer::enqueueByteTransfer of size {} is too large",
             dataToWrite.size_bytes());
+
+        util::assertWarn<std::size_t>(
+            dataToWrite.size_bytes() > 0,
+            "BufferStager::enqueueByteTransfer of size {} is too small",
+            dataToWrite.size_bytes(),
+            location);
 
         util::RangeAllocation thisAllocation = this->transfer_allocator.lock(
             [&](util::RangeAllocator& a)

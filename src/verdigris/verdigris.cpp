@@ -28,10 +28,11 @@
 
 namespace verdigris
 {
-    Verdigris::Verdigris(game::Game* game_) // NOLINT
+    Verdigris::Verdigris(game::Game* game_)
         : game {game_}
         , triangle {ecs::createEntity()}
         , voxel_world {this->game}
+        , time_alive {0.0f}
     {
         this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
             gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
@@ -80,7 +81,7 @@ namespace verdigris
 
         this->camera.addPosition({79.606, 42.586, -9.784});
         this->camera.addPitch(0.397f);
-        this->camera.addYaw(3.87f);
+        this->camera.addYaw(5.17f);
 
         voxel::MaterialBrick brick {};
 
@@ -88,7 +89,7 @@ namespace verdigris
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
         std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
 
-        for (int i = 0; i < 2; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             brick.modifyOverVoxels(
                 [&](auto, voxel::Voxel& v)
@@ -225,19 +226,14 @@ namespace verdigris
 
         for (const auto& [pos, o] : this->cubes)
         {
-            const f32 x = (32.0f * std::sin(this->time_alive * 2.0f)) + pos.x;
-            const f32 z = (32.0f * std::cos(this->time_alive * 2.0f)) + pos.z;
+            const f32 x =
+                (32.0f * std::sin(this->time_alive * (2.0f + std::fmod<float>(pos.y, 1.3f))))
+                + pos.x;
+            const f32 z =
+                (32.0f * std::cos(this->time_alive * (2.0f + std::fmod<float>(pos.y, 1.3f))))
+                + pos.z;
 
             this->voxel_world.setVoxelObjectPosition(o, voxel::WorldPosition {{x, pos.y, z}});
-        }
-
-        if (this->time_alive > 10.0f)
-        {
-            for (auto& [pos, o] : this->cubes)
-            {
-                this->voxel_world.destroyVoxelObject(std::move(o));
-            }
-            this->cubes.clear();
         }
 
         profilerTaskGenerator.stamp("update block");

@@ -6,6 +6,7 @@
 #include "util/range_allocator.hpp"
 #include "util/ranges.hpp"
 #include <ctti/nameof.hpp>
+#include <source_location>
 #include <type_traits>
 #include <vector>
 #include <vk_mem_alloc.h>
@@ -484,13 +485,17 @@ namespace gfx::vulkan
 
         template<class T>
             requires std::is_trivially_copyable_v<T>
-        void
-        enqueueTransfer(const GpuOnlyBuffer<T>& buffer, u32 offset, std::span<const T> data) const
+        void enqueueTransfer(
+            const GpuOnlyBuffer<T>& buffer,
+            u32                     offset,
+            std::span<const T>      data,
+            std::source_location    location = std::source_location::current()) const
         {
             this->enqueueByteTransfer(
                 *buffer,
                 offset * sizeof(T), // NOLINTNEXTLINE
-                std::span {reinterpret_cast<const std::byte*>(data.data()), data.size_bytes()});
+                std::span {reinterpret_cast<const std::byte*>(data.data()), data.size_bytes()},
+                location);
         }
 
         void
@@ -500,7 +505,8 @@ namespace gfx::vulkan
 
     private:
 
-        void enqueueByteTransfer(vk::Buffer, u32 offset, std::span<const std::byte>) const;
+        void enqueueByteTransfer(
+            vk::Buffer, u32 offset, std::span<const std::byte>, std::source_location) const;
 
         struct BufferTransfer
         {

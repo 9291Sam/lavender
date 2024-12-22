@@ -918,8 +918,13 @@ namespace voxel
                         thisAllocation =
                             this->voxel_face_allocator.allocate(static_cast<u32>(faces.size()));
 
-                        stager.enqueueTransfer(
-                            this->voxel_faces, thisAllocation.offset, {faces.data(), faces.size()});
+                        if (!faces.empty())
+                        {
+                            stager.enqueueTransfer(
+                                this->voxel_faces,
+                                thisAllocation.offset,
+                                {faces.data(), faces.size()});
+                        }
                     }
 
                     thisChunkData.active_draw_allocations = allocations;

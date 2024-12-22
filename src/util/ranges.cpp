@@ -127,31 +127,9 @@ namespace util
         // discard all of the deltas that are higher than we care about
         deltas.resize(deltas.size() - numberOfRanges);
 
-        // {
-        //     std::string msg {};
-
-        //     for (auto& d : deltas)
-        //     {
-        //         msg += std::format("{{#{}, ~{}}}, ", d.referent_base_index, d.distance_between);
-        //     }
-
-        //     util::logTrace("sorted deltas deltas {}", msg);
-        // }
-
         std::vector<std::size_t> nonMonotonicBuckets {};
         nonMonotonicBuckets.resize(
             mergedSortedRanges.size(), std::numeric_limits<std::size_t>::max());
-
-        // {
-        //     std::string msg {};
-
-        //     for (auto& b : nonMonotonicBuckets)
-        //     {
-        //         msg += std::format("{{b{}}}, ", b);
-        //     }
-
-        //     util::logTrace("pre nonMonotonicBuckets {}", msg);
-        // }
 
         std::size_t nextBucket = 0;
 
@@ -174,17 +152,6 @@ namespace util
                 b = nextBucket++;
             }
         }
-
-        // {
-        //     std::string msg {};
-
-        //     for (auto& b : nonMonotonicBuckets)
-        //     {
-        //         msg += std::format("{{b{}}}, ", b);
-        //     }
-
-        //     util::logTrace("post nonMonotomicBuckets {}", msg);
-        // }
 
         std::vector<InclusiveRange> output {};
         output.resize(

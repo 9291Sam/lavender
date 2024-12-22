@@ -44,7 +44,7 @@ namespace voxel
             LinearVoxelVolume                   volume {};
             voxel::WorldPosition                next_position {{0, 0, 0}};
             std::optional<voxel::WorldPosition> current_position;
-            bool                                should_be_deleted;
+            bool                                should_be_deleted = false;
         };
 
         util::OpaqueHandleAllocator<VoxelObject> voxel_object_allocator;
