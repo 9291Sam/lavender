@@ -68,6 +68,14 @@ namespace voxel
             .next_position = newPosition;
     }
 
+    void WorldManager::destroyVoxelObject(VoxelObject voxelObject)
+    {
+        this->voxel_object_tracking_data[this->voxel_object_allocator.getValueOfHandle(voxelObject)]
+            .should_be_deleted = true;
+
+        this->voxel_object_deletion_queue.push_back(std::move(voxelObject));
+    }
+
     std::vector<game::FrameGenerator::RecordObject>
     WorldManager::onFrameUpdate(const game::Camera& camera)
     {
@@ -141,24 +149,24 @@ namespace voxel
             {
                 VoxelObjectTrackingData& thisData = this->voxel_object_tracking_data[voxelObjectId];
 
-                if (thisData.current_position != thisData.next_position)
+                auto emitClearing = [&]
                 {
-                    if (thisData.current_position.has_value())
-                    {
-                        thisData.volume.temp_data.iterateOverVoxels(
-                            [&](const BrickLocalPosition localPos, const Voxel v)
+                    thisData.volume.temp_data.iterateOverVoxels(
+                        [&](const BrickLocalPosition localPos, const Voxel v)
+                        {
+                            if (v != Voxel::NullAirEmpty)
                             {
-                                if (v != Voxel::NullAirEmpty)
-                                {
-                                    changes.push_back(WorldChange {
-                                        .new_voxel {Voxel::NullAirEmpty},
-                                        .new_position {
-                                            static_cast<glm::i32vec3>(localPos)
-                                            + *thisData.current_position}});
-                                }
-                            });
-                    }
+                                changes.push_back(WorldChange {
+                                    .new_voxel {Voxel::NullAirEmpty},
+                                    .new_position {
+                                        static_cast<glm::i32vec3>(localPos)
+                                        + *thisData.current_position}});
+                            }
+                        });
+                };
 
+                auto emitVolume = [&]
+                {
                     thisData.volume.temp_data.iterateOverVoxels(
                         [&](const BrickLocalPosition localPos, const Voxel v)
                         {
@@ -171,10 +179,30 @@ namespace voxel
                                         + thisData.next_position}});
                             }
                         });
+                };
 
-                    thisData.current_position = thisData.next_position;
+                if (thisData.should_be_deleted)
+                {
+                    emitClearing();
                 }
+                else if (thisData.current_position != thisData.next_position)
+                {
+                    if (thisData.current_position.has_value())
+                    {
+                        emitClearing();
+                    }
+
+                    emitVolume();
+                }
+
+                thisData.current_position = thisData.next_position;
             });
+
+        for (VoxelObject& o : this->voxel_object_deletion_queue)
+        {
+            this->voxel_object_allocator.free(std::move(o));
+        }
+        this->voxel_object_deletion_queue.clear();
 
         for (WorldChange w : changes)
         {

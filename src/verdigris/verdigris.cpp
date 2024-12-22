@@ -87,7 +87,7 @@ namespace verdigris
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
         std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
 
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             brick.modifyOverVoxels(
                 [&](auto, voxel::Voxel& v)
@@ -106,7 +106,13 @@ namespace verdigris
         }
     }
 
-    Verdigris::~Verdigris() = default;
+    Verdigris::~Verdigris()
+    {
+        for (auto& [pos, o] : this->cubes)
+        {
+            this->voxel_world.destroyVoxelObject(std::move(o));
+        }
+    }
 
     game::Game::GameState::OnFrameReturnData Verdigris::onFrame(float deltaTime) const
     {
@@ -211,6 +217,15 @@ namespace verdigris
             const f32 z = (32.0f * std::cos(this->time_alive * 2.0f)) + pos.z;
 
             this->voxel_world.setVoxelObjectPosition(o, voxel::WorldPosition {{x, pos.y, z}});
+        }
+
+        if (this->time_alive > 10.0f)
+        {
+            for (auto& [pos, o] : this->cubes)
+            {
+                this->voxel_world.destroyVoxelObject(std::move(o));
+            }
+            this->cubes.clear();
         }
 
         profilerTaskGenerator.stamp("update block");

@@ -44,10 +44,12 @@ namespace voxel
             LinearVoxelVolume                   volume {};
             voxel::WorldPosition                next_position {{0, 0, 0}};
             std::optional<voxel::WorldPosition> current_position;
+            bool                                should_be_deleted;
         };
 
         util::OpaqueHandleAllocator<VoxelObject> voxel_object_allocator;
         std::vector<VoxelObjectTrackingData>     voxel_object_tracking_data;
+        std::vector<VoxelObject>                 voxel_object_deletion_queue;
 
         std::unordered_map<voxel::WorldPosition, ChunkRenderManager::Chunk> chunks;
         util::Mutex<
