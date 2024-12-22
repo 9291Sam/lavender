@@ -802,7 +802,10 @@ namespace voxel
                     oldGpuData.data.iterateOverBricks(
                         [&](BrickCoordinate bC, u16 oldOffset)
                         {
-                            if (oldOffset != ChunkBrickMap::NullOffset)
+                            if (oldOffset != ChunkBrickMap::NullOffset
+                                && oldMaterialBricks[oldOffset].isSolid()
+                                       != Voxel::NullAirEmpty) // TODO: do proper dense
+                                                               // brick things!
                             {
                                 const u16 newOffset =
                                     static_cast<u16>(newChunkOffsetAllocator.allocateOrPanic());

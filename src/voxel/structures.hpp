@@ -11,6 +11,7 @@
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/string_cast.hpp>
 #include <limits>
+#include <optional>
 #include <utility>
 
 namespace voxel
@@ -375,6 +376,27 @@ namespace voxel
                     }
                 }
             }
+        }
+
+        [[nodiscard]] std::optional<T> isSolid() const
+        {
+            T maybeSolidT = this->read(BrickLocalPosition {{0, 0, 0}});
+
+            for (std::size_t x = 0; x < VoxelsPerBrickEdge; ++x)
+            {
+                for (std::size_t y = 0; y < VoxelsPerBrickEdge; ++y)
+                {
+                    for (std::size_t z = 0; z < VoxelsPerBrickEdge; ++z)
+                    {
+                        if (this->read(BrickLocalPosition {{x, y, z}}) != maybeSolidT)
+                        {
+                            return std::nullopt;
+                        }
+                    }
+                }
+            }
+
+            return maybeSolidT;
         }
     };
 

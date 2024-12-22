@@ -40,8 +40,6 @@ namespace voxel
         RaytracedLight createRaytracedLight(GpuRaytracedLight);
         void           destroyRaytracedLight(RaytracedLight);
 
-        // TODO: require insertions of whole bricks??
-        // store nothing and just require that an entire chunk be uploaded each time
         void updateChunk(const Chunk&, std::span<const ChunkLocalUpdate>);
 
         std::vector<game::FrameGenerator::RecordObject>
