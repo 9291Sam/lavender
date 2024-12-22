@@ -27,15 +27,20 @@ namespace verdigris
             voxel::LinearVoxelVolume {brick}, this->current_position);
     }
 
+    Flyer::~Flyer()
+    {
+        if (!this->voxel_object.isNull())
+        {
+            this->world_manager->destroyVoxelObject(std::move(this->voxel_object));
+        }
+    }
+
     void Flyer::update(f32 deltaTime)
     {
         if (this->time_alive < 10.0f)
         {
             this->current_position =
                 voxel::WorldPosition {this->start + this->time_alive * this->dir * speed};
-        }
-        else
-        {
             this->world_manager->setVoxelObjectPosition(this->voxel_object, this->current_position);
         }
 

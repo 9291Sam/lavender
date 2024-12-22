@@ -3,6 +3,7 @@
 #include "ecs/entity.hpp"
 #include "ecs/entity_component_system_manager.hpp"
 #include "ecs/raw_entity.hpp"
+#include "flyer.hpp"
 #include "game/frame_generator.hpp"
 #include "game/game.hpp"
 #include "game/transform.hpp"
@@ -87,7 +88,7 @@ namespace verdigris
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
         std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
 
-        for (int i = 0; i < 1; ++i)
+        for (int i = 0; i < 2; ++i)
         {
             brick.modifyOverVoxels(
                 [&](auto, voxel::Voxel& v)
@@ -180,6 +181,17 @@ namespace verdigris
                      gfx::Window::Action::PlayerMoveDown))
         {
             newPosition -= game::Transform::UpVector * deltaTime * moveScale;
+        }
+
+        if (this->game->getRenderer()->getWindow()->isActionActive(gfx::Window::Action::SpawnFlyer))
+        {
+            this->fliers.push_back(
+                Flyer {camera.getPosition(), camera.getForwardVector(), 16.0f, &this->voxel_world});
+        }
+
+        for (Flyer& f : this->fliers)
+        {
+            f.update(deltaTime);
         }
 
         this->camera.setPosition(newPosition);

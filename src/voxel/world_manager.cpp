@@ -70,6 +70,8 @@ namespace voxel
 
     void WorldManager::destroyVoxelObject(VoxelObject voxelObject)
     {
+        util::assertFatal(!voxelObject.isNull(), "Tried to destroy null Voxel Object!");
+
         this->voxel_object_tracking_data[this->voxel_object_allocator.getValueOfHandle(voxelObject)]
             .should_be_deleted = true;
 

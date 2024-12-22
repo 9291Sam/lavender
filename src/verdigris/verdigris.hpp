@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ecs/entity.hpp"
+#include "flyer.hpp"
 #include "game/game.hpp"
 #include "voxel/world_manager.hpp"
 #include <vulkan/vulkan_handles.hpp>
@@ -15,6 +16,7 @@ namespace verdigris
         ecs::UniqueEntity                   triangle;
         mutable voxel::WorldManager         voxel_world;
         mutable std::vector<std::pair<glm::vec3, voxel::WorldManager::VoxelObject>> cubes;
+        mutable std::vector<Flyer>                                                  fliers;
         mutable float                                                               time_alive;
 
         explicit Verdigris(game::Game*);

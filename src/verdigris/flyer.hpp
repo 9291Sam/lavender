@@ -18,7 +18,7 @@ namespace verdigris
             voxel::WorldManager*,
             f32          maxTime  = 10.0f,
             voxel::Voxel material = voxel::Voxel::Emerald);
-        ~Flyer() = default;
+        ~Flyer();
 
         Flyer(const Flyer&)             = delete;
         Flyer(Flyer&&)                  = default;
