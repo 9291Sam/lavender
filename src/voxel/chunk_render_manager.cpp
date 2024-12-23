@@ -1115,6 +1115,8 @@ namespace voxel
 
                     commandBuffer.updateBuffer(
                         *this->global_voxel_data, 0, sizeof(GlobalVoxelData) - 4, &data);
+
+                    commandBuffer.fillBuffer(*this->visible_face_id_map, 0, vk::WholeSize, ~0U);
                 }}};
 
         game::FrameGenerator::RecordObject chunkDraw = game::FrameGenerator::RecordObject {
