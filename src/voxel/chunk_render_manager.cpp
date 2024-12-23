@@ -753,6 +753,8 @@ namespace voxel
 
                 if (!thisChunkData.updates.empty())
                 {
+                    util::MultiTimer timer {};
+
                     const PerChunkGpuData oldGpuData = this->gpu_chunk_data.read(chunkId);
 
                     const std::size_t oldBricksPerChunk = [&]() -> std::size_t
@@ -776,6 +778,8 @@ namespace voxel
                     const std::span<const BitBrick> oldShadowBricks = this->shadow_bricks.read(
                         oldGpuData.brick_allocation_offset, oldBricksPerChunk);
 
+                    timer.stamp("read bricks");
+
                     if (thisChunkData.active_brick_range_allocation.has_value())
                     {
                         this->brick_range_allocator.free(
@@ -790,6 +794,8 @@ namespace voxel
                             this->voxel_face_allocator.free(allocation);
                         }
                     }
+
+                    timer.stamp("free old");
 
                     util::IndexAllocator newChunkOffsetAllocator {
                         BricksPerChunkEdge * BricksPerChunkEdge * BricksPerChunkEdge};
@@ -820,6 +826,8 @@ namespace voxel
                                         static_cast<u32>(bC.asLinearIndex())}});
                             }
                         });
+
+                    timer.stamp("propagate old");
 
                     const std::vector<ChunkLocalUpdate> newUpdates =
                         std::move(thisChunkData.updates);
@@ -853,6 +861,8 @@ namespace voxel
                         newShadowBricks[maybeOffset].write(local, static_cast<bool>(shadowUpdate));
                     }
 
+                    timer.stamp("propagate new");
+
                     BrickList list {};
 
                     newBrickMap.iterateOverBricks(
@@ -877,8 +887,12 @@ namespace voxel
                             }
                         });
 
+                    timer.stamp("generate BrickList");
+
                     const std::array<std::vector<GreedyVoxelFace>, 6> newGreedyFaces =
                         meshChunkGreedy(list.formDenseBitChunk());
+
+                    timer.stamp("do mesh");
 
                     const util::RangeAllocation newBrickAllocation =
                         this->brick_range_allocator.allocate(
@@ -892,6 +906,8 @@ namespace voxel
                         newParentBricks.size());
 
                     thisChunkData.active_brick_range_allocation = newBrickAllocation;
+
+                    timer.stamp("allocate new ranges");
 
                     this->gpu_chunk_data.write(
                         chunkId,
@@ -926,6 +942,10 @@ namespace voxel
                                 {faces.data(), faces.size()});
                         }
                     }
+
+                    timer.stamp("do transfers");
+
+                    util::logTrace("Updating Chunk #{} | {}", chunkId, timer.finish());
 
                     thisChunkData.active_draw_allocations = allocations;
                 }

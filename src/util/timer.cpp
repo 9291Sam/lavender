@@ -1,6 +1,7 @@
 #include "timer.hpp"
 #include "log.hpp"
 #include <chrono>
+#include <source_location>
 
 namespace util
 {
@@ -33,5 +34,61 @@ namespace util
         }
 
         return 0;
+    }
+
+    MultiTimer::MultiTimer(std::source_location location_)
+        : previous_stamp_time {std::chrono::steady_clock::now()}
+        , location {location_}
+    {}
+
+    MultiTimer::~MultiTimer()
+    {
+        const std::string maybeMessage = this->finish();
+
+        if (!maybeMessage.empty())
+        {
+            util::logTrace("{}", maybeMessage);
+        }
+    }
+
+    void MultiTimer::stamp(std::string name)
+    {
+        const std::chrono::time_point<std::chrono::steady_clock> now =
+            std::chrono::steady_clock::now();
+
+        const std::chrono::microseconds thisDuration =
+            std::chrono::duration_cast<std::chrono::microseconds>(now - this->previous_stamp_time);
+
+        this->timings.push_back(Timing {.name {std::move(name)}, .time {thisDuration}});
+
+        this->previous_stamp_time = now;
+    }
+
+    std::string MultiTimer::finish()
+    {
+        std::string output {};
+
+        for (const Timing& t : this->timings)
+        {
+            output += static_cast<std::string>(t);
+
+            output += " | ";
+        }
+
+        if (!output.empty())
+        {
+            output.pop_back();
+            output.pop_back();
+            output.pop_back();
+        }
+
+        this->timings.clear();
+
+        return output;
+    }
+
+    MultiTimer::Timing::operator std::string () const
+    {
+        return std::format("{} {}us", this->name, this->time.count());
     }
 } // namespace util
