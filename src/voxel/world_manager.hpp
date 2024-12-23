@@ -2,6 +2,7 @@
 
 #include "chunk_render_manager.hpp"
 #include "game/frame_generator.hpp"
+#include "gfx/profiler/task_generator.hpp"
 #include "structures.hpp"
 #include "util/opaque_integer_handle.hpp"
 #include "voxel/chunk_render_manager.hpp"
@@ -32,7 +33,7 @@ namespace voxel
         void        destroyVoxelObject(VoxelObject);
 
         [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
-        onFrameUpdate(const game::Camera&);
+        onFrameUpdate(const game::Camera&, gfx::profiler::TaskGenerator&);
 
     private:
 

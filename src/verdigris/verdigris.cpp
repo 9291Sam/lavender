@@ -89,7 +89,7 @@ namespace verdigris
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
         std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
 
-        for (int i = 0; i < 0; ++i)
+        for (int i = 0; i < 16; ++i)
         {
             brick.modifyOverVoxels(
                 [&](auto, voxel::Voxel& v)
@@ -218,7 +218,7 @@ namespace verdigris
         profilerTaskGenerator.stamp("Camera Update");
 
         std::vector<game::FrameGenerator::RecordObject> draws {
-            this->voxel_world.onFrameUpdate(this->camera)};
+            this->voxel_world.onFrameUpdate(this->camera, profilerTaskGenerator)};
 
         profilerTaskGenerator.stamp("World Update");
 

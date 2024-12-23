@@ -83,8 +83,8 @@ namespace voxel
         this->voxel_object_deletion_queue.push_back(std::move(voxelObject));
     }
 
-    std::vector<game::FrameGenerator::RecordObject>
-    WorldManager::onFrameUpdate(const game::Camera& camera)
+    std::vector<game::FrameGenerator::RecordObject> WorldManager::onFrameUpdate(
+        const game::Camera& camera, gfx::profiler::TaskGenerator& profilerTaskGenerator)
     {
         std::unordered_map<const ChunkRenderManager::Chunk*, std::vector<voxel::ChunkLocalUpdate>>
             perChunkUpdates {};
@@ -107,15 +107,17 @@ namespace voxel
 
                     if (maybeIt == this->chunks.cend())
                     {
-                        const auto [realIt, _] =
-                            this->chunks.insert({pos, this->chunk_render_manager.createChunk(pos)});
-
-                        std::vector<voxel::ChunkLocalUpdate> slowUpdates =
-                            this->world_generator.generateChunk(pos);
-
-                        if (!slowUpdates.empty())
                         {
-                            perChunkUpdates[&realIt->second] = std::move(slowUpdates);
+                            const auto [realIt, _] = this->chunks.insert(
+                                {pos, this->chunk_render_manager.createChunk(pos)});
+
+                            std::vector<voxel::ChunkLocalUpdate> slowUpdates =
+                                this->world_generator.generateChunk(pos);
+
+                            if (!slowUpdates.empty())
+                            {
+                                perChunkUpdates[&realIt->second] = std::move(slowUpdates);
+                            }
                         }
 
                         goto exit;
@@ -124,6 +126,8 @@ namespace voxel
             }
         }
     exit:
+
+        profilerTaskGenerator.stamp("iterate and generate");
 
         // Erase chunks that are too far
         std::erase_if(
@@ -144,6 +148,8 @@ namespace voxel
                     return true;
                 }
             });
+
+        profilerTaskGenerator.stamp("erase far");
 
         struct WorldChange
         {
@@ -208,6 +214,8 @@ namespace voxel
                 thisData.current_position = thisData.next_position;
             });
 
+        profilerTaskGenerator.stamp("Voxel Object change collection");
+
         for (VoxelObject& o : this->voxel_object_deletion_queue)
         {
             this->voxel_object_allocator.free(std::move(o));
@@ -230,11 +238,20 @@ namespace voxel
             }
         }
 
+        profilerTaskGenerator.stamp("organize VoxelObject changes");
+
         for (auto& [chunkPtr, localUpdates] : perChunkUpdates)
         {
             this->chunk_render_manager.updateChunk(*chunkPtr, localUpdates);
         }
 
-        return this->chunk_render_manager.processUpdatesAndGetDrawObjects(camera);
+        profilerTaskGenerator.stamp("dispatch VoxelObject changes");
+
+        std::vector<game::FrameGenerator::RecordObject> recordObjects =
+            this->chunk_render_manager.processUpdatesAndGetDrawObjects(camera);
+
+        profilerTaskGenerator.stamp("ChunkRenderManager::onFrame");
+
+        return recordObjects;
     }
 } // namespace voxel
