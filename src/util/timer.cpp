@@ -17,7 +17,7 @@ namespace util
         this->end();
     }
 
-    std::size_t Timer::end()
+    std::size_t Timer::end(bool shouldPrint)
     {
         if (!this->ended)
         {
@@ -27,8 +27,11 @@ namespace util
                 std::chrono::duration_cast<std::chrono::microseconds>(
                     std::chrono::steady_clock::now() - this->start);
 
-            util::logTrace<const char*, const std::chrono::microseconds&>(
-                "{} | {}", this->name.data(), durationUs, this->location);
+            if (shouldPrint)
+            {
+                util::logTrace<const char*, const std::chrono::microseconds&>(
+                    "{} | {}", this->name.data(), durationUs, this->location);
+            }
 
             return static_cast<std::size_t>(durationUs.count());
         }

@@ -567,9 +567,19 @@ namespace voxel
             data;
     };
 
+    struct BrickParentInformation
+    {
+        u32 parent_chunk             : 16;
+        u32 position_in_parent_chunk : 9;
+    };
+
     struct ChunkAsyncMesh
     {
-        // every time you add something to this you need to free it in destroyChunk
+        ChunkBrickMap                               new_brick_map;
+        std::vector<MaterialBrick>                  new_material_bricks;
+        std::vector<BitBrick>                       new_shadow_bricks;
+        std::vector<BrickParentInformation>         new_parent_bricks;
+        std::array<std::vector<GreedyVoxelFace>, 6> new_greedy_faces;
     };
 
     struct CpuChunkData
@@ -578,6 +588,7 @@ namespace voxel
         std::optional<std::array<util::RangeAllocation, 6>> active_draw_allocations;
 
         std::vector<ChunkLocalUpdate> updates;
+        std::future<ChunkAsyncMesh>   maybe_async_mesh;
     };
 
     struct PerChunkGpuData
@@ -587,12 +598,6 @@ namespace voxel
         i32           world_offset_z          = 0;
         u32           brick_allocation_offset = 0;
         ChunkBrickMap data;
-    };
-
-    struct BrickParentInformation
-    {
-        u32 parent_chunk             : 16;
-        u32 position_in_parent_chunk : 9;
     };
 
     struct VisibleFaceIdBrickHashMapStorage

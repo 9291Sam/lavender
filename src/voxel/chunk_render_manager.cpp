@@ -215,6 +215,7 @@ namespace voxel
             return outFaces;
         }
 
+        std::future<ChunkAsyncMesh> spawnAsyncMeshOperation();
     } // namespace
 
     static constexpr u32 MaxChunks          = 4096; // max of u16
@@ -773,11 +774,20 @@ namespace voxel
                         }
                     }();
 
-                    const std::span<const MaterialBrick> oldMaterialBricks =
+                    const std::span<const MaterialBrick> spanOldMaterialBricks =
                         this->material_bricks.read(
                             oldGpuData.brick_allocation_offset, oldBricksPerChunk);
-                    const std::span<const BitBrick> oldShadowBricks = this->shadow_bricks.read(
+                    const std::span<const BitBrick> spanOldShadowBricks = this->shadow_bricks.read(
                         oldGpuData.brick_allocation_offset, oldBricksPerChunk);
+
+                    util::Timer                      t {"memcpy"};
+                    const std::vector<MaterialBrick> oldMaterialBricks {
+                        spanOldMaterialBricks.cbegin(), spanOldMaterialBricks.cend()};
+                    const std::vector<BitBrick> oldShadowBricks {
+                        spanOldShadowBricks.cbegin(), spanOldShadowBricks.cend()};
+
+                    const std::size_t us = t.end(false);
+                    util::logTrace("{} {}", us, oldBricksPerChunk);
 
                     timer.stamp("read bricks");
 
@@ -946,7 +956,8 @@ namespace voxel
 
                     timer.stamp("do transfers");
 
-                    util::logTrace("Updating Chunk #{} | {}", chunkId, timer.finish());
+                    // util::logTrace("Updating Chunk #{} | {}", chunkId, timer.finish());
+                    std::ignore = timer.finish();
 
                     thisChunkData.active_draw_allocations = allocations;
                 }
