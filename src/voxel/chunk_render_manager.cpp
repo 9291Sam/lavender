@@ -13,6 +13,7 @@
 #include <glm/geometric.hpp>
 #include <memory>
 #include <ranges>
+#include <source_location>
 #include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
@@ -710,18 +711,18 @@ namespace voxel
     }
 
     void ChunkRenderManager::updateChunk(
-        const Chunk& chunk, std::span<const ChunkLocalUpdate> chunkUpdates)
+        const Chunk&                      chunk,
+        std::span<const ChunkLocalUpdate> chunkUpdates,
+        std::source_location              location)
     {
-        util::assertFatal(!chunk.isNull(), "Tried to update null chunk!");
-        // util::assertWarn(!chunkUpdates.empty(), "Tried to do zero updates to a chunk!");
+        util::assertFatal<>(!chunk.isNull(), "Tried to update null chunk!", location);
+        util::assertWarn<>(!chunkUpdates.empty(), "Tried to do zero updates to a chunk!", location);
 
         std::vector<ChunkLocalUpdate>& updatesQueue =
             this->cpu_chunk_data[this->chunk_id_allocator.getValueOfHandle(chunk)].updates;
 
-        for (const ChunkLocalUpdate& update : chunkUpdates)
-        {
-            updatesQueue.push_back(update);
-        }
+        // this is literally a 3x improvement over a loop
+        updatesQueue.append_range(chunkUpdates);
     }
 
     std::vector<game::FrameGenerator::RecordObject>

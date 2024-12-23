@@ -113,7 +113,10 @@ namespace voxel
                         std::vector<voxel::ChunkLocalUpdate> slowUpdates =
                             this->world_generator.generateChunk(pos);
 
-                        perChunkUpdates[&realIt->second] = std::move(slowUpdates);
+                        if (!slowUpdates.empty())
+                        {
+                            perChunkUpdates[&realIt->second] = std::move(slowUpdates);
+                        }
 
                         goto exit;
                     }

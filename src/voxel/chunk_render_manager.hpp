@@ -8,6 +8,7 @@
 #include "util/misc.hpp"
 #include "util/opaque_integer_handle.hpp"
 #include "util/range_allocator.hpp"
+#include <source_location>
 #include <span>
 #include <vulkan/vulkan_handles.hpp>
 
@@ -40,7 +41,10 @@ namespace voxel
         RaytracedLight createRaytracedLight(GpuRaytracedLight);
         void           destroyRaytracedLight(RaytracedLight);
 
-        void updateChunk(const Chunk&, std::span<const ChunkLocalUpdate>);
+        void updateChunk(
+            const Chunk&,
+            std::span<const ChunkLocalUpdate>,
+            std::source_location = std::source_location::current());
 
         std::vector<game::FrameGenerator::RecordObject>
         processUpdatesAndGetDrawObjects(const game::Camera&);
