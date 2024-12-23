@@ -573,6 +573,15 @@ namespace voxel
         u32 position_in_parent_chunk : 9;
     };
 
+    struct PerChunkGpuData
+    {
+        i32           world_offset_x          = 0;
+        i32           world_offset_y          = 0;
+        i32           world_offset_z          = 0;
+        u32           brick_allocation_offset = 0;
+        ChunkBrickMap data;
+    };
+
     struct ChunkAsyncMesh
     {
         ChunkBrickMap                               new_brick_map;
@@ -589,15 +598,6 @@ namespace voxel
 
         std::vector<ChunkLocalUpdate> updates;
         std::future<ChunkAsyncMesh>   maybe_async_mesh;
-    };
-
-    struct PerChunkGpuData
-    {
-        i32           world_offset_x          = 0;
-        i32           world_offset_y          = 0;
-        i32           world_offset_z          = 0;
-        u32           brick_allocation_offset = 0;
-        ChunkBrickMap data;
     };
 
     struct VisibleFaceIdBrickHashMapStorage

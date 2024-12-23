@@ -10,6 +10,8 @@
 #include "util/range_allocator.hpp"
 #include "util/static_filesystem.hpp"
 #include "voxel/material_manager.hpp"
+#include <chrono>
+#include <future>
 #include <glm/geometric.hpp>
 #include <memory>
 #include <ranges>
@@ -215,7 +217,104 @@ namespace voxel
             return outFaces;
         }
 
-        std::future<ChunkAsyncMesh> spawnAsyncMeshOperation();
+        [[nodiscard]] ChunkAsyncMesh doMesh(
+            const u16                           chunkId,
+            const PerChunkGpuData               oldGpuData,
+            const std::vector<MaterialBrick>    oldMaterialBricks,
+            const std::vector<BitBrick>         oldShadowBricks,
+            // NOLINTNEXTLINE(performance-unnecessary-value-param)
+            const std::vector<ChunkLocalUpdate> newUpdates)
+        {
+            util::IndexAllocator newChunkOffsetAllocator {
+                BricksPerChunkEdge * BricksPerChunkEdge * BricksPerChunkEdge};
+            ChunkBrickMap                       newBrickMap {};
+            std::vector<MaterialBrick>          newMaterialBricks {};
+            std::vector<BitBrick>               newShadowBricks {};
+            std::vector<BrickParentInformation> newParentBricks {};
+
+            // Propagate old updates
+            oldGpuData.data.iterateOverBricks(
+                [&](BrickCoordinate bC, u16 oldOffset)
+                {
+                    if (oldOffset != ChunkBrickMap::NullOffset
+                        && oldMaterialBricks[oldOffset].isSolid()
+                               != Voxel::NullAirEmpty) // TODO: do proper dense
+                                                       // brick things!
+                    {
+                        const u16 newOffset =
+                            static_cast<u16>(newChunkOffsetAllocator.allocateOrPanic());
+
+                        newBrickMap.setOffset(bC, newOffset);
+
+                        newMaterialBricks.push_back(oldMaterialBricks[oldOffset]);
+                        newShadowBricks.push_back(oldShadowBricks[oldOffset]);
+                        newParentBricks.push_back(BrickParentInformation {
+                            .parent_chunk {chunkId},
+                            .position_in_parent_chunk {static_cast<u32>(bC.asLinearIndex())}});
+                    }
+                });
+
+            for (const ChunkLocalUpdate& newUpdate : newUpdates)
+            {
+                const ChunkLocalPosition             updatePosition = newUpdate.getPosition();
+                const Voxel                          updateVoxel    = newUpdate.getVoxel();
+                const ChunkLocalUpdate::ShadowUpdate shadowUpdate   = newUpdate.getShadowUpdate();
+                const ChunkLocalUpdate::CameraVisibleUpdate cameraVisibilityUpdate =
+                    newUpdate.getCameraVisibility();
+
+                const auto [coordinate, local] = splitChunkLocalPosition(updatePosition);
+
+                u16 maybeOffset = newBrickMap.getOffset(coordinate);
+                if (maybeOffset == ChunkBrickMap::NullOffset)
+                {
+                    maybeOffset = static_cast<u16>(newChunkOffsetAllocator.allocateOrPanic());
+
+                    newBrickMap.setOffset(coordinate, maybeOffset);
+                    newMaterialBricks.push_back(MaterialBrick {});
+                    newShadowBricks.push_back(BitBrick {});
+                    newParentBricks.push_back(BrickParentInformation {
+                        .parent_chunk {chunkId},
+                        .position_in_parent_chunk {static_cast<u32>(coordinate.asLinearIndex())}});
+                }
+                newMaterialBricks[maybeOffset].write(local, updateVoxel);
+                newShadowBricks[maybeOffset].write(local, static_cast<bool>(shadowUpdate));
+            }
+
+            BrickList list {};
+
+            newBrickMap.iterateOverBricks(
+                [&](BrickCoordinate bC, u16 maybeOffset)
+                {
+                    if (maybeOffset != ChunkBrickMap::NullOffset)
+                    {
+                        // TODO: will need to be replaced with PrimaryRayBricks
+                        const MaterialBrick& materialBrick = newMaterialBricks[maybeOffset];
+                        BitBrick             bitBrick {};
+
+                        materialBrick.iterateOverVoxels(
+                            [&](BrickLocalPosition bP, Voxel v)
+                            {
+                                if (v != Voxel::NullAirEmpty)
+                                {
+                                    bitBrick.write(bP, true);
+                                }
+                            });
+
+                        list.data.push_back({bC, bitBrick});
+                    }
+                });
+
+            std::array<std::vector<GreedyVoxelFace>, 6> newGreedyFaces =
+                meshChunkGreedy(list.formDenseBitChunk());
+
+            return ChunkAsyncMesh {
+                .new_brick_map {newBrickMap},
+                .new_material_bricks {std::move(newMaterialBricks)},
+                .new_shadow_bricks {std::move(newShadowBricks)},
+                .new_parent_bricks {std::move(newParentBricks)},
+                .new_greedy_faces {std::move(newGreedyFaces)}};
+        }
+        // std::future<ChunkAsyncMesh> spawnAsyncMeshOperation();
     } // namespace
 
     static constexpr u32 MaxChunks          = 4096; // max of u16
@@ -753,10 +852,9 @@ namespace voxel
                     };
                 }();
 
-                if (!thisChunkData.updates.empty())
+                // we need to spawn a new mesh task
+                if (!thisChunkData.updates.empty() && !thisChunkData.maybe_async_mesh.valid())
                 {
-                    util::MultiTimer timer {};
-
                     const PerChunkGpuData oldGpuData = this->gpu_chunk_data.read(chunkId);
 
                     const std::size_t oldBricksPerChunk = [&]() -> std::size_t
@@ -780,17 +878,24 @@ namespace voxel
                     const std::span<const BitBrick> spanOldShadowBricks = this->shadow_bricks.read(
                         oldGpuData.brick_allocation_offset, oldBricksPerChunk);
 
-                    util::Timer                      t {"memcpy"};
-                    const std::vector<MaterialBrick> oldMaterialBricks {
+                    std::vector<MaterialBrick> oldMaterialBricks {
                         spanOldMaterialBricks.cbegin(), spanOldMaterialBricks.cend()};
-                    const std::vector<BitBrick> oldShadowBricks {
+                    std::vector<BitBrick> oldShadowBricks {
                         spanOldShadowBricks.cbegin(), spanOldShadowBricks.cend()};
 
-                    const std::size_t us = t.end(false);
-                    util::logTrace("{} {}", us, oldBricksPerChunk);
-
-                    timer.stamp("read bricks");
-
+                    thisChunkData.maybe_async_mesh = std::async(
+                        doMesh,
+                        chunkId,
+                        oldGpuData,
+                        std::move(oldMaterialBricks),
+                        std::move(oldShadowBricks),
+                        std::move(thisChunkData.updates));
+                }
+                else if (
+                    thisChunkData.maybe_async_mesh.valid()
+                    && thisChunkData.maybe_async_mesh.wait_for(std::chrono::years {0})
+                           == std::future_status::ready)
+                {
                     if (thisChunkData.active_brick_range_allocation.has_value())
                     {
                         this->brick_range_allocator.free(
@@ -806,119 +911,25 @@ namespace voxel
                         }
                     }
 
-                    timer.stamp("free old");
-
-                    util::IndexAllocator newChunkOffsetAllocator {
-                        BricksPerChunkEdge * BricksPerChunkEdge * BricksPerChunkEdge};
-                    ChunkBrickMap                       newBrickMap {};
-                    std::vector<MaterialBrick>          newMaterialBricks {};
-                    std::vector<BitBrick>               newShadowBricks {};
-                    std::vector<BrickParentInformation> newParentBricks {};
-
-                    // Propagate old updates
-                    oldGpuData.data.iterateOverBricks(
-                        [&](BrickCoordinate bC, u16 oldOffset)
-                        {
-                            if (oldOffset != ChunkBrickMap::NullOffset
-                                && oldMaterialBricks[oldOffset].isSolid()
-                                       != Voxel::NullAirEmpty) // TODO: do proper dense
-                                                               // brick things!
-                            {
-                                const u16 newOffset =
-                                    static_cast<u16>(newChunkOffsetAllocator.allocateOrPanic());
-
-                                newBrickMap.setOffset(bC, newOffset);
-
-                                newMaterialBricks.push_back(oldMaterialBricks[oldOffset]);
-                                newShadowBricks.push_back(oldShadowBricks[oldOffset]);
-                                newParentBricks.push_back(BrickParentInformation {
-                                    .parent_chunk {chunkId},
-                                    .position_in_parent_chunk {
-                                        static_cast<u32>(bC.asLinearIndex())}});
-                            }
-                        });
-
-                    timer.stamp("propagate old");
-
-                    const std::vector<ChunkLocalUpdate> newUpdates =
-                        std::move(thisChunkData.updates);
-
-                    for (const ChunkLocalUpdate& newUpdate : newUpdates)
-                    {
-                        const ChunkLocalPosition updatePosition = newUpdate.getPosition();
-                        const Voxel              updateVoxel    = newUpdate.getVoxel();
-                        const ChunkLocalUpdate::ShadowUpdate shadowUpdate =
-                            newUpdate.getShadowUpdate();
-                        const ChunkLocalUpdate::CameraVisibleUpdate cameraVisibilityUpdate =
-                            newUpdate.getCameraVisibility();
-
-                        const auto [coordinate, local] = splitChunkLocalPosition(updatePosition);
-
-                        u16 maybeOffset = newBrickMap.getOffset(coordinate);
-                        if (maybeOffset == ChunkBrickMap::NullOffset)
-                        {
-                            maybeOffset =
-                                static_cast<u16>(newChunkOffsetAllocator.allocateOrPanic());
-
-                            newBrickMap.setOffset(coordinate, maybeOffset);
-                            newMaterialBricks.push_back(MaterialBrick {});
-                            newShadowBricks.push_back(BitBrick {});
-                            newParentBricks.push_back(BrickParentInformation {
-                                .parent_chunk {chunkId},
-                                .position_in_parent_chunk {
-                                    static_cast<u32>(coordinate.asLinearIndex())}});
-                        }
-                        newMaterialBricks[maybeOffset].write(local, updateVoxel);
-                        newShadowBricks[maybeOffset].write(local, static_cast<bool>(shadowUpdate));
-                    }
-
-                    timer.stamp("propagate new");
-
-                    BrickList list {};
-
-                    newBrickMap.iterateOverBricks(
-                        [&](BrickCoordinate bC, u16 maybeOffset)
-                        {
-                            if (maybeOffset != ChunkBrickMap::NullOffset)
-                            {
-                                // TODO: will need to be replaced with PrimaryRayBricks
-                                const MaterialBrick& materialBrick = newMaterialBricks[maybeOffset];
-                                BitBrick             bitBrick {};
-
-                                materialBrick.iterateOverVoxels(
-                                    [&](BrickLocalPosition bP, Voxel v)
-                                    {
-                                        if (v != Voxel::NullAirEmpty)
-                                        {
-                                            bitBrick.write(bP, true);
-                                        }
-                                    });
-
-                                list.data.push_back({bC, bitBrick});
-                            }
-                        });
-
-                    timer.stamp("generate BrickList");
-
-                    const std::array<std::vector<GreedyVoxelFace>, 6> newGreedyFaces =
-                        meshChunkGreedy(list.formDenseBitChunk());
-
-                    timer.stamp("do mesh");
+                    ChunkAsyncMesh newMeshResult   = thisChunkData.maybe_async_mesh.get();
+                    thisChunkData.maybe_async_mesh = {};
 
                     const util::RangeAllocation newBrickAllocation =
                         this->brick_range_allocator.allocate(
-                            static_cast<u32>(newMaterialBricks.size()));
+                            static_cast<u32>(newMeshResult.new_material_bricks.size()));
                     util::assertFatal(
-                        newMaterialBricks.size() == newShadowBricks.size()
-                            && newShadowBricks.size() == newParentBricks.size(),
+                        newMeshResult.new_material_bricks.size()
+                                == newMeshResult.new_shadow_bricks.size()
+                            && newMeshResult.new_shadow_bricks.size()
+                                   == newMeshResult.new_parent_bricks.size(),
                         "Dont mess this up {} {} {}",
-                        newMaterialBricks.size(),
-                        newShadowBricks.size(),
-                        newParentBricks.size());
+                        newMeshResult.new_material_bricks.size(),
+                        newMeshResult.new_shadow_bricks.size(),
+                        newMeshResult.new_parent_bricks.size());
 
                     thisChunkData.active_brick_range_allocation = newBrickAllocation;
 
-                    timer.stamp("allocate new ranges");
+                    const PerChunkGpuData& oldGpuData = this->gpu_chunk_data.read(chunkId);
 
                     this->gpu_chunk_data.write(
                         chunkId,
@@ -927,20 +938,22 @@ namespace voxel
                             .world_offset_y {oldGpuData.world_offset_y},
                             .world_offset_z {oldGpuData.world_offset_z},
                             .brick_allocation_offset {newBrickAllocation.offset},
-                            .data {newBrickMap}});
+                            .data {newMeshResult.new_brick_map}});
 
                     stager.enqueueTransfer(
                         this->per_brick_chunk_parent_info,
                         newBrickAllocation.offset,
-                        {newParentBricks});
+                        {newMeshResult.new_parent_bricks});
 
-                    this->material_bricks.write(newBrickAllocation.offset, newMaterialBricks);
-                    this->shadow_bricks.write(newBrickAllocation.offset, newShadowBricks);
+                    this->material_bricks.write(
+                        newBrickAllocation.offset, newMeshResult.new_material_bricks);
+                    this->shadow_bricks.write(
+                        newBrickAllocation.offset, newMeshResult.new_shadow_bricks);
 
                     std::array<util::RangeAllocation, 6> allocations {};
 
                     for (auto [thisAllocation, faces] :
-                         std::views::zip(allocations, newGreedyFaces))
+                         std::views::zip(allocations, newMeshResult.new_greedy_faces))
                     {
                         thisAllocation =
                             this->voxel_face_allocator.allocate(static_cast<u32>(faces.size()));
@@ -953,11 +966,6 @@ namespace voxel
                                 {faces.data(), faces.size()});
                         }
                     }
-
-                    timer.stamp("do transfers");
-
-                    // util::logTrace("Updating Chunk #{} | {}", chunkId, timer.finish());
-                    std::ignore = timer.finish();
 
                     thisChunkData.active_draw_allocations = allocations;
                 }
