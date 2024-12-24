@@ -2,6 +2,7 @@
 #include "camera.hpp"
 #include "frame_generator.hpp"
 #include "util/static_filesystem.hpp"
+#include "util/thread_pool.hpp"
 #include "util/threads.hpp"
 #include <atomic>
 #include <chrono>
@@ -49,7 +50,7 @@ namespace game
         std::atomic<bool>                       shouldWorkerStop {false};
         util::Mutex<std::function<void(float)>> tickFunc {};
 
-        std::future<void> tickWorker = std::async(
+        std::future<void> tickWorker = util::runAsync(
             [&tickFunc, &shouldWorkerStop]
             {
                 float deltaTime = 0.0f;

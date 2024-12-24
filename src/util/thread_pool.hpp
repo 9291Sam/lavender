@@ -11,7 +11,7 @@ namespace util
     class ThreadPool
     {
     public:
-        explicit ThreadPool(std::size_t numberOfWorkers = std::thread::hardware_concurrency());
+        explicit ThreadPool(std::size_t numberOfWorkers = std::thread::hardware_concurrency() - 2);
         ~ThreadPool();
 
         ThreadPool(const ThreadPool&)             = delete;
@@ -27,10 +27,10 @@ namespace util
             std::future<std::invoke_result_t<Fn>> future = task.get_future();
 
             this->function_queue.enqueue(
-                std::move_only_function {[localTask = std::move(task)] mutable
-                                         {
-                                             localTask();
-                                         }});
+                std::move_only_function<void()> {[localTask = std::move(task)] mutable
+                                                 {
+                                                     localTask();
+                                                 }});
 
             return future;
         }

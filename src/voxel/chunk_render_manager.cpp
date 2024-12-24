@@ -10,6 +10,7 @@
 #include "util/index_allocator.hpp"
 #include "util/range_allocator.hpp"
 #include "util/static_filesystem.hpp"
+#include "util/thread_pool.hpp"
 #include "util/timer.hpp"
 #include "voxel/material_manager.hpp"
 #include <chrono>
@@ -899,14 +900,22 @@ namespace voxel
                     std::vector<PrimaryRayBrick> oldPrimaryRayBricks {
                         spanOldPrimaryRayBricks.cbegin(), spanOldPrimaryRayBricks.cend()};
 
-                    thisChunkData.maybe_async_mesh = std::async(
-                        doMesh,
-                        chunkId,
-                        oldGpuData,
-                        std::move(oldMaterialBricks),
-                        std::move(oldShadowBricks),
-                        std::move(oldPrimaryRayBricks),
-                        std::move(thisChunkData.updates));
+                    thisChunkData.maybe_async_mesh = util::runAsync(
+                        [chunkId,
+                         localOldGpuData          = std::move(oldGpuData),
+                         localOldMaterialBricks   = std::move(oldMaterialBricks),
+                         localOldShadowBricks     = std::move(oldShadowBricks),
+                         localOldPrimaryRayBricks = std::move(oldPrimaryRayBricks),
+                         localNewUpdates          = std::move(thisChunkData.updates)]
+                        {
+                            return doMesh(
+                                chunkId,
+                                localOldGpuData,
+                                localOldMaterialBricks,
+                                localOldShadowBricks,
+                                localOldPrimaryRayBricks,
+                                localNewUpdates);
+                        });
                 }
                 else if (
                     thisChunkData.maybe_async_mesh.valid()
