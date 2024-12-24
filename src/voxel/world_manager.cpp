@@ -5,6 +5,7 @@
 #include "util/thread_pool.hpp"
 #include "voxel/chunk_render_manager.hpp"
 #include "world/generator.hpp"
+#include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <future>
@@ -18,7 +19,7 @@ namespace voxel
     static constexpr std::size_t MaxVoxelObjects = 4096;
 
     WorldManager::WorldManager(const game::Game* game)
-        : generation_threads {2}
+        : generation_threads {3}
         , chunk_render_manager {game}
         , world_generator {3347347348}
         , voxel_object_allocator {MaxVoxelObjects}
@@ -272,18 +273,29 @@ namespace voxel
         : chunk_render_manager {chunkRenderManager}
         , world_generator {worldGenerator}
         , chunk {this->chunk_render_manager->createChunk(rootPosition)}
+        , should_still_generate(std::make_shared<std::atomic<bool>>(true))
         , updates {pool.executeOnPool(
-              [wg = worldGenerator, pos = rootPosition]
+              [wg  = worldGenerator,
+               pos = rootPosition,
+               shouldGeneratePtr =
+                   this->should_still_generate] -> std::vector<voxel::ChunkLocalUpdate>
               {
-                  return wg->generateChunk(pos);
+                  if (shouldGeneratePtr->load(std::memory_order_acquire))
+                  {
+                      return wg->generateChunk(pos);
+                  }
+                  else
+                  {
+                      return {};
+                  }
               })}
     {}
 
     WorldManager::LazilyGeneratedChunk::~LazilyGeneratedChunk()
     {
-        if (this->updates.valid())
+        if (this->should_still_generate != nullptr)
         {
-            this->updates.wait();
+            this->should_still_generate->store(false, std::memory_order_release);
         }
 
         if (!this->chunk.isNull())

@@ -61,9 +61,10 @@ namespace voxel
                 std::span<const voxel::ChunkLocalUpdate> extraUpdates, std::size_t& updatesOcurred);
 
         private:
-            ChunkRenderManager*       chunk_render_manager;
-            world::WorldGenerator*    world_generator;
-            ChunkRenderManager::Chunk chunk;
+            ChunkRenderManager*                chunk_render_manager;
+            world::WorldGenerator*             world_generator;
+            ChunkRenderManager::Chunk          chunk;
+            std::shared_ptr<std::atomic<bool>> should_still_generate;
 
             std::future<std::vector<voxel::ChunkLocalUpdate>> updates;
         };
