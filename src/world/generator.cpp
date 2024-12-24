@@ -19,22 +19,25 @@ namespace world
     {
         std::array<std::array<float, 64>, 64> res {};
 
-        std::array<std::array<float, 64>, 64> mat {};
+        std::unique_ptr<std::array<std::array<std::array<float, 64>, 64>, 64>> mat {
+            new std::array<std::array<std::array<float, 64>, 64>, 64>};
         this->fractal->GenUniformGrid2D(
             res.data()->data(),
-            root.z,
             root.x,
+            root.z,
             64,
             64,
             0.02f,
             static_cast<int>(this->seed * 13437));
-        this->fractal->GenUniformGrid2D(
-            mat.data()->data(),
-            root.z,
+        this->fractal->GenUniformGrid3D(
+            mat->data()->data()->data(),
             root.x,
+            root.z,
+            root.y,
             64,
             64,
-            0.02f,
+            64,
+            0.05f,
             static_cast<int>(this->seed * 8594835));
 
         std::vector<voxel::ChunkLocalUpdate> out {};
@@ -44,18 +47,21 @@ namespace world
         {
             for (u8 j = 0; j < 64; ++j)
             {
-                const i32 worldHeight = static_cast<i32>(std::exp(4.0f * res[i][j])); // NOLINT
+                const i32 worldHeight = static_cast<i32>(std::exp(4.0f * res[j][i])); // NOLINT
 
                 for (u8 h = 0; h < 64; ++h)
                 {
                     const i32 worldHeightThisVoxel = h + root.y;
-                    if (worldHeight - 64 < worldHeightThisVoxel
-                        && worldHeightThisVoxel < worldHeight)
+                    if (worldHeightThisVoxel < worldHeight)
                     {
                         out.push_back(voxel::ChunkLocalUpdate {
                             voxel::ChunkLocalPosition {{i, h, j}},
                             static_cast<voxel::Voxel>(util::map<float>(
-                                static_cast<float>(mat[i][j]), -1.0f, 1.0f, 1.0f, 17.9f)), // NOLINT
+                                static_cast<float>((*mat)[h][j][i]),
+                                -1.0f,
+                                1.0f,
+                                1.0f,
+                                17.9f)), // NOLINT
                             voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
                             voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
                     }

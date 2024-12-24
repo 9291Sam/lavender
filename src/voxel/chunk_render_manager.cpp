@@ -225,7 +225,7 @@ namespace voxel
             const std::vector<MaterialBrick>    oldMaterialBricks,
             const std::vector<ShadowBrick>      oldShadowBricks,
             const std::vector<PrimaryRayBrick>  oldPrimaryRayBricks,
-            // NOLINTNEXTLINE(performance-unnecessary-value-param)
+            // NOLINTNEXTLINE(performance-unnecessary-value-param) lifetimes exist
             const std::vector<ChunkLocalUpdate> newUpdates)
         {
             util::MultiTimer t {};
@@ -311,6 +311,8 @@ namespace voxel
                 meshChunkGreedy(list.formDenseBitChunk());
 
             t.stamp("form brick list and do mesh");
+
+            std::ignore = t.finish();
 
             return ChunkAsyncMesh {
                 .new_brick_map {newBrickMap},

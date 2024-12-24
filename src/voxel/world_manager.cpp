@@ -89,7 +89,7 @@ namespace voxel
         std::unordered_map<const ChunkRenderManager::Chunk*, std::vector<voxel::ChunkLocalUpdate>>
             perChunkUpdates {};
 
-        const i32 radius = 6;
+        const i32 radius = 12;
         const auto [cameraChunkBase, _] =
             splitWorldPosition(WorldPosition {static_cast<glm::i32vec3>(camera.getPosition())});
         const glm::i32vec3 chunkRangeBase = cameraChunkBase - radius;
@@ -97,7 +97,7 @@ namespace voxel
 
         for (int x = chunkRangeBase.x; x <= chunkRangePeak.x; ++x)
         {
-            for (int y = chunkRangeBase.y; y <= chunkRangePeak.y; ++y)
+            for (int y = -1; y <= 1; ++y)
             {
                 for (int z = chunkRangeBase.z; z <= chunkRangePeak.z; ++z)
                 {

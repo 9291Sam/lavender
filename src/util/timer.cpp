@@ -50,7 +50,7 @@ namespace util
 
         if (!maybeMessage.empty())
         {
-            util::logTrace("{}", maybeMessage);
+            util::logTrace<const std::string&>("{}", maybeMessage, this->location);
         }
     }
 
