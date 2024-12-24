@@ -89,7 +89,7 @@ namespace voxel
     std::vector<game::FrameGenerator::RecordObject> WorldManager::onFrameUpdate(
         const game::Camera& camera, gfx::profiler::TaskGenerator& profilerTaskGenerator)
     {
-        const i32 radius = 12;
+        const i32 radius = 6;
         const auto [cameraChunkBase, _] =
             splitWorldPosition(WorldPosition {static_cast<glm::i32vec3>(camera.getPosition())});
         const glm::i32vec3 chunkRangeBase = cameraChunkBase - radius;
@@ -98,9 +98,9 @@ namespace voxel
         // const int maxSpawns     = 256;
         // int       currentSpawns = 0;
 
-        for (int x = chunkRangeBase.x; x <= chunkRangePeak.x; ++x)
+        for (int y = chunkRangePeak.y; y >= chunkRangeBase.y; --y)
         {
-            for (int y = -1; y <= 1; ++y)
+            for (int x = chunkRangeBase.x; x <= chunkRangePeak.x; ++x)
             {
                 for (int z = chunkRangeBase.z; z <= chunkRangePeak.z; ++z)
                 {

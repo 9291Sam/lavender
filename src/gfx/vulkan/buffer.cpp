@@ -159,9 +159,9 @@ namespace gfx::vulkan
 
         for (const auto& [outputBuffer, bufferCopies] : copies)
         {
-            if (bufferCopies.size() > 512)
+            if (bufferCopies.size() > 4096)
             {
-                util::logTrace("Excessive copies on buffer {}", bufferCopies.size());
+                util::logWarn("Excessive copies on buffer {}", bufferCopies.size());
             }
             commandBuffer.copyBuffer(*this->staging_buffer, outputBuffer, bufferCopies);
         }
