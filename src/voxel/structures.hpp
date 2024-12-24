@@ -173,6 +173,8 @@ namespace voxel
         Granite,
         Basalt,
         Limestone,
+        Dirt,
+        Grass,
     };
 
     enum class VoxelFaceDirection : std::uint8_t

@@ -75,9 +75,9 @@ namespace verdigris
                         .name {"Triangle Pipeline Layout"}})},
                 .name {"Triangle Pipeline"}});
 
-        this->triangle.addComponent(TriangleComponent {
-            .transform {.scale {glm::vec3 {25.0f, 25.0f, 25.0f}}} // namespace verdigris
-        });
+        this->triangle.addComponent(TriangleComponent {.transform {
+            .translation {glm::vec3 {1.323123, 32.3232123f, 3.8473f}},
+            .scale {glm::vec3 {1.0f, 1.0f, 1.0f}}}});
 
         this->camera.addPosition({79.606, 42.586, -9.784});
         this->camera.addPitch(0.397f);
@@ -94,10 +94,10 @@ namespace verdigris
             brick.modifyOverVoxels(
                 [&](auto bp, voxel::Voxel& v)
                 {
-                    if (bp.x < 4 && bp.y < 4 && bp.z < 4)
-                    {
-                        v = static_cast<voxel::Voxel>(dist(gen) * 17.99f);
-                    }
+                    // if (bp.x < 4 && bp.y < 4 && bp.z < 4)
+                    // {
+                    v = static_cast<voxel::Voxel>(dist(gen) * 17.99f);
+                    // }
                 });
 
             this->cubes.push_back(

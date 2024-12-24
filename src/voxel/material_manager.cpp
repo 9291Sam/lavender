@@ -201,6 +201,32 @@ namespace voxel
                 .emissive_color_power {},
                 .coat_color_power {},
             };
+        case Voxel::Dirt:
+            return VoxelMaterial {
+                .ambient_color {0.3828125f, 0.28515625, 0.1953125f, 1.0},
+                .diffuse_color {0.3828125f, 0.28515625, 0.1953125f, 1.0},
+                .specular_color {0.296648f, 0.296648f, 0.296648f, 1.0},
+                .diffuse_subsurface_weight {0.00f},
+                .specular {0.01f},
+                .roughness {1.0f},
+                .metallic {0.0},
+                .emissive_color_power {},
+                .coat_color_power {},
+            };
+
+        case Voxel::Grass:
+            return VoxelMaterial {
+                .ambient_color {0.140625f, 0.28515625f, 0.12445385f, 1.0},
+                .diffuse_color {0.140625f, 0.28515625f, 0.12445385f, 1.0},
+                .specular_color {0.034848f, 0.05945f, 0.1642348f, 1.0},
+                .diffuse_subsurface_weight {0.00f},
+                .specular {0.01f},
+                .roughness {1.0f},
+                .metallic {0.0},
+                .emissive_color_power {},
+                .coat_color_power {},
+            };
+
         case Voxel::NullAirEmpty:
             [[fallthrough]];
         default:
