@@ -13,7 +13,7 @@
 #include "util/thread_pool.hpp"
 #include "util/timer.hpp"
 #include "voxel/material_manager.hpp"
-#include <chrono>
+#include <boost/dynamic_bitset/dynamic_bitset.hpp>
 #include <future>
 #include <glm/geometric.hpp>
 #include <memory>
@@ -322,116 +322,6 @@ namespace voxel
                 .new_shadow_bricks {std::move(newShadowBricks)},
                 .new_primary_ray_bricks {std::move(newPrimaryRayBricks)},
                 .new_greedy_faces {std::move(newGreedyFaces)}};
-        }
-
-        struct Plane
-        {
-            glm::vec3 normal;   // Normal vector of the plane
-            float     distance; // Distance from the origin
-        };
-
-        struct AABB
-        {
-            glm::vec3 min; // Minimum corner of the AABB
-            glm::vec3 max; // Maximum corner of the AABB
-        };
-
-        std::array<Plane, 6> extractFrustumPlanes(const glm::mat4& mvpMatrix)
-        {
-            std::array<Plane, 6> frustum;
-
-            // Left plane
-            frustum[0].normal = glm::vec3(
-                mvpMatrix[0][3] + mvpMatrix[0][0],
-                mvpMatrix[1][3] + mvpMatrix[1][0],
-                mvpMatrix[2][3] + mvpMatrix[2][0]);
-            frustum[0].distance = mvpMatrix[3][3] + mvpMatrix[3][0];
-
-            // Right plane
-            frustum[1].normal = glm::vec3(
-                mvpMatrix[0][3] - mvpMatrix[0][0],
-                mvpMatrix[1][3] - mvpMatrix[1][0],
-                mvpMatrix[2][3] - mvpMatrix[2][0]);
-            frustum[1].distance = mvpMatrix[3][3] - mvpMatrix[3][0];
-
-            // Bottom plane
-            frustum[2].normal = glm::vec3(
-                mvpMatrix[0][3] + mvpMatrix[0][1],
-                mvpMatrix[1][3] + mvpMatrix[1][1],
-                mvpMatrix[2][3] + mvpMatrix[2][1]);
-            frustum[2].distance = mvpMatrix[3][3] + mvpMatrix[3][1];
-
-            // Top plane
-            frustum[3].normal = glm::vec3(
-                mvpMatrix[0][3] - mvpMatrix[0][1],
-                mvpMatrix[1][3] - mvpMatrix[1][1],
-                mvpMatrix[2][3] - mvpMatrix[2][1]);
-            frustum[3].distance = mvpMatrix[3][3] - mvpMatrix[3][1];
-
-            // Near plane
-            frustum[4].normal = glm::vec3(
-                mvpMatrix[0][3] + mvpMatrix[0][2],
-                mvpMatrix[1][3] + mvpMatrix[1][2],
-                mvpMatrix[2][3] + mvpMatrix[2][2]);
-            frustum[4].distance = mvpMatrix[3][3] + mvpMatrix[3][2];
-
-            // Far plane
-            frustum[5].normal = glm::vec3(
-                mvpMatrix[0][3] - mvpMatrix[0][2],
-                mvpMatrix[1][3] - mvpMatrix[1][2],
-                mvpMatrix[2][3] - mvpMatrix[2][2]);
-            frustum[5].distance = mvpMatrix[3][3] - mvpMatrix[3][2];
-
-            // Normalize the planes
-            for (auto& plane : frustum)
-            {
-                float length = glm::length(plane.normal);
-                plane.normal /= length;
-                plane.distance /= length;
-            }
-
-            return frustum;
-        }
-
-        bool isAABBWithinFrustum(const AABB& aabb, const glm::mat4& mvpMatrix)
-        {
-            // Extract frustum planes from the MVP matrix
-            auto frustum = extractFrustumPlanes(mvpMatrix);
-
-            // Loop through each plane in the frustum
-            for (const auto& plane : frustum)
-            {
-                // Calculate the positive and negative extents of the AABB relative to the plane
-                glm::vec3 positiveVertex = aabb.min;
-                glm::vec3 negativeVertex = aabb.max;
-
-                if (plane.normal.x >= 0)
-                {
-                    positiveVertex.x = aabb.max.x;
-                    negativeVertex.x = aabb.min.x;
-                }
-                if (plane.normal.y >= 0)
-                {
-                    positiveVertex.y = aabb.max.y;
-                    negativeVertex.y = aabb.min.y;
-                }
-                if (plane.normal.z >= 0)
-                {
-                    positiveVertex.z = aabb.max.z;
-                    negativeVertex.z = aabb.min.z;
-                }
-
-                // Check if the positive vertex is behind the plane
-                float positiveDistance = glm::dot(plane.normal, positiveVertex) + plane.distance;
-                if (positiveDistance < 0)
-                {
-                    // If the positive vertex is behind the plane, the AABB is outside
-                    return false;
-                }
-            }
-
-            // If the AABB is not outside any of the planes, it is within the frustum
-            return true;
         }
 
     } // namespace
@@ -1296,6 +1186,41 @@ namespace voxel
                           }}};
 
         return {preFrameUpdate, chunkDraw, visibilityDraw, colorCalculation, colorTransfer};
+    }
+
+    boost::dynamic_bitset<u64> ChunkRenderManager::readShadow(
+        const Chunk& chunk, std::span<const ChunkLocalPosition> positions)
+    {
+        const PerChunkGpuData& chunkGpuData =
+            this->gpu_chunk_data.read(this->chunk_id_allocator.getValueOfHandle(chunk));
+
+        boost::dynamic_bitset<u64> output {};
+        output.resize(positions.size());
+
+        for (std::size_t i = 0; i < positions.size(); ++i)
+        {
+            const ChunkLocalPosition& p = positions[i];
+
+            const auto [bC, bP] = splitChunkLocalPosition(p);
+
+            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+            const u16 maybeLocalOffset = chunkGpuData.data.data[bC.x][bC.y][bC.z];
+
+            if (maybeLocalOffset != decltype(chunkGpuData.data)::NullOffset)
+            {
+                const u32 globalBrickOffset =
+                    chunkGpuData.brick_allocation_offset + maybeLocalOffset;
+
+                const ShadowBrick& shadowBrick = this->shadow_bricks.read(globalBrickOffset);
+
+                if (shadowBrick.read(bP))
+                {
+                    output.set(i, true);
+                }
+            }
+        }
+
+        return output;
     }
 
 } // namespace voxel

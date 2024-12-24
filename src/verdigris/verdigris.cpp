@@ -198,7 +198,12 @@ namespace verdigris
             f.update(deltaTime);
         }
 
-        this->camera.setPosition(newPosition);
+        voxel::WorldPosition cameraPos {static_cast<glm::i32vec3>(camera.getPosition())};
+
+        if (!this->voxel_world.readVoxelOccupied({&cameraPos, 1}).at(0))
+        {
+            this->camera.setPosition(newPosition);
+        }
 
         auto getMouseDeltaRadians = [&]
         {

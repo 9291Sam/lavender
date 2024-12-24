@@ -9,6 +9,7 @@
 #include "util/misc.hpp"
 #include "util/opaque_integer_handle.hpp"
 #include "util/range_allocator.hpp"
+#include <boost/dynamic_bitset.hpp>
 #include <source_location>
 #include <span>
 #include <vulkan/vulkan_handles.hpp>
@@ -39,8 +40,8 @@ namespace voxel
         [[nodiscard]] Chunk createChunk(WorldPosition);
         void                destroyChunk(Chunk);
 
-        RaytracedLight createRaytracedLight(GpuRaytracedLight);
-        void           destroyRaytracedLight(RaytracedLight);
+        [[nodiscard]] RaytracedLight createRaytracedLight(GpuRaytracedLight);
+        void                         destroyRaytracedLight(RaytracedLight);
 
         void updateChunk(
             const Chunk&,
@@ -49,6 +50,9 @@ namespace voxel
 
         std::vector<game::FrameGenerator::RecordObject>
         processUpdatesAndGetDrawObjects(const game::Camera&, gfx::profiler::TaskGenerator&);
+
+        [[nodiscard]] boost::dynamic_bitset<u64>
+        readShadow(const Chunk&, std::span<const ChunkLocalPosition>);
 
     private:
         const game::Game* game;

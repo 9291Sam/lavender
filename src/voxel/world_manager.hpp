@@ -8,6 +8,7 @@
 #include "util/thread_pool.hpp"
 #include "voxel/chunk_render_manager.hpp"
 #include "world/generator.hpp"
+#include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
 namespace voxel
 {
@@ -32,6 +33,8 @@ namespace voxel
         VoxelObject createVoxelObject(LinearVoxelVolume, WorldPosition);
         void        setVoxelObjectPosition(const VoxelObject&, WorldPosition);
         void        destroyVoxelObject(VoxelObject);
+
+        boost::dynamic_bitset<u64> readVoxelOccupied(std::span<const voxel::WorldPosition>);
 
         [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
         onFrameUpdate(const game::Camera&, gfx::profiler::TaskGenerator&);
@@ -59,6 +62,11 @@ namespace voxel
 
             void updateAndFlushUpdates(
                 std::span<const voxel::ChunkLocalUpdate> extraUpdates, std::size_t& updatesOcurred);
+
+            const ChunkRenderManager::Chunk* getChunk() const
+            {
+                return &this->chunk;
+            }
 
         private:
             ChunkRenderManager*                chunk_render_manager;

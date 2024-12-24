@@ -11,6 +11,7 @@
 #include <future>
 #include <glm/gtc/quaternion.hpp>
 #include <random>
+#include <ranges>
 #include <unordered_map>
 #include <vector>
 
@@ -84,6 +85,57 @@ namespace voxel
             .should_be_deleted = true;
 
         this->voxel_object_deletion_queue.push_back(std::move(voxelObject));
+    }
+
+    boost::dynamic_bitset<u64>
+    WorldManager::readVoxelOccupied(std::span<const WorldPosition> positions)
+    {
+        util::assertFatal(
+            positions.size() < std::numeric_limits<u32>::max(), "Tried to poll too many positions");
+
+        struct ReadbackInfo
+        {
+            std::vector<ChunkLocalPosition> chunk_local_positions;
+            std::vector<u32>                positions_in_input_buffer;
+        };
+
+        std::unordered_map<const ChunkRenderManager::Chunk*, ReadbackInfo> readbackMap {};
+
+        for (const auto [index, p] : std::views::enumerate(positions))
+        {
+            const auto [coordinate, position] = splitWorldPosition(p);
+
+            const decltype(this->chunks)::const_iterator maybeIt =
+                this->chunks.find(voxel::WorldPosition {{coordinate * 64}});
+
+            if (maybeIt != this->chunks.cend())
+            {
+                ReadbackInfo& r = readbackMap[maybeIt->second.getChunk()];
+
+                r.chunk_local_positions.push_back(position);
+                r.positions_in_input_buffer.push_back(static_cast<u32>(index));
+            }
+        }
+
+        boost::dynamic_bitset<u64> result {};
+        result.resize(positions.size());
+
+        for (const auto& [chunk, readbackInfo] : readbackMap)
+        {
+            const boost::dynamic_bitset<u64> chunkLocalReads =
+                this->chunk_render_manager.readShadow(*chunk, readbackInfo.chunk_local_positions);
+
+            util::assertFatal(
+                chunkLocalReads.size() == readbackInfo.positions_in_input_buffer.size(),
+                "Dont mess this up");
+
+            for (std::size_t i = 0; i < chunkLocalReads.size(); ++i)
+            {
+                result.set(readbackInfo.positions_in_input_buffer[i], chunkLocalReads[i]);
+            }
+        }
+
+        return result;
     }
 
     std::vector<game::FrameGenerator::RecordObject> WorldManager::onFrameUpdate(
