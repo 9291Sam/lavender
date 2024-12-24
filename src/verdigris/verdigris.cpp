@@ -92,7 +92,7 @@ namespace verdigris
         for (int i = 0; i < 16; ++i)
         {
             brick.modifyOverVoxels(
-                [&](auto bp, voxel::Voxel& v)
+                [&](auto, voxel::Voxel& v)
                 {
                     // if (bp.x < 4 && bp.y < 4 && bp.z < 4)
                     // {

@@ -36,6 +36,33 @@ namespace voxel
         onFrameUpdate(const game::Camera&, gfx::profiler::TaskGenerator&);
 
     private:
+        class LazilyGeneratedChunk
+        {
+        public:
+            explicit LazilyGeneratedChunk(
+                ChunkRenderManager*, world::WorldGenerator*, voxel::WorldPosition rootPosition);
+            ~LazilyGeneratedChunk();
+
+            LazilyGeneratedChunk(const LazilyGeneratedChunk&)             = delete;
+            LazilyGeneratedChunk(LazilyGeneratedChunk&&)                  = default;
+            LazilyGeneratedChunk& operator= (const LazilyGeneratedChunk&) = delete;
+            LazilyGeneratedChunk& operator= (LazilyGeneratedChunk&&)      = default;
+
+            void wait()
+            {
+                this->updates.wait();
+            }
+
+            void updateAndFlushUpdates(
+                std::span<const voxel::ChunkLocalUpdate> extraUpdates, std::size_t& updatesOcurred);
+
+        private:
+            ChunkRenderManager*       chunk_render_manager;
+            world::WorldGenerator*    world_generator;
+            ChunkRenderManager::Chunk chunk;
+
+            std::future<std::vector<voxel::ChunkLocalUpdate>> updates;
+        };
 
         ChunkRenderManager    chunk_render_manager;
         world::WorldGenerator world_generator;
@@ -52,10 +79,7 @@ namespace voxel
         std::vector<VoxelObjectTrackingData>     voxel_object_tracking_data;
         std::vector<VoxelObject>                 voxel_object_deletion_queue;
 
-        std::unordered_map<voxel::WorldPosition, ChunkRenderManager::Chunk> chunks;
-        util::Mutex<
-            std::vector<std::pair<const ChunkRenderManager::Chunk*, std::vector<ChunkLocalUpdate>>>>
-            updates;
+        std::unordered_map<voxel::WorldPosition, LazilyGeneratedChunk> chunks;
 
         std::vector<ChunkRenderManager::RaytracedLight> raytraced_lights;
     };

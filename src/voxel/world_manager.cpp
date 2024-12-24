@@ -4,6 +4,9 @@
 #include "structures.hpp"
 #include "voxel/chunk_render_manager.hpp"
 #include "world/generator.hpp"
+#include <chrono>
+#include <cstdio>
+#include <future>
 #include <glm/gtc/quaternion.hpp>
 #include <random>
 #include <unordered_map>
@@ -38,10 +41,7 @@ namespace voxel
 
     WorldManager::~WorldManager()
     {
-        for (auto& [pos, c] : this->chunks)
-        {
-            this->chunk_render_manager.destroyChunk(std::move(c));
-        }
+        this->chunks.clear();
 
         for (voxel::ChunkRenderManager::RaytracedLight& l : this->raytraced_lights)
         {
@@ -86,14 +86,14 @@ namespace voxel
     std::vector<game::FrameGenerator::RecordObject> WorldManager::onFrameUpdate(
         const game::Camera& camera, gfx::profiler::TaskGenerator& profilerTaskGenerator)
     {
-        std::unordered_map<const ChunkRenderManager::Chunk*, std::vector<voxel::ChunkLocalUpdate>>
-            perChunkUpdates {};
-
         const i32 radius = 12;
         const auto [cameraChunkBase, _] =
             splitWorldPosition(WorldPosition {static_cast<glm::i32vec3>(camera.getPosition())});
         const glm::i32vec3 chunkRangeBase = cameraChunkBase - radius;
         const glm::i32vec3 chunkRangePeak = cameraChunkBase + radius;
+
+        const int maxSpawns     = 8;
+        int       currentSpawns = 0;
 
         for (int x = chunkRangeBase.x; x <= chunkRangePeak.x; ++x)
         {
@@ -107,25 +107,20 @@ namespace voxel
 
                     if (maybeIt == this->chunks.cend())
                     {
+                        this->chunks.insert(
+                            {pos,
+                             LazilyGeneratedChunk {
+                                 &this->chunk_render_manager, &this->world_generator, pos}});
+
+                        if (currentSpawns++ > maxSpawns)
                         {
-                            const auto [realIt, _] = this->chunks.insert(
-                                {pos, this->chunk_render_manager.createChunk(pos)});
-
-                            std::vector<voxel::ChunkLocalUpdate> slowUpdates =
-                                this->world_generator.generateChunk(pos);
-
-                            if (!slowUpdates.empty())
-                            {
-                                perChunkUpdates[&realIt->second] = std::move(slowUpdates);
-                            }
+                            goto early_exit;
                         }
-
-                        goto exit;
                     }
                 }
             }
         }
-    exit:
+    early_exit:
 
         profilerTaskGenerator.stamp("iterate and generate");
 
@@ -136,17 +131,9 @@ namespace voxel
             {
                 auto& [pos, chunk] = item;
 
-                if (glm::all(glm::lessThanEqual(pos, chunkRangePeak * 64))
-                    && glm::all(glm::greaterThanEqual(pos, chunkRangeBase * 64)))
-                {
-                    return false;
-                }
-                else
-                {
-                    this->chunk_render_manager.destroyChunk(std::move(chunk));
-
-                    return true;
-                }
+                return !(
+                    glm::all(glm::lessThanEqual(pos, chunkRangePeak * 64))
+                    && glm::all(glm::greaterThanEqual(pos, chunkRangeBase * 64)));
             });
 
         profilerTaskGenerator.stamp("erase far");
@@ -225,6 +212,9 @@ namespace voxel
         }
         this->voxel_object_deletion_queue.clear();
 
+        std::unordered_map<const LazilyGeneratedChunk*, std::vector<voxel::ChunkLocalUpdate>>
+            voxelObjectUpdates {};
+
         for (WorldChange w : changes)
         {
             const auto [chunkBase, chunkLocal] = splitWorldPosition(w.new_position);
@@ -233,7 +223,7 @@ namespace voxel
 
             if (maybeChunkIt != this->chunks.cend())
             {
-                perChunkUpdates[&maybeChunkIt->second].push_back(ChunkLocalUpdate {
+                voxelObjectUpdates[&maybeChunkIt->second].push_back(ChunkLocalUpdate {
                     chunkLocal,
                     w.new_voxel,
                     ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
@@ -244,9 +234,20 @@ namespace voxel
 
         profilerTaskGenerator.stamp("organize VoxelObject changes");
 
-        for (auto& [chunkPtr, localUpdates] : perChunkUpdates)
+        std::size_t updatesOcurred = 0;
+
+        for (auto& [_, lazyChunk] : this->chunks)
         {
-            this->chunk_render_manager.updateChunk(*chunkPtr, localUpdates);
+            std::span<const voxel::ChunkLocalUpdate> maybeUpdates {};
+
+            if (const decltype(voxelObjectUpdates)::const_iterator maybeVoxelObjectUpdatesIt =
+                    voxelObjectUpdates.find(&lazyChunk);
+                maybeVoxelObjectUpdatesIt != voxelObjectUpdates.cend())
+            {
+                maybeUpdates = std::span {maybeVoxelObjectUpdatesIt->second};
+            }
+
+            lazyChunk.updateAndFlushUpdates(maybeUpdates, updatesOcurred);
         }
 
         profilerTaskGenerator.stamp("dispatch VoxelObject changes");
@@ -256,5 +257,54 @@ namespace voxel
                 camera, profilerTaskGenerator);
 
         return recordObjects;
+    }
+
+    WorldManager::LazilyGeneratedChunk::LazilyGeneratedChunk(
+        ChunkRenderManager*    chunkRenderManager,
+        world::WorldGenerator* worldGenerator,
+        voxel::WorldPosition   rootPosition)
+        : chunk_render_manager {chunkRenderManager}
+        , world_generator {worldGenerator}
+        , chunk {this->chunk_render_manager->createChunk(rootPosition)}
+        , updates {std::async(
+              [wg = worldGenerator, pos = rootPosition]
+              {
+                  return wg->generateChunk(pos);
+              })}
+    {}
+
+    WorldManager::LazilyGeneratedChunk::~LazilyGeneratedChunk()
+    {
+        if (this->updates.valid())
+        {
+            this->updates.wait();
+        }
+
+        if (!this->chunk.isNull())
+        {
+            this->chunk_render_manager->destroyChunk(std::move(this->chunk));
+        }
+    }
+
+    void WorldManager::LazilyGeneratedChunk::updateAndFlushUpdates(
+        std::span<const voxel::ChunkLocalUpdate> extraUpdates, std::size_t& updatesOcurred)
+    {
+        if (updatesOcurred < 3 && this->updates.valid()
+            && this->updates.wait_for(std::chrono::years {0}) == std::future_status::ready)
+        {
+            updatesOcurred += 1;
+
+            std::vector<voxel::ChunkLocalUpdate> realUpdates = this->updates.get();
+
+            if (!realUpdates.empty())
+            {
+                this->chunk_render_manager->updateChunk(this->chunk, realUpdates);
+            }
+        }
+
+        if (!extraUpdates.empty() && extraUpdates.data() != nullptr)
+        {
+            this->chunk_render_manager->updateChunk(this->chunk, extraUpdates);
+        }
     }
 } // namespace voxel
