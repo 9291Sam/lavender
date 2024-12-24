@@ -4,6 +4,7 @@
 #include "util/misc.hpp"
 #include <algorithm>
 #include <array>
+#include <format>
 #include <glm/vec2.hpp>
 #include <map>
 #include <span>
@@ -202,6 +203,32 @@ namespace gfx::profiler
         {
             rect(drawList, graphPos, graphPos + graphSize, 0xffffffff, false);
             float heightThreshold = 1.0f;
+
+            const glm::vec2 bottomLeftCorner = graphPos + glm::vec2 {0.0f, graphSize.y};
+
+            auto drawMsLine = [&](float time, u32 color)
+            {
+                const float height10ms = ((time) / max_frame_time) * graphSize.y;
+                rect(
+                    drawList,
+                    bottomLeftCorner + glm::vec2(0.0f, -height10ms),
+                    bottomLeftCorner + glm::vec2(graphSize.x, -height10ms - 1.0f),
+                    color);
+
+                std::array<char, 64> buffer {};
+                std::format_to_n(buffer.begin(), 64, "{}", time);
+
+                text(
+                    drawList,
+                    bottomLeftCorner + glm::vec2(2.0f, -height10ms - 16),
+                    color,
+                    buffer.data());
+            };
+
+            drawMsLine(0.005f, convertToColor(0x256D7BFF));
+            drawMsLine(0.010f, convertToColor(0xC7B446FF));
+            drawMsLine(0.016f, convertToColor(0xCB3234FF));
+            drawMsLine(0.022f, convertToColor(0x85219CFF));
 
             for (size_t frameNumber = 0; frameNumber < frames.size(); frameNumber++)
             {
