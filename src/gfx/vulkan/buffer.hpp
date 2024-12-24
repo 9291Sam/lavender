@@ -520,6 +520,16 @@ namespace gfx::vulkan
         const Allocator*                                allocator;
         mutable gfx::vulkan::WriteOnlyBuffer<std::byte> staging_buffer;
 
+        struct OverflowTransfer
+        {
+            vk::Buffer             buffer;
+            u32                    offset;
+            std::vector<std::byte> data;
+            std::source_location   location;
+        };
+
+        util::Mutex<std::vector<OverflowTransfer>> overflow_transfers;
+
         util::Mutex<util::RangeAllocator>        transfer_allocator;
         util::Mutex<std::vector<BufferTransfer>> transfers;
         util::Mutex<

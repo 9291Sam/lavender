@@ -1,6 +1,7 @@
 #include "buffer.hpp"
 #include "allocator.hpp"
 #include "frame_manager.hpp"
+#include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/offsetAllocator.hpp"
 #include "util/range_allocator.hpp"
@@ -45,32 +46,51 @@ namespace gfx::vulkan
             dataToWrite.size_bytes(),
             location);
 
-        util::RangeAllocation thisAllocation = this->transfer_allocator.lock(
-            [&](util::RangeAllocator& a)
-            {
-                this->allocated += dataToWrite.size_bytes();
-
-                return a.allocate(static_cast<u32>(dataToWrite.size_bytes()));
-            });
-
-        std::span<std::byte> stagingBufferData = this->staging_buffer.getGpuDataNonCoherent();
-
-        // static_assert(std::is_trivially_copyable_v<std::byte>);
-        std::memcpy(
-            stagingBufferData.data() + thisAllocation.offset,
-            dataToWrite.data(),
-            dataToWrite.size_bytes());
-
-        this->transfers.lock(
-            [&](std::vector<BufferTransfer>& t)
-            {
-                t.push_back(BufferTransfer {
-                    .staging_allocation {thisAllocation},
-                    .output_buffer {buffer},
-                    .output_offset {offset},
-                    .size {static_cast<u32>(dataToWrite.size_bytes())},
+        std::expected<util::RangeAllocation, util::RangeAllocator::OutOfBlocks> maybeAllocation =
+            this->transfer_allocator.lock(
+                [&](util::RangeAllocator& a)
+                {
+                    return a.tryAllocate(static_cast<u32>(dataToWrite.size_bytes()));
                 });
-            });
+
+        if (maybeAllocation.has_value())
+        {
+            this->allocated += dataToWrite.size_bytes();
+
+            std::span<std::byte> stagingBufferData = this->staging_buffer.getGpuDataNonCoherent();
+
+            // static_assert(std::is_trivially_copyable_v<std::byte>);
+            std::memcpy(
+                stagingBufferData.data() + maybeAllocation->offset,
+                dataToWrite.data(),
+                dataToWrite.size_bytes());
+
+            this->transfers.lock(
+                [&](std::vector<BufferTransfer>& t)
+                {
+                    t.push_back(BufferTransfer {
+                        .staging_allocation {*maybeAllocation},
+                        .output_buffer {buffer},
+                        .output_offset {offset},
+                        .size {static_cast<u32>(dataToWrite.size_bytes())},
+                    });
+                });
+        }
+        else
+        {
+            // shit we need to overflow
+            util::logWarn("overflowing on staging buffer!");
+
+            this->overflow_transfers.lock(
+                [&](std::vector<OverflowTransfer>& overflowTransfers)
+                {
+                    overflowTransfers.push_back({OverflowTransfer {
+                        .buffer {buffer},
+                        .offset {offset},
+                        .data {dataToWrite.cbegin(), dataToWrite.cend()},
+                        .location {location}}});
+                });
+        }
     }
 
     void BufferStager::flushTransfers(
@@ -107,6 +127,15 @@ namespace gfx::vulkan
                     toFreeMap.erase(f);
                 }
             });
+
+        {
+            std::vector<OverflowTransfer> overflows = this->overflow_transfers.moveInner();
+
+            for (OverflowTransfer& t : overflows)
+            {
+                this->enqueueByteTransfer(t.buffer, t.offset, t.data, t.location);
+            }
+        }
 
         std::vector<BufferTransfer> grabbedTransfers = this->transfers.moveInner();
 

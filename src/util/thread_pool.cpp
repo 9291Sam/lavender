@@ -1,5 +1,6 @@
 #include "thread_pool.hpp"
 #include <atomic>
+#include <functional>
 
 namespace util
 {
@@ -23,7 +24,7 @@ namespace util
             t.join();
         }
 
-        std::function<void()> localFunction {};
+        std::move_only_function<void()> localFunction {};
 
         for (int i = 0; i < 64; ++i)
         {
@@ -41,7 +42,7 @@ namespace util
     {
         using namespace std::literals;
 
-        std::function<void()> localFunction {};
+        std::move_only_function<void()> localFunction {};
 
         while (!this->should_threads_close.load(std::memory_order_acquire))
         {

@@ -2,6 +2,7 @@
 #include "game/camera.hpp"
 #include "game/game.hpp"
 #include "structures.hpp"
+#include "util/thread_pool.hpp"
 #include "voxel/chunk_render_manager.hpp"
 #include "world/generator.hpp"
 #include <chrono>
@@ -266,7 +267,7 @@ namespace voxel
         : chunk_render_manager {chunkRenderManager}
         , world_generator {worldGenerator}
         , chunk {this->chunk_render_manager->createChunk(rootPosition)}
-        , updates {std::async(
+        , updates {util::runAsync(
               [wg = worldGenerator, pos = rootPosition]
               {
                   return wg->generateChunk(pos);
