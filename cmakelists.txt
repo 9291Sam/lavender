@@ -211,6 +211,11 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Ap
         target_compile_options(lavender PUBLIC -gdwarf-4)
         target_compile_options(lavender PUBLIC -g3)
 
+        
+        target_compile_options(library_target PUBLIC -glldb)
+        target_compile_options(library_target PUBLIC -gdwarf-4)
+        target_compile_options(library_target PUBLIC -g3)
+
         # target_compile_options(lavender PUBLIC -fsanitize=thread)
         # target_link_options(lavender PUBLIC -fsanitize=thread)
 

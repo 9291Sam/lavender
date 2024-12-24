@@ -149,6 +149,11 @@ namespace verdigris
             this->camera.setPosition({79.606, 75.586, 16.78});
         }
 
+        // TODO: make not static lol
+        static float verticalVelocity = 0.0f;    // Initial velocity for gravity
+        const float  gravity          = -512.0f; // Gravitational acceleration (m/s²)
+        const float  maxFallSpeed     = -512.0f; // Terminal velocity
+
         glm::vec3 previousPosition = this->camera.getPosition();
 
         glm::vec3 newPosition = previousPosition;
@@ -193,17 +198,85 @@ namespace verdigris
                 Flyer {camera.getPosition(), camera.getForwardVector(), 16.0f, &this->voxel_world});
         }
 
+        if (this->game->getRenderer()->getWindow()->isActionActive(
+                gfx::Window::Action::PlayerMoveUp))
+        {
+            if (verticalVelocity == 0.0f)
+            {
+                verticalVelocity += 128.0f;
+            }
+        }
+
+        newPosition.y = previousPosition.y;
+
         for (Flyer& f : this->fliers)
         {
             f.update(deltaTime);
         }
 
-        voxel::WorldPosition cameraPos {static_cast<glm::i32vec3>(camera.getPosition())};
+        glm::vec3 currentPosition = this->camera.getPosition();
+        glm::vec3 displacement    = newPosition - currentPosition;
 
-        if (!this->voxel_world.readVoxelOccupied({&cameraPos, 1}).at(0))
+        verticalVelocity += gravity * deltaTime;
+        verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
+
+        displacement.y += verticalVelocity * deltaTime;
+
+        // HACK: just prevent it from mattering lol
+        if (glm::length(displacement) > 1.0f)
         {
-            this->camera.setPosition(newPosition);
+            displacement = glm::normalize(displacement) * 0.999999f;
         }
+
+        glm::vec3 resolvedPosition = currentPosition;
+
+        auto readVoxelOpacity = [&](voxel::WorldPosition p)
+        {
+            return this->voxel_world.readVoxelOccupied({&p, 1}).at(0);
+        };
+
+        glm::vec3 testPositionX = resolvedPosition + glm::vec3(displacement.x, 0.0f, 0.0f);
+        if (!readVoxelOpacity(voxel::WorldPosition {glm::floor(testPositionX)}))
+        {
+            resolvedPosition.x += displacement.x;
+        }
+
+        glm::vec3 testPositionY = resolvedPosition + glm::vec3(0.0f, displacement.y, 0.0f);
+        if (!readVoxelOpacity(voxel::WorldPosition {glm::floor(testPositionY)}))
+        {
+            resolvedPosition.y += displacement.y;
+        }
+        else
+        {
+            verticalVelocity = 0.0f;
+
+            glm::vec3 upwardPosition = glm::floor(newPosition);
+            bool      tooFar         = false;
+
+            int steps = 0;
+            while (!tooFar && readVoxelOpacity(voxel::WorldPosition {glm::floor(upwardPosition)}))
+            {
+                upwardPosition.y += 1.0f;
+
+                if (steps++ > 3)
+                {
+                    tooFar = true;
+                }
+            }
+
+            if (!tooFar)
+            {
+                resolvedPosition.y = upwardPosition.y;
+            }
+        }
+
+        glm::vec3 testPositionZ = resolvedPosition + glm::vec3(0.0f, 0.0f, displacement.z);
+        if (!readVoxelOpacity(voxel::WorldPosition {glm::floor(testPositionZ)}))
+        {
+            resolvedPosition.z += displacement.z;
+        }
+
+        this->camera.setPosition(resolvedPosition);
 
         auto getMouseDeltaRadians = [&]
         {
@@ -268,8 +341,11 @@ namespace verdigris
 
         profilerTaskGenerator.stamp("Triangle Propagation");
 
+        auto realCamera = this->camera;
+        realCamera.addPosition({0.0, 32.0f, 0.0});
+
         return OnFrameReturnData {
-            .main_scene_camera {this->camera},
+            .main_scene_camera {realCamera},
             .record_objects {std::move(draws)},
             .generator {profilerTaskGenerator}};
     }

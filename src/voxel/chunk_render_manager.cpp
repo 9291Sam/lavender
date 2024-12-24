@@ -326,7 +326,7 @@ namespace voxel
 
     } // namespace
 
-    static constexpr u32 MaxChunks          = 4096; // max of u16
+    static constexpr u32 MaxChunks = 65534; // max of u16, chunk ids are u16s, null is ~0u16
     static constexpr u32 DirectionsPerChunk = 6;
     static constexpr u32 MaxBricks          = 1U << 20U; // FIXED(shader bound)
     static constexpr u32 MaxFaces           = 1U << 23U; // FIXED(shader bound)
@@ -1031,7 +1031,7 @@ namespace voxel
 
                         // TODO: refine bounds on axies
                         if (glm::distance(chunkCenterPosition, camera.getPosition())
-                                > VoxelsPerChunkEdge
+                                > VoxelsPerChunkEdge * 2
                             && (glm::dot(forwardVector, toChunkVector) < -std::cos(std::min({
                                     this->game->getFovXRadians(),
                                     this->game->getFovYRadians(),
