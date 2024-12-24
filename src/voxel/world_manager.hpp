@@ -5,6 +5,7 @@
 #include "gfx/profiler/task_generator.hpp"
 #include "structures.hpp"
 #include "util/opaque_integer_handle.hpp"
+#include "util/thread_pool.hpp"
 #include "voxel/chunk_render_manager.hpp"
 #include "world/generator.hpp"
 
@@ -40,7 +41,10 @@ namespace voxel
         {
         public:
             explicit LazilyGeneratedChunk(
-                ChunkRenderManager*, world::WorldGenerator*, voxel::WorldPosition rootPosition);
+                util::ThreadPool&,
+                ChunkRenderManager*,
+                world::WorldGenerator*,
+                voxel::WorldPosition rootPosition);
             ~LazilyGeneratedChunk();
 
             LazilyGeneratedChunk(const LazilyGeneratedChunk&)             = delete;
@@ -64,6 +68,7 @@ namespace voxel
             std::future<std::vector<voxel::ChunkLocalUpdate>> updates;
         };
 
+        util::ThreadPool      generation_threads;
         ChunkRenderManager    chunk_render_manager;
         world::WorldGenerator world_generator;
 

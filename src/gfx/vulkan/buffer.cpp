@@ -35,10 +35,11 @@ namespace gfx::vulkan
         std::span<const std::byte> dataToWrite,
         std::source_location       location) const
     {
-        util::assertFatal(
-            dataToWrite.size_bytes() < std::numeric_limits<u32>::max(),
+        util::assertFatal<std::size_t>(
+            dataToWrite.size_bytes() < StagingBufferSize / 2,
             "Buffer::enqueueByteTransfer of size {} is too large",
-            dataToWrite.size_bytes());
+            dataToWrite.size_bytes(),
+            location);
 
         util::assertWarn<std::size_t>(
             dataToWrite.size_bytes() > 0,
@@ -79,11 +80,15 @@ namespace gfx::vulkan
         else
         {
             // shit we need to overflow
-            util::logWarn("overflowing on staging buffer!");
 
             this->overflow_transfers.lock(
                 [&](std::vector<OverflowTransfer>& overflowTransfers)
                 {
+                    util::logWarn(
+                        "overflowing {} on staging buffer! of size {}",
+                        overflowTransfers.size(),
+                        dataToWrite.size_bytes());
+
                     overflowTransfers.push_back({OverflowTransfer {
                         .buffer {buffer},
                         .offset {offset},
@@ -127,15 +132,6 @@ namespace gfx::vulkan
                     toFreeMap.erase(f);
                 }
             });
-
-        {
-            std::vector<OverflowTransfer> overflows = this->overflow_transfers.moveInner();
-
-            for (OverflowTransfer& t : overflows)
-            {
-                this->enqueueByteTransfer(t.buffer, t.offset, t.data, t.location);
-            }
-        }
 
         std::vector<BufferTransfer> grabbedTransfers = this->transfers.moveInner();
 
@@ -181,6 +177,15 @@ namespace gfx::vulkan
                     std::make_move_iterator(grabbedTransfers.begin()),
                     std::make_move_iterator(grabbedTransfers.end()));
             });
+
+        {
+            std::vector<OverflowTransfer> overflows = this->overflow_transfers.moveInner();
+
+            for (OverflowTransfer& t : overflows)
+            {
+                this->enqueueByteTransfer(t.buffer, t.offset, t.data, t.location);
+            }
+        }
     }
 
     std::pair<std::size_t, std::size_t> BufferStager::getUsage() const

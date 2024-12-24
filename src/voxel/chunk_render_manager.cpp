@@ -221,13 +221,13 @@ namespace voxel
         }
 
         [[nodiscard]] ChunkAsyncMesh doMesh(
-            const u16                           chunkId,
-            const PerChunkGpuData               oldGpuData,
-            const std::vector<MaterialBrick>    oldMaterialBricks,
-            const std::vector<ShadowBrick>      oldShadowBricks,
-            const std::vector<PrimaryRayBrick>  oldPrimaryRayBricks,
+            const u16                              chunkId,
+            const PerChunkGpuData                  oldGpuData,
+            const std::span<const MaterialBrick>   oldMaterialBricks,
+            const std::span<const ShadowBrick>     oldShadowBricks,
+            const std::span<const PrimaryRayBrick> oldPrimaryRayBricks,
             // NOLINTNEXTLINE(performance-unnecessary-value-param) lifetimes exist
-            const std::vector<ChunkLocalUpdate> newUpdates)
+            const std::vector<ChunkLocalUpdate>    newUpdates)
         {
             util::MultiTimer t {};
 
@@ -323,7 +323,117 @@ namespace voxel
                 .new_primary_ray_bricks {std::move(newPrimaryRayBricks)},
                 .new_greedy_faces {std::move(newGreedyFaces)}};
         }
-        // std::future<ChunkAsyncMesh> spawnAsyncMeshOperation();
+
+        struct Plane
+        {
+            glm::vec3 normal;   // Normal vector of the plane
+            float     distance; // Distance from the origin
+        };
+
+        struct AABB
+        {
+            glm::vec3 min; // Minimum corner of the AABB
+            glm::vec3 max; // Maximum corner of the AABB
+        };
+
+        std::array<Plane, 6> extractFrustumPlanes(const glm::mat4& mvpMatrix)
+        {
+            std::array<Plane, 6> frustum;
+
+            // Left plane
+            frustum[0].normal = glm::vec3(
+                mvpMatrix[0][3] + mvpMatrix[0][0],
+                mvpMatrix[1][3] + mvpMatrix[1][0],
+                mvpMatrix[2][3] + mvpMatrix[2][0]);
+            frustum[0].distance = mvpMatrix[3][3] + mvpMatrix[3][0];
+
+            // Right plane
+            frustum[1].normal = glm::vec3(
+                mvpMatrix[0][3] - mvpMatrix[0][0],
+                mvpMatrix[1][3] - mvpMatrix[1][0],
+                mvpMatrix[2][3] - mvpMatrix[2][0]);
+            frustum[1].distance = mvpMatrix[3][3] - mvpMatrix[3][0];
+
+            // Bottom plane
+            frustum[2].normal = glm::vec3(
+                mvpMatrix[0][3] + mvpMatrix[0][1],
+                mvpMatrix[1][3] + mvpMatrix[1][1],
+                mvpMatrix[2][3] + mvpMatrix[2][1]);
+            frustum[2].distance = mvpMatrix[3][3] + mvpMatrix[3][1];
+
+            // Top plane
+            frustum[3].normal = glm::vec3(
+                mvpMatrix[0][3] - mvpMatrix[0][1],
+                mvpMatrix[1][3] - mvpMatrix[1][1],
+                mvpMatrix[2][3] - mvpMatrix[2][1]);
+            frustum[3].distance = mvpMatrix[3][3] - mvpMatrix[3][1];
+
+            // Near plane
+            frustum[4].normal = glm::vec3(
+                mvpMatrix[0][3] + mvpMatrix[0][2],
+                mvpMatrix[1][3] + mvpMatrix[1][2],
+                mvpMatrix[2][3] + mvpMatrix[2][2]);
+            frustum[4].distance = mvpMatrix[3][3] + mvpMatrix[3][2];
+
+            // Far plane
+            frustum[5].normal = glm::vec3(
+                mvpMatrix[0][3] - mvpMatrix[0][2],
+                mvpMatrix[1][3] - mvpMatrix[1][2],
+                mvpMatrix[2][3] - mvpMatrix[2][2]);
+            frustum[5].distance = mvpMatrix[3][3] - mvpMatrix[3][2];
+
+            // Normalize the planes
+            for (auto& plane : frustum)
+            {
+                float length = glm::length(plane.normal);
+                plane.normal /= length;
+                plane.distance /= length;
+            }
+
+            return frustum;
+        }
+
+        bool isAABBWithinFrustum(const AABB& aabb, const glm::mat4& mvpMatrix)
+        {
+            // Extract frustum planes from the MVP matrix
+            auto frustum = extractFrustumPlanes(mvpMatrix);
+
+            // Loop through each plane in the frustum
+            for (const auto& plane : frustum)
+            {
+                // Calculate the positive and negative extents of the AABB relative to the plane
+                glm::vec3 positiveVertex = aabb.min;
+                glm::vec3 negativeVertex = aabb.max;
+
+                if (plane.normal.x >= 0)
+                {
+                    positiveVertex.x = aabb.max.x;
+                    negativeVertex.x = aabb.min.x;
+                }
+                if (plane.normal.y >= 0)
+                {
+                    positiveVertex.y = aabb.max.y;
+                    negativeVertex.y = aabb.min.y;
+                }
+                if (plane.normal.z >= 0)
+                {
+                    positiveVertex.z = aabb.max.z;
+                    negativeVertex.z = aabb.min.z;
+                }
+
+                // Check if the positive vertex is behind the plane
+                float positiveDistance = glm::dot(plane.normal, positiveVertex) + plane.distance;
+                if (positiveDistance < 0)
+                {
+                    // If the positive vertex is behind the plane, the AABB is outside
+                    return false;
+                }
+            }
+
+            // If the AABB is not outside any of the planes, it is within the frustum
+            return true;
+        }
+
     } // namespace
 
     static constexpr u32 MaxChunks          = 4096; // max of u16
@@ -893,19 +1003,12 @@ namespace voxel
                         &this->primary_ray_bricks[oldGpuData.brick_allocation_offset],
                         oldBricksPerChunk};
 
-                    std::vector<MaterialBrick> oldMaterialBricks {
-                        spanOldMaterialBricks.cbegin(), spanOldMaterialBricks.cend()};
-                    std::vector<ShadowBrick> oldShadowBricks {
-                        spanOldShadowBricks.cbegin(), spanOldShadowBricks.cend()};
-                    std::vector<PrimaryRayBrick> oldPrimaryRayBricks {
-                        spanOldPrimaryRayBricks.cbegin(), spanOldPrimaryRayBricks.cend()};
-
                     thisChunkData.maybe_async_mesh = util::runAsync(
                         [chunkId,
-                         localOldGpuData          = std::move(oldGpuData),
-                         localOldMaterialBricks   = std::move(oldMaterialBricks),
-                         localOldShadowBricks     = std::move(oldShadowBricks),
-                         localOldPrimaryRayBricks = std::move(oldPrimaryRayBricks),
+                         localOldGpuData          = oldGpuData,
+                         localOldMaterialBricks   = spanOldMaterialBricks,
+                         localOldShadowBricks     = spanOldShadowBricks,
+                         localOldPrimaryRayBricks = spanOldPrimaryRayBricks,
                          localNewUpdates          = std::move(thisChunkData.updates)]
                         {
                             return doMesh(
@@ -1004,49 +1107,7 @@ namespace voxel
                     thisChunkData.active_draw_allocations = allocations;
                 }
 
-                bool isChunkInFrustum = false;
-
-                isChunkInFrustum |=
-                    (glm::distance(camera.getPosition(), chunkPosition) < VoxelsPerChunkEdge * 4);
-
-                isChunkInFrustum |=
-                    (glm::all(glm::lessThan(
-                         camera.getPosition() - chunkPosition, glm::vec3 {VoxelsPerChunkEdge}))
-                     && glm::all(
-                         glm::greaterThan(camera.getPosition() - chunkPosition, glm::vec3 {0})));
-
-                for (auto x :
-                     {chunkPosition.x,
-                      chunkPosition.x + (VoxelsPerChunkEdge / 2.0f),
-                      chunkPosition.x + VoxelsPerChunkEdge})
-                {
-                    for (auto y :
-                         {chunkPosition.y,
-                          chunkPosition.y + (VoxelsPerChunkEdge / 2.0f),
-                          chunkPosition.y + VoxelsPerChunkEdge})
-                    {
-                        for (auto z :
-                             {chunkPosition.z,
-                              chunkPosition.z + (VoxelsPerChunkEdge / 2.0f),
-                              chunkPosition.z + VoxelsPerChunkEdge})
-                        {
-                            const glm::vec4 cornerPos {x, y, z, 1.0};
-
-                            const glm::vec4 res =
-                                camera.getPerspectiveMatrix(
-                                    *game, game::Transform {.translation {cornerPos}})
-                                * glm::vec4 {0.0, 0.0, 0.0, 1.0};
-
-                            if (glm::all(glm::lessThan(res.xyz() / res.w, glm::vec3 {1.5}))
-                                && glm::all(glm::greaterThan(res.xyz() / res.w, glm::vec3 {-1.5})))
-                            {
-                                isChunkInFrustum = true;
-                                goto exit;
-                            }
-                        }
-                    }
-                }
-            exit:
+                bool isChunkInFrustum = true;
 
                 if (thisChunkData.active_draw_allocations.has_value() && isChunkInFrustum)
                 {
@@ -1065,12 +1126,33 @@ namespace voxel
                             glm::normalize(chunkCenterPosition - camera.getPosition());
                         const glm::vec3 forwardVector = camera.getForwardVector();
 
-                        // if ((glm::dot(forwardVector, toChunkVector) > 0.0f
-                        //      && glm::dot(toChunkVector, normalVector) < 0.0f)
-                        //     || (glm::distance(chunkCenterPosition, camera.getPosition())
-                        //         < VoxelsPerChunkEdge * 3.0f)
+                        const glm::i32vec3 chunkCenterInteger =
+                            static_cast<glm::i32vec3>(chunkCenterPosition);
+                        const glm::i32vec3 cameraCenterInteger =
+                            static_cast<glm::i32vec3>(camera.getPosition());
 
-                        // )
+                        const glm::i32vec3 chunkCoordinate =
+                            chunkCenterInteger / static_cast<i32>(voxel::VoxelsPerChunkEdge);
+                        const glm::i32vec3 cameraCoordinate =
+                            cameraCenterInteger / static_cast<i32>(voxel::VoxelsPerChunkEdge);
+
+                        const bool doesChunkShareAxis =
+                            glm::any(glm::equal(chunkCoordinate, cameraCoordinate));
+
+                        // TODO: refine bounds on axies
+                        if (glm::distance(chunkCenterPosition, camera.getPosition())
+                                > VoxelsPerChunkEdge
+                            && (glm::dot(forwardVector, toChunkVector) < -std::cos(std::min({
+                                    this->game->getFovXRadians(),
+                                    this->game->getFovYRadians(),
+                                }))
+
+                                || glm::dot(forwardVector, toChunkVector) < 0.0f
+
+                                || (glm::dot(toChunkVector, normalVector) > 0.0f
+                                    && !doesChunkShareAxis)))
+                        {}
+                        else
                         {
                             indirectCommands.push_back(vk::DrawIndirectCommand {
                                 .vertexCount {numberOfFaces * 6},
@@ -1089,8 +1171,7 @@ namespace voxel
                     }
                 }
             });
-
-        profilerTaskGenerator.stamp("Cull and spawn re meshes");
+        profilerTaskGenerator.stamp("Cull and Spawn Meshes");
 
         // Update Debug Menu
         ::numberOfChunksAllocated.store(this->chunk_id_allocator.getNumberAllocated());

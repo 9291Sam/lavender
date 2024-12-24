@@ -18,7 +18,8 @@ namespace voxel
     static constexpr std::size_t MaxVoxelObjects = 4096;
 
     WorldManager::WorldManager(const game::Game* game)
-        : chunk_render_manager {game}
+        : generation_threads {2}
+        , chunk_render_manager {game}
         , world_generator {3347347348}
         , voxel_object_allocator {MaxVoxelObjects}
     {
@@ -93,8 +94,8 @@ namespace voxel
         const glm::i32vec3 chunkRangeBase = cameraChunkBase - radius;
         const glm::i32vec3 chunkRangePeak = cameraChunkBase + radius;
 
-        const int maxSpawns     = 8;
-        int       currentSpawns = 0;
+        // const int maxSpawns     = 256;
+        // int       currentSpawns = 0;
 
         for (int x = chunkRangeBase.x; x <= chunkRangePeak.x; ++x)
         {
@@ -111,17 +112,20 @@ namespace voxel
                         this->chunks.insert(
                             {pos,
                              LazilyGeneratedChunk {
-                                 &this->chunk_render_manager, &this->world_generator, pos}});
+                                 this->generation_threads,
+                                 &this->chunk_render_manager,
+                                 &this->world_generator,
+                                 pos}});
 
-                        if (currentSpawns++ > maxSpawns)
-                        {
-                            goto early_exit;
-                        }
+                        // if (currentSpawns++ > maxSpawns)
+                        // {
+                        //     goto early_exit;
+                        // }
                     }
                 }
             }
         }
-    early_exit:
+        // early_exit:
 
         profilerTaskGenerator.stamp("iterate and generate");
 
@@ -261,13 +265,14 @@ namespace voxel
     }
 
     WorldManager::LazilyGeneratedChunk::LazilyGeneratedChunk(
+        util::ThreadPool&      pool,
         ChunkRenderManager*    chunkRenderManager,
         world::WorldGenerator* worldGenerator,
         voxel::WorldPosition   rootPosition)
         : chunk_render_manager {chunkRenderManager}
         , world_generator {worldGenerator}
         , chunk {this->chunk_render_manager->createChunk(rootPosition)}
-        , updates {util::runAsync(
+        , updates {pool.executeOnPool(
               [wg = worldGenerator, pos = rootPosition]
               {
                   return wg->generateChunk(pos);

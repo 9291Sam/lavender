@@ -427,7 +427,8 @@ namespace gfx::vulkan
             return this->modify(offset, 1)[0];
         }
 
-        void flushViaStager(const BufferStager& stager);
+        void flushViaStager(
+            const BufferStager& stager, std::source_location = std::source_location::current());
         void flushCachedChangesImmediate()
         {
             std::vector<FlushData> localFlushes = this->mergeFlushes();
@@ -446,14 +447,15 @@ namespace gfx::vulkan
 
         std::vector<FlushData> mergeFlushes()
         {
-            std::vector<util::InclusiveRange> mergedRanges;
+            // return std::move(this->flushes);
+            std::vector<util::InclusiveRange> mergedRanges = std::move(this->flushes);
 
-            if (this->flushes.size() > 58000)
-            {
-                util::logTrace("{}", this->name);
-            }
+            // if (this->flushes.size() > 58000)
+            // {
+            //     util::logTrace("{}", this->name);
+            // }
 
-            mergedRanges = util::mergeDownRanges(std::move(this->flushes), 128);
+            // mergedRanges = util::mergeDownRanges, 128);
 
             std::vector<FlushData> newFlushes {};
             newFlushes.reserve(mergedRanges.size());
@@ -538,7 +540,8 @@ namespace gfx::vulkan
     };
 
     template<class T>
-    void CpuCachedBuffer<T>::flushViaStager(const BufferStager& stager)
+    void
+    CpuCachedBuffer<T>::flushViaStager(const BufferStager& stager, std::source_location location)
     {
         std::vector<FlushData> mergedFlushes = this->mergeFlushes();
 
@@ -547,7 +550,8 @@ namespace gfx::vulkan
             stager.enqueueTransfer(
                 *this,
                 static_cast<u32>(f.offset_elements),
-                {this->cpu_buffer.data() + f.offset_elements, f.size_elements});
+                {this->cpu_buffer.data() + f.offset_elements, f.size_elements},
+                location);
         }
     }
 

@@ -1,10 +1,12 @@
 #pragma once
 
 #include "imgui.h"
+#include "util/log.hpp"
 #include "util/misc.hpp"
 #include <algorithm>
 #include <array>
 #include <format>
+#include <glm/gtx/string_cast.hpp>
 #include <glm/vec2.hpp>
 #include <map>
 #include <span>
@@ -273,13 +275,13 @@ namespace gfx::profiler
             glm::vec2   legendSize,
             size_t      frameIndexOffset)
         {
-            float markerLeftRectMargin   = 3.0f;
-            float markerLeftRectWidth    = 5.0f;
-            float markerMidWidth         = 30.0f;
-            float markerRightRectWidth   = 10.0f;
-            float markerRightRectMargin  = 3.0f;
-            float markerRightRectHeight  = 10.0f;
-            float markerRightRectSpacing = 4.0f;
+            const float markerLeftRectMargin   = 3.0f;
+            const float markerLeftRectWidth    = 5.0f;
+            const float markerMidWidth         = 30.0f;
+            const float markerRightRectWidth   = 10.0f;
+            const float markerRightRectMargin  = 3.0f;
+            const float markerRightRectHeight  = 10.0f;
+            const float markerRightRectSpacing = 4.0f;
 
             auto& currFrame = frames
                 [(current_frame_index - frameIndexOffset - 1 + 2 * frames.size()) % frames.size()];
@@ -328,6 +330,7 @@ namespace gfx::profiler
                         legendSize.y - markerRightRectMargin
                             - ((markerRightRectHeight + markerRightRectSpacing)
                                * static_cast<float>(stat.on_screen_index)));
+
                 glm::vec2 markerRightRectMax =
                     markerRightRectMin + glm::vec2(markerRightRectWidth, -markerRightRectHeight);
 
