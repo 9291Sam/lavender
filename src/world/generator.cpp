@@ -44,11 +44,13 @@ namespace world
         {
             for (u8 j = 0; j < 64; ++j)
             {
-                const float worldHeight = std::exp(4.0f * res[i][j]); // NOLINT
+                const i32 worldHeight = static_cast<i32>(std::exp(4.0f * res[i][j])); // NOLINT
 
                 for (u8 h = 0; h < 64; ++h)
                 {
-                    if (h + root.y < static_cast<i32>(worldHeight))
+                    const i32 worldHeightThisVoxel = h + root.y;
+                    if (worldHeight - 64 < worldHeightThisVoxel
+                        && worldHeightThisVoxel < worldHeight)
                     {
                         out.push_back(voxel::ChunkLocalUpdate {
                             voxel::ChunkLocalPosition {{i, h, j}},

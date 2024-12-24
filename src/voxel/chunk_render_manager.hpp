@@ -1,6 +1,7 @@
 #pragma once
 
 #include "game/frame_generator.hpp"
+#include "gfx/profiler/task_generator.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "material_manager.hpp"
 #include "structures.hpp"
@@ -47,7 +48,7 @@ namespace voxel
             std::source_location = std::source_location::current());
 
         std::vector<game::FrameGenerator::RecordObject>
-        processUpdatesAndGetDrawObjects(const game::Camera&);
+        processUpdatesAndGetDrawObjects(const game::Camera&, gfx::profiler::TaskGenerator&);
 
     private:
         const game::Game* game;
@@ -69,11 +70,12 @@ namespace voxel
         util::RangeAllocator                                 brick_range_allocator;
         gfx::vulkan::WriteOnlyBuffer<BrickParentInformation> per_brick_chunk_parent_info;
         gfx::vulkan::CpuCachedBuffer<MaterialBrick>          material_bricks;
-        gfx::vulkan::CpuCachedBuffer<BitBrick>               shadow_bricks;
+        gfx::vulkan::CpuCachedBuffer<ShadowBrick>            shadow_bricks;
         gfx::vulkan::WriteOnlyBuffer<VisibilityBrick>        visibility_bricks;
+        std::vector<PrimaryRayBrick>                         primary_ray_bricks;
         static constexpr std::size_t                         VramOverheadPerBrick =
-            sizeof(BrickParentInformation) + sizeof(MaterialBrick) + sizeof(BitBrick)
-            + sizeof(BitBrick) + sizeof(VisibilityBrick);
+            sizeof(BrickParentInformation) + sizeof(MaterialBrick) + sizeof(ShadowBrick)
+            + sizeof(PrimaryRayBrick) + sizeof(VisibilityBrick);
 
         // Greedily Meshed Voxel Data
         util::RangeAllocator                          voxel_face_allocator;

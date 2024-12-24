@@ -1,6 +1,7 @@
 #include "chunk_render_manager.hpp"
 #include "game/frame_generator.hpp"
 #include "game/game.hpp"
+#include "gfx/profiler/task_generator.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/device.hpp"
@@ -9,6 +10,7 @@
 #include "util/index_allocator.hpp"
 #include "util/range_allocator.hpp"
 #include "util/static_filesystem.hpp"
+#include "util/timer.hpp"
 #include "voxel/material_manager.hpp"
 #include <chrono>
 #include <future>
@@ -221,16 +223,20 @@ namespace voxel
             const u16                           chunkId,
             const PerChunkGpuData               oldGpuData,
             const std::vector<MaterialBrick>    oldMaterialBricks,
-            const std::vector<BitBrick>         oldShadowBricks,
+            const std::vector<ShadowBrick>      oldShadowBricks,
+            const std::vector<PrimaryRayBrick>  oldPrimaryRayBricks,
             // NOLINTNEXTLINE(performance-unnecessary-value-param)
             const std::vector<ChunkLocalUpdate> newUpdates)
         {
+            util::MultiTimer t {};
+
             util::IndexAllocator newChunkOffsetAllocator {
                 BricksPerChunkEdge * BricksPerChunkEdge * BricksPerChunkEdge};
             ChunkBrickMap                       newBrickMap {};
-            std::vector<MaterialBrick>          newMaterialBricks {};
-            std::vector<BitBrick>               newShadowBricks {};
             std::vector<BrickParentInformation> newParentBricks {};
+            std::vector<MaterialBrick>          newMaterialBricks {};
+            std::vector<ShadowBrick>            newShadowBricks {};
+            std::vector<PrimaryRayBrick>        newPrimaryRayBricks {};
 
             // Propagate old updates
             oldGpuData.data.iterateOverBricks(
@@ -246,13 +252,16 @@ namespace voxel
 
                         newBrickMap.setOffset(bC, newOffset);
 
-                        newMaterialBricks.push_back(oldMaterialBricks[oldOffset]);
-                        newShadowBricks.push_back(oldShadowBricks[oldOffset]);
                         newParentBricks.push_back(BrickParentInformation {
                             .parent_chunk {chunkId},
                             .position_in_parent_chunk {static_cast<u32>(bC.asLinearIndex())}});
+                        newMaterialBricks.push_back(oldMaterialBricks[oldOffset]);
+                        newShadowBricks.push_back(oldShadowBricks[oldOffset]);
+                        newPrimaryRayBricks.push_back(oldPrimaryRayBricks[oldOffset]);
                     }
                 });
+
+            t.stamp("propagate old updates");
 
             for (const ChunkLocalUpdate& newUpdate : newUpdates)
             {
@@ -270,15 +279,21 @@ namespace voxel
                     maybeOffset = static_cast<u16>(newChunkOffsetAllocator.allocateOrPanic());
 
                     newBrickMap.setOffset(coordinate, maybeOffset);
-                    newMaterialBricks.push_back(MaterialBrick {});
-                    newShadowBricks.push_back(BitBrick {});
+
                     newParentBricks.push_back(BrickParentInformation {
                         .parent_chunk {chunkId},
                         .position_in_parent_chunk {static_cast<u32>(coordinate.asLinearIndex())}});
+                    newMaterialBricks.push_back(MaterialBrick {});
+                    newShadowBricks.push_back(ShadowBrick {});
+                    newPrimaryRayBricks.push_back(PrimaryRayBrick {});
                 }
                 newMaterialBricks[maybeOffset].write(local, updateVoxel);
                 newShadowBricks[maybeOffset].write(local, static_cast<bool>(shadowUpdate));
+                newPrimaryRayBricks[maybeOffset].write(
+                    local, static_cast<bool>(cameraVisibilityUpdate));
             }
+
+            t.stamp("propagate new updates");
 
             BrickList list {};
 
@@ -287,31 +302,22 @@ namespace voxel
                 {
                     if (maybeOffset != ChunkBrickMap::NullOffset)
                     {
-                        // TODO: will need to be replaced with PrimaryRayBricks
-                        const MaterialBrick& materialBrick = newMaterialBricks[maybeOffset];
-                        BitBrick             bitBrick {};
-
-                        materialBrick.iterateOverVoxels(
-                            [&](BrickLocalPosition bP, Voxel v)
-                            {
-                                if (v != Voxel::NullAirEmpty)
-                                {
-                                    bitBrick.write(bP, true);
-                                }
-                            });
-
-                        list.data.push_back({bC, bitBrick});
+                        list.data.push_back(
+                            {bC, static_cast<BitBrick>(newPrimaryRayBricks[maybeOffset])});
                     }
                 });
 
             std::array<std::vector<GreedyVoxelFace>, 6> newGreedyFaces =
                 meshChunkGreedy(list.formDenseBitChunk());
 
+            t.stamp("form brick list and do mesh");
+
             return ChunkAsyncMesh {
                 .new_brick_map {newBrickMap},
+                .new_parent_bricks {std::move(newParentBricks)},
                 .new_material_bricks {std::move(newMaterialBricks)},
                 .new_shadow_bricks {std::move(newShadowBricks)},
-                .new_parent_bricks {std::move(newParentBricks)},
+                .new_primary_ray_bricks {std::move(newPrimaryRayBricks)},
                 .new_greedy_faces {std::move(newGreedyFaces)}};
         }
         // std::future<ChunkAsyncMesh> spawnAsyncMeshOperation();
@@ -372,6 +378,7 @@ namespace voxel
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               static_cast<std::size_t>(MaxBricks),
               "Visibility Bricks")
+        , primary_ray_bricks(static_cast<std::size_t>(MaxBricks), PrimaryRayBrick {})
         , voxel_face_allocator(MaxFaces, MaxChunks * 6)
         , voxel_faces(
               game_->getRenderer()->getAllocator(),
@@ -743,7 +750,7 @@ namespace voxel
 
         this->cpu_chunk_data.resize(MaxChunks);
         this->visible_face_id_map.fillImmediate(
-            VisibleFaceIdBrickHashMapStorage {.key {~0U}, .value {~0U}});
+            VisibleFaceIdBrickHashMapStorage {.key {~0U}, .value {~0U}}); // TODO: remove?
         this->visibility_bricks.fillImmediate(VisibilityBrick {});
 
         util::logTrace("Constructed Chunk Render Manager");
@@ -826,7 +833,8 @@ namespace voxel
     }
 
     std::vector<game::FrameGenerator::RecordObject>
-    ChunkRenderManager::processUpdatesAndGetDrawObjects(const game::Camera& camera) // NOLINT
+    ChunkRenderManager::processUpdatesAndGetDrawObjects(
+        const game::Camera& camera, gfx::profiler::TaskGenerator& profilerTaskGenerator) // NOLINT
     {
         const gfx::vulkan::BufferStager& stager = this->game->getRenderer()->getStager();
 
@@ -875,13 +883,19 @@ namespace voxel
                     const std::span<const MaterialBrick> spanOldMaterialBricks =
                         this->material_bricks.read(
                             oldGpuData.brick_allocation_offset, oldBricksPerChunk);
-                    const std::span<const BitBrick> spanOldShadowBricks = this->shadow_bricks.read(
-                        oldGpuData.brick_allocation_offset, oldBricksPerChunk);
+                    const std::span<const ShadowBrick> spanOldShadowBricks =
+                        this->shadow_bricks.read(
+                            oldGpuData.brick_allocation_offset, oldBricksPerChunk);
+                    const std::span<const PrimaryRayBrick> spanOldPrimaryRayBricks {
+                        &this->primary_ray_bricks[oldGpuData.brick_allocation_offset],
+                        oldBricksPerChunk};
 
                     std::vector<MaterialBrick> oldMaterialBricks {
                         spanOldMaterialBricks.cbegin(), spanOldMaterialBricks.cend()};
-                    std::vector<BitBrick> oldShadowBricks {
+                    std::vector<ShadowBrick> oldShadowBricks {
                         spanOldShadowBricks.cbegin(), spanOldShadowBricks.cend()};
+                    std::vector<PrimaryRayBrick> oldPrimaryRayBricks {
+                        spanOldPrimaryRayBricks.cbegin(), spanOldPrimaryRayBricks.cend()};
 
                     thisChunkData.maybe_async_mesh = std::async(
                         doMesh,
@@ -889,6 +903,7 @@ namespace voxel
                         oldGpuData,
                         std::move(oldMaterialBricks),
                         std::move(oldShadowBricks),
+                        std::move(oldPrimaryRayBricks),
                         std::move(thisChunkData.updates));
                 }
                 else if (
@@ -921,11 +936,14 @@ namespace voxel
                         newMeshResult.new_material_bricks.size()
                                 == newMeshResult.new_shadow_bricks.size()
                             && newMeshResult.new_shadow_bricks.size()
-                                   == newMeshResult.new_parent_bricks.size(),
-                        "Dont mess this up {} {} {}",
+                                   == newMeshResult.new_parent_bricks.size()
+                            && newMeshResult.new_parent_bricks.size()
+                                   == newMeshResult.new_primary_ray_bricks.size(),
+                        "Dont mess this up {} {} {} {}",
                         newMeshResult.new_material_bricks.size(),
                         newMeshResult.new_shadow_bricks.size(),
-                        newMeshResult.new_parent_bricks.size());
+                        newMeshResult.new_parent_bricks.size(),
+                        newMeshResult.new_primary_ray_bricks.size());
 
                     thisChunkData.active_brick_range_allocation = newBrickAllocation;
 
@@ -949,6 +967,11 @@ namespace voxel
                         newBrickAllocation.offset, newMeshResult.new_material_bricks);
                     this->shadow_bricks.write(
                         newBrickAllocation.offset, newMeshResult.new_shadow_bricks);
+
+                    std::copy( // NOLINT
+                        newMeshResult.new_primary_ray_bricks.cbegin(),
+                        newMeshResult.new_primary_ray_bricks.cend(),
+                        this->primary_ray_bricks.begin() + newBrickAllocation.offset);
 
                     std::array<util::RangeAllocation, 6> allocations {};
 
@@ -1056,6 +1079,8 @@ namespace voxel
                 }
             });
 
+        profilerTaskGenerator.stamp("Cull and spawn re meshes");
+
         // Update Debug Menu
         ::numberOfChunksAllocated.store(this->chunk_id_allocator.getNumberAllocated());
         ::numberOfChunksPossible.store(MaxChunks);
@@ -1093,6 +1118,8 @@ namespace voxel
                 0,
                 std::span<const ChunkDrawIndirectInstancePayload> {indirectPayload});
         }
+
+        profilerTaskGenerator.stamp("Do gpu writes");
 
         game::FrameGenerator::RecordObject preFrameUpdate = game::FrameGenerator::RecordObject {
             .transform {},

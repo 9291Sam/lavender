@@ -89,7 +89,7 @@ namespace voxel
         std::unordered_map<const ChunkRenderManager::Chunk*, std::vector<voxel::ChunkLocalUpdate>>
             perChunkUpdates {};
 
-        const i32 radius = 4;
+        const i32 radius = 6;
         const auto [cameraChunkBase, _] =
             splitWorldPosition(WorldPosition {static_cast<glm::i32vec3>(camera.getPosition())});
         const glm::i32vec3 chunkRangeBase = cameraChunkBase - radius;
@@ -155,6 +155,7 @@ namespace voxel
         {
             Voxel         new_voxel;
             WorldPosition new_position;
+            bool          should_be_visible;
         };
 
         std::vector<WorldChange> changes;
@@ -176,7 +177,8 @@ namespace voxel
                                     .new_voxel {Voxel::NullAirEmpty},
                                     .new_position {
                                         static_cast<glm::i32vec3>(localPos)
-                                        + *thisData.current_position}});
+                                        + *thisData.current_position},
+                                    .should_be_visible {false}});
                             }
                         });
                 };
@@ -192,7 +194,8 @@ namespace voxel
                                     .new_voxel {v},
                                     .new_position {
                                         static_cast<glm::i32vec3>(localPos)
-                                        + thisData.next_position}});
+                                        + thisData.next_position},
+                                    .should_be_visible {true}});
                             }
                         });
                 };
@@ -234,7 +237,8 @@ namespace voxel
                     chunkLocal,
                     w.new_voxel,
                     ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
-                    ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
+                    w.should_be_visible ? ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible
+                                        : ChunkLocalUpdate::CameraVisibleUpdate::CameraInvisible});
             }
         }
 
@@ -248,9 +252,8 @@ namespace voxel
         profilerTaskGenerator.stamp("dispatch VoxelObject changes");
 
         std::vector<game::FrameGenerator::RecordObject> recordObjects =
-            this->chunk_render_manager.processUpdatesAndGetDrawObjects(camera);
-
-        profilerTaskGenerator.stamp("ChunkRenderManager::onFrame");
+            this->chunk_render_manager.processUpdatesAndGetDrawObjects(
+                camera, profilerTaskGenerator);
 
         return recordObjects;
     }

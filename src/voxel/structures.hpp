@@ -400,6 +400,12 @@ namespace voxel
         }
     };
 
+    struct ShadowBrick : public BitBrick
+    {};
+
+    struct PrimaryRayBrick : public BitBrick
+    {};
+
     struct MaterialBrick : TypedBrick<Voxel>
     {};
 
@@ -585,9 +591,10 @@ namespace voxel
     struct ChunkAsyncMesh
     {
         ChunkBrickMap                               new_brick_map;
-        std::vector<MaterialBrick>                  new_material_bricks;
-        std::vector<BitBrick>                       new_shadow_bricks;
         std::vector<BrickParentInformation>         new_parent_bricks;
+        std::vector<MaterialBrick>                  new_material_bricks;
+        std::vector<ShadowBrick>                    new_shadow_bricks;
+        std::vector<PrimaryRayBrick>                new_primary_ray_bricks;
         std::array<std::vector<GreedyVoxelFace>, 6> new_greedy_faces;
     };
 
