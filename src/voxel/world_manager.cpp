@@ -110,8 +110,7 @@ namespace voxel
         {
             const auto [coordinate, position] = splitWorldPosition(p);
 
-            const decltype(this->chunks)::const_iterator maybeIt =
-                this->chunks.find(voxel::WorldPosition {{coordinate * 64}});
+            const decltype(this->chunks)::const_iterator maybeIt = this->chunks.find(coordinate);
 
             if (maybeIt != this->chunks.cend())
             {
@@ -149,8 +148,10 @@ namespace voxel
         const i32 radius = 6;
         const auto [cameraChunkBase, _] =
             splitWorldPosition(WorldPosition {static_cast<glm::i32vec3>(camera.getPosition())});
-        const glm::i32vec3 chunkRangeBase = cameraChunkBase - radius;
-        const glm::i32vec3 chunkRangePeak = cameraChunkBase + radius;
+        const voxel::ChunkCoordinate chunkRangeBase =
+            voxel::ChunkCoordinate {cameraChunkBase - radius};
+        const voxel::ChunkCoordinate chunkRangePeak =
+            voxel::ChunkCoordinate {cameraChunkBase + radius};
 
         // const int maxSpawns     = 256;
         // int       currentSpawns = 0;
@@ -161,20 +162,21 @@ namespace voxel
             {
                 for (int z = chunkRangeBase.z; z <= chunkRangePeak.z; ++z)
                 {
-                    const voxel::WorldPosition pos {{(64 * x), (64 * y), (64 * z)}};
+                    const voxel::ChunkCoordinate coordinate {x, y, z};
 
-                    const decltype(this->chunks)::const_iterator maybeIt = this->chunks.find(pos);
+                    const decltype(this->chunks)::const_iterator maybeIt =
+                        this->chunks.find(coordinate);
 
                     if (maybeIt == this->chunks.cend())
                     {
                         this->chunks.emplace(
                             std::piecewise_construct,
-                            std::forward_as_tuple(pos),
+                            std::forward_as_tuple(coordinate),
                             std::forward_as_tuple(
                                 this->generation_threads,
                                 &this->chunk_render_manager,
                                 &this->world_generator,
-                                pos));
+                                coordinate));
 
                         // if (currentSpawns++ > maxSpawns)
                         // {
@@ -196,8 +198,8 @@ namespace voxel
                 auto& [pos, chunk] = item;
 
                 const bool shouldErase =
-                    !(glm::all(glm::lessThanEqual(pos, chunkRangePeak * 64))
-                      && glm::all(glm::greaterThanEqual(pos, chunkRangeBase * 64)));
+                    !(glm::all(glm::lessThanEqual(pos, chunkRangePeak))
+                      && glm::all(glm::greaterThanEqual(pos, chunkRangeBase)));
 
                 if (shouldErase)
                 {
@@ -288,9 +290,9 @@ namespace voxel
 
         for (WorldChange w : changes)
         {
-            const auto [chunkBase, chunkLocal] = splitWorldPosition(w.new_position);
+            const auto [chunkCoordinate, chunkLocal] = splitWorldPosition(w.new_position);
             const decltype(this->chunks)::const_iterator maybeChunkIt =
-                this->chunks.find(voxel::WorldPosition {chunkBase * 64});
+                this->chunks.find(chunkCoordinate);
 
             if (maybeChunkIt != this->chunks.cend())
             {
@@ -335,20 +337,20 @@ namespace voxel
         util::ThreadPool&      pool,
         ChunkRenderManager*    chunkRenderManager,
         world::WorldGenerator* worldGenerator,
-        voxel::WorldPosition   rootPosition)
+        voxel::ChunkCoordinate coordinate)
         : chunk_render_manager {chunkRenderManager}
         , world_generator {worldGenerator}
-        , chunk {this->chunk_render_manager->createChunk(rootPosition)}
+        , chunk {this->chunk_render_manager->createChunk(coordinate)}
         , should_still_generate(std::make_shared<std::atomic<bool>>(true))
         , updates {pool.executeOnPool(
-              [wg  = worldGenerator,
-               pos = rootPosition,
+              [wg    = worldGenerator,
+               coord = coordinate,
                shouldGeneratePtr =
                    this->should_still_generate]() -> std::vector<voxel::ChunkLocalUpdate>
               {
                   if (shouldGeneratePtr->load(std::memory_order_acquire))
                   {
-                      return wg->generateChunk(pos);
+                      return wg->generateChunk(coord);
                   }
                   else
                   {

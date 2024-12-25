@@ -48,7 +48,7 @@ namespace voxel
                 util::ThreadPool&,
                 ChunkRenderManager*,
                 world::WorldGenerator*,
-                voxel::WorldPosition rootPosition);
+                voxel::ChunkCoordinate);
             ~LazilyGeneratedChunk();
 
             LazilyGeneratedChunk(const LazilyGeneratedChunk&)             = delete;
@@ -100,7 +100,7 @@ namespace voxel
         std::vector<VoxelObjectTrackingData>     voxel_object_tracking_data;
         std::vector<VoxelObject>                 voxel_object_deletion_queue;
 
-        std::unordered_map<voxel::WorldPosition, LazilyGeneratedChunk> chunks;
+        std::unordered_map<voxel::ChunkCoordinate, LazilyGeneratedChunk> chunks;
 
         std::vector<ChunkRenderManager::RaytracedLight> raytraced_lights;
     };

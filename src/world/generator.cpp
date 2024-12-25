@@ -15,8 +15,11 @@ namespace world
     }
 
     std::vector<voxel::ChunkLocalUpdate>
-    WorldGenerator::generateChunk(voxel::WorldPosition root) const
+    WorldGenerator::generateChunk(voxel::ChunkCoordinate baseCoordinate) const
     {
+        const voxel::WorldPosition root {
+            baseCoordinate.asVector() * static_cast<i32>(voxel::VoxelsPerChunkEdge)};
+
         if (root.x == 0 && root.z == 0)
         {
             return {};

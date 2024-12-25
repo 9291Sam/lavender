@@ -96,6 +96,11 @@ namespace voxel
         explicit WorldPosition(Base::VectorType v)
             : Base {v}
         {}
+
+        template<class... Args>
+        explicit WorldPosition(Args&&... args)
+            : WorldPosition {Base::VectorType {std::forward<Args>(args)...}}
+        {}
     };
 
     /// Represents the position of a single voxel in the space of a generic chunk
@@ -104,6 +109,11 @@ namespace voxel
     {
         explicit ChunkLocalPosition(Base::VectorType v)
             : Base {v}
+        {}
+
+        template<class... Args>
+        explicit ChunkLocalPosition(Args&&... args)
+            : ChunkLocalPosition {Base::VectorType {std::forward<Args>(args)...}}
         {}
     };
 
@@ -114,6 +124,11 @@ namespace voxel
         explicit BrickLocalPosition(Base::VectorType v)
             : Base {v}
         {}
+
+        template<class... Args>
+        explicit BrickLocalPosition(Args&&... args)
+            : BrickLocalPosition {Base::VectorType {std::forward<Args>(args)...}}
+        {}
     };
 
     /// Represents the position of a single Brick in the space of a chunk
@@ -122,6 +137,24 @@ namespace voxel
     {
         explicit BrickCoordinate(Base::VectorType v)
             : Base {v}
+        {}
+
+        template<class... Args>
+        explicit BrickCoordinate(Args&&... args)
+            : BrickCoordinate {Base::VectorType {std::forward<Args>(args)...}}
+        {}
+    };
+
+    /// Represents the position of a single Chunk in world space
+    struct ChunkCoordinate : public VoxelCoordinateBase<ChunkCoordinate, glm::i32vec3>
+    {
+        explicit ChunkCoordinate(Base::VectorType v)
+            : Base {v}
+        {}
+
+        template<class... Args>
+        explicit ChunkCoordinate(Args&&... args)
+            : ChunkCoordinate {Base::VectorType {std::forward<Args>(args)...}}
         {}
     };
 
@@ -140,10 +173,10 @@ namespace voxel
             BrickCoordinate {p / BricksPerChunkEdge}, BrickLocalPosition {p % BricksPerChunkEdge}};
     }
 
-    inline std::pair<WorldPosition, ChunkLocalPosition> splitWorldPosition(WorldPosition p)
+    inline std::pair<ChunkCoordinate, ChunkLocalPosition> splitWorldPosition(WorldPosition p)
     {
         return {
-            WorldPosition {
+            ChunkCoordinate {
                 {util::divideEuclidean(p.x, static_cast<i32>(VoxelsPerChunkEdge)),
                  util::divideEuclidean(p.y, static_cast<i32>(VoxelsPerChunkEdge)),
                  util::divideEuclidean(p.z, static_cast<i32>(VoxelsPerChunkEdge))}},
@@ -646,5 +679,15 @@ struct std::hash<voxel::WorldPosition> // NOLINT
     {
         return std::hash<voxel::WorldPosition::VectorType> {}(
             static_cast<voxel::WorldPosition::VectorType>(c));
+    }
+};
+
+template<>
+struct std::hash<voxel::ChunkCoordinate> // NOLINT
+{
+    std::size_t operator() (const voxel::ChunkCoordinate& c) const
+    {
+        return std::hash<voxel::ChunkCoordinate::VectorType> {}(
+            static_cast<voxel::ChunkCoordinate::VectorType>(c));
     }
 };

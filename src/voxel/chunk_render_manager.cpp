@@ -761,16 +761,16 @@ namespace voxel
 
     ChunkRenderManager::~ChunkRenderManager() = default;
 
-    ChunkRenderManager::Chunk ChunkRenderManager::createChunk(WorldPosition newChunkWorldPosition)
+    ChunkRenderManager::Chunk ChunkRenderManager::createChunk(ChunkCoordinate chunkCoordinate)
     {
         Chunk     newChunk = this->chunk_id_allocator.allocateOrPanic();
         const u16 chunkId  = this->chunk_id_allocator.getValueOfHandle(newChunk);
 
         this->cpu_chunk_data[chunkId] = CpuChunkData {};
         const PerChunkGpuData newChunkGpuData {
-            .world_offset_x {newChunkWorldPosition.x},
-            .world_offset_y {newChunkWorldPosition.y},
-            .world_offset_z {newChunkWorldPosition.z},
+            .world_offset_x {chunkCoordinate.x * VoxelsPerChunkEdge},
+            .world_offset_y {chunkCoordinate.y * VoxelsPerChunkEdge},
+            .world_offset_z {chunkCoordinate.z * VoxelsPerChunkEdge},
             .brick_allocation_offset {0},
             .data {}};
         this->gpu_chunk_data.write(chunkId, newChunkGpuData);

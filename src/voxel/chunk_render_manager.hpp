@@ -37,7 +37,7 @@ namespace voxel
         ChunkRenderManager& operator= (ChunkRenderManager&&)      = delete;
 
         /// Creates an empty chunk at the world aligned position
-        [[nodiscard]] Chunk createChunk(WorldPosition);
+        [[nodiscard]] Chunk createChunk(ChunkCoordinate);
         void                destroyChunk(Chunk);
 
         [[nodiscard]] RaytracedLight createRaytracedLight(GpuRaytracedLight);
