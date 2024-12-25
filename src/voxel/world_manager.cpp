@@ -45,6 +45,11 @@ namespace voxel
 
     WorldManager::~WorldManager()
     {
+        for (auto& [pos, chunk] : this->chunks)
+        {
+            chunk.markShouldNotGenerate();
+        }
+
         this->chunks.clear();
 
         for (voxel::ChunkRenderManager::RaytracedLight& l : this->raytraced_lights)

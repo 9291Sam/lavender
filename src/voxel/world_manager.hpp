@@ -56,6 +56,11 @@ namespace voxel
             LazilyGeneratedChunk& operator= (const LazilyGeneratedChunk&) = delete;
             LazilyGeneratedChunk& operator= (LazilyGeneratedChunk&&)      = delete;
 
+            void markShouldNotGenerate()
+            {
+                this->should_still_generate->store(false, std::memory_order_release);
+            }
+
             void leak()
             {
                 this->should_still_generate->store(false, std::memory_order_release);
