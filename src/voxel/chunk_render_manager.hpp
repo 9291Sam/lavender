@@ -5,7 +5,6 @@
 #include "gfx/vulkan/buffer.hpp"
 #include "material_manager.hpp"
 #include "structures.hpp"
-#include "util/index_allocator.hpp"
 #include "util/misc.hpp"
 #include "util/opaque_integer_handle.hpp"
 #include "util/range_allocator.hpp"
@@ -24,7 +23,6 @@ namespace voxel
     class ChunkRenderManager
     {
     public:
-        // TODO: opaque handle allocator
         using Chunk          = util::OpaqueHandle<"voxel::ChunkRenderManager::Chunk", u16>;
         using RaytracedLight = util::OpaqueHandle<"voxel::ChunkRenderManager::RaytracedLight", u16>;
     public:
@@ -65,10 +63,14 @@ namespace voxel
         gfx::vulkan::CpuCachedBuffer<GpuRaytracedLight> raytraced_lights;
 
         // Per Chunk Data
-        util::OpaqueHandleAllocator<Chunk>            chunk_id_allocator;
-        std::vector<CpuChunkData>                     cpu_chunk_data;
-        gfx::vulkan::CpuCachedBuffer<PerChunkGpuData> gpu_chunk_data;
-        static constexpr std::size_t VramOverheadPerChunk = sizeof(PerChunkGpuData);
+        util::OpaqueHandleAllocator<Chunk>                   chunk_id_allocator;
+        std::vector<CpuChunkData>                            cpu_chunk_data;
+        gfx::vulkan::CpuCachedBuffer<PerChunkGpuData>        gpu_chunk_data;
+        bool                                                 does_chunk_hash_map_need_recreated;
+        gfx::vulkan::WriteOnlyBuffer<HashedGpuChunkPosition> aligned_chunk_hash_table_keys;
+        gfx::vulkan::WriteOnlyBuffer<u16> aligned_chunk_hash_table_values; // chunkId
+        static constexpr std::size_t      VramOverheadPerChunk =
+            sizeof(PerChunkGpuData) + sizeof(u32) + sizeof(u16);
 
         // Per Brick Data
         util::RangeAllocator                                 brick_range_allocator;
@@ -89,7 +91,6 @@ namespace voxel
         gfx::vulkan::WriteOnlyBuffer<VisibleFaceData>                  visible_face_data;
 
         // Actual Draw Data
-
         struct ChunkDrawIndirectInstancePayload
         {
             u32 normal;

@@ -3,6 +3,7 @@
 #include "game/transform.hpp"
 #include <format>
 #include <gfx/renderer.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
 #include <util/log.hpp>
 
 namespace game
@@ -24,14 +25,8 @@ namespace game
 
     glm::mat4 Camera::getPerspectiveMatrix(const Game& game, const Transform& transform_) const
     {
-        // TODO: replace
-        // https://gist.github.com/pezcode/1609b61a1eedd207ec8c5acf6f94f53a
-        glm::mat4 projection = glm::perspective(
-            game.getFovYRadians(),
-            game.getAspectRatio(),
-            //! sync with shader
-            0.1f,       // NOLINT
-            100000.0f); // NOLINT
+        const glm::mat4 projection =
+            glm::infinitePerspective(game.getFovYRadians(), game.getAspectRatio(), 0.1f);
 
         return projection * this->getViewMatrix() * transform_.asModelMatrix();
     }

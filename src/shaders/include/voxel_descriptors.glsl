@@ -162,7 +162,7 @@ u32 integerHash(u32 h)
 
 void face_id_map_write(u32 key, u32 value)
 {
-    u32 slot = integerHash(key);
+    u32 slot = integerHash(key) & (kHashTableCapacity - 1);
 
     for (int i = 0; i < kHashTableCapacity; ++i)
     {
@@ -180,7 +180,7 @@ void face_id_map_write(u32 key, u32 value)
 
 u32 face_id_map_read(u32 key)
 {
-    u32 slot = integerHash(key);
+    u32 slot = integerHash(key) & (kHashTableCapacity - 1);
 
     for (int i = 0; i < kHashTableCapacity; ++i)
     {
