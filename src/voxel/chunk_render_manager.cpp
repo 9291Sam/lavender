@@ -328,7 +328,7 @@ namespace voxel
     } // namespace
 
     static constexpr u32 MaxChunks          = 65534; // max of u16, chunk ids are u16s, null is ~0
-    static constexpr u32 MaxChunkHashNodes  = 1U << 18U;
+    static constexpr u32 MaxChunkHashNodes  = 1U << 16U;
     static constexpr u32 DirectionsPerChunk = 6;
     static constexpr u32 MaxBricks          = 1U << 20U; // FIXED(shader bound)
     static constexpr u32 MaxFaces           = 1U << 23U; // FIXED(shader bound)
@@ -358,6 +358,7 @@ namespace voxel
               vk::MemoryPropertyFlagBits::eDeviceLocal,
               MaxChunks,
               "Gpu Chunk Data Buffer")
+        , does_chunk_hash_map_need_recreated {true}
         , aligned_chunk_hash_table_keys(
               game_->getRenderer()->getAllocator(),
               vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
@@ -465,7 +466,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // PerBrickChunkParentInfo
+                          // AlignedChunkHashTableKeys
                           vk::DescriptorSetLayoutBinding {
                               .binding {3},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -476,7 +477,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // MaterialBricks
+                          // AlignedChunkHashTableValues
                           vk::DescriptorSetLayoutBinding {
                               .binding {4},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -487,7 +488,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // ShadowBricks
+                          // PerBrickChunkParentInfo
                           vk::DescriptorSetLayoutBinding {
                               .binding {5},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -498,7 +499,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // VisibilityBricks
+                          // MaterialBricks
                           vk::DescriptorSetLayoutBinding {
                               .binding {6},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -509,7 +510,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // VoxelFaces
+                          // ShadowBricks
                           vk::DescriptorSetLayoutBinding {
                               .binding {7},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -520,7 +521,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // VisibleFaceIdMap
+                          // VisibilityBricks
                           vk::DescriptorSetLayoutBinding {
                               .binding {8},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -531,7 +532,7 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // VisibleFaceData
+                          // VoxelFaces
                           vk::DescriptorSetLayoutBinding {
                               .binding {9},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
@@ -542,9 +543,31 @@ namespace voxel
                                   | vk::ShaderStageFlagBits::eCompute},
                               .pImmutableSamplers {nullptr},
                           },
-                          // Materials
+                          // VisibleFaceIdMap
                           vk::DescriptorSetLayoutBinding {
                               .binding {10},
+                              .descriptorType {vk::DescriptorType::eStorageBuffer},
+                              .descriptorCount {1},
+                              .stageFlags {
+                                  vk::ShaderStageFlagBits::eVertex
+                                  | vk::ShaderStageFlagBits::eFragment
+                                  | vk::ShaderStageFlagBits::eCompute},
+                              .pImmutableSamplers {nullptr},
+                          },
+                          // VisibleFaceData
+                          vk::DescriptorSetLayoutBinding {
+                              .binding {11},
+                              .descriptorType {vk::DescriptorType::eStorageBuffer},
+                              .descriptorCount {1},
+                              .stageFlags {
+                                  vk::ShaderStageFlagBits::eVertex
+                                  | vk::ShaderStageFlagBits::eFragment
+                                  | vk::ShaderStageFlagBits::eCompute},
+                              .pImmutableSamplers {nullptr},
+                          },
+                          // Materials
+                          vk::DescriptorSetLayoutBinding {
+                              .binding {12},
                               .descriptorType {vk::DescriptorType::eStorageBuffer},
                               .descriptorCount {1},
                               .stageFlags {
@@ -697,6 +720,16 @@ namespace voxel
             },
             vk::DescriptorBufferInfo {
                 .buffer {*this->gpu_chunk_data},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->aligned_chunk_hash_table_keys},
+                .offset {0},
+                .range {vk::WholeSize},
+            },
+            vk::DescriptorBufferInfo {
+                .buffer {*this->aligned_chunk_hash_table_values},
                 .offset {0},
                 .range {vk::WholeSize},
             },
