@@ -8,6 +8,7 @@
 #include "util/thread_pool.hpp"
 #include "voxel/chunk_render_manager.hpp"
 #include "world/generator.hpp"
+#include <atomic>
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
 namespace voxel
@@ -51,13 +52,14 @@ namespace voxel
             ~LazilyGeneratedChunk();
 
             LazilyGeneratedChunk(const LazilyGeneratedChunk&)             = delete;
-            LazilyGeneratedChunk(LazilyGeneratedChunk&&)                  = default;
+            LazilyGeneratedChunk(LazilyGeneratedChunk&&)                  = delete;
             LazilyGeneratedChunk& operator= (const LazilyGeneratedChunk&) = delete;
-            LazilyGeneratedChunk& operator= (LazilyGeneratedChunk&&)      = default;
+            LazilyGeneratedChunk& operator= (LazilyGeneratedChunk&&)      = delete;
 
-            void wait()
+            void leak()
             {
-                this->updates.wait();
+                this->should_still_generate->store(false, std::memory_order_release);
+                this->updates = {};
             }
 
             void updateAndFlushUpdates(

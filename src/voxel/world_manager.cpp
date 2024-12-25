@@ -162,13 +162,14 @@ namespace voxel
 
                     if (maybeIt == this->chunks.cend())
                     {
-                        this->chunks.insert(
-                            {pos,
-                             LazilyGeneratedChunk {
-                                 this->generation_threads,
-                                 &this->chunk_render_manager,
-                                 &this->world_generator,
-                                 pos}});
+                        this->chunks.emplace(
+                            std::piecewise_construct,
+                            std::forward_as_tuple(pos),
+                            std::forward_as_tuple(
+                                this->generation_threads,
+                                &this->chunk_render_manager,
+                                &this->world_generator,
+                                pos));
 
                         // if (currentSpawns++ > maxSpawns)
                         // {
@@ -189,9 +190,16 @@ namespace voxel
             {
                 auto& [pos, chunk] = item;
 
-                return !(
-                    glm::all(glm::lessThanEqual(pos, chunkRangePeak * 64))
-                    && glm::all(glm::greaterThanEqual(pos, chunkRangeBase * 64)));
+                const bool shouldErase =
+                    !(glm::all(glm::lessThanEqual(pos, chunkRangePeak * 64))
+                      && glm::all(glm::greaterThanEqual(pos, chunkRangeBase * 64)));
+
+                if (shouldErase)
+                {
+                    chunk.leak();
+                }
+
+                return shouldErase;
             });
 
         profilerTaskGenerator.stamp("erase far");
@@ -284,7 +292,8 @@ namespace voxel
                 voxelObjectUpdates[&maybeChunkIt->second].push_back(ChunkLocalUpdate {
                     chunkLocal,
                     w.new_voxel,
-                    ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+                    w.should_be_visible ? ChunkLocalUpdate::ShadowUpdate::ShadowCasting
+                                        : ChunkLocalUpdate::ShadowUpdate::ShadowTransparent,
                     w.should_be_visible ? ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible
                                         : ChunkLocalUpdate::CameraVisibleUpdate::CameraInvisible});
             }
@@ -330,7 +339,7 @@ namespace voxel
               [wg  = worldGenerator,
                pos = rootPosition,
                shouldGeneratePtr =
-                   this->should_still_generate] -> std::vector<voxel::ChunkLocalUpdate>
+                   this->should_still_generate]() -> std::vector<voxel::ChunkLocalUpdate>
               {
                   if (shouldGeneratePtr->load(std::memory_order_acquire))
                   {
@@ -348,6 +357,11 @@ namespace voxel
         if (this->should_still_generate != nullptr)
         {
             this->should_still_generate->store(false, std::memory_order_release);
+        }
+
+        if (this->updates.valid())
+        {
+            this->updates.wait();
         }
 
         if (!this->chunk.isNull())

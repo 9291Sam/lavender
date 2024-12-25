@@ -27,7 +27,7 @@ namespace util
             std::future<std::invoke_result_t<Fn>> future = task.get_future();
 
             this->function_queue.enqueue(
-                std::move_only_function<void()> {[localTask = std::move(task)] mutable
+                std::move_only_function<void()> {[localTask = std::move(task)]() mutable
                                                  {
                                                      localTask();
                                                  }});
