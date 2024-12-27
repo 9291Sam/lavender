@@ -77,7 +77,7 @@ namespace verdigris
                 .name {"Triangle Pipeline"}});
 
         this->triangle.addComponent(TriangleComponent {.transform {
-            .translation {glm::vec3 {1.323123, 32.3232123f, 3.8473f}},
+            .translation {glm::vec3 {6.323123, 26.3232123f, 33.8473f}},
             .scale {glm::vec3 {1.0f, 1.0f, 1.0f}}}});
 
         this->camera.addPosition({79.606, 42.586, -9.784});
@@ -92,34 +92,34 @@ namespace verdigris
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
         std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
 
-        for (int i = 0; i < 16; ++i)
-        {
-            brick.modifyOverVoxels(
-                [&](auto bp, voxel::Voxel& v)
-                {
-                    if (bp.x < 6 && bp.y < 6 && bp.z < 6)
-                    {
-                        v = voxel::Voxel::Diamond;
-                    }
-                    // // {
-                    // v = static_cast<voxel::Voxel>(dist(gen) * 17.99f);
-                    // // }
-                });
+        // for (int i = 0; i < 16; ++i)
+        // {
+        //     brick.modifyOverVoxels(
+        //         [&](auto bp, voxel::Voxel& v)
+        //         {
+        //             if (bp.x < 6 && bp.y < 6 && bp.z < 6)
+        //             {
+        //                 v = voxel::Voxel::Diamond;
+        //             }
+        //             // // {
+        //             // v = static_cast<voxel::Voxel>(dist(gen) * 17.99f);
+        //             // // }
+        //         });
 
-            this->cubes.push_back(
-                {//     glm::vec3 {
-                 //      distN(gen) * 64.0f,
-                 //      (distN(gen) * 32.0f) + 32.0f,
-                 //      distN(gen) * 64.0f,
-                 //  },
-                 glm::vec3 {
-                     0.0f,
-                     8.0f,
-                     0.0f,
-                 },
-                 this->voxel_world.createVoxelObject(
-                     voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
-        }
+        //     this->cubes.push_back(
+        //         {//     glm::vec3 {
+        //          //      distN(gen) * 64.0f,
+        //          //      (distN(gen) * 32.0f) + 32.0f,
+        //          //      distN(gen) * 64.0f,
+        //          //  },
+        //          glm::vec3 {
+        //              0.0f,
+        //              8.0f,
+        //              0.0f,
+        //          },
+        //          this->voxel_world.createVoxelObject(
+        //              voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
+        // }
     }
 
     Verdigris::~Verdigris()
@@ -228,13 +228,13 @@ namespace verdigris
         glm::vec3 currentPosition = this->camera.getPosition();
         glm::vec3 displacement    = newPosition - currentPosition;
 
-        if (this->time_alive > 5.0f)
-        {
-            verticalVelocity += gravity * deltaTime;
-            verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
+        // if (this->time_alive > 5.0f)
+        // {
+        //     verticalVelocity += gravity * deltaTime;
+        //     verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
 
-            displacement.y += verticalVelocity * deltaTime;
-        }
+        //     displacement.y += verticalVelocity * deltaTime;
+        // }
 
         // HACK: just prevent it from mattering lol
         // if (glm::length(displacement) > 1.0f)
@@ -246,10 +246,6 @@ namespace verdigris
 
         auto readVoxelOpacity = [&](voxel::WorldPosition p)
         {
-            if (p.y < 64)
-            {
-                return true;
-            }
             return this->voxel_world.readVoxelOccupied({&p, 1}).test(0);
         };
 

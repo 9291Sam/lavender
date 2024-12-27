@@ -96,20 +96,6 @@ namespace world
                             voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
                             voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
                     }
-                    else if (i > 30 && i < 33 && j > 30 && j < 33)
-                    {
-                        out.push_back(voxel::ChunkLocalUpdate {
-                            voxel::ChunkLocalPosition {{i, h, j}},
-                            static_cast<voxel::Voxel>(util::map<float>(
-                                // static_cast<float>((*rockSampler)[h][j][i]),
-                                10.0f,
-                                -1.0f,
-                                1.0f,
-                                14.0f,
-                                18.0f)), // NOLINT
-                            voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
-                            voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
-                    }
                     // else if (relativeDistanceToHeight < 2)
                     // {
                     //     out.push_back(voxel::ChunkLocalUpdate {
@@ -126,6 +112,24 @@ namespace world
                     //         voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
                     //         voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
                     // }
+                }
+            }
+        }
+
+        if (baseCoordinate == voxel::ChunkCoordinate {{0, 0, 0}})
+        {
+            for (i32 x = 14; x < 18; ++x)
+            {
+                for (i32 z = 14; z < 18; ++z)
+                {
+                    for (i32 y = 0; y < 64; ++y)
+                    {
+                        out.push_back(voxel::ChunkLocalUpdate {
+                            voxel::ChunkLocalPosition {{x, y, z}},
+                            voxel::Voxel::Emerald, // NOLINT
+                            voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+                            voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
+                    }
                 }
             }
         }
