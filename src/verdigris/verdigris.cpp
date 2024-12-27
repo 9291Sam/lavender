@@ -23,6 +23,7 @@
 #include <boost/unordered/concurrent_flat_map.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtc/random.hpp>
+#include <mutex>
 #include <random>
 #include <utility>
 
@@ -85,6 +86,8 @@ namespace verdigris
 
         voxel::MaterialBrick brick {};
 
+        // brick.write(voxel::BrickLocalPosition {{0, 0, 0}}, voxel::Voxel::Diamond);
+
         std::mt19937_64                     gen {73847375}; // NOLINT
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
         std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
@@ -92,19 +95,27 @@ namespace verdigris
         for (int i = 0; i < 16; ++i)
         {
             brick.modifyOverVoxels(
-                [&](auto, voxel::Voxel& v)
+                [&](auto bp, voxel::Voxel& v)
                 {
-                    // if (bp.x < 4 && bp.y < 4 && bp.z < 4)
-                    // {
-                    v = static_cast<voxel::Voxel>(dist(gen) * 17.99f);
-                    // }
+                    if (bp.x < 6 && bp.y < 6 && bp.z < 6)
+                    {
+                        v = voxel::Voxel::Diamond;
+                    }
+                    // // {
+                    // v = static_cast<voxel::Voxel>(dist(gen) * 17.99f);
+                    // // }
                 });
 
             this->cubes.push_back(
-                {glm::vec3 {
-                     distN(gen) * 64.0f,
-                     (distN(gen) * 32.0f) + 32.0f,
-                     distN(gen) * 64.0f,
+                {//     glm::vec3 {
+                 //      distN(gen) * 64.0f,
+                 //      (distN(gen) * 32.0f) + 32.0f,
+                 //      distN(gen) * 64.0f,
+                 //  },
+                 glm::vec3 {
+                     0.0f,
+                     8.0f,
+                     0.0f,
                  },
                  this->voxel_world.createVoxelObject(
                      voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
@@ -235,7 +246,11 @@ namespace verdigris
 
         auto readVoxelOpacity = [&](voxel::WorldPosition p)
         {
-            return this->voxel_world.readVoxelOccupied({&p, 1}).at(0);
+            if (p.y < 64)
+            {
+                return true;
+            }
+            return this->voxel_world.readVoxelOccupied({&p, 1}).test(0);
         };
 
         glm::vec3 testPositionX = resolvedPosition + glm::vec3(displacement.x, 0.0f, 0.0f);
@@ -311,17 +326,31 @@ namespace verdigris
 
         this->time_alive += deltaTime;
 
-        for (const auto& [pos, o] : this->cubes)
-        {
-            const f32 x =
-                (32.0f * std::sin(this->time_alive * (2.0f + std::fmod<float>(pos.y, 1.3f))))
-                + pos.x;
-            const f32 z =
-                (32.0f * std::cos(this->time_alive * (2.0f + std::fmod<float>(pos.y, 1.3f))))
-                + pos.z;
+        static std::once_flag once {};
+        std::call_once(
+            once,
+            [&]()
+            {
+                float degoff = 0.0f;
+                for (const auto& [pos, o] : this->cubes)
+                {
+                    const f32 x =
+                        (64.0f
+                         * std::sin(
+                             degoff + this->time_alive * (1.0f + std::fmod<float>(pos.y, 1.3f))))
+                        + pos.x;
+                    const f32 z =
+                        (64.0f
+                         * std::cos(
+                             degoff + this->time_alive * (1.0f + std::fmod<float>(pos.y, 1.3f))))
+                        + pos.z;
 
-            this->voxel_world.setVoxelObjectPosition(o, voxel::WorldPosition {{x, pos.y, z}});
-        }
+                    degoff += 1.57079633 / 4;
+
+                    this->voxel_world.setVoxelObjectPosition(
+                        o, voxel::WorldPosition {{x, pos.y, z}});
+                }
+            });
 
         profilerTaskGenerator.stamp("update block");
 

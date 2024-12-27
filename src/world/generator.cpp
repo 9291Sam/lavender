@@ -20,10 +20,10 @@ namespace world
         const voxel::WorldPosition root {
             baseCoordinate.asVector() * static_cast<i32>(voxel::VoxelsPerChunkEdge)};
 
-        if (root.x == 0 && root.z == 0)
-        {
-            return {};
-        }
+        // if (root.x == 0 && root.z == 0)
+        // {
+        //     return {};
+        // }
 
         auto gen2D =
             [&](float       scale,
@@ -58,11 +58,11 @@ namespace world
             return res;
         };
 
-        auto height      = gen2D(0.001f, this->seed + 487484);
-        auto bumpHeight  = gen2D(0.01f, this->seed + 7373834);
-        auto mainRock    = gen3D(0.001f, this->seed - 747875);
-        auto pebblesRock = gen3D(0.01f, this->seed - 52649274);
-        auto pebbles     = gen3D(0.05f, this->seed - 948);
+        // auto height      = gen2D(0.001f, this->seed + 487484);
+        // auto bumpHeight  = gen2D(0.01f, this->seed + 7373834);
+        // auto mainRock    = gen3D(0.001f, this->seed - 747875);
+        // auto pebblesRock = gen3D(0.01f, this->seed - 52649274);
+        // auto pebbles     = gen3D(0.05f, this->seed - 948);
 
         std::vector<voxel::ChunkLocalUpdate> out {};
         out.reserve(32768);
@@ -71,8 +71,8 @@ namespace world
         {
             for (u8 i = 0; i < 64; ++i)
             {
-                const i32 worldHeight =
-                    static_cast<i32>((*height)[j][i] * 64.0f + (*bumpHeight)[j][i] * 2.0f);
+                const i32 worldHeight = 0.0f;
+                // static_cast<i32>((*height)[j][i] * 64.0f + (*bumpHeight)[j][i] * 2.0f);
 
                 for (u8 h = 0; h < 64; ++h)
                 {
@@ -81,13 +81,14 @@ namespace world
 
                     if (relativeDistanceToHeight < 0)
                     {
-                        std::array<std::array<std::array<float, 64>, 64>, 64>* rockSampler =
-                            (*pebbles)[h][j][i] > 0.75f ? pebblesRock.get() : mainRock.get();
+                        // std::array<std::array<std::array<float, 64>, 64>, 64>* rockSampler =
+                        //     (*pebbles)[h][j][i] > 0.75f ? pebblesRock.get() : mainRock.get();
 
                         out.push_back(voxel::ChunkLocalUpdate {
                             voxel::ChunkLocalPosition {{i, h, j}},
                             static_cast<voxel::Voxel>(util::map<float>(
-                                static_cast<float>((*rockSampler)[h][j][i]),
+                                // static_cast<float>((*rockSampler)[h][j][i]),
+                                8.0f,
                                 -1.0f,
                                 1.0f,
                                 14.0f,
@@ -95,22 +96,36 @@ namespace world
                             voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
                             voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
                     }
-                    else if (relativeDistanceToHeight < 2)
+                    else if (i > 30 && i < 33 && j > 30 && j < 33)
                     {
                         out.push_back(voxel::ChunkLocalUpdate {
                             voxel::ChunkLocalPosition {{i, h, j}},
-                            voxel::Voxel::Dirt,
+                            static_cast<voxel::Voxel>(util::map<float>(
+                                // static_cast<float>((*rockSampler)[h][j][i]),
+                                10.0f,
+                                -1.0f,
+                                1.0f,
+                                14.0f,
+                                18.0f)), // NOLINT
                             voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
                             voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
                     }
-                    else if (relativeDistanceToHeight < 3)
-                    {
-                        out.push_back(voxel::ChunkLocalUpdate {
-                            voxel::ChunkLocalPosition {{i, h, j}},
-                            voxel::Voxel::Grass,
-                            voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
-                            voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
-                    }
+                    // else if (relativeDistanceToHeight < 2)
+                    // {
+                    //     out.push_back(voxel::ChunkLocalUpdate {
+                    //         voxel::ChunkLocalPosition {{i, h, j}},
+                    //         voxel::Voxel::Dirt,
+                    //         voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+                    //         voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
+                    // }
+                    // else if (relativeDistanceToHeight < 3)
+                    // {
+                    //     out.push_back(voxel::ChunkLocalUpdate {
+                    //         voxel::ChunkLocalPosition {{i, h, j}},
+                    //         voxel::Voxel::Grass,
+                    //         voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+                    //         voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
+                    // }
                 }
             }
         }

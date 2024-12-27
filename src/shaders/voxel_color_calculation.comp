@@ -352,49 +352,47 @@ u32 getBrickOfWorldPosition(ivec3 pos)
     return maybePtr;
 }
 
-// bool isGlobalPositionOccupied(ivec3 pos)
-// {
-//     // TODO: this isnt the right coordinate
-//     ivec3 globalChunkCoordinate = ivec3(
-//         divideEuclideani32(pos.x, 64),
-//         divideEuclideani32(pos.y, 64),
-//         divideEuclideani32(pos.z, 64));
+bool isGlobalPositionOccupied(ivec3 pos)
+{
+    // TODO: this isnt the right coordinate
+    ivec3 globalChunkCoordinate = ivec3(
+        divideEuclideani32(pos.x, 64),
+        divideEuclideani32(pos.y, 64),
+        divideEuclideani32(pos.z, 64));
 
-//     ivec3 positionWithinChunk = ivec3(
-//         moduloEuclideani32(pos.x, 64),
-//         moduloEuclideani32(pos.y, 64),
-//         moduloEuclideani32(pos.z, 64));
+    ivec3 positionWithinChunk = ivec3(
+        moduloEuclideani32(pos.x, 64),
+        moduloEuclideani32(pos.y, 64),
+        moduloEuclideani32(pos.z, 64));
 
-//     u16 chunk = in_global_chunks.chunk[globalChunkCoordinate.x + 128][globalChunkCoordinate.y +
-//     128]
-//                                       [globalChunkCoordinate.z + 128];
+    u16 chunk = ChunkHashTable_load(globalChunkCoordinate);
 
-//     if (chunk == u16(-1))
-//     {
-//         return false;
-//     }
+    if (chunk == u16(-1))
+    {
+        return false;
+    }
 
-//     ivec3 brickCoordinate = positionWithinChunk / 8;
-//     ivec3 brickPosition   = positionWithinChunk % 8;
+    ivec3 brickCoordinate = positionWithinChunk / 8;
+    ivec3 brickPosition   = positionWithinChunk % 8;
 
-//     MaybeBrickPointer maybePtr = BrickMap_load(chunk, brickCoordinate);
+    u32 maybePtr = BrickMap_load(chunk, brickCoordinate);
 
-//     if (maybePtr.pointer == ~0u)
-//     {
-//         return false;
-//     }
+    if (maybePtr == ~0u)
+    {
+        return false;
+    }
 
-//     GetIdxAndBitResult r = getIdxAndBit(brickPosition);
+    GetIdxAndBitResult r = getIdxAndBit(brickPosition);
 
-//     if ((in_opacity_bricks.brick[maybePtr.pointer].data[r.idx] & (1u << r.bit)) == 0)
-//     {
-//         return false;
-//     }
-//     else
-//     {
-//         return true;
-//     }
-// }
+    if ((in_shadow_bricks.brick[maybePtr].data[r.idx] & (1u << r.bit)) == 0)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
 
 vec3 stepMask(vec3 sideDist)
 {
@@ -487,6 +485,25 @@ bool traceDDARay(vec3 start, vec3 end)
     }
 
     return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
+}
+
+bool traceShitty(vec3 start, vec3 end)
+{
+    const vec3  toEnd         = end - start;
+    const float toEndDistance = length(toEnd);
+    const vec3  dir           = normalize(toEnd);
+
+    for (float t = 0.0; t < toEndDistance; t += 0.05)
+    {
+        const ivec3 s = ivec3(floor(start + dir * t));
+
+        if (isGlobalPositionOccupied(s))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 vec3 exp_strength_falloff(vec3 strengths)

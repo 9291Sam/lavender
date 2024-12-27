@@ -112,8 +112,16 @@ u16 ChunkHashTable_load(i32vec3 chunkCoordinate)
 
 u32 BrickMap_load(u32 chunk_id, uvec3 coord)
 {
-    return in_gpu_chunk_data.data[chunk_id].data.data[coord.x][coord.y][coord.z]
-         + in_gpu_chunk_data.data[chunk_id].brick_allocation_offset;
+    const u16 maybeOffset = in_gpu_chunk_data.data[chunk_id].data.data[coord.x][coord.y][coord.z];
+
+    if (maybeOffset == u16(-1))
+    {
+        return ~0u;
+    }
+    else
+    {
+        return maybeOffset + in_gpu_chunk_data.data[chunk_id].brick_allocation_offset;
+    }
 }
 
 struct BrickParentInfo
