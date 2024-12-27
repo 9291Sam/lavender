@@ -19,27 +19,26 @@ namespace util
         ThreadPool& operator= (const ThreadPool&) = delete;
         ThreadPool& operator= (ThreadPool&&)      = delete;
 
-        template<class Fn>
-        std::future<std::invoke_result_t<Fn>> executeOnPool(Fn func) const
+        template<class Fn, class R = std::invoke_result_t<Fn>>
+        std::future<R> executeOnPool(Fn func) const
             requires std::is_invocable_v<Fn>
         {
-            std::packaged_task                    task {func};
-            std::future<std::invoke_result_t<Fn>> future = task.get_future();
+            std::shared_ptr<std::packaged_task<R()>> task {new std::packaged_task<R()> {func}};
+            std::future<R>                           future = task->get_future();
 
-            this->function_queue.enqueue(
-                std::move_only_function<void()> {[localTask = std::move(task)]() mutable
-                                                 {
-                                                     localTask();
-                                                 }});
+            this->function_queue.enqueue(std::function<void()> {[localTask = task]() mutable
+                                                                {
+                                                                    (*localTask)();
+                                                                }});
 
             return future;
         }
     private:
         void threadFunction() const;
 
-        mutable moodycamel::BlockingConcurrentQueue<std::move_only_function<void()>> function_queue;
-        std::atomic<bool>        should_threads_close;
-        std::vector<std::thread> threads;
+        mutable moodycamel::BlockingConcurrentQueue<std::function<void()>> function_queue;
+        std::atomic<bool>                                                  should_threads_close;
+        std::vector<std::thread>                                           threads;
     };
 
     void              installGlobalThreadPoolRacy();

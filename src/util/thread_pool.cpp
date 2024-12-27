@@ -24,7 +24,7 @@ namespace util
             t.join();
         }
 
-        std::move_only_function<void()> localFunction {};
+        std::function<void()> localFunction {};
 
         for (int i = 0; i < 64; ++i)
         {
@@ -42,7 +42,7 @@ namespace util
     {
         using namespace std::literals;
 
-        std::move_only_function<void()> localFunction {};
+        std::function<void()> localFunction {};
 
         while (!this->should_threads_close.load(std::memory_order_acquire))
         {

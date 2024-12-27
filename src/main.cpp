@@ -12,26 +12,26 @@
 #include <cassert>
 #include <ctti/type_id.hpp>
 #include <glm/gtx/hash.hpp>
+#include <mutex>
 #include <string_view>
 #include <utility>
 
 //
 
 // // Threadsafe, efficieint
-// class EntityManager
-// {
-// public:
+class EntityManager
+{
+public:
 
-//     [[nodiscard]] u32 createEntity() const;
-//     void              destroyEntity(u32) const;
+    [[nodiscard]] u32 createEntity() const;
+    void              destroyEntity(u32) const;
 
-//     [[nodiscard]] bool isEntityAlive() const;
+    [[nodiscard]] bool unGuardedIsEntityAlive() const;
+    std::shared_mutex& getGuardForEntity(u32 entity, std::invocable<> auto func) const {}
 
-//     void withEntityALiveGuard(u32 entity, std::invocable<> auto func) {}
-
-// private:
-//     std::atomic<u32> next_valid_entity_id;
-// };
+private:
+    std::atomic<u32> next_valid_entity_id;
+};
 
 // Entity Id Allocator
 // Entity -> Component Map
@@ -120,7 +120,7 @@
 #include <thread>
 #include <vector>
 
-i64 a = 4;
+int a = 4;
 
 class ReadLockBenchmark
 {
@@ -153,13 +153,13 @@ public:
                         {
                             std::unique_lock<decltype(this->mutex)> lock(mutex);
 
-                            for (int iters = 0; iters < 64; ++iters)
-                            {
-                                if (a % 2 == 0)
-                                {
-                                    a += j;
-                                }
-                            }
+                            // for (int iters = 0; iters < 64; ++iters)
+                            // {
+                            //     if (a % 2 == 0)
+                            //     {
+                            //         a += j;
+                            //     }
+                            // }
                         }
                         // Simulate brief read operation
                         // std::this_thread::yield();
