@@ -301,8 +301,11 @@ namespace verdigris
 
         profilerTaskGenerator.stamp("Camera Update");
 
+        auto realCamera = this->camera;
+        realCamera.addPosition({0.0, 32.0f, 0.0});
+
         std::vector<game::FrameGenerator::RecordObject> draws {
-            this->voxel_world.onFrameUpdate(this->camera, profilerTaskGenerator)};
+            this->voxel_world.onFrameUpdate(realCamera, profilerTaskGenerator)};
 
         profilerTaskGenerator.stamp("World Update");
 
@@ -343,9 +346,6 @@ namespace verdigris
             });
 
         profilerTaskGenerator.stamp("Triangle Propagation");
-
-        auto realCamera = this->camera;
-        realCamera.addPosition({0.0, 32.0f, 0.0});
 
         return OnFrameReturnData {
             .main_scene_camera {realCamera},

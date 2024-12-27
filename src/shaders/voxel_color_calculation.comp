@@ -269,35 +269,35 @@ CalculatedLightPower newLightPower(
 //     return lightPower;
 // }
 
-// i32 moduloEuclideani32(i32 lhs, i32 rhs)
-// {
-//     if (lhs < 0)
-//     {
-//         // Offset lhs to ensure positive remainder
-//         lhs += (-lhs / rhs + 1) * rhs;
-//     }
+i32 moduloEuclideani32(i32 lhs, i32 rhs)
+{
+    if (lhs < 0)
+    {
+        // Offset lhs to ensure positive remainder
+        lhs += (-lhs / rhs + 1) * rhs;
+    }
 
-//     const i32 remainder = lhs % rhs;
-//     if (remainder < 0)
-//     {
-//         return rhs > 0 ? remainder + rhs : remainder - rhs;
-//     }
-//     return remainder;
-// }
+    const i32 remainder = lhs % rhs;
+    if (remainder < 0)
+    {
+        return rhs > 0 ? remainder + rhs : remainder - rhs;
+    }
+    return remainder;
+}
 
-// i32 divideEuclideani32(i32 lhs, i32 rhs)
-// {
-//     int quotient  = lhs / rhs;
-//     int remainder = lhs % rhs;
+i32 divideEuclideani32(i32 lhs, i32 rhs)
+{
+    int quotient  = lhs / rhs;
+    int remainder = lhs % rhs;
 
-//     // Adjust quotient for Euclidean behavior
-//     if (remainder != 0 && ((rhs < 0) != (lhs < 0)))
-//     {
-//         quotient -= 1;
-//     }
+    // Adjust quotient for Euclidean behavior
+    if (remainder != 0 && ((rhs < 0) != (lhs < 0)))
+    {
+        quotient -= 1;
+    }
 
-//     return quotient;
-// }
+    return quotient;
+}
 
 // struct GetIdxAndBitResult
 // {
@@ -544,6 +544,18 @@ void main()
             in_gpu_chunk_data.data[parent_chunk].world_offset_x,
             in_gpu_chunk_data.data[parent_chunk].world_offset_y,
             in_gpu_chunk_data.data[parent_chunk].world_offset_z);
+
+        const ivec3 parentChunkCoordinate = ivec3(
+            divideEuclideani32(parent_chunk_world_position.x, 64),
+            divideEuclideani32(parent_chunk_world_position.y, 64),
+            divideEuclideani32(parent_chunk_world_position.z, 64));
+
+        const u16 hashChunk = ChunkHashTable_load(parentChunkCoordinate);
+
+        if (u32(hashChunk) != parent_chunk) // TODO: remove, temporary asssert
+        {
+            return;
+        }
 
         // TODO: shouldn't be 0.5 the normal should be removed from this
         const ivec3 voxel_corner_pos_world =

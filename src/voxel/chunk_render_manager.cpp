@@ -8,6 +8,7 @@
 #include "gfx/window.hpp"
 #include "structures.hpp"
 #include "util/index_allocator.hpp"
+#include "util/log.hpp"
 #include "util/range_allocator.hpp"
 #include "util/static_filesystem.hpp"
 #include "util/thread_pool.hpp"
@@ -1193,16 +1194,16 @@ namespace voxel
 
             auto insertChunkHashTable = [&](HashedGpuChunkPosition position, u16 chunkId)
             {
-                uint32_t slot = position.hashed_value % MaxChunkHashNodes;
+                const u32 key = position.hashed_value;
+
+                uint32_t slot = key % MaxChunkHashNodes;
 
                 while (true)
                 {
-                    const uint32_t prev = nonAtomicCas(
-                        keys[slot].hashed_value,
-                        HashedGpuChunkPosition::Empty,
-                        position.hashed_value);
+                    const uint32_t prev =
+                        nonAtomicCas(keys[slot].hashed_value, HashedGpuChunkPosition::Empty, key);
 
-                    if (prev == HashedGpuChunkPosition::Empty || prev == position.hashed_value)
+                    if (prev == HashedGpuChunkPosition::Empty || prev == key)
                     {
                         values[slot] = chunkId;
                         break;
@@ -1211,9 +1212,33 @@ namespace voxel
                 }
             };
 
+            auto readChunkHashTable = [&](HashedGpuChunkPosition position) -> u16
+            {
+                const u32 key = position.hashed_value;
+
+                uint32_t slot = key % MaxChunkHashNodes;
+
+                while (true)
+                {
+                    if (keys[slot].hashed_value == key)
+                    {
+                        return values[slot];
+                    }
+                    if (keys[slot].hashed_value == HashedGpuChunkPosition::Empty)
+                    {
+                        return 65535;
+                    }
+                    slot = (slot + 1) % MaxChunkHashNodes;
+                }
+            };
+
             for (const auto [key, value] : alignedChunksToPutInHashMap)
             {
                 insertChunkHashTable(key, value);
+
+                // util::assertFatal(
+                //     value == readChunkHashTable(key), "{} != {}", value,
+                //     readChunkHashTable(key));
             }
 
             stager.enqueueTransfer(this->aligned_chunk_hash_table_keys, 0, {keys});

@@ -46,6 +46,70 @@ layout(set = 1, binding = 2) readonly buffer GpuChunkDataBuffer
 }
 in_gpu_chunk_data;
 
+u32 gpuU32HashCombine(u32 seed, u32 hash)
+{
+    return seed ^ (hash + 0x9E3779B9U + (seed << 6U) + (seed >> 2U));
+}
+
+u32 lowBiasHash(u32 x)
+{
+    x ^= x >> 16U;
+    x *= 0x7fEB352DU;
+    x ^= x >> 15U;
+    x *= 0x846CA68BU;
+    x ^= x >> 16U;
+
+    return x;
+}
+
+u32 calculateHashOfChunkCoordinate(i32vec3 c)
+{
+    u32 seed = 0xE727328CU;
+
+    seed = gpuU32HashCombine(seed, lowBiasHash(u32(c.x)));
+
+    seed = gpuU32HashCombine(seed, lowBiasHash(u32(c.y)));
+
+    seed = gpuU32HashCombine(seed, lowBiasHash(u32(c.z)));
+
+    return seed;
+}
+
+layout(set = 1, binding = 3) readonly buffer AlignedChunkHashTableKeys
+{
+    u32 keys[];
+}
+in_aligned_chunk_hash_table_keys;
+
+layout(set = 1, binding = 4) readonly buffer AlignedChunkHashTableValues
+{
+    u16 values[];
+}
+in_aligned_chunk_hash_table_values;
+
+const u32 MaxChunkHashNodes = 1U << 16U;
+const u32 ChunkHashEmpty    = ~0u;
+
+u16 ChunkHashTable_load(i32vec3 chunkCoordinate)
+{
+    const u32 key = calculateHashOfChunkCoordinate(chunkCoordinate);
+
+    uint32_t slot = key % MaxChunkHashNodes;
+
+    while (true)
+    {
+        if (in_aligned_chunk_hash_table_keys.keys[slot] == key)
+        {
+            return in_aligned_chunk_hash_table_values.values[slot];
+        }
+        if (in_aligned_chunk_hash_table_keys.keys[slot] == ChunkHashEmpty)
+        {
+            return u16(~0u);
+        }
+        slot = (slot + 1) % MaxChunkHashNodes;
+    }
+}
+
 u32 BrickMap_load(u32 chunk_id, uvec3 coord)
 {
     return in_gpu_chunk_data.data[chunk_id].data.data[coord.x][coord.y][coord.z]
