@@ -27,17 +27,20 @@ namespace voxel
     {
         this->voxel_object_tracking_data.resize(MaxVoxelObjects, VoxelObjectTrackingData {});
 
-        std::mt19937_64                     gen {73847375}; // NOLINT
+        std::mt19937_64                     gen {7384375}; // NOLINT
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
 
-        // for (int i = 0; i < 1; ++i)
-        // {
-        this->raytraced_lights.push_back(
-            this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
-                .position_and_half_intensity_distance {
-                    glm::vec4 {6.323123, 26.3232123f, 33.8473f, 96.0f}},
-                .color_and_power {glm::vec4 {1.0f, 1.0f, 1.0f, 96}}}));
-        // }
+        for (int i = 0; i < 4; ++i)
+        {
+            this->raytraced_lights.push_back(
+                this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
+                    .position_and_half_intensity_distance {glm::vec4 {
+                        util::map(dist(gen), 0.0f, 1.0f, -16.0f, 128.0f) + 32.0f,
+                        util::map(dist(gen), 0.0f, 1.0f, 0.0f, 184.0f),
+                        util::map(dist(gen), 0.0f, 1.0f, 0.0f, 64.0f) + 32.0f,
+                        24.0f}},
+                    .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 96}}}));
+        }
     }
 
     WorldManager::~WorldManager()

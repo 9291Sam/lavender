@@ -92,34 +92,25 @@ namespace verdigris
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
         std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
 
-        // for (int i = 0; i < 16; ++i)
-        // {
-        //     brick.modifyOverVoxels(
-        //         [&](auto bp, voxel::Voxel& v)
-        //         {
-        //             if (bp.x < 6 && bp.y < 6 && bp.z < 6)
-        //             {
-        //                 v = voxel::Voxel::Diamond;
-        //             }
-        //             // // {
-        //             // v = static_cast<voxel::Voxel>(dist(gen) * 17.99f);
-        //             // // }
-        //         });
+        for (int i = 0; i < 16; ++i)
+        {
+            brick.modifyOverVoxels(
+                [&](auto, voxel::Voxel& v)
+                {
+                    // // {
+                    v = static_cast<voxel::Voxel>(dist(gen) * 17.99f);
+                    // // }
+                });
 
-        //     this->cubes.push_back(
-        //         {//     glm::vec3 {
-        //          //      distN(gen) * 64.0f,
-        //          //      (distN(gen) * 32.0f) + 32.0f,
-        //          //      distN(gen) * 64.0f,
-        //          //  },
-        //          glm::vec3 {
-        //              0.0f,
-        //              8.0f,
-        //              0.0f,
-        //          },
-        //          this->voxel_world.createVoxelObject(
-        //              voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
-        // }
+            this->cubes.push_back(
+                {glm::vec3 {
+                     distN(gen) * 64.0f,
+                     (distN(gen) * 32.0f) + 32.0f,
+                     distN(gen) * 64.0f,
+                 },
+                 this->voxel_world.createVoxelObject(
+                     voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
+        }
     }
 
     Verdigris::~Verdigris()
@@ -230,10 +221,10 @@ namespace verdigris
 
         // if (this->time_alive > 5.0f)
         // {
-        //     verticalVelocity += gravity * deltaTime;
-        //     verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
+        verticalVelocity += gravity * deltaTime;
+        verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
 
-        //     displacement.y += verticalVelocity * deltaTime;
+        displacement.y += verticalVelocity * deltaTime;
         // }
 
         // HACK: just prevent it from mattering lol
@@ -322,31 +313,22 @@ namespace verdigris
 
         this->time_alive += deltaTime;
 
-        static std::once_flag once {};
-        std::call_once(
-            once,
-            [&]()
-            {
-                float degoff = 0.0f;
-                for (const auto& [pos, o] : this->cubes)
-                {
-                    const f32 x =
-                        (64.0f
-                         * std::sin(
-                             degoff + this->time_alive * (1.0f + std::fmod<float>(pos.y, 1.3f))))
-                        + pos.x;
-                    const f32 z =
-                        (64.0f
-                         * std::cos(
-                             degoff + this->time_alive * (1.0f + std::fmod<float>(pos.y, 1.3f))))
-                        + pos.z;
+        float degoff = 0.0f;
+        for (const auto& [pos, o] : this->cubes)
+        {
+            const f32 x =
+                (64.0f
+                 * std::sin(degoff + this->time_alive * (1.0f + std::fmod<float>(pos.y, 1.3f))))
+                + pos.x;
+            const f32 z =
+                (64.0f
+                 * std::cos(degoff + this->time_alive * (1.0f + std::fmod<float>(pos.y, 1.3f))))
+                + pos.z;
 
-                    degoff += 1.57079633 / 4;
+            degoff += 1.57079633 / 4;
 
-                    this->voxel_world.setVoxelObjectPosition(
-                        o, voxel::WorldPosition {{x, pos.y, z}});
-                }
-            });
+            this->voxel_world.setVoxelObjectPosition(o, voxel::WorldPosition {{x, pos.y, z}});
+        }
 
         profilerTaskGenerator.stamp("update block");
 
