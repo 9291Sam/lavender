@@ -34,7 +34,7 @@ namespace voxel
         // {
         this->raytraced_lights.push_back(
             this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
-                .position_and_half_intensity_distance {glm::vec4 {-36.0f, 36.0f, 100.0f, 24.0f}},
+                .position_and_half_intensity_distance {glm::vec4 {32.0f, 32.0f, 32.0f, 24.0f}},
                 .color_and_power {glm::vec4 {1.0f, 1.0f, 1.0f, 96}}}));
         // }
     }

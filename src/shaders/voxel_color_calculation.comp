@@ -299,61 +299,58 @@ i32 divideEuclideani32(i32 lhs, i32 rhs)
     return quotient;
 }
 
-// struct GetIdxAndBitResult
-// {
-//     u32 idx;
-//     u32 bit;
-// };
+struct GetIdxAndBitResult
+{
+    u32 idx;
+    u32 bit;
+};
 
-// GetIdxAndBitResult getIdxAndBit(ivec3 p)
-// {
-//     const u32 linearIndex = p.x + p.z * 8 + p.y * 8 * 8;
+GetIdxAndBitResult getIdxAndBit(ivec3 p)
+{
+    const u32 linearIndex = p.x + p.z * 8 + p.y * 8 * 8;
 
-//     return GetIdxAndBitResult(linearIndex / 32, linearIndex % 32);
-// }
+    return GetIdxAndBitResult(linearIndex / 32, linearIndex % 32);
+}
 
-// bool OpactityBrick_readUnchecked(u32 ptr, ivec3 pos)
-// {
-//     GetIdxAndBitResult r = getIdxAndBit(pos);
+bool ShadowBrick_readUnchecked(u32 ptr, ivec3 pos)
+{
+    GetIdxAndBitResult r = getIdxAndBit(pos);
 
-//     if ((in_opacity_bricks.brick[ptr].data[r.idx] & (1u << r.bit)) == 0)
-//     {
-//         return false;
-//     }
-//     else
-//     {
-//         return true;
-//     }
-// }
+    if ((in_shadow_bricks.brick[ptr].data[r.idx] & (1u << r.bit)) == 0)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
 
-// u32 getBrickOfWorldPosition(ivec3 pos)
-// {
-//     ivec3 globalChunkCoordinate = ivec3(
-//         divideEuclideani32(pos.x, 64),
-//         divideEuclideani32(pos.y, 64),
-//         divideEuclideani32(pos.z, 64));
+u32 getBrickOfWorldPosition(ivec3 pos)
+{
+    ivec3 globalChunkCoordinate = ivec3(
+        divideEuclideani32(pos.x, 64),
+        divideEuclideani32(pos.y, 64),
+        divideEuclideani32(pos.z, 64));
 
-//     ivec3 positionWithinChunk = ivec3(
-//         moduloEuclideani32(pos.x, 64),
-//         moduloEuclideani32(pos.y, 64),
-//         moduloEuclideani32(pos.z, 64));
+    ivec3 positionWithinChunk = ivec3(
+        moduloEuclideani32(pos.x, 64),
+        moduloEuclideani32(pos.y, 64),
+        moduloEuclideani32(pos.z, 64));
 
-//     u16 chunk = in_global_chunks.chunk[globalChunkCoordinate.x + 128][globalChunkCoordinate.y +
-//     128]
-//                                       [globalChunkCoordinate.z + 128];
+    u16 chunk = ChunkHashTable_load(globalChunkCoordinate);
 
-//     if (chunk == u16(-1))
-//     {
-//         return ~0u;
-//     }
+    if (chunk == u16(-1))
+    {
+        return ~0u;
+    }
 
-//     ivec3 brickCoordinate = positionWithinChunk / 8;
-//     ivec3 brickPosition   = positionWithinChunk % 8;
+    ivec3 brickCoordinate = positionWithinChunk / 8;
 
-//     const u32 maybePtr = BrickMap_load(chunk, brickCoordinate);
+    const u32 maybePtr = BrickMap_load(chunk, brickCoordinate);
 
-//     return maybePtr;
-// }
+    return maybePtr;
+}
 
 // bool isGlobalPositionOccupied(ivec3 pos)
 // {
@@ -399,100 +396,98 @@ i32 divideEuclideani32(i32 lhs, i32 rhs)
 //     }
 // }
 
-// vec3 stepMask(vec3 sideDist)
-// {
-//     bvec3 mask;
-//     bvec3 b1 = lessThan(sideDist.xyz, sideDist.yzx);
-//     bvec3 b2 = lessThanEqual(sideDist.xyz, sideDist.zxy);
-//     mask.z   = b1.z && b2.z;
-//     mask.x   = b1.x && b2.x;
-//     mask.y   = b1.y && b2.y;
-//     if (!any(mask)) // Thank you Spalmer
-//     {
-//         mask.z = true;
-//     }
+vec3 stepMask(vec3 sideDist)
+{
+    bvec3 mask;
+    bvec3 b1 = lessThan(sideDist.xyz, sideDist.yzx);
+    bvec3 b2 = lessThanEqual(sideDist.xyz, sideDist.zxy);
+    mask.z   = b1.z && b2.z;
+    mask.x   = b1.x && b2.x;
+    mask.y   = b1.y && b2.y;
+    if (!any(mask)) // Thank you Spalmer
+    {
+        mask.z = true;
+    }
 
-//     return vec3(mask);
-// }
+    return vec3(mask);
+}
 
-// bool traceBlock(u32 brick, vec3 rayPos, vec3 rayDir, vec3 iMask, float max_dist)
-// {
-//     rayPos         = clamp(rayPos, vec3(0.0001), vec3(7.9999));
-//     vec3 mapPos    = floor(rayPos);
-//     vec3 raySign   = sign(rayDir);
-//     vec3 deltaDist = 1.0 / rayDir;
-//     vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
-//     vec3 mask      = iMask;
+bool traceBlock(u32 brick, vec3 rayPos, vec3 rayDir, vec3 iMask, float max_dist)
+{
+    rayPos         = clamp(rayPos, vec3(0.0001), vec3(7.9999));
+    vec3 mapPos    = floor(rayPos);
+    vec3 raySign   = sign(rayDir);
+    vec3 deltaDist = 1.0 / rayDir;
+    vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
+    vec3 mask      = iMask;
 
-//     for (int i = 0;
-//          i < 27 && all(lessThanEqual(mapPos, vec3(7.0))) && all(greaterThanEqual(mapPos,
-//          vec3(0.0)))
-//          && length(mapPos - rayPos) <= max_dist;
-//          ++i)
-//     {
-//         if (OpactityBrick_readUnchecked(brick, ivec3(mapPos)))
-//         {
-//             return true;
-//         }
+    for (int i = 0;
+         i < 27 && all(lessThanEqual(mapPos, vec3(7.0))) && all(greaterThanEqual(mapPos, vec3(0.0)))
+         && length(mapPos - rayPos) <= max_dist;
+         ++i)
+    {
+        if (ShadowBrick_readUnchecked(brick, ivec3(mapPos)))
+        {
+            return true;
+        }
 
-//         mask = stepMask(sideDist);
-//         mapPos += mask * raySign;
-//         sideDist += mask * raySign * deltaDist;
-//     }
+        mask = stepMask(sideDist);
+        mapPos += mask * raySign;
+        sideDist += mask * raySign * deltaDist;
+    }
 
-//     return false;
-// }
+    return false;
+}
 
-// bool traceWorld(vec3 rayPos, vec3 rayDir, float max_dist)
-// {
-//     vec3 mapPos    = floor(rayPos);
-//     vec3 raySign   = sign(rayDir);
-//     vec3 deltaDist = 1.0 / rayDir;
-//     vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
-//     vec3 mask      = stepMask(sideDist);
+bool traceWorld(vec3 rayPos, vec3 rayDir, float max_dist)
+{
+    vec3 mapPos    = floor(rayPos);
+    vec3 raySign   = sign(rayDir);
+    vec3 deltaDist = 1.0 / rayDir;
+    vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
+    vec3 mask      = stepMask(sideDist);
 
-//     for (int i = 0; i < 256 && length(mapPos - rayPos) < max_dist; i++)
-//     {
-//         u32 brick = getBrickOfWorldPosition(ivec3(mapPos * 8.0));
-//         if (brick != ~0u)
-//         {
-//             vec3  mini      = ((mapPos - rayPos) + 0.5 - 0.5 * vec3(raySign)) * deltaDist;
-//             float d         = max(mini.x, max(mini.y, mini.z));
-//             vec3  intersect = rayPos + rayDir * d;
-//             vec3  uv3d      = intersect - mapPos;
+    for (int i = 0; i < 256 && length(mapPos - rayPos) < max_dist; i++)
+    {
+        u32 brick = getBrickOfWorldPosition(ivec3(mapPos * 8.0));
+        if (brick != ~0u)
+        {
+            vec3  mini      = ((mapPos - rayPos) + 0.5 - 0.5 * vec3(raySign)) * deltaDist;
+            float d         = max(mini.x, max(mini.y, mini.z));
+            vec3  intersect = rayPos + rayDir * d;
+            vec3  uv3d      = intersect - mapPos;
 
-//             if (mapPos == floor(rayPos)) // Handle edge case where camera origin is inside of
-//             block
-//             {
-//                 uv3d = rayPos - mapPos;
-//             }
+            if (mapPos == floor(rayPos)) // Handle edge case where camera origin is inside of block
+            {
+                uv3d = rayPos - mapPos;
+            }
 
-//             bool hit = traceBlock(
-//                 brick, uv3d * 8.0, rayDir, mask, (max_dist - length(mapPos - rayPos)) * 8.0);
+            bool hit = traceBlock(
+                brick, uv3d * 8.0, rayDir, mask, (max_dist - length(mapPos - rayPos)) * 8.0);
 
-//             if (hit)
-//             {
-//                 return true;
-//             }
-//         }
+            if (hit)
+            {
+                return true;
+            }
+        }
 
-//         mask = stepMask(sideDist);
-//         mapPos += mask * raySign;
-//         sideDist += mask * raySign * deltaDist;
-//     }
+        mask = stepMask(sideDist);
+        mapPos += mask * raySign;
+        sideDist += mask * raySign * deltaDist;
+    }
 
-//     return false;
-// }
+    return false;
+}
 
-// bool traceDDARay(vec3 start, vec3 end)
-// {
-//     if (distance(end, start) > 512)
-//     {
-//         return true;
-//     }
+bool traceDDARay(vec3 start, vec3 end)
+{
+    if (distance(end, start) > 512)
+    {
+        return true;
+    }
 
-//     return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
-// }
+    return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
+}
 
 vec3 exp_strength_falloff(vec3 strengths)
 {
@@ -545,18 +540,6 @@ void main()
             in_gpu_chunk_data.data[parent_chunk].world_offset_y,
             in_gpu_chunk_data.data[parent_chunk].world_offset_z);
 
-        const ivec3 parentChunkCoordinate = ivec3(
-            divideEuclideani32(parent_chunk_world_position.x, 64),
-            divideEuclideani32(parent_chunk_world_position.y, 64),
-            divideEuclideani32(parent_chunk_world_position.z, 64));
-
-        const u16 hashChunk = ChunkHashTable_load(parentChunkCoordinate);
-
-        if (u32(hashChunk) != parent_chunk) // TODO: remove, temporary asssert
-        {
-            return;
-        }
-
         // TODO: shouldn't be 0.5 the normal should be removed from this
         const ivec3 voxel_corner_pos_world =
             parent_chunk_world_position + ivec3(chunk_local_position);
@@ -585,10 +568,11 @@ void main()
                 continue;
             }
 
-            // const bool isFaceInShadow = traceDDARay(
-            //     sample_positon_world, in_raytraced_lights.data[i].position_and_max_distance.xyz);
+            const bool isFaceInShadow = traceDDARay(
+                sample_positon_world,
+                in_raytraced_lights.data[i].position_and_half_intensity_distance.xyz);
 
-            // if (!isFaceInShadow)
+            if (!isFaceInShadow)
             {
                 CalculatedLightPower power = newLightPower(
                     in_global_info.camera_position.xyz,
