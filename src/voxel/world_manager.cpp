@@ -22,7 +22,7 @@ namespace voxel
     WorldManager::WorldManager(const game::Game* game)
         : generation_threads {3}
         , chunk_render_manager {game}
-        , world_generator {3347347348}
+        , world_generator {334734734}
         , voxel_object_allocator {MaxVoxelObjects}
     {
         this->voxel_object_tracking_data.resize(MaxVoxelObjects, VoxelObjectTrackingData {});
@@ -145,7 +145,7 @@ namespace voxel
     std::vector<game::FrameGenerator::RecordObject> WorldManager::onFrameUpdate(
         const game::Camera& camera, gfx::profiler::TaskGenerator& profilerTaskGenerator)
     {
-        const i32 radius = 4;
+        const i32 radius = 6;
         const auto [cameraChunkBase, _] =
             splitWorldPosition(WorldPosition {static_cast<glm::i32vec3>(camera.getPosition())});
         const voxel::ChunkCoordinate chunkRangeBase =
@@ -156,7 +156,7 @@ namespace voxel
         // const int maxSpawns     = 256;
         // int       currentSpawns = 0;
 
-        for (int y = 1; y >= -1; --y)
+        for (int y = chunkRangePeak.y; y >= chunkRangeBase.y; --y)
         {
             for (int x = chunkRangeBase.x; x <= chunkRangePeak.x; ++x)
             {
@@ -380,7 +380,7 @@ namespace voxel
     void WorldManager::LazilyGeneratedChunk::updateAndFlushUpdates(
         std::span<const voxel::ChunkLocalUpdate> extraUpdates, std::size_t& updatesOcurred)
     {
-        if (updatesOcurred < 8 && this->updates.valid()
+        if (this->updates.valid()
             && this->updates.wait_for(std::chrono::years {0}) == std::future_status::ready)
         {
             updatesOcurred += 1;

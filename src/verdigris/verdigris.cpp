@@ -92,7 +92,7 @@ namespace verdigris
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
         std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
 
-        for (int i = 0; i < 16; ++i)
+        for (int i = 0; i < 1; ++i)
         {
             brick.modifyOverVoxels(
                 [&](auto, voxel::Voxel& v)
@@ -104,9 +104,9 @@ namespace verdigris
 
             this->cubes.push_back(
                 {glm::vec3 {
-                     distN(gen) * 64.0f,
-                     (distN(gen) * 32.0f) + 32.0f,
-                     distN(gen) * 64.0f,
+                     dist(gen) * 64.0f,
+                     (dist(gen) * 32.0f) + 32.0f,
+                     dist(gen) * 64.0f,
                  },
                  this->voxel_world.createVoxelObject(
                      voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
