@@ -30,7 +30,7 @@ namespace voxel
         std::mt19937_64                     gen {7384375}; // NOLINT
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
 
-        for (int i = 0; i < 64; ++i)
+        for (int i = 0; i < 128; ++i)
         {
             this->raytraced_lights.push_back(
                 this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
@@ -38,8 +38,8 @@ namespace voxel
                         util::map(dist(gen), 0.0f, 1.0f, -384.0f, 320.0f),
                         util::map(dist(gen), 0.0f, 1.0f, 0.0f, 64.0f),
                         util::map(dist(gen), 0.0f, 1.0f, -384.0f, 320.0f),
-                        16.0f}},
-                    .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 128}}}));
+                        8.0f}},
+                    .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 96}}}));
         }
     }
 
@@ -106,9 +106,9 @@ namespace voxel
 
         std::unordered_map<const ChunkRenderManager::Chunk*, ReadbackInfo> readbackMap {};
 
-        for (u32 i = 0; i < positions.size(); ++i)
+        for (const auto [index, p] : std::views::enumerate(positions))
         {
-            const auto [coordinate, position] = splitWorldPosition(positions[i]);
+            const auto [coordinate, position] = splitWorldPosition(p);
 
             const decltype(this->chunks)::const_iterator maybeIt = this->chunks.find(coordinate);
 
@@ -117,7 +117,7 @@ namespace voxel
                 ReadbackInfo& r = readbackMap[maybeIt->second.getChunk()];
 
                 r.chunk_local_positions.push_back(position);
-                r.positions_in_input_buffer.push_back(i);
+                r.positions_in_input_buffer.push_back(static_cast<u32>(index));
             }
         }
 

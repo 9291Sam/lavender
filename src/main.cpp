@@ -37,38 +37,38 @@
 // Entity -> Component Map
 // Component Data Storage
 
-class ConcreteEntity final : DERIVE_INHERENT_ENTITY(ConcreteEntity, entity)
-{
-public:
-    explicit ConcreteEntity(ecs::UniqueEntity entity_, int health_ = 100)
-        : name {"Unknown"}
-        , health {health_}
-        , entity {std::move(entity_)}
-    {}
+// class ConcreteEntity final : DERIVE_INHERENT_ENTITY(ConcreteEntity, entity)
+// {
+// public:
+//     explicit ConcreteEntity(ecs::UniqueEntity entity_, int health_ = 100)
+//         : name {"Unknown"}
+//         , health {health_}
+//         , entity {std::move(entity_)}
+//     {}
 
-    [[nodiscard]] int getHealth() const
-    {
-        return this->health;
-    }
-    void setHealth(int health_)
-    {
-        this->health = health_;
-    }
+//     [[nodiscard]] int getHealth() const
+//     {
+//         return this->health;
+//     }
+//     void setHealth(int health_)
+//     {
+//         this->health = health_;
+//     }
 
-    [[nodiscard]] std::string_view getName() const
-    {
-        return this->name;
-    }
-    void setName(std::string_view newName)
-    {
-        this->name = newName;
-    }
+//     [[nodiscard]] std::string_view getName() const
+//     {
+//         return this->name;
+//     }
+//     void setName(std::string_view newName)
+//     {
+//         this->name = newName;
+//     }
 
-private:
-    std::string       name;
-    int               health;
-    ecs::UniqueEntity entity;
-};
+// private:
+//     std::string       name;
+//     int               health;
+//     ecs::UniqueEntity entity;
+// };
 
 int main()
 {
@@ -78,13 +78,16 @@ int main()
 
     try
     {
+        int f = 0;
+
         util::logLog(
-            "starting lavender {}.{}.{}.{}{}",
+            "starting lavender {}.{}.{}.{}{} {}",
             LAVENDER_VERSION_MAJOR,
             LAVENDER_VERSION_MINOR,
             LAVENDER_VERSION_PATCH,
             LAVENDER_VERSION_TWEAK,
-            util::isDebugBuild() ? " | Debug Build" : "");
+            util::isDebugBuild() ? " | Debug Build" : "",
+            f);
 
         game::Game game {};
 

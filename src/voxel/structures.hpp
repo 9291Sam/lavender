@@ -1,6 +1,5 @@
 #pragma once
 
-#include "shaders/include/common.glsl"
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/opaque_integer_handle.hpp"
@@ -673,15 +672,31 @@ namespace voxel
         glm::vec4 color_and_power;
     };
 
+    inline u32 gpuU32HashCombine(u32 seed, u32 hash)
+    {
+        return seed ^ (hash + 0x9E3779B9U + (seed << 6U) + (seed >> 2U));
+    }
+
+    inline u32 lowBiasHash(u32 x)
+    {
+        x ^= x >> 16U;
+        x *= 0x7fEB352DU;
+        x ^= x >> 15U;
+        x *= 0x846CA68BU;
+        x ^= x >> 16U;
+
+        return x;
+    }
+
     inline u32 calculateHashOfChunkCoordinate(ChunkCoordinate c)
     {
         u32 seed = 0xE727328CU;
 
-        seed = gpu_hashCombineU32(seed, gpu_hashU32(static_cast<u32>(c.x)));
+        seed = gpuU32HashCombine(seed, lowBiasHash(static_cast<u32>(c.x)));
 
-        seed = gpu_hashCombineU32(seed, gpu_hashU32(static_cast<u32>(c.y)));
+        seed = gpuU32HashCombine(seed, lowBiasHash(static_cast<u32>(c.y)));
 
-        seed = gpu_hashCombineU32(seed, gpu_hashU32(static_cast<u32>(c.z)));
+        seed = gpuU32HashCombine(seed, lowBiasHash(static_cast<u32>(c.z)));
 
         return seed;
     }

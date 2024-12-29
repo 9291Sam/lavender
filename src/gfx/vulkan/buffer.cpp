@@ -92,7 +92,7 @@ namespace gfx::vulkan
                     overflowTransfers.push_back({OverflowTransfer {
                         .buffer {buffer},
                         .offset {offset},
-                        .data {dataToWrite.begin(), dataToWrite.end()},
+                        .data {dataToWrite.cbegin(), dataToWrite.cend()},
                         .location {location}}});
                 });
         }
