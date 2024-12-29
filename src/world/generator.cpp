@@ -72,7 +72,7 @@ namespace world
             for (u8 i = 0; i < 64; ++i)
             {
                 const i32 worldHeight =
-                    static_cast<i32>((*height)[j][i] * 64.0f + (*bumpHeight)[j][i] * 2.0f);
+                    static_cast<i32>((*height)[j][i] * 32.0f + (*bumpHeight)[j][i] * 2.0f);
 
                 for (u8 h = 0; h < 64; ++h)
                 {

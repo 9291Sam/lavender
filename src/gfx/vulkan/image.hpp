@@ -42,14 +42,14 @@ namespace gfx::vulkan
     private:
         void free();
 
-        VmaAllocator allocator;
+        VmaAllocator allocator = nullptr;
 
         vk::Extent2D         extent;
-        vk::Format           format;
+        vk::Format           format {};
         vk::ImageAspectFlags aspect;
 
         vk::Image           image;
-        VmaAllocation       memory;
+        VmaAllocation       memory {};
         vk::UniqueImageView view;
     }; // class Image2D
 

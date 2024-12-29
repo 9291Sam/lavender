@@ -30,15 +30,15 @@ namespace voxel
         std::mt19937_64                     gen {7384375}; // NOLINT
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
 
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < 128; ++i)
         {
             this->raytraced_lights.push_back(
                 this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
                     .position_and_half_intensity_distance {glm::vec4 {
-                        util::map(dist(gen), 0.0f, 1.0f, -16.0f, 128.0f) + 32.0f,
-                        util::map(dist(gen), 0.0f, 1.0f, 0.0f, 184.0f) + 48.0f,
-                        util::map(dist(gen), 0.0f, 1.0f, 0.0f, 64.0f) + 32.0f,
-                        24.0f}},
+                        util::map(dist(gen), 0.0f, 1.0f, -384.0f, 320.0f),
+                        util::map(dist(gen), 0.0f, 1.0f, 0.0f, 64.0f),
+                        util::map(dist(gen), 0.0f, 1.0f, -384.0f, 320.0f),
+                        8.0f}},
                     .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 96}}}));
         }
     }

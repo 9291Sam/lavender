@@ -568,7 +568,7 @@ void main()
 
         for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
         {
-            const float minimalPerceptibleInfluence = 1.0 / 256.0;
+            const float minimalPerceptibleInfluence = 1.0 / 128.0;
             const float half_distance =
                 in_raytraced_lights.data[i].position_and_half_intensity_distance.w;
             const float lightPower = in_raytraced_lights.data[i].color_and_power.w;

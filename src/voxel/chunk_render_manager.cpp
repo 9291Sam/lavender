@@ -133,6 +133,7 @@ namespace voxel
 
                 return res;
             };
+
             u32 normalId = 0;
             for (std::vector<GreedyVoxelFace>& faces : outFaces)
             {
@@ -309,11 +310,16 @@ namespace voxel
                             {bC, static_cast<BitBrick>(newPrimaryRayBricks[maybeOffset])});
                     }
                 });
+            t.stamp("form brick list");
+
+            std::unique_ptr<DenseBitChunk> denseBitChunk {list.formDenseBitChunk()};
+
+            t.stamp("Generate dense bit chunk");
 
             std::array<std::vector<GreedyVoxelFace>, 6> newGreedyFaces =
-                meshChunkGreedy(list.formDenseBitChunk());
+                meshChunkGreedy(std::move(denseBitChunk));
 
-            t.stamp("form brick list and do mesh");
+            t.stamp("mesh chunk greedily");
 
             std::ignore = t.finish();
 

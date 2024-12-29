@@ -105,7 +105,7 @@ namespace verdigris
             this->cubes.push_back(
                 {glm::vec3 {
                      dist(gen) * 64.0f,
-                     (dist(gen) * 32.0f) + 32.0f,
+                     (dist(gen) * 32.0f),
                      dist(gen) * 64.0f,
                  },
                  this->voxel_world.createVoxelObject(
@@ -219,13 +219,13 @@ namespace verdigris
         glm::vec3 currentPosition = this->camera.getPosition();
         glm::vec3 displacement    = newPosition - currentPosition;
 
-        // if (this->time_alive > 5.0f)
-        // {
-        verticalVelocity += gravity * deltaTime;
-        verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
+        if (this->time_alive > 5.0f)
+        {
+            verticalVelocity += gravity * deltaTime;
+            verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
 
-        displacement.y += verticalVelocity * deltaTime;
-        // }
+            displacement.y += verticalVelocity * deltaTime;
+        }
 
         // HACK: just prevent it from mattering lol
         // if (glm::length(displacement) > 1.0f)
@@ -311,8 +311,6 @@ namespace verdigris
 
         profilerTaskGenerator.stamp("World Update");
 
-        this->time_alive += deltaTime;
-
         float degoff = 0.0f;
         for (const auto& [pos, o] : this->cubes)
         {
@@ -329,6 +327,8 @@ namespace verdigris
 
             this->voxel_world.setVoxelObjectPosition(o, voxel::WorldPosition {{x, pos.y, z}});
         }
+
+        this->time_alive += deltaTime;
 
         profilerTaskGenerator.stamp("update block");
 
