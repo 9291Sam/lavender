@@ -315,12 +315,10 @@ namespace verdigris
         for (const auto& [pos, o] : this->cubes)
         {
             const f32 x =
-                (64.0f
-                 * std::sin(degoff + this->time_alive * (1.0f + std::fmod<float>(pos.y, 1.3f))))
+                (64.0f * std::sin(degoff + this->time_alive * (1.0f + std::fmod(pos.y, 1.3f))))
                 + pos.x;
             const f32 z =
-                (64.0f
-                 * std::cos(degoff + this->time_alive * (1.0f + std::fmod<float>(pos.y, 1.3f))))
+                (64.0f * std::cos(degoff + this->time_alive * (1.0f + std::fmod(pos.y, 1.3f))))
                 + pos.z;
 
             degoff += 1.57079633 / 4;
