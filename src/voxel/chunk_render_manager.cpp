@@ -862,7 +862,6 @@ namespace voxel
     ChunkRenderManager::RaytracedLight
     ChunkRenderManager::createRaytracedLight(GpuRaytracedLight rawLight)
     {
-        util::logTrace("createdLight");
         RaytracedLight newRaytracedLight = this->raytraced_light_allocator.allocateOrPanic();
 
         this->raytraced_lights.write(
@@ -873,7 +872,6 @@ namespace voxel
 
     void ChunkRenderManager::destroyRaytracedLight(RaytracedLight light)
     {
-        util::logTrace("destroyed Light");
         this->raytraced_lights.write(
             this->raytraced_light_allocator.getValueOfHandle(light), GpuRaytracedLight {});
 
@@ -1214,6 +1212,11 @@ namespace voxel
                     if (prev == HashedGpuChunkPosition::Empty || prev == key)
                     {
                         values[slot] = chunkId;
+                        break;
+                    }
+                    else if (prev == key)
+                    {
+                        util::logWarn("Hash collision detected! {}", position.hashed_value);
                         break;
                     }
                     slot = (slot + 1) % MaxChunkHashNodes;

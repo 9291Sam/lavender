@@ -4,6 +4,8 @@
 #include "util/misc.hpp"
 #include "util/opaque_integer_handle.hpp"
 #include "util/range_allocator.hpp"
+#include <bit>
+#include <cmath>
 #include <compare>
 #include <ctti/nameof.hpp>
 #include <future>
@@ -711,6 +713,26 @@ namespace voxel
 
         u32 hashed_value = Empty;
     };
+
+    inline u32 calculateLODBasedOnDistance(float distance)
+    {
+        if (!std::isnormal(distance) && distance != 0.0f)
+        {
+            util::panic("tried to get the LOD of {}", distance);
+        }
+
+        const int uncorrectedLod =
+            std::bit_width<u32>(static_cast<u32>(distance / VoxelsPerChunkEdge));
+
+        if (uncorrectedLod == 0)
+        {
+            return 0;
+        }
+        else
+        {
+            return static_cast<u32>(uncorrectedLod) - 1;
+        }
+    }
 } // namespace voxel
 
 template<>

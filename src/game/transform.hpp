@@ -26,7 +26,7 @@ namespace game
         [[nodiscard]] glm::vec3 getUpVector() const;
         [[nodiscard]] glm::vec3 getRightVector() const;
 
-        // add rotate by functions
+        void rotateBy(glm::quat);
         void pitchBy(float pitch);
         void yawBy(float yaw);
         void rollBy(float roll);
