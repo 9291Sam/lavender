@@ -106,9 +106,9 @@ namespace voxel
 
         std::unordered_map<const ChunkRenderManager::Chunk*, ReadbackInfo> readbackMap {};
 
-        for (const auto [index, p] : std::views::enumerate(positions))
+        for (u32 i = 0; i < positions.size(); ++i)
         {
-            const auto [coordinate, position] = splitWorldPosition(p);
+            const auto [coordinate, position] = splitWorldPosition(positions[i]);
 
             const decltype(this->chunks)::const_iterator maybeIt = this->chunks.find(coordinate);
 
@@ -117,7 +117,7 @@ namespace voxel
                 ReadbackInfo& r = readbackMap[maybeIt->second.getChunk()];
 
                 r.chunk_local_positions.push_back(position);
-                r.positions_in_input_buffer.push_back(static_cast<u32>(index));
+                r.positions_in_input_buffer.push_back(i);
             }
         }
 
