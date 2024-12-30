@@ -77,7 +77,7 @@ namespace gfx
         this->instance  = std::make_unique<vulkan::Instance>();
         this->surface   = this->window->createSurface(**this->instance);
         this->device    = std::make_unique<vulkan::Device>(**this->instance, *this->surface);
-        this->allocator = std::make_unique<vulkan::Allocator>(*this->instance, *this->device);
+        this->allocator = std::make_unique<vulkan::Allocator>(*this->instance, &*this->device);
         this->stager    = std::make_unique<vulkan::BufferStager>(&*this->allocator);
 
         this->critical_section = util::Mutex {

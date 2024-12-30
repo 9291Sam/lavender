@@ -110,7 +110,7 @@ namespace gfx::vulkan
 
                 for (const auto& [fence, allocations] : toFreeMap)
                 {
-                    if (this->allocator->getDevice().getFenceStatus(**fence)
+                    if (this->allocator->getDevice()->getDevice().getFenceStatus(**fence)
                         == vk::Result::eSuccess)
                     {
                         toRemove.push_back(fence);

@@ -13,8 +13,8 @@
 
 namespace gfx::vulkan
 {
-    Allocator::Allocator(const Instance& instance, const Device& device_)
-        : device {device_.getDevice()}
+    Allocator::Allocator(const Instance& instance, const Device* device_)
+        : device {device_}
         , allocator {nullptr}
     {
         VmaVulkanFunctions vulkanFunctions {};
@@ -23,8 +23,8 @@ namespace gfx::vulkan
 
         const VmaAllocatorCreateInfo allocatorCreateInfo {
             .flags {},
-            .physicalDevice {device_.getPhysicalDevice()},
-            .device {this->device},
+            .physicalDevice {device_->getPhysicalDevice()},
+            .device {this->device->getDevice()},
             .preferredLargeHeapBlockSize {0}, // chosen by VMA
             .pAllocationCallbacks {nullptr},
             .pDeviceMemoryCallbacks {nullptr},
@@ -74,11 +74,12 @@ namespace gfx::vulkan
             .pPoolSizes {availableDescriptors.data()},
         };
 
-        this->descriptor_pool = this->device.createDescriptorPoolUnique(descriptorPoolCreateInfo);
+        this->descriptor_pool =
+            this->device->getDevice().createDescriptorPoolUnique(descriptorPoolCreateInfo);
 
         if constexpr (util::isDebugBuild())
         {
-            this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+            this->device->getDevice().setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
                 .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
                 .pNext {nullptr},
                 .objectType {vk::ObjectType::eDescriptorPool},
@@ -87,12 +88,13 @@ namespace gfx::vulkan
             });
         }
 
-        this->pipeline_cache = this->device.createPipelineCacheUnique(vk::PipelineCacheCreateInfo {
-            .sType {vk::StructureType::ePipelineCacheCreateInfo},
-            .pNext {nullptr},
-            .flags {},
-            .initialDataSize {0},
-            .pInitialData {nullptr}});
+        this->pipeline_cache =
+            this->device->getDevice().createPipelineCacheUnique(vk::PipelineCacheCreateInfo {
+                .sType {vk::StructureType::ePipelineCacheCreateInfo},
+                .pNext {nullptr},
+                .flags {},
+                .initialDataSize {0},
+                .pInitialData {nullptr}});
 
         util::logTrace("Created allocator");
     }
@@ -250,11 +252,11 @@ namespace gfx::vulkan
         };
 
         vk::DescriptorSet set =
-            this->device.allocateDescriptorSets(descriptorSetAllocateInfo).at(0);
+            this->device->getDevice().allocateDescriptorSets(descriptorSetAllocateInfo).at(0);
 
         if constexpr (util::isDebugBuild())
         {
-            this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
+            this->device->getDevice().setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
                 .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
                 .pNext {nullptr},
                 .objectType {vk::ObjectType::eDescriptorSet},
@@ -268,7 +270,7 @@ namespace gfx::vulkan
 
     void Allocator::earlyDeallocateDescriptorSet(vk::DescriptorSet set) const
     {
-        this->device.freeDescriptorSets(*this->descriptor_pool, {set});
+        this->device->getDevice().freeDescriptorSets(*this->descriptor_pool, {set});
     }
 
     std::shared_ptr<vk::UniqueDescriptorSetLayout>
@@ -294,17 +296,19 @@ namespace gfx::vulkan
                     };
 
                     vk::UniqueDescriptorSetLayout layout =
-                        this->device.createDescriptorSetLayoutUnique(descriptorSetLayoutCreateInfo);
+                        this->device->getDevice().createDescriptorSetLayoutUnique(
+                            descriptorSetLayoutCreateInfo);
 
                     if constexpr (util::isDebugBuild())
                     {
-                        this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
-                            .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                            .pNext {nullptr},
-                            .objectType {vk::ObjectType::eDescriptorSetLayout},
-                            .objectHandle {std::bit_cast<u64>(*layout)},
-                            .pObjectName {info.name.c_str()},
-                        });
+                        this->device->getDevice().setDebugUtilsObjectNameEXT(
+                            vk::DebugUtilsObjectNameInfoEXT {
+                                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                                .pNext {nullptr},
+                                .objectType {vk::ObjectType::eDescriptorSetLayout},
+                                .objectHandle {std::bit_cast<u64>(*layout)},
+                                .pObjectName {info.name.c_str()},
+                            });
                     }
 
                     std::shared_ptr<vk::UniqueDescriptorSetLayout> // NOLINT
@@ -349,17 +353,19 @@ namespace gfx::vulkan
                     };
 
                     vk::UniquePipelineLayout layout =
-                        this->device.createPipelineLayoutUnique(pipelineLayoutCreateInfo);
+                        this->device->getDevice().createPipelineLayoutUnique(
+                            pipelineLayoutCreateInfo);
 
                     if constexpr (util::isDebugBuild())
                     {
-                        this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
-                            .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                            .pNext {nullptr},
-                            .objectType {vk::ObjectType::ePipelineLayout},
-                            .objectHandle {std::bit_cast<u64>(*layout)},
-                            .pObjectName {info.name.c_str()},
-                        });
+                        this->device->getDevice().setDebugUtilsObjectNameEXT(
+                            vk::DebugUtilsObjectNameInfoEXT {
+                                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                                .pNext {nullptr},
+                                .objectType {vk::ObjectType::ePipelineLayout},
+                                .objectHandle {std::bit_cast<u64>(*layout)},
+                                .pObjectName {info.name.c_str()},
+                            });
                     }
 
                     std::shared_ptr<vk::UniquePipelineLayout> // NOLINT
@@ -404,7 +410,7 @@ namespace gfx::vulkan
                         .basePipelineIndex {},
                     };
 
-                    auto [result, pipeline] = this->device.createComputePipelineUnique(
+                    auto [result, pipeline] = this->device->getDevice().createComputePipelineUnique(
                         *this->pipeline_cache, computePipelineCreateInfo);
 
                     util::assertFatal(
@@ -414,13 +420,14 @@ namespace gfx::vulkan
 
                     if constexpr (util::isDebugBuild())
                     {
-                        this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
-                            .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                            .pNext {nullptr},
-                            .objectType {vk::ObjectType::ePipeline},
-                            .objectHandle {std::bit_cast<u64>(*pipeline)},
-                            .pObjectName {info.name.c_str()},
-                        });
+                        this->device->getDevice().setDebugUtilsObjectNameEXT(
+                            vk::DebugUtilsObjectNameInfoEXT {
+                                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                                .pNext {nullptr},
+                                .objectType {vk::ObjectType::ePipeline},
+                                .objectHandle {std::bit_cast<u64>(*pipeline)},
+                                .pObjectName {info.name.c_str()},
+                            });
                     }
 
                     std::shared_ptr<vk::UniquePipeline> // NOLINT
@@ -627,8 +634,9 @@ namespace gfx::vulkan
                         .basePipelineIndex {0},
                     };
 
-                    auto [result, pipeline] = this->device.createGraphicsPipelineUnique(
-                        *this->pipeline_cache, pipelineCreateInfo);
+                    auto [result, pipeline] =
+                        this->device->getDevice().createGraphicsPipelineUnique(
+                            *this->pipeline_cache, pipelineCreateInfo);
 
                     util::assertFatal(
                         result == vk::Result::eSuccess,
@@ -637,13 +645,14 @@ namespace gfx::vulkan
 
                     if constexpr (util::isDebugBuild())
                     {
-                        this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
-                            .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                            .pNext {nullptr},
-                            .objectType {vk::ObjectType::ePipeline},
-                            .objectHandle {std::bit_cast<u64>(*pipeline)},
-                            .pObjectName {info.name.c_str()},
-                        });
+                        this->device->getDevice().setDebugUtilsObjectNameEXT(
+                            vk::DebugUtilsObjectNameInfoEXT {
+                                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                                .pNext {nullptr},
+                                .objectType {vk::ObjectType::ePipeline},
+                                .objectHandle {std::bit_cast<u64>(*pipeline)},
+                                .pObjectName {info.name.c_str()},
+                            });
                     }
 
                     std::shared_ptr<vk::UniquePipeline> // NOLINT
@@ -703,17 +712,18 @@ namespace gfx::vulkan
                     };
 
                     vk::UniqueShaderModule module =
-                        this->device.createShaderModuleUnique(shaderModuleCreateInfo);
+                        this->device->getDevice().createShaderModuleUnique(shaderModuleCreateInfo);
 
                     if constexpr (util::isDebugBuild())
                     {
-                        this->device.setDebugUtilsObjectNameEXT(vk::DebugUtilsObjectNameInfoEXT {
-                            .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
-                            .pNext {nullptr},
-                            .objectType {vk::ObjectType::eShaderModule},
-                            .objectHandle {std::bit_cast<u64>(*module)},
-                            .pObjectName {debugName.c_str()},
-                        });
+                        this->device->getDevice().setDebugUtilsObjectNameEXT(
+                            vk::DebugUtilsObjectNameInfoEXT {
+                                .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
+                                .pNext {nullptr},
+                                .objectType {vk::ObjectType::eShaderModule},
+                                .objectHandle {std::bit_cast<u64>(*module)},
+                                .pObjectName {debugName.c_str()},
+                            });
                     }
 
                     std::shared_ptr<vk::UniqueShaderModule> // NOLINT
@@ -755,7 +765,7 @@ namespace gfx::vulkan
             });
     }
 
-    vk::Device Allocator::getDevice() const
+    const Device* Allocator::getDevice() const
     {
         return this->device;
     }

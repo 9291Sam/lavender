@@ -38,6 +38,10 @@ namespace gfx::vulkan
                 return getRatingOfDevice(l) < getRatingOfDevice(r);
             });
 
+        this->physical_device_type = this->physical_device.getProperties().deviceType;
+
+        this->is_physical_device_amd = this->physical_device.getProperties().vendorID == 0x1002;
+
         const std::vector<vk::QueueFamilyProperties> queueFamilyProperties =
             this->physical_device.getQueueFamilyProperties();
 
@@ -318,9 +322,19 @@ namespace gfx::vulkan
         return this->queue_family_numbers.at(static_cast<std::size_t>(util::toUnderlying(t)));
     }
 
+    bool Device::isIntegrated() const noexcept
+    {
+        return this->physical_device_type == vk::PhysicalDeviceType::eIntegratedGpu;
+    }
+
     vk::PhysicalDevice Device::getPhysicalDevice() const noexcept
     {
         return this->physical_device;
+    }
+
+    bool Device::isAmd() const noexcept
+    {
+        return this->is_physical_device_amd;
     }
 
     vk::Device Device::getDevice() const noexcept

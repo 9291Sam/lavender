@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/vulkan/allocator.hpp"
+#include "gfx/vulkan/device.hpp"
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/range_allocator.hpp"
@@ -61,6 +62,14 @@ namespace gfx::vulkan
                 !(memoryPropertyFlags & vk::MemoryPropertyFlagBits::eHostCoherent),
                 "Tried to create coherent buffer!");
 
+            if (allocator_->getDevice()->isIntegrated() && allocator_->getDevice()->isAmd()
+                && memoryPropertyFlags & vk::MemoryPropertyFlagBits::eDeviceLocal)
+            {
+                memoryPropertyFlags &= ~vk::MemoryPropertyFlagBits::eDeviceLocal;
+                util::logWarn(
+                    "Paving over excessive Device Local {}", vk::to_string(memoryPropertyFlags));
+            }
+
             const VkBufferCreateInfo bufferCreateInfo {
                 .sType {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO},
                 .pNext {nullptr},
@@ -74,7 +83,9 @@ namespace gfx::vulkan
 
             const VmaAllocationCreateInfo allocationCreateInfo {
                 .flags {VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT},
-                .usage {VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE},
+                .usage {
+                    allocator_->getDevice()->isIntegrated() ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST
+                                                            : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE},
                 .requiredFlags {static_cast<VkMemoryPropertyFlags>(memoryPropertyFlags)},
                 .preferredFlags {},
                 .memoryTypeBits {},
@@ -103,7 +114,7 @@ namespace gfx::vulkan
 
             if constexpr (util::isDebugBuild())
             {
-                this->allocator->getDevice().setDebugUtilsObjectNameEXT(
+                this->allocator->getDevice()->getDevice().setDebugUtilsObjectNameEXT(
                     vk::DebugUtilsObjectNameInfoEXT {
                         .sType {vk::StructureType::eDebugUtilsObjectNameInfoEXT},
                         .pNext {nullptr},

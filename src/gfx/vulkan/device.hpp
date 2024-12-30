@@ -4,6 +4,8 @@
 #include "util/misc.hpp"
 #include <thread>
 #include <util/threads.hpp>
+#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_enums.hpp>
 #include <vulkan/vulkan_format_traits.hpp>
 #include <vulkan/vulkan_handles.hpp>
 #include <vulkan/vulkan_to_string.hpp>
@@ -49,7 +51,9 @@ namespace gfx::vulkan
         [[nodiscard]] std::optional<u32> getFamilyOfQueueType(QueueType) const noexcept;
         [[nodiscard]] u32                getNumberOfQueues(QueueType) const noexcept;
         [[nodiscard]] vk::PhysicalDevice getPhysicalDevice() const noexcept;
+        [[nodiscard]] bool               isIntegrated() const noexcept;
         [[nodiscard]] vk::Device         getDevice() const noexcept;
+        [[nodiscard]] bool               isAmd() const noexcept;
         [[nodiscard]] const vk::Device*  operator->() const noexcept
         {
             return &*this->device;
@@ -104,7 +108,9 @@ namespace gfx::vulkan
         std::array<u32, static_cast<std::size_t>(QueueType::NumberOfQueueTypes)>
             queue_family_numbers;
 
-        vk::PhysicalDevice physical_device;
-        vk::UniqueDevice   device;
+        vk::PhysicalDevice     physical_device;
+        vk::PhysicalDeviceType physical_device_type;
+        bool                   is_physical_device_amd;
+        vk::UniqueDevice       device;
     };
 } // namespace gfx::vulkan

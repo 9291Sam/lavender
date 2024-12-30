@@ -205,7 +205,7 @@ namespace gfx::vulkan
     {
     public:
 
-        Allocator(const Instance&, const Device&);
+        Allocator(const Instance&, const Device*);
         ~Allocator();
 
         Allocator(const Allocator&)             = delete;
@@ -236,12 +236,12 @@ namespace gfx::vulkan
                                             lookupPipelineLayout(vk::Pipeline) const;
         [[nodiscard]] vk::PipelineBindPoint lookupPipelineBindPoint(vk::Pipeline) const;
 
-        vk::Device         getDevice() const;
+        const Device*      getDevice() const;
         vk::DescriptorPool getRawPool() const;
         vk::PipelineCache  getRawCache() const;
 
     private:
-        vk::Device               device;
+        const Device*            device;
         VmaAllocator             allocator;
         vk::UniqueDescriptorPool descriptor_pool;
         vk::UniquePipelineCache  pipeline_cache;
