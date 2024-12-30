@@ -271,18 +271,19 @@ CalculatedLightPower newLightPower(
 
 i32 moduloEuclideani32(i32 lhs, i32 rhs)
 {
-    if (lhs < 0)
-    {
-        // Offset lhs to ensure positive remainder
-        lhs += (-lhs / rhs + 1) * rhs;
-    }
+    return (lhs % rhs + rhs) % rhs;
+    // if (lhs < 0)
+    // {
+    //     // Offset lhs to ensure positive remainder
+    //     lhs += (-lhs / rhs + 1) * rhs;
+    // }
 
-    const i32 remainder = lhs % rhs;
-    if (remainder < 0)
-    {
-        return rhs > 0 ? remainder + rhs : remainder - rhs;
-    }
-    return remainder;
+    // const i32 remainder = lhs % rhs;
+    // if (remainder < 0)
+    // {
+    //     return rhs > 0 ? remainder + rhs : remainder - rhs;
+    // }
+    // return remainder;
 }
 
 i32 divideEuclideani32(i32 lhs, i32 rhs)
