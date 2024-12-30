@@ -1,6 +1,7 @@
 #ifndef SRC_SHADERS_INCLUDE_NEW_VOXEL_DESCRIPTORS_GLSL
 #define SRC_SHADERS_INCLUDE_NEW_VOXEL_DESCRIPTORS_GLSL
 
+#include "common.glsl"
 #include "types.glsl"
 
 layout(set = 1, binding = 0) buffer GlobalVoxelDataBuffer
@@ -46,31 +47,15 @@ layout(set = 1, binding = 2) readonly buffer GpuChunkDataBuffer
 }
 in_gpu_chunk_data;
 
-u32 gpuU32HashCombine(u32 seed, u32 hash)
-{
-    return seed ^ (hash + 0x9E3779B9U + (seed << 6U) + (seed >> 2U));
-}
-
-u32 lowBiasHash(u32 x)
-{
-    x ^= x >> 16U;
-    x *= 0x7fEB352DU;
-    x ^= x >> 15U;
-    x *= 0x846CA68BU;
-    x ^= x >> 16U;
-
-    return x;
-}
-
 u32 calculateHashOfChunkCoordinate(i32vec3 c)
 {
     u32 seed = 0xE727328CU;
 
-    seed = gpuU32HashCombine(seed, lowBiasHash(u32(c.x)));
+    seed = gpu_hashCombineU32(seed, gpu_hashU32(u32(c.x)));
 
-    seed = gpuU32HashCombine(seed, lowBiasHash(u32(c.y)));
+    seed = gpu_hashCombineU32(seed, gpu_hashU32(u32(c.y)));
 
-    seed = gpuU32HashCombine(seed, lowBiasHash(u32(c.z)));
+    seed = gpu_hashCombineU32(seed, gpu_hashU32(u32(c.z)));
 
     return seed;
 }

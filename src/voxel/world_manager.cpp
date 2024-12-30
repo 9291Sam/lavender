@@ -38,7 +38,7 @@ namespace voxel
                         util::map(dist(gen), 0.0f, 1.0f, -384.0f, 320.0f),
                         util::map(dist(gen), 0.0f, 1.0f, 0.0f, 64.0f),
                         util::map(dist(gen), 0.0f, 1.0f, -384.0f, 320.0f),
-                        8.0f}},
+                        16.0f}},
                     .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 96}}}));
         }
     }
