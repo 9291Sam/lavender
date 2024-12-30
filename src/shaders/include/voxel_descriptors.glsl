@@ -37,6 +37,7 @@ struct PerChunkGpuData
     i32           world_offset_x;
     i32           world_offset_y;
     i32           world_offset_z;
+    u32           lod;
     u32           brick_allocation_offset;
     ChunkBrickMap data;
 };
@@ -146,6 +147,33 @@ layout(set = 1, binding = 7) readonly buffer ShadowBrickBuffer
     BitBrick brick[];
 }
 in_shadow_bricks;
+
+struct GetIdxAndBitResult
+{
+    u32 idx;
+    u32 bit;
+};
+
+GetIdxAndBitResult getIdxAndBit(ivec3 p)
+{
+    const u32 linearIndex = p.x + p.y * 8 + p.z * 8 * 8;
+
+    return GetIdxAndBitResult(linearIndex / 32, linearIndex % 32);
+}
+
+bool ShadowBrick_readUnchecked(u32 ptr, ivec3 pos)
+{
+    GetIdxAndBitResult r = getIdxAndBit(pos);
+
+    if ((in_shadow_bricks.brick[ptr].data[r.idx] & (1u << r.bit)) == 0)
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
 
 struct VisibilityBrick
 {

@@ -2,6 +2,7 @@
 
 #include "global_descriptor_set.glsl"
 #include "types.glsl"
+#include "util.glsl"
 #include "voxel_descriptors.glsl"
 
 struct CalculatedLightPower
@@ -9,107 +10,6 @@ struct CalculatedLightPower
     vec3 diffuse_strength;
     vec3 specular_strength;
 };
-
-// CalculatedLightPower oldLightPower(
-//     vec3          camera_position,
-//     vec3          voxel_position,
-//     vec3          voxel_normal,
-//     PointLight    light,
-//     VoxelMaterial material)
-// {
-//     vec3  to_light_vector   = light.position.xyz - voxel_position;
-//     float to_light_distance = length(to_light_vector);
-//     to_light_vector /= to_light_distance;
-
-//     vec3 view_vector    = normalize(camera_position - voxel_position);
-//     vec3 reflect_vector = 2.0 * dot(to_light_vector, voxel_normal) * voxel_normal -
-//     to_light_vector;
-
-//     float attenuation =
-//         1.0
-//         / (light.falloffs.x + light.falloffs.y * to_light_distance
-//            + light.falloffs.z * to_light_distance * to_light_distance
-//            + light.falloffs.w * to_light_distance * to_light_distance * to_light_distance);
-
-//     // dot(voxel_normal, to_light_vector) * 0.5 + 0.5 half lambert
-//     vec3 diffuse_strength = max(dot(voxel_normal, to_light_vector), 0.0) *
-//     light.color_and_power.rgb
-//                           * light.color_and_power.w * attenuation;
-//     vec3 specular_strength = pow(max(dot(reflect_vector, view_vector), 0.0), material.specular)
-//                            * light.color_and_power.rgb * light.color_and_power.w * attenuation;
-
-//     return CalculatedLightPower(diffuse_strength, specular_strength);
-// }
-
-// CalculatedLightPower cooktd(
-//     vec3          camera_position,
-//     vec3          voxel_position,
-//     vec3          voxel_normal,
-//     PointLight    light,
-//     VoxelMaterial material)
-// {
-//     // Calculate vectors
-//     vec3 light_dir = normalize(light.position.xyz - voxel_position);
-//     vec3 view_dir  = normalize(camera_position - voxel_position);
-//     vec3 half_dir  = normalize(light_dir + view_dir);
-
-//     // Diffuse reflection (Lambertian)
-//     float diffuse_factor = max(dot(voxel_normal, light_dir), 0.0);
-//     vec3  diffuse        = diffuse_factor * (1.0 - material.metallic) *
-//     material.diffuse_color.xyz;
-
-//     // Cook-Torrance specular reflection
-//     float roughness_sq = material.roughness * material.roughness;
-//     float HdotN        = max(dot(half_dir, voxel_normal), 0.0);
-//     float D            = roughness_sq
-//             / (3.14159265358979323846264 * pow(HdotN * HdotN * (roughness_sq - 1.0) + 1.0, 2.0));
-//     float NdotL    = max(dot(voxel_normal, light_dir), 0.0);
-//     float NdotV    = max(dot(voxel_normal, view_dir), 0.0);
-//     float G        = min(1.0, 2.0 * HdotN * min(NdotL, NdotV) / max(NdotV, 0.001));
-//     vec3  F        = mix(vec3(0.04), material.specular_color.xyz, material.metallic);
-//     vec3  specular = (D * G * F) / (4.0 * max(NdotL, 0.001) * max(NdotV, 0.001));
-
-//     // Clear coat (optional improvement)
-//     vec3  clear_coat_specular = material.coat_color_power.xyz * HdotN;
-//     float clear_coat_factor   = material.coat_color_power.w;
-
-//     // Light attenuation
-//     float distance = max(length(light.position.xyz - voxel_position), 0.001);
-//     float attenuation =
-//         1.0
-//         / (light.falloffs.x + light.falloffs.y * distance + light.falloffs.z * distance *
-//         distance);
-
-//     // Light contribution
-//     float light_intensity = light.color_and_power.w * attenuation;
-//     vec3  light_color     = light.color_and_power.xyz;
-
-//     // Diffuse and specular strengths
-//     CalculatedLightPower lightPower;
-//     lightPower.diffuse_strength = diffuse * light_color * light_intensity;
-//     lightPower.specular_strength =
-//         (specular + clear_coat_factor * clear_coat_specular) * light_color * light_intensity;
-
-//     return lightPower;
-// }
-
-float rand(vec3 pos)
-{
-    u32 seed = 474838454;
-
-    seed = gpu_hashCombineU32(seed, gpu_hashU32(floatBitsToUint(pos.x)));
-
-    seed = gpu_hashCombineU32(seed, gpu_hashU32(floatBitsToUint(pos.y)));
-
-    seed = gpu_hashCombineU32(gpu_hashU32(floatBitsToUint(pos.z)), seed);
-
-    return float(seed) / float(u32(-1));
-}
-
-float map(float x, float in_min, float in_max, float out_min, float out_max)
-{
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-}
 
 float getRandomNoiseMultiplier(vec3 pos)
 {
@@ -170,64 +70,6 @@ CalculatedLightPower newLightPower(
     return lightPower;
 }
 
-i32 moduloEuclideani32(i32 lhs, i32 rhs)
-{
-    return (lhs % rhs + rhs) % rhs;
-    // if (lhs < 0)
-    // {
-    //     // Offset lhs to ensure positive remainder
-    //     lhs += (-lhs / rhs + 1) * rhs;
-    // }
-
-    // const i32 remainder = lhs % rhs;
-    // if (remainder < 0)
-    // {
-    //     return rhs > 0 ? remainder + rhs : remainder - rhs;
-    // }
-    // return remainder;
-}
-
-i32 divideEuclideani32(i32 lhs, i32 rhs)
-{
-    int quotient  = lhs / rhs;
-    int remainder = lhs % rhs;
-
-    // Adjust quotient for Euclidean behavior
-    if (remainder != 0 && ((rhs < 0) != (lhs < 0)))
-    {
-        quotient -= 1;
-    }
-
-    return quotient;
-}
-
-struct GetIdxAndBitResult
-{
-    u32 idx;
-    u32 bit;
-};
-
-GetIdxAndBitResult getIdxAndBit(ivec3 p)
-{
-    const u32 linearIndex = p.x + p.y * 8 + p.z * 8 * 8;
-
-    return GetIdxAndBitResult(linearIndex / 32, linearIndex % 32);
-}
-
-bool ShadowBrick_readUnchecked(u32 ptr, ivec3 pos)
-{
-    GetIdxAndBitResult r = getIdxAndBit(pos);
-
-    if ((in_shadow_bricks.brick[ptr].data[r.idx] & (1u << r.bit)) == 0)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
-}
-
 u32 getBrickOfWorldPosition(ivec3 pos)
 {
     ivec3 globalChunkCoordinate = ivec3(
@@ -252,48 +94,6 @@ u32 getBrickOfWorldPosition(ivec3 pos)
     const u32 maybePtr = BrickMap_load(chunk, brickCoordinate);
 
     return maybePtr;
-}
-
-bool isGlobalPositionOccupied(ivec3 pos)
-{
-    // TODO: this isnt the right coordinate
-    ivec3 globalChunkCoordinate = ivec3(
-        divideEuclideani32(pos.x, 64),
-        divideEuclideani32(pos.y, 64),
-        divideEuclideani32(pos.z, 64));
-
-    ivec3 positionWithinChunk = ivec3(
-        moduloEuclideani32(pos.x, 64),
-        moduloEuclideani32(pos.y, 64),
-        moduloEuclideani32(pos.z, 64));
-
-    u16 chunk = ChunkHashTable_load(globalChunkCoordinate);
-
-    if (chunk == u16(-1))
-    {
-        return false;
-    }
-
-    ivec3 brickCoordinate = positionWithinChunk / 8;
-    ivec3 brickPosition   = positionWithinChunk % 8;
-
-    u32 maybePtr = BrickMap_load(chunk, brickCoordinate);
-
-    if (maybePtr == ~0u)
-    {
-        return false;
-    }
-
-    GetIdxAndBitResult r = getIdxAndBit(brickPosition);
-
-    if ((in_shadow_bricks.brick[maybePtr].data[r.idx] & (1u << r.bit)) == 0)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
 }
 
 vec3 stepMask(vec3 sideDist)
@@ -387,25 +187,6 @@ bool traceDDARay(vec3 start, vec3 end)
     }
 
     return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
-}
-
-bool traceShitty(vec3 start, vec3 end)
-{
-    const vec3  toEnd         = end - start;
-    const float toEndDistance = length(toEnd);
-    const vec3  dir           = normalize(toEnd);
-
-    for (float t = 0.0; t < toEndDistance; t += 0.01)
-    {
-        const ivec3 s = ivec3(floor(start + dir * t));
-
-        if (isGlobalPositionOccupied(s))
-        {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 vec3 exp_strength_falloff(vec3 strengths)

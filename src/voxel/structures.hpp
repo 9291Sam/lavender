@@ -622,6 +622,7 @@ namespace voxel
         i32           world_offset_x          = 0;
         i32           world_offset_y          = 0;
         i32           world_offset_z          = 0;
+        u32           lod                     = 0;
         u32           brick_allocation_offset = 0;
         ChunkBrickMap data;
     };
