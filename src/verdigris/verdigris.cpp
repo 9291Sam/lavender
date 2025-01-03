@@ -3,7 +3,6 @@
 #include "ecs/entity.hpp"
 #include "ecs/entity_component_system_manager.hpp"
 #include "ecs/raw_entity.hpp"
-#include "flyer.hpp"
 #include "game/frame_generator.hpp"
 #include "game/game.hpp"
 #include "game/transform.hpp"
@@ -17,6 +16,7 @@
 #include "voxel/chunk_render_manager.hpp"
 #include "voxel/structures.hpp"
 #include "voxel/world_manager.hpp"
+#include "world/generator.hpp"
 #include <FastNoise/FastNoise.h>
 #include <boost/container_hash/hash_fwd.hpp>
 #include <boost/range/numeric.hpp>
@@ -32,7 +32,8 @@ namespace verdigris
     Verdigris::Verdigris(game::Game* game_)
         : game {game_}
         , triangle {ecs::createEntity()}
-        , voxel_world {this->game}
+        , chunk_render_manager {this->game}
+        , world_generator {7384375}
         , time_alive {0.0f}
     {
         this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
@@ -92,32 +93,62 @@ namespace verdigris
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
         std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
 
-        for (int i = 0; i < 1; ++i)
-        {
-            brick.modifyOverVoxels(
-                [&](auto, voxel::Voxel& v)
-                {
-                    // // {
-                    v = static_cast<voxel::Voxel>(dist(gen) * 17.99f);
-                    // // }
-                });
+        // for (int i = 0; i < 1; ++i)
+        // {
+        //     brick.modifyOverVoxels(
+        //         [&](auto, voxel::Voxel& v)
+        //         {
+        //             // // {
+        //             v = static_cast<voxel::Voxel>(dist(gen) * 17.99f);
+        //             // // }
+        //         });
 
-            this->cubes.push_back(
-                {glm::vec3 {
-                     dist(gen) * 64.0f,
-                     (dist(gen) * 32.0f),
-                     dist(gen) * 64.0f,
-                 },
-                 this->voxel_world.createVoxelObject(
-                     voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
+        //     this->cubes.push_back(
+        //         {glm::vec3 {
+        //              dist(gen) * 64.0f,
+        //              (dist(gen) * 32.0f),
+        //              dist(gen) * 64.0f,
+        //          },
+        //          this->voxel_world.createVoxelObject(
+        //              voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
+        // }
+
+        const voxel::ChunkLocation location {.root_position {0, 0, 0}, .lod {1}};
+
+        this->chunk = this->chunk_render_manager.createChunk(location);
+
+        const std::vector<voxel::ChunkLocalUpdate> updates =
+            this->world_generator.generateChunk(location);
+
+        this->chunk_render_manager.updateChunk(this->chunk, updates);
+
+        for (int i = 0; i < 32; ++i)
+        {
+            this->raytraced_lights.push_back(
+                this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
+                    .position_and_half_intensity_distance {glm::vec4 {
+                        util::map(dist(gen), 0.0f, 1.0f, -64.0f, 128.0f),
+                        util::map(dist(gen), 0.0f, 1.0f, 0.0f, 64.0f),
+                        util::map(dist(gen), 0.0f, 1.0f, -64.0f, 128.0f),
+                        4.0f}},
+                    .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 256}}}));
         }
     }
 
     Verdigris::~Verdigris()
     {
-        for (auto& [pos, o] : this->cubes)
+        if (!this->chunk.isNull())
         {
-            this->voxel_world.destroyVoxelObject(std::move(o));
+            this->chunk_render_manager.destroyChunk(std::move(this->chunk));
+        }
+        // for (auto& [pos, o] : this->cubes)
+        // {
+        //     this->voxel_world.destroyVoxelObject(std::move(o));
+        // }
+
+        for (voxel::ChunkRenderManager::RaytracedLight& l : this->raytraced_lights)
+        {
+            this->chunk_render_manager.destroyRaytracedLight(std::move(l));
         }
     }
 
@@ -194,11 +225,13 @@ namespace verdigris
             newPosition -= game::Transform::UpVector * deltaTime * moveScale;
         }
 
-        if (this->game->getRenderer()->getWindow()->isActionActive(gfx::Window::Action::SpawnFlyer))
-        {
-            this->fliers.push_back(
-                Flyer {camera.getPosition(), camera.getForwardVector(), 16.0f, &this->voxel_world});
-        }
+        // if
+        // (this->game->getRenderer()->getWindow()->isActionActive(gfx::Window::Action::SpawnFlyer))
+        // {
+        //     this->fliers.push_back(
+        //         Flyer {camera.getPosition(), camera.getForwardVector(), 16.0f,
+        //         &this->voxel_world});
+        // }
 
         if (this->game->getRenderer()->getWindow()->isActionActive(
                 gfx::Window::Action::PlayerMoveUp))
@@ -211,21 +244,18 @@ namespace verdigris
 
         newPosition.y = previousPosition.y;
 
-        for (Flyer& f : this->fliers)
-        {
-            f.update(deltaTime);
-        }
+        // for (Flyer& f : this->fliers)
+        // {
+        //     f.update(deltaTime);
+        // }
 
         glm::vec3 currentPosition = this->camera.getPosition();
         glm::vec3 displacement    = newPosition - currentPosition;
 
-        if (this->time_alive > 5.0f)
-        {
-            verticalVelocity += gravity * deltaTime;
-            verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
+        verticalVelocity += gravity * deltaTime;
+        verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
 
-            displacement.y += verticalVelocity * deltaTime;
-        }
+        displacement.y += verticalVelocity * deltaTime;
 
         // HACK: just prevent it from mattering lol
         // if (glm::length(displacement) > 1.0f)
@@ -237,7 +267,7 @@ namespace verdigris
 
         auto readVoxelOpacity = [&](voxel::WorldPosition p)
         {
-            return this->voxel_world.readVoxelOccupied({&p, 1}).test(0);
+            return p.y < 32;
         };
 
         glm::vec3 testPositionX = resolvedPosition + glm::vec3(displacement.x, 0.0f, 0.0f);
@@ -307,24 +337,25 @@ namespace verdigris
         realCamera.addPosition({0.0, 32.0f, 0.0});
 
         std::vector<game::FrameGenerator::RecordObject> draws {
-            this->voxel_world.onFrameUpdate(realCamera, profilerTaskGenerator)};
+            this->chunk_render_manager.processUpdatesAndGetDrawObjects(
+                realCamera, profilerTaskGenerator)};
 
         profilerTaskGenerator.stamp("World Update");
 
-        float degoff = 0.0f;
-        for (const auto& [pos, o] : this->cubes)
-        {
-            const f32 x =
-                (64.0f * std::sin(degoff + this->time_alive * (1.0f + std::fmod(pos.y, 1.3f))))
-                + pos.x;
-            const f32 z =
-                (64.0f * std::cos(degoff + this->time_alive * (1.0f + std::fmod(pos.y, 1.3f))))
-                + pos.z;
+        // float degoff = 0.0f;
+        // for (const auto& [pos, o] : this->cubes)
+        // {
+        //     const f32 x =
+        //         (64.0f * std::sin(degoff + this->time_alive * (1.0f + std::fmod(pos.y, 1.3f))))
+        //         + pos.x;
+        //     const f32 z =
+        //         (64.0f * std::cos(degoff + this->time_alive * (1.0f + std::fmod(pos.y, 1.3f))))
+        //         + pos.z;
 
-            degoff += 1.57079633 / 4;
+        //     degoff += 1.57079633 / 4;
 
-            this->voxel_world.setVoxelObjectPosition(o, voxel::WorldPosition {{x, pos.y, z}});
-        }
+        //     this->voxel_world.setVoxelObjectPosition(o, voxel::WorldPosition {{x, pos.y, z}});
+        // }
 
         this->time_alive += deltaTime;
 

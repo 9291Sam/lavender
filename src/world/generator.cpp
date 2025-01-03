@@ -1,4 +1,5 @@
 #include "generator.hpp"
+#include "shaders/include/common.glsl"
 #include "voxel/structures.hpp"
 
 namespace world
@@ -15,15 +16,14 @@ namespace world
     }
 
     std::vector<voxel::ChunkLocalUpdate>
-    WorldGenerator::generateChunk(voxel::ChunkCoordinate baseCoordinate) const
+    WorldGenerator::generateChunk(voxel::ChunkLocation chunkRoot) const
     {
-        const voxel::WorldPosition root {
-            baseCoordinate.asVector() * static_cast<i32>(voxel::VoxelsPerChunkEdge)};
+        const voxel::WorldPosition root {chunkRoot.root_position};
 
-        if (root.x == 0 && root.z == 0)
-        {
-            return {};
-        }
+        // if (root.x == 0 && root.z == 0)
+        // {
+        //     return {};
+        // }
 
         auto gen2D =
             [&](float       scale,
@@ -58,11 +58,13 @@ namespace world
             return res;
         };
 
-        auto height      = gen2D(0.001f, this->seed + 487484);
-        auto bumpHeight  = gen2D(0.01f, this->seed + 7373834);
-        auto mainRock    = gen3D(0.001f, this->seed - 747875);
-        auto pebblesRock = gen3D(0.01f, this->seed - 52649274);
-        auto pebbles     = gen3D(0.05f, this->seed - 948);
+        const float lodScale = static_cast<float>(gpu_calculateChunkVoxelSizeUnits(chunkRoot.lod));
+
+        auto height      = gen2D(lodScale * 0.001f, this->seed + 487484);
+        auto bumpHeight  = gen2D(lodScale * 0.01f, this->seed + 7373834);
+        auto mainRock    = gen3D(lodScale * 0.001f, this->seed - 747875);
+        auto pebblesRock = gen3D(lodScale * 0.01f, this->seed - 52649274);
+        auto pebbles     = gen3D(lodScale * 0.05f, this->seed - 948);
 
         std::vector<voxel::ChunkLocalUpdate> out {};
         out.reserve(32768);

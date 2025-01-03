@@ -13,7 +13,7 @@ namespace world
         explicit WorldGenerator(u64 seed);
 
         [[nodiscard]] std::vector<voxel::ChunkLocalUpdate>
-            generateChunk(voxel::ChunkCoordinate) const;
+            generateChunk(voxel::ChunkLocation) const;
 
     private:
 

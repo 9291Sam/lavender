@@ -268,11 +268,11 @@ void main()
                 continue;
             }
 
-            const bool isFaceInShadow = traceDDARay(
-                sample_positon_world,
-                in_raytraced_lights.data[i].position_and_half_intensity_distance.xyz);
+            // const bool isFaceInShadow = traceDDARay(
+            //     sample_positon_world,
+            //     in_raytraced_lights.data[i].position_and_half_intensity_distance.xyz);
 
-            if (!isFaceInShadow)
+            // if (!isFaceInShadow)
             {
                 CalculatedLightPower power = newLightPower(
                     in_global_info.camera_position.xyz,

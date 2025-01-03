@@ -6,6 +6,7 @@
 #include "gfx/vulkan/buffer.hpp"
 #include "gfx/vulkan/device.hpp"
 #include "gfx/window.hpp"
+#include "shaders/include/common.glsl"
 #include "structures.hpp"
 #include "util/index_allocator.hpp"
 #include "util/log.hpp"
@@ -815,16 +816,17 @@ namespace voxel
 
     ChunkRenderManager::~ChunkRenderManager() = default;
 
-    ChunkRenderManager::Chunk ChunkRenderManager::createChunk(ChunkCoordinate chunkCoordinate)
+    ChunkRenderManager::Chunk ChunkRenderManager::createChunk(ChunkLocation chunkLocation)
     {
         Chunk     newChunk = this->chunk_id_allocator.allocateOrPanic();
         const u16 chunkId  = this->chunk_id_allocator.getValueOfHandle(newChunk);
 
         this->cpu_chunk_data[chunkId] = CpuChunkData {};
         const PerChunkGpuData newChunkGpuData {
-            .world_offset_x {chunkCoordinate.x * VoxelsPerChunkEdge},
-            .world_offset_y {chunkCoordinate.y * VoxelsPerChunkEdge},
-            .world_offset_z {chunkCoordinate.z * VoxelsPerChunkEdge},
+            .world_offset_x {chunkLocation.root_position.x},
+            .world_offset_y {chunkLocation.root_position.y},
+            .world_offset_z {chunkLocation.root_position.z},
+            .lod {chunkLocation.lod},
             .brick_allocation_offset {0},
             .data {}};
         this->gpu_chunk_data.write(chunkId, newChunkGpuData);
@@ -901,7 +903,7 @@ namespace voxel
 
         std::vector<vk::DrawIndirectCommand>                indirectCommands {};
         std::vector<ChunkDrawIndirectInstancePayload>       indirectPayload {};
-        std::vector<std::pair<HashedGpuChunkPosition, u16>> alignedChunksToPutInHashMap {};
+        std::vector<std::pair<HashedGpuChunkLocation, u16>> alignedChunksToPutInHashMap {};
 
         u32 callNumber         = 0;
         u32 numberOfTotalFaces = 0;
@@ -911,30 +913,24 @@ namespace voxel
             {
                 CpuChunkData& thisChunkData = this->cpu_chunk_data[chunkId];
 
-                const glm::i32vec3 chunkCornerPosition = [&]
+                const ChunkLocation chunkPosition = [&]
                 {
                     const PerChunkGpuData& gpuData = this->gpu_chunk_data.read(chunkId);
 
-                    return glm::i32vec3 {
-                        gpuData.world_offset_x,
-                        gpuData.world_offset_y,
-                        gpuData.world_offset_z,
-                    };
+                    return ChunkLocation {
+                        glm::i32vec3 {
+                            gpuData.world_offset_x,
+                            gpuData.world_offset_y,
+                            gpuData.world_offset_z,
+                        },
+                        gpuData.lod};
                 }();
-
-                const auto [chunkCoordinate, localPos] =
-                    splitWorldPosition(WorldPosition {chunkCornerPosition});
-                util::assertFatal(
-                    glm::all(glm::equal(localPos.asVector(), glm::u8vec3 {0})),
-                    "erm what {} {}",
-                    chunkId,
-                    glm::to_string(localPos.asVector()));
 
 #warning handle
                 if (/* is chunk aligned chunk */; true)
                 {
                     alignedChunksToPutInHashMap.push_back(
-                        {HashedGpuChunkPosition {chunkCoordinate}, chunkId});
+                        {HashedGpuChunkLocation {chunkPosition}, chunkId});
                 }
 
                 // we need to spawn a new mesh task
@@ -1076,7 +1072,10 @@ namespace voxel
                 if (thisChunkData.active_draw_allocations.has_value() && isChunkInFrustum)
                 {
                     const glm::vec3 chunkCenterPosition =
-                        chunkCornerPosition + (VoxelsPerChunkEdge / 2);
+                        chunkPosition.root_position
+                        + static_cast<i32>(
+                            (gpu_calculateChunkVoxelSizeUnits(chunkPosition.lod)
+                             * (VoxelsPerChunkEdge / 2)));
 
                     u32 normal = 0;
 
@@ -1098,8 +1097,9 @@ namespace voxel
                         const glm::i32vec3 cameraCoordinate =
                             cameraCenterInteger / static_cast<i32>(voxel::VoxelsPerChunkEdge);
 
-                        const bool doesChunkShareAxis =
-                            glm::any(glm::equal(chunkCoordinate, cameraCoordinate));
+#warning fix
+                        const bool doesChunkShareAxis = false;
+                        // glm::any(glm::equal(chunkCoordinate, cameraCoordinate));
 
                         // TODO: refine bounds on axies
                         if (glm::distance(chunkCenterPosition, camera.getPosition())
@@ -1179,10 +1179,10 @@ namespace voxel
         {
             this->does_chunk_hash_map_need_recreated = false;
 
-            std::vector<HashedGpuChunkPosition> keys {};
+            std::vector<HashedGpuChunkLocation> keys {};
             std::vector<u16>                    values {};
 
-            keys.resize(MaxChunkHashNodes, HashedGpuChunkPosition {});
+            keys.resize(MaxChunkHashNodes, HashedGpuChunkLocation {});
             values.resize(MaxChunkHashNodes, 65535);
 
             // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -1198,7 +1198,7 @@ namespace voxel
                 return originalMem;
             };
 
-            auto insertChunkHashTable = [&](HashedGpuChunkPosition position, u16 chunkId)
+            auto insertChunkHashTable = [&](HashedGpuChunkLocation position, u16 chunkId)
             {
                 const u32 key = position.hashed_value;
 
@@ -1207,9 +1207,9 @@ namespace voxel
                 while (true)
                 {
                     const uint32_t prev =
-                        nonAtomicCas(keys[slot].hashed_value, HashedGpuChunkPosition::Empty, key);
+                        nonAtomicCas(keys[slot].hashed_value, HashedGpuChunkLocation::Empty, key);
 
-                    if (prev == HashedGpuChunkPosition::Empty || prev == key)
+                    if (prev == HashedGpuChunkLocation::Empty || prev == key)
                     {
                         values[slot] = chunkId;
                         break;
@@ -1223,7 +1223,7 @@ namespace voxel
                 }
             };
 
-            auto readChunkHashTable = [&](HashedGpuChunkPosition position) -> u16
+            auto readChunkHashTable = [&](HashedGpuChunkLocation position) -> u16
             {
                 const u32 key = position.hashed_value;
 
@@ -1235,7 +1235,7 @@ namespace voxel
                     {
                         return values[slot];
                     }
-                    if (keys[slot].hashed_value == HashedGpuChunkPosition::Empty)
+                    if (keys[slot].hashed_value == HashedGpuChunkLocation::Empty)
                     {
                         return 65535;
                     }

@@ -35,7 +35,7 @@ namespace voxel
         ChunkRenderManager& operator= (ChunkRenderManager&&)      = delete;
 
         /// Creates an empty chunk at the world aligned position
-        [[nodiscard]] Chunk createChunk(ChunkCoordinate);
+        [[nodiscard]] Chunk createChunk(ChunkLocation);
         void                destroyChunk(Chunk);
 
         [[nodiscard]] RaytracedLight createRaytracedLight(GpuRaytracedLight);
@@ -67,7 +67,7 @@ namespace voxel
         std::vector<CpuChunkData>                            cpu_chunk_data;
         gfx::vulkan::CpuCachedBuffer<PerChunkGpuData>        gpu_chunk_data;
         bool                                                 does_chunk_hash_map_need_recreated;
-        gfx::vulkan::WriteOnlyBuffer<HashedGpuChunkPosition> aligned_chunk_hash_table_keys;
+        gfx::vulkan::WriteOnlyBuffer<HashedGpuChunkLocation> aligned_chunk_hash_table_keys;
         gfx::vulkan::WriteOnlyBuffer<u16> aligned_chunk_hash_table_values; // chunkId
         static constexpr std::size_t      VramOverheadPerChunk =
             sizeof(PerChunkGpuData) + sizeof(u32) + sizeof(u16);

@@ -65,32 +65,36 @@ void main()
         uvec3(FACE_LOOKUP_TABLE[in_normal_id][IDX_TO_VTX_TABLE[point_within_face]]);
 
     vec3 scaled_face_point_local = vec3(0.0);
+
+    const float width_scale  = 2 * float(1 + width);
+    const float height_scale = 2 * float(1 + height);
+
     if (in_normal_id == 0 || in_normal_id == 1)
     {
         // TOP or BOTTOM face: scale X and Z
         scaled_face_point_local = vec3(
-            face_point_local.x * float(1 + width),
+            face_point_local.x * width_scale,
             face_point_local.y,
-            face_point_local.z * float(1 + height));
+            face_point_local.z * height_scale);
     }
     else if (in_normal_id == 2 || in_normal_id == 3)
     {
         // LEFT or RIGHT face: scale Y and Z
         scaled_face_point_local = vec3(
             face_point_local.x,
-            face_point_local.y * float(1 + width),
-            face_point_local.z * float(1 + height));
+            face_point_local.y * width_scale,
+            face_point_local.z * height_scale);
     }
     else
     {
         // FRONT or BACK face: scale X and Y
         scaled_face_point_local = vec3(
-            face_point_local.x * float(1 + width),
-            face_point_local.y * float(1 + height),
+            face_point_local.x * width_scale,
+            face_point_local.y * height_scale,
             face_point_local.z);
     }
 
-    const vec3 point_within_chunk = pos_in_chunk + scaled_face_point_local;
+    const vec3 point_within_chunk = 2 * pos_in_chunk + scaled_face_point_local;
 
     const ivec3 in_chunk_position = ivec3(
         in_gpu_chunk_data.data[in_chunk_id].world_offset_x,

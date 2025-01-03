@@ -6,6 +6,7 @@
 #include "util/opaque_integer_handle.hpp"
 #include "util/range_allocator.hpp"
 #include <bit>
+#include <boost/container_hash/hash_fwd.hpp>
 #include <cmath>
 #include <compare>
 #include <ctti/nameof.hpp>
@@ -149,17 +150,17 @@ namespace voxel
     };
 
     /// Represents the position of a single Chunk in world space
-    struct ChunkCoordinate : public VoxelCoordinateBase<ChunkCoordinate, glm::i32vec3>
-    {
-        explicit ChunkCoordinate(Base::VectorType v)
-            : Base {v}
-        {}
+    // struct ChunkCoordinate : public VoxelCoordinateBase<ChunkCoordinate, glm::i32vec3>
+    // {
+    //     explicit ChunkCoordinate(Base::VectorType v)
+    //         : Base {v}
+    //     {}
 
-        template<class... Args>
-        explicit ChunkCoordinate(Args&&... args)
-            : ChunkCoordinate {Base::VectorType {std::forward<Args>(args)...}}
-        {}
-    };
+    //     template<class... Args>
+    //     explicit ChunkCoordinate(Args&&... args)
+    //         : ChunkCoordinate {Base::VectorType {std::forward<Args>(args)...}}
+    //     {}
+    // };
 
     inline ChunkLocalPosition assembleChunkLocalPosition(BrickCoordinate c, BrickLocalPosition p)
     {
@@ -176,18 +177,18 @@ namespace voxel
             BrickCoordinate {p / BricksPerChunkEdge}, BrickLocalPosition {p % BricksPerChunkEdge}};
     }
 
-    inline std::pair<ChunkCoordinate, ChunkLocalPosition> splitWorldPosition(WorldPosition p)
-    {
-        return {
-            ChunkCoordinate {
-                {util::divideEuclidean(p.x, static_cast<i32>(VoxelsPerChunkEdge)),
-                 util::divideEuclidean(p.y, static_cast<i32>(VoxelsPerChunkEdge)),
-                 util::divideEuclidean(p.z, static_cast<i32>(VoxelsPerChunkEdge))}},
-            ChunkLocalPosition {
-                {util::moduloEuclidean(p.x, static_cast<i32>(VoxelsPerChunkEdge)),
-                 util::moduloEuclidean(p.y, static_cast<i32>(VoxelsPerChunkEdge)),
-                 util::moduloEuclidean(p.z, static_cast<i32>(VoxelsPerChunkEdge))}}};
-    }
+    // inline std::pair<ChunkCoordinate, ChunkLocalPosition> splitWorldPosition(WorldPosition p)
+    // {
+    //     return {
+    //         ChunkCoordinate {
+    //             {util::divideEuclidean(p.x, static_cast<i32>(VoxelsPerChunkEdge)),
+    //              util::divideEuclidean(p.y, static_cast<i32>(VoxelsPerChunkEdge)),
+    //              util::divideEuclidean(p.z, static_cast<i32>(VoxelsPerChunkEdge))}},
+    //         ChunkLocalPosition {
+    //             {util::moduloEuclidean(p.x, static_cast<i32>(VoxelsPerChunkEdge)),
+    //              util::moduloEuclidean(p.y, static_cast<i32>(VoxelsPerChunkEdge)),
+    //              util::moduloEuclidean(p.z, static_cast<i32>(VoxelsPerChunkEdge))}}};
+    // }
 
     enum class Voxel : u16 // NOLINT
     {
@@ -674,28 +675,17 @@ namespace voxel
         glm::vec4 color_and_power;
     };
 
-    inline u32 calculateHashOfChunkCoordinate(ChunkCoordinate c)
-    {
-        u32 seed = 0xE727328CU;
+    using ChunkLocation = Gpu_ChunkLocation;
 
-        seed = gpu_hashCombineU32(seed, gpu_hashU32(static_cast<u32>(c.x)));
-
-        seed = gpu_hashCombineU32(seed, gpu_hashU32(static_cast<u32>(c.y)));
-
-        seed = gpu_hashCombineU32(seed, gpu_hashU32(static_cast<u32>(c.z)));
-
-        return seed;
-    }
-
-    struct HashedGpuChunkPosition
+    struct HashedGpuChunkLocation
     {
         static constexpr u32 Empty = ~0u;
 
-        explicit HashedGpuChunkPosition(ChunkCoordinate c)
-            : hashed_value {calculateHashOfChunkCoordinate(c)}
+        explicit HashedGpuChunkLocation(ChunkLocation c)
+            : hashed_value {gpu_hashChunkCoordinate(c)}
         {}
 
-        HashedGpuChunkPosition() = default;
+        HashedGpuChunkLocation() = default;
 
         u32 hashed_value = Empty;
     };
@@ -732,11 +722,19 @@ struct std::hash<voxel::WorldPosition> // NOLINT
 };
 
 template<>
-struct std::hash<voxel::ChunkCoordinate> // NOLINT
+struct std::hash<voxel::ChunkLocation> // NOLINT
 {
-    std::size_t operator() (const voxel::ChunkCoordinate& c) const
+    std::size_t operator() (const voxel::ChunkLocation& c) const
     {
-        return std::hash<voxel::ChunkCoordinate::VectorType> {}(
-            static_cast<voxel::ChunkCoordinate::VectorType>(c));
+        std::size_t hash = 3647823783747483352;
+
+        boost::hash_combine(hash, c.root_position.x);
+        boost::hash_combine(hash, c.root_position.y);
+        boost::hash_combine(hash, c.root_position.z);
+        boost::hash_combine(hash, c.lod);
+        boost::hash_combine(hash, c.root_position.z);
+        boost::hash_combine(hash, c.root_position.y);
+
+        return hash;
     }
 };
