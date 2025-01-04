@@ -113,14 +113,27 @@ namespace verdigris
         //              voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
         // }
 
-        const voxel::ChunkLocation location {.root_position {0, 0, 0}, .lod {0}};
+        for (i32 x : {-64, 0})
+        {
+            for (i32 y : {-64, 0})
+            {
+                for (i32 z : {-64, 0})
+                {
+                    const voxel::ChunkLocation location {
+                        .root_position {x, y, z}, .lod {(y == 0 && z == 0) ? 1u : 0u}};
 
-        this->chunk = this->chunk_render_manager.createChunk(location);
+                    voxel::ChunkRenderManager::Chunk c =
+                        this->chunk_render_manager.createChunk(location);
 
-        const std::vector<voxel::ChunkLocalUpdate> updates =
-            this->world_generator.generateChunk(location);
+                    const std::vector<voxel::ChunkLocalUpdate> updates =
+                        this->world_generator.generateChunk(location);
 
-        this->chunk_render_manager.updateChunk(this->chunk, updates);
+                    this->chunk_render_manager.updateChunk(c, updates);
+
+                    this->chunks.push_back(std::move(c));
+                }
+            }
+        }
 
         for (int i = 0; i < 32; ++i)
         {
@@ -130,16 +143,19 @@ namespace verdigris
                         util::map(dist(gen), 0.0f, 1.0f, -64.0f, 128.0f),
                         util::map(dist(gen), 0.0f, 1.0f, 0.0f, 64.0f),
                         util::map(dist(gen), 0.0f, 1.0f, -64.0f, 128.0f),
-                        4.0f}},
+                        12.0f}},
                     .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 256}}}));
         }
     }
 
     Verdigris::~Verdigris()
     {
-        if (!this->chunk.isNull())
+        for (voxel::ChunkRenderManager::Chunk& c : this->chunks)
         {
-            this->chunk_render_manager.destroyChunk(std::move(this->chunk));
+            if (!c.isNull())
+            {
+                this->chunk_render_manager.destroyChunk(std::move(c));
+            }
         }
         // for (auto& [pos, o] : this->cubes)
         // {
@@ -267,7 +283,7 @@ namespace verdigris
 
         auto readVoxelOpacity = [&](voxel::WorldPosition p)
         {
-            return p.y < -16;
+            return p.y < 16;
         };
 
         glm::vec3 testPositionX = resolvedPosition + glm::vec3(displacement.x, 0.0f, 0.0f);

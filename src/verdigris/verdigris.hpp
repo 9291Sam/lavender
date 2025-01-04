@@ -12,13 +12,13 @@ namespace verdigris
 {
     struct Verdigris : public game::Game::GameState
     {
-        mutable game::Camera                     camera;
-        game::Game*                              game;
-        std::shared_ptr<vk::UniquePipeline>      triangle_pipeline;
-        ecs::UniqueEntity                        triangle;
-        mutable voxel::ChunkRenderManager        chunk_render_manager;
-        mutable world::WorldGenerator            world_generator;
-        mutable voxel::ChunkRenderManager::Chunk chunk;
+        mutable game::Camera                                  camera;
+        game::Game*                                           game;
+        std::shared_ptr<vk::UniquePipeline>                   triangle_pipeline;
+        ecs::UniqueEntity                                     triangle;
+        mutable voxel::ChunkRenderManager                     chunk_render_manager;
+        mutable world::WorldGenerator                         world_generator;
+        mutable std::vector<voxel::ChunkRenderManager::Chunk> chunks;
 
         std::vector<voxel::ChunkRenderManager::RaytracedLight> raytraced_lights;
         // mutable voxel::WorldManager         voxel_world;

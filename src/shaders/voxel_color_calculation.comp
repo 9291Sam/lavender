@@ -235,6 +235,9 @@ void main()
             in_material_bricks.brick[brick_pointer]
                 .data[brick_local_position.x][brick_local_position.y][brick_local_position.z];
 
+        const float chunk_voxel_size =
+            gpu_calculateChunkVoxelSizeUnits(in_gpu_chunk_data.data[parent_chunk].lod);
+
         const VoxelMaterial this_material = in_voxel_materials.material[int(this_voxel.data)];
 
         const ivec3 parent_chunk_world_position = ivec3(
@@ -243,51 +246,51 @@ void main()
             in_gpu_chunk_data.data[parent_chunk].world_offset_z);
 
         const ivec3 voxel_corner_pos_world =
-            parent_chunk_world_position + ivec3(chunk_local_position);
+            parent_chunk_world_position + i32(chunk_voxel_size) * ivec3(chunk_local_position);
         const vec3 sample_position_world =
             vec3(voxel_corner_pos_world) + 0.5 + unpackNormalId(normal);
 
         vec3 sum_diffuse  = vec3(0.0);
         vec3 sum_specular = vec3(0.0);
 
-        // for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
-        // {
-        //     const float minimalPerceptibleInfluence = 1.0 / 128.0;
-        //     const float half_distance =
-        //         in_raytraced_lights.data[i].position_and_half_intensity_distance.w;
-        //     const float lightPower = in_raytraced_lights.data[i].color_and_power.w;
-        //     const float maxDistance =
-        //         -half_distance * log2(minimalPerceptibleInfluence / lightPower);
+        for (int i = 0; i < in_global_voxel_data.number_of_lights; ++i)
+        {
+            const float minimalPerceptibleInfluence = 1.0 / 128.0;
+            const float half_distance =
+                in_raytraced_lights.data[i].position_and_half_intensity_distance.w;
+            const float lightPower = in_raytraced_lights.data[i].color_and_power.w;
+            const float maxDistance =
+                -half_distance * log2(minimalPerceptibleInfluence / lightPower);
 
-        //     const vec3 toLightVector =
-        //         in_raytraced_lights.data[i].position_and_half_intensity_distance.xyz
-        //         - sample_position_world;
+            const vec3 toLightVector =
+                in_raytraced_lights.data[i].position_and_half_intensity_distance.xyz
+                - sample_position_world;
 
-        //     if (dot(unpackNormalId(normal), normalize(toLightVector)) < 0.0
-        //         || length(toLightVector) > maxDistance)
-        //     {
-        //         continue;
-        //     }
+            if (dot(unpackNormalId(normal), normalize(toLightVector)) < 0.0
+                || length(toLightVector) > maxDistance)
+            {
+                continue;
+            }
 
-        //     // const bool isFaceInShadow = traceDDARay(
-        //     //     sample_position_world,
-        //     //     in_raytraced_lights.data[i].position_and_half_intensity_distance.xyz);
+            // const bool isFaceInShadow = traceDDARay(
+            //     sample_position_world,
+            //     in_raytraced_lights.data[i].position_and_half_intensity_distance.xyz);
 
-        //     // if (!isFaceInShadow)
-        //     {
-        //         CalculatedLightPower power = newLightPower(
-        //             in_global_info.camera_position.xyz,
-        //             sample_position_world,
-        //             unpackNormalId(normal),
-        //             in_raytraced_lights.data[i],
-        //             this_material);
+            // if (!isFaceInShadow)
+            {
+                CalculatedLightPower power = newLightPower(
+                    in_global_info.camera_position.xyz,
+                    sample_position_world,
+                    unpackNormalId(normal),
+                    in_raytraced_lights.data[i],
+                    this_material);
 
-        //         sum_diffuse += power.diffuse_strength;
-        //         // #warning no specular
+                sum_diffuse += power.diffuse_strength;
+                // #warning no specular
 
-        //         sum_specular += power.specular_strength;
-        //     }
-        // }
+                sum_specular += power.specular_strength;
+            }
+        }
 
         sum_diffuse = clamp(sum_diffuse, 0.48, 1024.0);
 
