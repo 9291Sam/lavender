@@ -1029,6 +1029,7 @@ namespace voxel
                             .world_offset_x {oldGpuData.world_offset_x},
                             .world_offset_y {oldGpuData.world_offset_y},
                             .world_offset_z {oldGpuData.world_offset_z},
+                            .lod {oldGpuData.lod},
                             .brick_allocation_offset {newBrickAllocation.offset},
                             .data {newMeshResult.new_brick_map}});
 
@@ -1111,8 +1112,9 @@ namespace voxel
 
                                 || glm::dot(forwardVector, toChunkVector) < 0.0f
 
-                                || (glm::dot(toChunkVector, normalVector) > 0.0f
-                                    && !doesChunkShareAxis)))
+                                // || (glm::dot(toChunkVector, normalVector) > 0.0f
+                                //     && !doesChunkShareAxis))
+                                ))
                         {
                             /* cull */
                         }

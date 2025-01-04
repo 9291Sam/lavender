@@ -44,7 +44,6 @@ layout(location = 1) in u32 in_chunk_id;
 layout(location = 0) out u32 out_chunk_id;
 layout(location = 1) out vec3 out_chunk_local_position;
 layout(location = 2) out u32 out_normal_id;
-layout(location = 3) out vec3 out_frag_location_world;
 
 void main()
 {
@@ -61,13 +60,16 @@ void main()
 
     const uvec3 pos_in_chunk = uvec3(x_pos, y_pos, z_pos);
 
-    const uvec3 face_point_local =
-        uvec3(FACE_LOOKUP_TABLE[in_normal_id][IDX_TO_VTX_TABLE[point_within_face]]);
+    const float chunk_voxel_size =
+        gpu_calculateChunkVoxelSizeUnits(in_gpu_chunk_data.data[in_chunk_id].lod);
+
+    const uvec3 face_point_local = uvec3(
+        chunk_voxel_size * FACE_LOOKUP_TABLE[in_normal_id][IDX_TO_VTX_TABLE[point_within_face]]);
 
     vec3 scaled_face_point_local = vec3(0.0);
 
-    const float width_scale  = 2 * float(1 + width);
-    const float height_scale = 2 * float(1 + height);
+    const float width_scale  = float(1 + width);
+    const float height_scale = float(1 + height);
 
     if (in_normal_id == 0 || in_normal_id == 1)
     {
@@ -94,7 +96,7 @@ void main()
             face_point_local.z);
     }
 
-    const vec3 point_within_chunk = 2 * pos_in_chunk + scaled_face_point_local;
+    const vec3 point_within_chunk = chunk_voxel_size * pos_in_chunk + scaled_face_point_local;
 
     const ivec3 in_chunk_position = ivec3(
         in_gpu_chunk_data.data[in_chunk_id].world_offset_x,
@@ -106,8 +108,7 @@ void main()
     const vec3 normal = unpackNormalId(in_normal_id);
 
     gl_Position = in_mvp_matrices.matrix[in_push_constants.matrix_id] * vec4(face_point_world, 1.0);
-    out_chunk_local_position = point_within_chunk + -0.5 * normal;
+    out_chunk_local_position = point_within_chunk + -0.5 * chunk_voxel_size * normal;
     out_chunk_id             = in_chunk_id;
     out_normal_id            = in_normal_id;
-    out_frag_location_world  = face_point_world;
 }

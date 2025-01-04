@@ -6,7 +6,6 @@
 layout(location = 0) in flat u32 in_chunk_id;
 layout(location = 1) in vec3 in_chunk_local_position;
 layout(location = 2) in flat u32 in_normal_id;
-layout(location = 3) in vec3 in_frag_location_world;
 
 layout(location = 0) out u32 out_face_data;
 

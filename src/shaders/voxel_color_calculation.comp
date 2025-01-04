@@ -70,124 +70,126 @@ CalculatedLightPower newLightPower(
     return lightPower;
 }
 
-u32 getBrickOfWorldPosition(ivec3 pos)
-{
-    ivec3 globalChunkCoordinate = ivec3(
-        divideEuclideani32(pos.x, 64),
-        divideEuclideani32(pos.y, 64),
-        divideEuclideani32(pos.z, 64));
+// u32 getBrickOfWorldPosition(ivec3 pos)
+// {
+//     ivec3 globalChunkCoordinate = ivec3(
+//         divideEuclideani32(pos.x, 64),
+//         divideEuclideani32(pos.y, 64),
+//         divideEuclideani32(pos.z, 64));
 
-    ivec3 positionWithinChunk = ivec3(
-        moduloEuclideani32(pos.x, 64),
-        moduloEuclideani32(pos.y, 64),
-        moduloEuclideani32(pos.z, 64));
+//     ivec3 positionWithinChunk = ivec3(
+//         moduloEuclideani32(pos.x, 64),
+//         moduloEuclideani32(pos.y, 64),
+//         moduloEuclideani32(pos.z, 64));
 
-    u16 chunk = ChunkHashTable_load(globalChunkCoordinate);
+//     u16 chunk = ChunkHashTable_load(globalChunkCoordinate);
 
-    if (chunk == u16(-1))
-    {
-        return ~0u;
-    }
+//     if (chunk == u16(-1))
+//     {
+//         return ~0u;
+//     }
 
-    ivec3 brickCoordinate = positionWithinChunk / 8;
+//     ivec3 brickCoordinate = positionWithinChunk / 8;
 
-    const u32 maybePtr = BrickMap_load(chunk, brickCoordinate);
+//     const u32 maybePtr = BrickMap_load(chunk, brickCoordinate);
 
-    return maybePtr;
-}
+//     return maybePtr;
+// }
 
-vec3 stepMask(vec3 sideDist)
-{
-    bvec3 mask;
-    bvec3 b1 = lessThan(sideDist.xyz, sideDist.yzx);
-    bvec3 b2 = lessThanEqual(sideDist.xyz, sideDist.zxy);
-    mask.z   = b1.z && b2.z;
-    mask.x   = b1.x && b2.x;
-    mask.y   = b1.y && b2.y;
-    if (!any(mask)) // Thank you Spalmer
-    {
-        mask.z = true;
-    }
+// vec3 stepMask(vec3 sideDist)
+// {
+//     bvec3 mask;
+//     bvec3 b1 = lessThan(sideDist.xyz, sideDist.yzx);
+//     bvec3 b2 = lessThanEqual(sideDist.xyz, sideDist.zxy);
+//     mask.z   = b1.z && b2.z;
+//     mask.x   = b1.x && b2.x;
+//     mask.y   = b1.y && b2.y;
+//     if (!any(mask)) // Thank you Spalmer
+//     {
+//         mask.z = true;
+//     }
 
-    return vec3(mask);
-}
+//     return vec3(mask);
+// }
 
-bool traceBlock(u32 brick, vec3 rayPos, vec3 rayDir, vec3 iMask, float max_dist)
-{
-    rayPos         = clamp(rayPos, vec3(0.0001), vec3(7.9999));
-    vec3 mapPos    = floor(rayPos);
-    vec3 raySign   = sign(rayDir);
-    vec3 deltaDist = 1.0 / rayDir;
-    vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
-    vec3 mask      = iMask;
+// bool traceBlock(u32 brick, vec3 rayPos, vec3 rayDir, vec3 iMask, float max_dist)
+// {
+//     rayPos         = clamp(rayPos, vec3(0.0001), vec3(7.9999));
+//     vec3 mapPos    = floor(rayPos);
+//     vec3 raySign   = sign(rayDir);
+//     vec3 deltaDist = 1.0 / rayDir;
+//     vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
+//     vec3 mask      = iMask;
 
-    for (int i = 0;
-         i < 27 && all(lessThanEqual(mapPos, vec3(7.0))) && all(greaterThanEqual(mapPos, vec3(0.0)))
-         && length(mapPos - rayPos) <= max_dist;
-         ++i)
-    {
-        if (ShadowBrick_readUnchecked(brick, ivec3(mapPos)))
-        {
-            return true;
-        }
+//     for (int i = 0;
+//          i < 27 && all(lessThanEqual(mapPos, vec3(7.0))) && all(greaterThanEqual(mapPos,
+//          vec3(0.0)))
+//          && length(mapPos - rayPos) <= max_dist;
+//          ++i)
+//     {
+//         if (ShadowBrick_readUnchecked(brick, ivec3(mapPos)))
+//         {
+//             return true;
+//         }
 
-        mask = stepMask(sideDist);
-        mapPos += mask * raySign;
-        sideDist += mask * raySign * deltaDist;
-    }
+//         mask = stepMask(sideDist);
+//         mapPos += mask * raySign;
+//         sideDist += mask * raySign * deltaDist;
+//     }
 
-    return false;
-}
+//     return false;
+// }
 
-bool traceWorld(vec3 rayPos, vec3 rayDir, float max_dist)
-{
-    vec3 mapPos    = floor(rayPos);
-    vec3 raySign   = sign(rayDir);
-    vec3 deltaDist = 1.0 / rayDir;
-    vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
-    vec3 mask      = stepMask(sideDist);
+// bool traceWorld(vec3 rayPos, vec3 rayDir, float max_dist)
+// {
+//     vec3 mapPos    = floor(rayPos);
+//     vec3 raySign   = sign(rayDir);
+//     vec3 deltaDist = 1.0 / rayDir;
+//     vec3 sideDist  = ((mapPos - rayPos) + 0.5 + raySign * 0.5) * deltaDist;
+//     vec3 mask      = stepMask(sideDist);
 
-    for (int i = 0; i < 32 && length(mapPos - rayPos) < max_dist; i++)
-    {
-        u32 brick = getBrickOfWorldPosition(ivec3(mapPos * 8.0));
-        if (brick != ~0u)
-        {
-            vec3  mini      = ((mapPos - rayPos) + 0.5 - 0.5 * vec3(raySign)) * deltaDist;
-            float d         = max(mini.x, max(mini.y, mini.z));
-            vec3  intersect = rayPos + rayDir * d;
-            vec3  uv3d      = intersect - mapPos;
+//     for (int i = 0; i < 32 && length(mapPos - rayPos) < max_dist; i++)
+//     {
+//         u32 brick = getBrickOfWorldPosition(ivec3(mapPos * 8.0));
+//         if (brick != ~0u)
+//         {
+//             vec3  mini      = ((mapPos - rayPos) + 0.5 - 0.5 * vec3(raySign)) * deltaDist;
+//             float d         = max(mini.x, max(mini.y, mini.z));
+//             vec3  intersect = rayPos + rayDir * d;
+//             vec3  uv3d      = intersect - mapPos;
 
-            if (mapPos == floor(rayPos)) // Handle edge case where camera origin is inside of block
-            {
-                uv3d = rayPos - mapPos;
-            }
+//             if (mapPos == floor(rayPos)) // Handle edge case where camera origin is inside of
+//             block
+//             {
+//                 uv3d = rayPos - mapPos;
+//             }
 
-            bool hit = traceBlock(
-                brick, uv3d * 8.0, rayDir, mask, (max_dist - length(mapPos - rayPos)) * 8.0);
+//             bool hit = traceBlock(
+//                 brick, uv3d * 8.0, rayDir, mask, (max_dist - length(mapPos - rayPos)) * 8.0);
 
-            if (hit)
-            {
-                return true;
-            }
-        }
+//             if (hit)
+//             {
+//                 return true;
+//             }
+//         }
 
-        mask = stepMask(sideDist);
-        mapPos += mask * raySign;
-        sideDist += mask * raySign * deltaDist;
-    }
+//         mask = stepMask(sideDist);
+//         mapPos += mask * raySign;
+//         sideDist += mask * raySign * deltaDist;
+//     }
 
-    return false;
-}
+//     return false;
+// }
 
-bool traceDDARay(vec3 start, vec3 end)
-{
-    if (distance(end, start) > 512)
-    {
-        return true;
-    }
+// bool traceDDARay(vec3 start, vec3 end)
+// {
+//     if (distance(end, start) > 512)
+//     {
+//         return true;
+//     }
 
-    return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
-}
+//     return traceWorld(start / 8.0, normalize(end - start), length(end - start) / 8.0);
+// }
 
 vec3 exp_strength_falloff(vec3 strengths)
 {
@@ -288,7 +290,7 @@ void main()
             }
         }
 
-        sum_diffuse = clamp(sum_diffuse, 0.012, 1024.0);
+        sum_diffuse = clamp(sum_diffuse, 12.0, 1024.0);
 
         vec3 realColor = clamp(
             exp_strength_falloff(sum_diffuse) * this_material.diffuse_color.xyz

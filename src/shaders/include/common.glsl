@@ -59,6 +59,8 @@ GLSL_INLINE u32 gpu_hashChunkCoordinate(Gpu_ChunkLocation location)
 
     seed = gpu_hashCombineU32(seed, gpu_hashU32(u32(location.root_position.z)));
 
+    seed = gpu_hashCombineU32(seed, gpu_hashU32(location.lod));
+
     return seed;
 }
 
@@ -69,18 +71,7 @@ GLSL_INLINE u32 gpu_calculateChunkWidthUnits(u32 lod)
 
 GLSL_INLINE u32 gpu_calculateChunkVoxelSizeUnits(u32 lod)
 {
-    if (lod == 0)
-    {
-        return 1;
-    }
-    else if (lod == 1)
-    {
-        return 2;
-    }
-    else
-    {
-        return 1u << lod;
-    }
+    return 1u << lod;
 }
 
 #endif // SRC_SHADERS_INCLUDE_COMMON_GLSL

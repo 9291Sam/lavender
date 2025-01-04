@@ -48,19 +48,6 @@ layout(set = 1, binding = 2) readonly buffer GpuChunkDataBuffer
 }
 in_gpu_chunk_data;
 
-u32 calculateHashOfChunkCoordinate(i32vec3 c)
-{
-    u32 seed = 0xE727328CU;
-
-    seed = gpu_hashCombineU32(seed, gpu_hashU32(u32(c.x)));
-
-    seed = gpu_hashCombineU32(seed, gpu_hashU32(u32(c.y)));
-
-    seed = gpu_hashCombineU32(seed, gpu_hashU32(u32(c.z)));
-
-    return seed;
-}
-
 layout(set = 1, binding = 3) readonly buffer AlignedChunkHashTableKeys
 {
     u32 keys[];
@@ -76,9 +63,9 @@ in_aligned_chunk_hash_table_values;
 const u32 MaxChunkHashNodes = 1U << 16U;
 const u32 ChunkHashEmpty    = ~0u;
 
-u16 ChunkHashTable_load(i32vec3 chunkCoordinate)
+u16 ChunkHashTable_load(Gpu_ChunkLocation chunk)
 {
-    const u32 key = calculateHashOfChunkCoordinate(chunkCoordinate);
+    const u32 key = gpu_hashChunkCoordinate(chunk);
 
     uint32_t slot = key % MaxChunkHashNodes;
 

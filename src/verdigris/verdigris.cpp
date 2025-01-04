@@ -267,7 +267,7 @@ namespace verdigris
 
         auto readVoxelOpacity = [&](voxel::WorldPosition p)
         {
-            return p.y < 32;
+            return p.y < -16;
         };
 
         glm::vec3 testPositionX = resolvedPosition + glm::vec3(displacement.x, 0.0f, 0.0f);
