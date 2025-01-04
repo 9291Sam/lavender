@@ -11,7 +11,10 @@ layout(location = 0) out u32 out_face_data;
 
 void main()
 {
-    const uvec3 chunk_local_position = uvec3(floor(in_chunk_local_position));
+    const float chunk_voxel_size =
+        gpu_calculateChunkVoxelSizeUnits(in_gpu_chunk_data.data[in_chunk_id].lod);
+
+    const uvec3 chunk_local_position = uvec3(floor(in_chunk_local_position / chunk_voxel_size));
 
     const uvec3 brick_coordinate     = chunk_local_position / 8;
     const uvec3 brick_local_position = chunk_local_position % 8;

@@ -58,7 +58,8 @@ namespace world
             return res;
         };
 
-        const float lodScale = static_cast<float>(gpu_calculateChunkVoxelSizeUnits(chunkRoot.lod));
+        const float lodScale =
+            1.0f / static_cast<float>(gpu_calculateChunkVoxelSizeUnits(chunkRoot.lod));
 
         auto height      = gen2D(lodScale * 0.001f, this->seed + 487484);
         auto bumpHeight  = gen2D(lodScale * 0.01f, this->seed + 7373834);

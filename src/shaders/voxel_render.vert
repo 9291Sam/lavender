@@ -58,7 +58,7 @@ void main()
     const u32 width  = GreedyVoxelFace_width(greedy_face);
     const u32 height = GreedyVoxelFace_height(greedy_face);
 
-    const uvec3 pos_in_chunk = uvec3(x_pos, y_pos, z_pos);
+    const uvec3 voxel_position_in_chunk = uvec3(x_pos, y_pos, z_pos);
 
     const float chunk_voxel_size =
         gpu_calculateChunkVoxelSizeUnits(in_gpu_chunk_data.data[in_chunk_id].lod);
@@ -96,7 +96,8 @@ void main()
             face_point_local.z);
     }
 
-    const vec3 point_within_chunk = chunk_voxel_size * pos_in_chunk + scaled_face_point_local;
+    const vec3 point_within_chunk =
+        chunk_voxel_size * voxel_position_in_chunk + scaled_face_point_local;
 
     const ivec3 in_chunk_position = ivec3(
         in_gpu_chunk_data.data[in_chunk_id].world_offset_x,
@@ -108,7 +109,9 @@ void main()
     const vec3 normal = unpackNormalId(in_normal_id);
 
     gl_Position = in_mvp_matrices.matrix[in_push_constants.matrix_id] * vec4(face_point_world, 1.0);
-    out_chunk_local_position = point_within_chunk + -0.5 * chunk_voxel_size * normal;
+    out_chunk_local_position = point_within_chunk + chunk_voxel_size * (0.5 * -normal);
+    // (voxel_position_in_chunk + scaled_face_point_local) + 0.5 * chunk_voxel_size
+    // + chunk_voxel_size* normal;
     out_chunk_id             = in_chunk_id;
     out_normal_id            = in_normal_id;
 }

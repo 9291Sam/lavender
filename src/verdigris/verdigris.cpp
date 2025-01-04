@@ -113,7 +113,7 @@ namespace verdigris
         //              voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
         // }
 
-        const voxel::ChunkLocation location {.root_position {0, 0, 0}, .lod {1}};
+        const voxel::ChunkLocation location {.root_position {0, 0, 0}, .lod {0}};
 
         this->chunk = this->chunk_render_manager.createChunk(location);
 
