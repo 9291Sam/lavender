@@ -292,7 +292,7 @@ void main()
             }
         }
 
-        sum_diffuse = clamp(sum_diffuse, 0.48, 1024.0);
+        sum_diffuse = clamp(sum_diffuse, 1.0, 1024.0);
 
         vec3 realColor = clamp(
             exp_strength_falloff(sum_diffuse) * this_material.diffuse_color.xyz

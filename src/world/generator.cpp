@@ -25,6 +25,8 @@ namespace world
         //     return {};
         // }
 
+        const i32 integerScale = gpu_calculateChunkVoxelSizeUnits(chunkRoot.lod);
+
         auto gen2D =
             [&](float       scale,
                 std::size_t localSeed) -> std::unique_ptr<std::array<std::array<float, 64>, 64>>
@@ -33,7 +35,13 @@ namespace world
                 new std::array<std::array<float, 64>, 64>};
 
             this->fractal->GenUniformGrid2D(
-                res->data()->data(), root.x, root.z, 64, 64, scale, static_cast<int>(localSeed));
+                res->data()->data(),
+                root.x / integerScale,
+                root.z / integerScale,
+                64,
+                64,
+                scale,
+                static_cast<int>(localSeed));
 
             return res;
         };
@@ -58,10 +66,7 @@ namespace world
         //     return res;
         // };
 
-        const float lodScale =
-            1.0f / static_cast<float>(gpu_calculateChunkVoxelSizeUnits(chunkRoot.lod));
-
-        auto height = gen2D(lodScale * 0.001f, this->seed + 487484);
+        auto height = gen2D(static_cast<float>(integerScale) * 0.001f, this->seed + 487484);
         // auto bumpHeight = gen2D(lodScale * 0.01f, this->seed + 7373834);
         // auto mainRock    = gen3D(lodScale * 0.001f, this->seed - 747875);
         // auto pebblesRock = gen3D(lodScale * 0.01f, this->seed - 52649274);
@@ -102,22 +107,22 @@ namespace world
                             voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
                             voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
                     }
-                    // else if (relativeDistanceToHeight < 2)
-                    // {
-                    //     out.push_back(voxel::ChunkLocalUpdate {
-                    //         voxel::ChunkLocalPosition {{i, h, j}},
-                    //         voxel::Voxel::Dirt,
-                    //         voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
-                    //         voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
-                    // }
-                    // else if (relativeDistanceToHeight < 3)
-                    // {
-                    //     out.push_back(voxel::ChunkLocalUpdate {
-                    //         voxel::ChunkLocalPosition {{i, h, j}},
-                    //         voxel::Voxel::Grass,
-                    //         voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
-                    //         voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
-                    // }
+                    else if (relativeDistanceToHeight < 2)
+                    {
+                        out.push_back(voxel::ChunkLocalUpdate {
+                            voxel::ChunkLocalPosition {{i, h, j}},
+                            voxel::Voxel::Dirt,
+                            voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+                            voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
+                    }
+                    else if (relativeDistanceToHeight < 3)
+                    {
+                        out.push_back(voxel::ChunkLocalUpdate {
+                            voxel::ChunkLocalPosition {{i, h, j}},
+                            voxel::Voxel::Grass,
+                            voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
+                            voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
+                    }
                 }
             }
         }

@@ -91,16 +91,21 @@ namespace voxel
         {
             std::array<std::unique_ptr<Node>, 8>* const children = std::get_if<1>(&this->payload);
 
-            // if (...)
-            // {
-            //     merge();
-            // }
-
-            for (const std::unique_ptr<Node>& c : *children)
+            if (this->entire_bounds.lod < desiredLOD)
             {
-                if (c != nullptr)
+                *children = {};
+
+                this->payload.emplace<LazilyGeneratedChunk>(
+                    threadPool, chunkRenderManager, worldGenerator, this->entire_bounds);
+            }
+            else
+            {
+                for (const std::unique_ptr<Node>& c : *children)
                 {
-                    c->update(camera, threadPool, chunkRenderManager, worldGenerator);
+                    if (c != nullptr)
+                    {
+                        c->update(camera, threadPool, chunkRenderManager, worldGenerator);
+                    }
                 }
             }
         }

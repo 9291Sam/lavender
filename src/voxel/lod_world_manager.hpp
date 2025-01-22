@@ -82,6 +82,15 @@ namespace voxel
                       worldGenerator,
                       bounds}
             {}
+            ~Node()
+            {
+                LazilyGeneratedChunk* const chunk = std::get_if<0>(&this->payload);
+
+                if (chunk != nullptr)
+                {
+                    chunk->markShouldNotGenerate();
+                }
+            }
             voxel::ChunkLocation                                                     entire_bounds;
             std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>> payload;
 
@@ -153,7 +162,7 @@ namespace voxel
     class LodWorldManager
     {
     public:
-        explicit LodWorldManager(const game::Game*, u32 dimension = 8192);
+        explicit LodWorldManager(const game::Game*, u32 dimension = 1024);
         ~LodWorldManager();
 
         LodWorldManager(const LodWorldManager&)             = delete;
