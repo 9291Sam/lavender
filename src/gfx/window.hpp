@@ -3,6 +3,7 @@
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <glm/gtx/hash.hpp>
 #include <map>
 #include <vulkan/vulkan_format_traits.hpp>
 #include <vulkan/vulkan_handles.hpp>
@@ -77,6 +78,7 @@ namespace gfx
 
         [[nodiscard]] bool         isActionActive(Action, bool ignoreCursorAttached = false) const;
         [[nodiscard]] Delta        getScreenSpaceMouseDelta() const;
+        [[nodiscard]] Delta        getScrollDelta() const;
         [[nodiscard]] float        getDeltaTimeSeconds() const;
         [[nodiscard]] vk::Extent2D getFramebufferSize() const;
 
@@ -97,6 +99,7 @@ namespace gfx
     private:
         static void keypressCallback(GLFWwindow*, int, int, int, int);
         static void frameBufferResizeCallback(GLFWwindow*, int, int);
+        static void mouseScrollCallback(GLFWwindow*, double, double);
         static void mouseButtonCallback(GLFWwindow*, int, int, int);
         static void windowFocusCallback(GLFWwindow*, int);
         static void errorCallback(int, const char*);
@@ -119,5 +122,8 @@ namespace gfx
         std::atomic<Delta>               mouse_delta_pixels;
         std::atomic<Delta>               screen_space_mouse_delta;
         mutable std::atomic<bool>        is_cursor_attached;
+        std::atomic<glm::dvec2>          previous_absolute_scroll_position;
+        std::atomic<glm::dvec2>          absolute_scroll_position;
+        std::atomic<Delta>               scroll_delta;
     };
 } // namespace gfx

@@ -18,6 +18,7 @@
 #include "voxel/world_manager.hpp"
 #include "world/generator.hpp"
 #include <FastNoise/FastNoise.h>
+#include <algorithm>
 #include <boost/container_hash/hash_fwd.hpp>
 #include <boost/range/numeric.hpp>
 #include <boost/unordered/concurrent_flat_map.hpp>
@@ -34,7 +35,9 @@ namespace verdigris
         : game {game_}
         , triangle {ecs::createEntity()}
         , lod_world_manager {this->game}
+        , absolute_scroll_y {0.0}
         , time_alive {0.0f}
+
     {
         // this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
         //     gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
@@ -146,10 +149,14 @@ namespace verdigris
         gfx::profiler::TaskGenerator profilerTaskGenerator {};
 
         // TODO: moving diagonally is faster
-        const float moveScale = this->game->getRenderer()->getWindow()->isActionActive(
-                                    gfx::Window::Action::PlayerSprint)
-                                  ? 128.0f
-                                  : 36.0f;
+
+        this->absolute_scroll_y += this->game->getRenderer()->getWindow()->getScrollDelta().y;
+
+        this->absolute_scroll_y = std::clamp(this->absolute_scroll_y, -1.0f, 12.0f);
+
+        const float moveScale = std::exp(this->absolute_scroll_y);
+
+        flySpeed.store(moveScale);
 
         const float rotateSpeedScale = 6.0f;
 

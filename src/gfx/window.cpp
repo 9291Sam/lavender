@@ -6,6 +6,7 @@
 #include <backends/imgui_impl_glfw.h>
 #include <chrono>
 #include <cmath>
+#include <glm/fwd.hpp>
 #include <imgui.h>
 #include <thread>
 #include <util/log.hpp>
@@ -83,14 +84,16 @@ namespace gfx
         {
             glfwSetWindowUserPointer(this->window, static_cast<void*>(this));
 
+            std::ignore = glfwSetKeyCallback(this->window, Window::keypressCallback);
+
             std::ignore =
                 glfwSetFramebufferSizeCallback(this->window, Window::frameBufferResizeCallback);
 
-            std::ignore = glfwSetKeyCallback(this->window, Window::keypressCallback);
-
-            std::ignore = glfwSetWindowFocusCallback(this->window, Window::windowFocusCallback);
+            std::ignore = glfwSetScrollCallback(this->window, Window::mouseScrollCallback);
 
             std::ignore = glfwSetMouseButtonCallback(this->window, Window::mouseButtonCallback);
+
+            std::ignore = glfwSetWindowFocusCallback(this->window, Window::windowFocusCallback);
         }
 
         // Configure framebuffer size, it may be different than the actual
@@ -133,6 +136,11 @@ namespace gfx
         {
             return Delta {.x {0.0f}, .y {0.0f}};
         }
+    }
+
+    Window::Delta Window::getScrollDelta() const
+    {
+        return this->scroll_delta.load();
     }
 
     bool Window::isActionActive(Action action, bool ignoreCursorAttached) const
@@ -260,24 +268,41 @@ namespace gfx
             --this->mouse_ignore_frames;
         }
 
-        // Mouse processing
-        std::pair<double, double> currentMousePositionDoubles {NAN, NAN};
+        // Mouse position processing
+        {
+            std::pair<double, double> currentMousePositionDoubles {NAN, NAN};
 
-        glfwGetCursorPos(
-            this->window, &currentMousePositionDoubles.first, &currentMousePositionDoubles.second);
+            glfwGetCursorPos(
+                this->window,
+                &currentMousePositionDoubles.first,
+                &currentMousePositionDoubles.second);
 
-        const Delta currentMousePosition {
-            static_cast<float>(currentMousePositionDoubles.first),
-            static_cast<float>(currentMousePositionDoubles.second)};
-        const Delta previousMousePosition {
-            this->previous_mouse_position.load(std::memory_order_acquire)};
+            const Delta currentMousePosition {
+                static_cast<float>(currentMousePositionDoubles.first),
+                static_cast<float>(currentMousePositionDoubles.second)};
+            const Delta previousMousePosition {
+                this->previous_mouse_position.load(std::memory_order_acquire)};
 
-        this->mouse_delta_pixels.store(
-            {currentMousePosition.x - previousMousePosition.x,
-             currentMousePosition.y - previousMousePosition.y},
-            std::memory_order_release);
+            this->mouse_delta_pixels.store(
+                {currentMousePosition.x - previousMousePosition.x,
+                 currentMousePosition.y - previousMousePosition.y},
+                std::memory_order_release);
 
-        this->previous_mouse_position.store(currentMousePosition, std::memory_order_release);
+            this->previous_mouse_position.store(currentMousePosition, std::memory_order_release);
+        }
+
+        // Mouse Scroll Processing
+        {
+            const glm::dvec2 newScroll = this->absolute_scroll_position.load();
+            const glm::dvec2 oldScroll = this->previous_absolute_scroll_position.load();
+
+            this->scroll_delta.store(Delta {
+                .x {static_cast<float>(newScroll.x - oldScroll.x)},
+                .y {static_cast<float>(newScroll.y - oldScroll.y)},
+            });
+
+            this->previous_absolute_scroll_position.store(newScroll);
+        }
 
         // Delta time processing
         const auto currentTime = std::chrono::steady_clock::now();
@@ -339,6 +364,14 @@ namespace gfx
                 .width {static_cast<std::uint32_t>(newWidth)},
                 .height {static_cast<std::uint32_t>(newHeight)}},
             std::memory_order_release);
+    }
+
+    void Window::mouseScrollCallback(GLFWwindow* glfwWindow, double x, double y)
+    {
+        gfx::Window* const window = static_cast<gfx::Window*>(glfwGetWindowUserPointer(glfwWindow));
+
+        window->absolute_scroll_position.store(
+            window->absolute_scroll_position.load() + glm::dvec2 {x, y});
     }
 
     void Window::mouseButtonCallback(

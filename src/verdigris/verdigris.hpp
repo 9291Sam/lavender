@@ -17,6 +17,7 @@ namespace verdigris
         game::Game*                         game;
         std::shared_ptr<vk::UniquePipeline> triangle_pipeline;
         ecs::UniqueEntity                   triangle;
+        mutable float                       absolute_scroll_y;
         mutable voxel::LodWorldManager      lod_world_manager;
         // mutable voxel::ChunkRenderManager                     chunk_render_manager;
         // mutable world::WorldGenerator                         world_generator;

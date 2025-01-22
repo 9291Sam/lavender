@@ -41,6 +41,8 @@ std::atomic<u32> numberOfChunksPossible  = 0; // NOLINT
 std::atomic<u32> numberOfBricksAllocated = 0; // NOLINT
 std::atomic<u32> numberOfBricksPossible  = 0; // NOLINT
 
+std::atomic<f32> flySpeed = 0.0f; // NOLINT
+
 std::atomic<u32> f32TickDeltaTime = 0; // NOLINT
 
 namespace game
@@ -1246,6 +1248,8 @@ namespace game
                         auto bricks         = numberOfBricksAllocated.load();
                         auto bricksPossible = numberOfBricksPossible.load();
 
+                        auto fly = flySpeed.load();
+
                         f32 tickDeltaTime = std::bit_cast<f32>(f32TickDeltaTime.load());
 
                         const std::string menuText = std::format(
@@ -1258,7 +1262,8 @@ namespace game
                             "Staging Usage: {}\n"
                             "Chunks {} / {} | {:.3f}%\n"
                             "Bricks {} / {} | {:.3f}%\n"
-                            "Faces {} / {} / {} / {} | {:.3f}%\n",
+                            "Faces {} / {} / {} / {} | {:.3f}%\n"
+                            "Fly Speed {}",
                             camera.getPosition().x,
                             camera.getPosition().y,
                             camera.getPosition().z,
@@ -1287,7 +1292,8 @@ namespace game
                             facesAllocated,
                             facesPossible,
                             100.0f * static_cast<float>(facesVisible)
-                                / static_cast<float>(facesPossible));
+                                / static_cast<float>(facesPossible),
+                            fly);
 
                         ImGui::TextWrapped("%s", menuText.c_str()); // NOLINT
 
