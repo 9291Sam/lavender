@@ -31,14 +31,13 @@ namespace voxel
         void updateAndFlushUpdates(
             std::span<const voxel::ChunkLocalUpdate> extraUpdates, std::size_t& updatesOcurred);
 
-        const ChunkRenderManager::Chunk* getChunk() const
+        [[nodiscard]] const ChunkRenderManager::Chunk* getChunk() const
         {
             return &this->chunk;
         }
 
     private:
         ChunkRenderManager*                chunk_render_manager;
-        world::WorldGenerator*             world_generator;
         ChunkRenderManager::Chunk          chunk;
         std::shared_ptr<std::atomic<bool>> should_still_generate;
 

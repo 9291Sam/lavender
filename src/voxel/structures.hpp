@@ -680,7 +680,7 @@ namespace voxel
         [[nodiscard]] glm::i32vec3 getCenterPosition() const
         {
             return this->root_position
-                 + static_cast<i32>(gpu_calculateChunkWidthUnits(this->lod)) / 2;
+                 + (static_cast<i32>(gpu_calculateChunkWidthUnits(this->lod)) / 2);
         }
     };
 
@@ -697,9 +697,11 @@ namespace voxel
         u32 hashed_value = Empty;
     };
 
-    inline u32 calculateLODBasedOnDistance(float distance)
+    template<class N>
+    inline u32 calculateLODBasedOnDistance(N distance)
+        requires (std::same_as<N, float> || std::same_as<N, u32>)
     {
-        if (!std::isnormal(distance) && distance != 0.0f)
+        if (!std::isnormal(distance) && distance > static_cast<N>(0.000001f))
         {
             util::panic("tried to get the LOD of {}", distance);
         }

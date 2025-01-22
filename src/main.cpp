@@ -94,6 +94,8 @@ int main()
         game.loadGameState<verdigris::Verdigris>();
 
         game.run();
+
+        fprintf(stderr, "left");
     }
     catch (const std::exception& e)
     {

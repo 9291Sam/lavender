@@ -256,3 +256,39 @@ The Caldera @ Ash Hollow
 advenrurrerer in the woods
 
 ingrock - good name for something
+
+
+
+LazilyGeneratedChunk* const chunk = std::get_if<0>(&this->payload);
+
+            if (this->entire_bounds.lod > desiredLOD)
+            {
+                chunk->markShouldNotGenerate();
+
+                std::array<std::unique_ptr<Node>, 8> newChildren {};
+                std::array<glm::ivec3, 8>            newChildrenRoots =
+                    generateChildrenRootPositions(this->entire_bounds);
+
+                for (std::size_t i = 0; i < 8; ++i)
+                {
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+                    newChildren[i] = std::make_unique<Node>(
+                        voxel::ChunkLocation {Gpu_ChunkLocation {
+                            // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+                            .root_position {newChildrenRoots[i]},
+                            .lod {this->entire_bounds.lod - 1},
+                        }},
+                        threadPool,
+                        chunkRenderManager,
+                        worldGenerator);
+                }
+
+                this->payload = std::move(newChildren);
+
+                // subdivide();
+                util::logTrace("subdivide!");
+            }
+
+            std::size_t _ {};
+
+            chunk->updateAndFlushUpdates({}, _);

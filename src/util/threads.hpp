@@ -29,14 +29,33 @@ namespace util
         {}
         ~Mutex() = default;
 
-        Mutex(const Mutex&)                 = delete;
-        Mutex(Mutex&&) noexcept             = default;
-        Mutex& operator= (const Mutex&)     = delete;
-        Mutex& operator= (Mutex&&) noexcept = default;
+        Mutex(const Mutex&) = delete;
+        Mutex(Mutex&& other) noexcept
+            : mutex {std::make_unique<std::mutex>()}
+            , tuple {std::move(other.tuple)}
+        {}
+        Mutex& operator= (const Mutex&) = delete;
+        Mutex& operator= (Mutex&& other) noexcept
+        {
+            if (this == &other)
+            {
+                return *this;
+            }
+
+            this->~Mutex();
+
+            new (this) Mutex {std::move(other)};
+
+            return *this;
+        }
 
         decltype(auto) lock(std::invocable<T&...> auto func) const
             noexcept(noexcept(std::apply(func, this->tuple)))
         {
+            if (this->mutex == nullptr)
+            {
+                abort();
+            }
             std::unique_lock lock {*this->mutex};
 
             return std::apply(func, this->tuple);

@@ -26,72 +26,68 @@
 #include <mutex>
 #include <random>
 #include <utility>
+#include <variant>
 
 namespace verdigris
 {
     Verdigris::Verdigris(game::Game* game_)
         : game {game_}
         , triangle {ecs::createEntity()}
-        , chunk_render_manager {this->game}
-        , world_generator {7384375}
+        , lod_world_manager {this->game}
         , time_alive {0.0f}
     {
-        this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
-            gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
-                .stages {{
-                    gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-                        .stage {vk::ShaderStageFlagBits::eVertex},
-                        .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
-                            staticFilesystem::loadShader("triangle.vert"),
-                            "Triangle Vertex Shader")},
-                        .entry_point {"main"},
-                    },
-                    gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-                        .stage {vk::ShaderStageFlagBits::eFragment},
-                        .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
-                            staticFilesystem::loadShader("triangle.frag"),
-                            "Triangle Fragment Shader")},
-                        .entry_point {"main"},
-                    },
-                }},
-                .vertex_attributes {},
-                .vertex_bindings {},
-                .topology {vk::PrimitiveTopology::eTriangleList},
-                .discard_enable {false},
-                .polygon_mode {vk::PolygonMode::eFill},
-                .cull_mode {vk::CullModeFlagBits::eNone},
-                .front_face {vk::FrontFace::eClockwise},
-                .depth_test_enable {true},
-                .depth_write_enable {true},
-                .depth_compare_op {vk::CompareOp::eLess},
-                .color_format {gfx::Renderer::ColorFormat.format},
-                .depth_format {gfx::Renderer::DepthFormat},
-                .blend_enable {true},
-                .layout {this->game->getRenderer()->getAllocator()->cachePipelineLayout(
-                    gfx::vulkan::CacheablePipelineLayoutCreateInfo {
-                        .descriptors {{this->game->getGlobalInfoDescriptorSetLayout()}},
-                        .push_constants {vk::PushConstantRange {
-                            .stageFlags {vk::ShaderStageFlagBits::eVertex},
-                            .offset {0},
-                            .size {64}}},
-                        .name {"Triangle Pipeline Layout"}})},
-                .name {"Triangle Pipeline"}});
+        // this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
+        //     gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
+        //         .stages {{
+        //             gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+        //                 .stage {vk::ShaderStageFlagBits::eVertex},
+        //                 .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
+        //                     staticFilesystem::loadShader("triangle.vert"),
+        //                     "Triangle Vertex Shader")},
+        //                 .entry_point {"main"},
+        //             },
+        //             gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+        //                 .stage {vk::ShaderStageFlagBits::eFragment},
+        //                 .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
+        //                     staticFilesystem::loadShader("triangle.frag"),
+        //                     "Triangle Fragment Shader")},
+        //                 .entry_point {"main"},
+        //             },
+        //         }},
+        //         .vertex_attributes {},
+        //         .vertex_bindings {},
+        //         .topology {vk::PrimitiveTopology::eTriangleList},
+        //         .discard_enable {false},
+        //         .polygon_mode {vk::PolygonMode::eFill},
+        //         .cull_mode {vk::CullModeFlagBits::eNone},
+        //         .front_face {vk::FrontFace::eClockwise},
+        //         .depth_test_enable {true},
+        //         .depth_write_enable {true},
+        //         .depth_compare_op {vk::CompareOp::eLess},
+        //         .color_format {gfx::Renderer::ColorFormat.format},
+        //         .depth_format {gfx::Renderer::DepthFormat},
+        //         .blend_enable {true},
+        //         .layout {this->game->getRenderer()->getAllocator()->cachePipelineLayout(
+        //             gfx::vulkan::CacheablePipelineLayoutCreateInfo {
+        //                 .descriptors {{this->game->getGlobalInfoDescriptorSetLayout()}},
+        //                 .push_constants {vk::PushConstantRange {
+        //                     .stageFlags {vk::ShaderStageFlagBits::eVertex},
+        //                     .offset {0},
+        //                     .size {64}}},
+        //                 .name {"Triangle Pipeline Layout"}})},
+        //         .name {"Triangle Pipeline"}});
 
-        this->triangle.addComponent(TriangleComponent {.transform {
-            .translation {glm::vec3 {6.323123, 26.3232123f, 33.8473f}},
-            .scale {glm::vec3 {32.0f, 32.0f, 32.0f}}}});
+        // this->triangle.addComponent(TriangleComponent {.transform {
+        //     .translation {glm::vec3 {6.323123, 26.3232123f, 33.8473f}},
+        //     .scale {glm::vec3 {1.0f, 1.0f, 1.0f}}}});
 
         this->camera.addPosition({79.606, 42.586, -9.784});
         this->camera.addPitch(0.397f);
         this->camera.addYaw(5.17f);
 
-        voxel::MaterialBrick brick {};
+        // voxel::MaterialBrick brick {};
 
         // brick.write(voxel::BrickLocalPosition {{0, 0, 0}}, voxel::Voxel::Diamond);
-
-        std::mt19937_64                     gen {73847375}; // NOLINT
-        std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
-        std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
 
         // for (int i = 0; i < 1; ++i)
         // {
@@ -113,60 +109,36 @@ namespace verdigris
         //              voxel::LinearVoxelVolume {brick}, voxel::WorldPosition {{0, 0, 0}})});
         // }
 
-        for (i32 x : {-64, 0})
-        {
-            for (i32 y : {-64, 0})
-            {
-                for (i32 z : {-64, 0})
-                {
-                    voxel::ChunkLocation location {};
-                    location.root_position = {x, y, z};
-                    location.lod           = {(x == 0 && y == 0 && z == 0) ? 1u : 0u};
+        // for (i32 x : {-64, 0})
+        // {
+        //     for (i32 y : {-64, 0})
+        //     {
+        //         for (i32 z : {-64, 0})
+        //         {
+        //             voxel::ChunkLocation location {};
+        //             location.root_position = {x, y, z};
+        //             location.lod           = {(x == 0 && y == 0 && z == 0) ? 1u : 0u};
 
-                    voxel::ChunkRenderManager::Chunk c =
-                        this->chunk_render_manager.createChunk(location);
+        //             voxel::ChunkRenderManager::Chunk c =
+        //                 this->chunk_render_manager.createChunk(location);
 
-                    const std::vector<voxel::ChunkLocalUpdate> updates =
-                        this->world_generator.generateChunk(location);
+        //             const std::vector<voxel::ChunkLocalUpdate> updates =
+        //                 this->world_generator.generateChunk(location);
 
-                    this->chunk_render_manager.updateChunk(c, updates);
+        //             this->chunk_render_manager.updateChunk(c, updates);
 
-                    this->chunks.push_back(std::move(c));
-                }
-            }
-        }
-
-        for (int i = 0; i < 32; ++i)
-        {
-            this->raytraced_lights.push_back(
-                this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
-                    .position_and_half_intensity_distance {glm::vec4 {
-                        util::map(dist(gen), 0.0f, 1.0f, -64.0f, 128.0f),
-                        util::map(dist(gen), 0.0f, 1.0f, 0.0f, 64.0f),
-                        util::map(dist(gen), 0.0f, 1.0f, -64.0f, 128.0f),
-                        12.0f}},
-                    .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 256}}}));
-        }
+        //             this->chunks.push_back(std::move(c));
+        //         }
+        //     }
+        // }
     }
 
     Verdigris::~Verdigris()
     {
-        for (voxel::ChunkRenderManager::Chunk& c : this->chunks)
-        {
-            if (!c.isNull())
-            {
-                this->chunk_render_manager.destroyChunk(std::move(c));
-            }
-        }
         // for (auto& [pos, o] : this->cubes)
         // {
         //     this->voxel_world.destroyVoxelObject(std::move(o));
         // }
-
-        for (voxel::ChunkRenderManager::RaytracedLight& l : this->raytraced_lights)
-        {
-            this->chunk_render_manager.destroyRaytracedLight(std::move(l));
-        }
     }
 
     game::Game::GameState::OnFrameReturnData Verdigris::onFrame(float deltaTime) const
@@ -176,7 +148,7 @@ namespace verdigris
         // TODO: moving diagonally is faster
         const float moveScale = this->game->getRenderer()->getWindow()->isActionActive(
                                     gfx::Window::Action::PlayerSprint)
-                                  ? 640.0f
+                                  ? 1228.0f
                                   : 36.0f;
 
         const float rotateSpeedScale = 6.0f;
@@ -356,8 +328,7 @@ namespace verdigris
         realCamera.addPosition({0.0, 32.0f, 0.0});
 
         std::vector<game::FrameGenerator::RecordObject> draws {
-            this->chunk_render_manager.processUpdatesAndGetDrawObjects(
-                realCamera, profilerTaskGenerator)};
+            this->lod_world_manager.onFrameUpdate(realCamera, profilerTaskGenerator)};
 
         profilerTaskGenerator.stamp("World Update");
 

@@ -123,8 +123,10 @@ add_executable(lavender
     src/verdigris/flyer.cpp
 
     src/voxel/chunk_render_manager.cpp
+    src/voxel/lazily_generated_chunk.cpp
     src/voxel/material_manager.cpp
     src/voxel/world_manager.cpp
+    src/voxel/lod_world_manager.cpp
     src/world/generator.cpp
     
 )
@@ -242,8 +244,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Ap
         # target_compile_options(lavender PUBLIC -fsanitize=thread)
         # target_link_options(lavender PUBLIC -fsanitize=thread)
 
-        # target_compile_options(lavender PUBLIC -fsanitize=address)
-        # target_link_options(lavender PUBLIC -fsanitize=address)
+        target_compile_options(lavender PUBLIC -fsanitize=address)
+        target_link_options(lavender PUBLIC -fsanitize=address)
     endif ()
 
     target_compile_options(library_target PRIVATE -w) # Disable all warnings

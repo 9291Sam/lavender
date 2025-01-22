@@ -11,7 +11,6 @@ namespace voxel
         world::WorldGenerator* worldGenerator,
         voxel::ChunkLocation   location)
         : chunk_render_manager {chunkRenderManager}
-        , world_generator {worldGenerator}
         , chunk {this->chunk_render_manager->createChunk(location)}
         , should_still_generate(std::make_shared<std::atomic<bool>>(true))
         , updates {pool.executeOnPool(
@@ -22,6 +21,7 @@ namespace voxel
               {
                   if (shouldGeneratePtr->load(std::memory_order_acquire))
                   {
+                      util::logTrace("async generation of chunk");
                       return wg->generateChunk(loc);
                   }
                   else

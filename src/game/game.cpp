@@ -40,6 +40,7 @@ namespace game
 
     Game::~Game() noexcept
     {
+        util::logTrace("destroying game!");
         this->renderer->getDevice()->getDevice().waitIdle();
     }
 
@@ -128,7 +129,11 @@ namespace game
 
         shouldWorkerStop = true;
 
-        tickWorker.get();
+        util::assertFatal(tickWorker.valid(), "hhh");
+
+        tickWorker.wait();
+
+        util::logTrace("returning from game");
     }
 
     float Game::getFovXRadians() const noexcept
