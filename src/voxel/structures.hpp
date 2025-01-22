@@ -675,7 +675,14 @@ namespace voxel
         glm::vec4 color_and_power;
     };
 
-    using ChunkLocation = Gpu_ChunkLocation;
+    struct ChunkLocation : public Gpu_ChunkLocation
+    {
+        [[nodiscard]] glm::i32vec3 getCenterPosition() const
+        {
+            return this->root_position
+                 + static_cast<i32>(gpu_calculateChunkWidthUnits(this->lod)) / 2;
+        }
+    };
 
     struct HashedGpuChunkLocation
     {

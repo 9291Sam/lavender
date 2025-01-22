@@ -1,122 +1,123 @@
-// #pragma once
+#pragma once
 
-// #include "game/camera.hpp"
-// #include "game/frame_generator.hpp"
-// #include "gfx/profiler/task_generator.hpp"
-// #include "util/thread_pool.hpp"
-// #include "voxel/chunk_render_manager.hpp"
-// #include "voxel/structures.hpp"
-// #include "world/generator.hpp"
-// #include <glm/geometric.hpp>
-// #include <memory>
-// #include <variant>
-// #include <vector>
+#include "game/camera.hpp"
+#include "game/frame_generator.hpp"
+#include "gfx/profiler/task_generator.hpp"
+#include "lazily_generated_chunk.hpp"
+#include "util/thread_pool.hpp"
+#include "voxel/chunk_render_manager.hpp"
+#include "voxel/structures.hpp"
+#include "world/generator.hpp"
+#include <glm/geometric.hpp>
+#include <memory>
+#include <utility>
+#include <variant>
+#include <vector>
 
-// namespace voxel
-// {
-//     class LazilyGeneratedChunk
-//     {
-//     public:
-//         explicit LazilyGeneratedChunk(
-//             util::ThreadPool&, ChunkRenderManager*, world::WorldGenerator*,
-//             voxel::ChunkCoordinate);
-//         ~LazilyGeneratedChunk();
+namespace voxel
+{
 
-//         LazilyGeneratedChunk(const LazilyGeneratedChunk&)             = delete;
-//         LazilyGeneratedChunk(LazilyGeneratedChunk&&)                  = delete;
-//         LazilyGeneratedChunk& operator= (const LazilyGeneratedChunk&) = delete;
-//         LazilyGeneratedChunk& operator= (LazilyGeneratedChunk&&)      = delete;
+    class VoxelChunkTree
+    {
 
-//         void markShouldNotGenerate()
-//         {
-//             this->should_still_generate->store(false, std::memory_order_release);
-//         }
+    public:
 
-//         void leak()
-//         {
-//             this->should_still_generate->store(false, std::memory_order_release);
-//             this->updates = {};
-//         }
+        void updateWithCamera(const game::Camera& c)
+        {
+            this->root.update(this->generator, c.getPosition());
+        }
 
-//         void updateAndFlushUpdates(
-//             std::span<const voxel::ChunkLocalUpdate> extraUpdates, std::size_t& updatesOcurred);
+    private:
+        enum class OctreeNodePosition : std::uint8_t
+        {
+            NxNyNz = 0b000,
+            NxNyPz = 0b001,
+            NxPyNz = 0b010,
+            NxPyPz = 0b011,
+            PxNyNz = 0b100,
+            PxNyPz = 0b101,
+            PxPyNz = 0b110,
+            PxPyPz = 0b111,
+        };
 
-//         const ChunkRenderManager::Chunk* getChunk() const
-//         {
-//             return &this->chunk;
-//         }
+        struct Node
+        {
+            voxel::ChunkLocation                                                     entire_bounds;
+            std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>> payload;
 
-//         [[nodiscard]] glm::i32vec3 getPosition() const;
+            void update(const world::WorldGenerator& worldGenerator, glm::vec3 cameraPosition)
+            {
+                const u32 desiredLOD = calculateLODBasedOnDistance(static_cast<f32>(glm::distance(
+                    static_cast<glm::f64vec3>(cameraPosition),
+                    static_cast<glm::f64vec3>(this->entire_bounds.getCenterPosition()))));
 
-//     private:
-//         ChunkRenderManager*                chunk_render_manager;
-//         world::WorldGenerator*             world_generator;
-//         ChunkRenderManager::Chunk          chunk;
-//         std::shared_ptr<std::atomic<bool>> should_still_generate;
+                switch (this->payload.index())
+                {
+                case 0: {
+                    LazilyGeneratedChunk* const chunk =
+                        std::get_if<LazilyGeneratedChunk>(&this->payload);
 
-//         std::future<std::vector<voxel::ChunkLocalUpdate>> updates;
-//     };
+                    if (desiredLOD == this->entire_bounds.lod)
+                    { /* do nothing */
+                    }
+                    else if (desiredLOD > this->entire_bounds.lod)
+                    { // we shouldn't exist
+                        util::logWarn("we shouldn't exist!");
+                    }
+                    else
+                    { // Subdivide
+                        chunk->leak();
 
-//     class VoxelChunkTree
-//     {
-//     public:
+                        this->payload.emplace(this->generateChildren(worldGenerator));
+                        // we're too far, we shouldn;t exist
+                    }
+                    break;
+                }
+                case 1: {
+                    std::array<std::unique_ptr<Node>, 8>* const nodes =
+                        std::get_if<std::array<std::unique_ptr<Node>, 8>>(&this->payload);
 
-//         void updateWithCamera(const game::Camera&);
+                    if (desiredLOD == this->entire_bounds.lod)
+                    {
+                        this->generateSingle(worldGenerator);
+                    }
+                    else if (desiredLOD > this->entire_bounds.lod)
+                    { // we shouldn't exist
+                        util::logWarn("we shouldn't exist!");
+                    }
+                    else
+                    { // Subdivide
+                        chunk->leak();
 
-//     private:
-//         struct Node
-//         {
-//             glm::i32vec3 root_position; std::variant<LazilyGeneratedChunk,
-//             std::array<std::unique_ptr<Node>, 8>> payload;
+                        this->payload.emplace(this->generateChildren());
+                        // we're too far, we shouldn;t exist
+                    }
+                    break;
+                }
+                default:
+                    std::unreachable();
+                }
+            }
+        };
 
-//             void subdivide(const world::WorldGenerator& worldGenerator, glm::i32vec3
-//             cameraPosition)
-//             {
-//                 switch (this->payload.index())
-//                 {
-//                 case 0:
-//                     LazilyGeneratedChunk* chunk = std::get_if<0>(&this->payload);
-//                 }
+        world::WorldGenerator generator;
+        Node                  root;
+    };
 
-//                 this->payload.index() const u32 desiredLOD =
-//                     calculateLODBasedOnDistance(static_cast<f32>(glm::distance(
-//                         static_cast<glm::f64vec3>(cameraPosition),
-//                         static_cast<glm::f64vec3>(this->chunk.getPosition()))));
+    class LodWorldManager
+    {
+    public:
+        explicit LodWorldManager(u32 lodsToLoad = 7);
+        ~LodWorldManager();
 
-//                 if (desiredLOD != this->lod)
-//                 {
-//                     if (desiredLOD < this->lod)
-//                     {
-//                         destroychildren();
-//                         regenerateThis();
-//                     }
-//                     else
-//                     {
-//                         destroyThis();
-//                         generateChildren();
-//                     }
-//                 }
-//             }
-//         };
+        LodWorldManager(const LodWorldManager&)             = delete;
+        LodWorldManager(LodWorldManager&&)                  = delete;
+        LodWorldManager& operator= (const LodWorldManager&) = delete;
+        LodWorldManager& operator= (LodWorldManager&&)      = delete;
 
-//         world::WorldGenerator generator;
-//         Node                  root;
-//     };
-
-//     class LodWorldManager
-//     {
-//     public:
-//         explicit LodWorldManager(u32 lodsToLoad = 7);
-//         ~LodWorldManager();
-
-//         LodWorldManager(const LodWorldManager&)             = delete;
-//         LodWorldManager(LodWorldManager&&)                  = delete;
-//         LodWorldManager& operator= (const LodWorldManager&) = delete;
-//         LodWorldManager& operator= (LodWorldManager&&)      = delete;
-
-//         std::vector<game::FrameGenerator::RecordObject>
-//         onFrameUpdate(const game::Camera&, gfx::profiler::TaskGenerator&);
-//     private:
-//         VoxelChunkTree tree;
-//     };
-// } // namespace voxel
+        std::vector<game::FrameGenerator::RecordObject>
+        onFrameUpdate(const game::Camera&, gfx::profiler::TaskGenerator&);
+    private:
+        VoxelChunkTree tree;
+    };
+} // namespace voxel

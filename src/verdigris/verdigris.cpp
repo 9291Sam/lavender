@@ -79,7 +79,7 @@ namespace verdigris
 
         this->triangle.addComponent(TriangleComponent {.transform {
             .translation {glm::vec3 {6.323123, 26.3232123f, 33.8473f}},
-            .scale {glm::vec3 {1.0f, 1.0f, 1.0f}}}});
+            .scale {glm::vec3 {32.0f, 32.0f, 32.0f}}}});
 
         this->camera.addPosition({79.606, 42.586, -9.784});
         this->camera.addPitch(0.397f);
@@ -119,8 +119,9 @@ namespace verdigris
             {
                 for (i32 z : {-64, 0})
                 {
-                    const voxel::ChunkLocation location {
-                        .root_position {x, y, z}, .lod {(y == 0 && z == 0) ? 1u : 0u}};
+                    voxel::ChunkLocation location {};
+                    location.root_position = {x, y, z};
+                    location.lod           = {(x == 0 && y == 0 && z == 0) ? 1u : 0u};
 
                     voxel::ChunkRenderManager::Chunk c =
                         this->chunk_render_manager.createChunk(location);
@@ -173,10 +174,11 @@ namespace verdigris
         gfx::profiler::TaskGenerator profilerTaskGenerator {};
 
         // TODO: moving diagonally is faster
-        const float moveScale        = this->game->getRenderer()->getWindow()->isActionActive(
+        const float moveScale = this->game->getRenderer()->getWindow()->isActionActive(
                                     gfx::Window::Action::PlayerSprint)
-                                         ? 64.0f
-                                         : 36.0f;
+                                  ? 640.0f
+                                  : 36.0f;
+
         const float rotateSpeedScale = 6.0f;
 
         if (this->game->getRenderer()->getWindow()->isActionActive(
@@ -199,9 +201,9 @@ namespace verdigris
         }
 
         // TODO: make not static lol
-        static float verticalVelocity = 0.0f;    // Initial velocity for gravity
-        const float  gravity          = -512.0f; // Gravitational acceleration (m/s²)
-        const float  maxFallSpeed     = -512.0f; // Terminal velocity
+        // static float verticalVelocity = 0.0f;    // Initial velocity for gravity
+        // const float  gravity          = -512.0f; // Gravitational acceleration (m/s²)
+        // const float  maxFallSpeed     = -512.0f; // Terminal velocity
 
         glm::vec3 previousPosition = this->camera.getPosition();
 
@@ -249,16 +251,16 @@ namespace verdigris
         //         &this->voxel_world});
         // }
 
-        if (this->game->getRenderer()->getWindow()->isActionActive(
-                gfx::Window::Action::PlayerMoveUp))
-        {
-            if (verticalVelocity == 0.0f)
-            {
-                verticalVelocity += 128.0f;
-            }
-        }
+        // if (this->game->getRenderer()->getWindow()->isActionActive(
+        //         gfx::Window::Action::PlayerMoveUp))
+        // {
+        //     if (verticalVelocity == 0.0f)
+        //     {
+        //         verticalVelocity += 128.0f;
+        //     }
+        // }
 
-        newPosition.y = previousPosition.y;
+        // newPosition.y = previousPosition.y;
 
         // for (Flyer& f : this->fliers)
         // {
@@ -268,10 +270,10 @@ namespace verdigris
         glm::vec3 currentPosition = this->camera.getPosition();
         glm::vec3 displacement    = newPosition - currentPosition;
 
-        verticalVelocity += gravity * deltaTime;
-        verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
+        // verticalVelocity += gravity * deltaTime;
+        // verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
 
-        displacement.y += verticalVelocity * deltaTime;
+        // displacement.y += verticalVelocity * deltaTime;
 
         // HACK: just prevent it from mattering lol
         // if (glm::length(displacement) > 1.0f)
@@ -283,7 +285,8 @@ namespace verdigris
 
         auto readVoxelOpacity = [&](voxel::WorldPosition p)
         {
-            return p.y < 16;
+            // return p.y < 16;
+            return false;
         };
 
         glm::vec3 testPositionX = resolvedPosition + glm::vec3(displacement.x, 0.0f, 0.0f);
@@ -299,7 +302,7 @@ namespace verdigris
         }
         else
         {
-            verticalVelocity = 0.0f;
+            // verticalVelocity = 0.0f;
 
             glm::vec3 upwardPosition = glm::floor(newPosition);
             bool      tooFar         = false;
