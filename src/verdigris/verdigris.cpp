@@ -148,7 +148,7 @@ namespace verdigris
         // TODO: moving diagonally is faster
         const float moveScale = this->game->getRenderer()->getWindow()->isActionActive(
                                     gfx::Window::Action::PlayerSprint)
-                                  ? 1228.0f
+                                  ? 128.0f
                                   : 36.0f;
 
         const float rotateSpeedScale = 6.0f;

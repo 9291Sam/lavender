@@ -79,9 +79,6 @@ namespace voxel
                 }
 
                 this->payload = std::move(newChildren);
-
-                // subdivide();
-                util::logTrace("subdivide!");
             }
             else
             {

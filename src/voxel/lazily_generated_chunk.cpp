@@ -21,7 +21,6 @@ namespace voxel
               {
                   if (shouldGeneratePtr->load(std::memory_order_acquire))
                   {
-                      util::logTrace("async generation of chunk");
                       return wg->generateChunk(loc);
                   }
                   else
