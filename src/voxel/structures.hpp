@@ -709,7 +709,7 @@ namespace voxel
         const int uncorrectedLod =
             std::bit_width<u32>(static_cast<u32>(distance / VoxelsPerChunkEdge));
 
-        if (uncorrectedLod == 0)
+        if (uncorrectedLod <= 0)
         {
             return 0;
         }

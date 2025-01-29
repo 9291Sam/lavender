@@ -25,7 +25,7 @@ namespace world
         //     return {};
         // }
 
-        const i32 integerScale = gpu_calculateChunkVoxelSizeUnits(chunkRoot.lod);
+        const i32 integerScale = static_cast<i32>(gpu_calculateChunkVoxelSizeUnits(chunkRoot.lod));
 
         auto gen2D =
             [&](float       scale,

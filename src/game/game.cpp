@@ -129,11 +129,7 @@ namespace game
 
         shouldWorkerStop = true;
 
-        util::assertFatal(tickWorker.valid(), "hhh");
-
         tickWorker.wait();
-
-        util::logTrace("returning from game");
     }
 
     float Game::getFovXRadians() const noexcept
