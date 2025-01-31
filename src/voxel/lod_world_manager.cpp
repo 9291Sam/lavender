@@ -25,7 +25,7 @@ namespace voxel
                       -static_cast<i32>(dimension / 2),
                       -static_cast<i32>(dimension / 2),
                   }},
-                  .lod {calculateLODBasedOnDistance<u32>(dimension)},
+                  .lod {calculateLODBasedOnDistance(static_cast<f32>(dimension))},
               }},
               threadPool,
               chunkRenderManager,
@@ -48,9 +48,11 @@ namespace voxel
         ChunkRenderManager*    chunkRenderManager,
         world::WorldGenerator* worldGenerator)
     {
-        const u32 desiredLOD = calculateLODBasedOnDistance(static_cast<f32>(glm::distance(
-            static_cast<glm::f64vec3>(camera.getPosition()),
-            static_cast<glm::f64vec3>(this->entire_bounds.getCenterPosition()))));
+        const u32 desiredLOD = calculateLODBasedOnDistance(
+            glm::distance(
+                camera.getPosition(),
+                static_cast<glm::f32vec3>(this->entire_bounds.getCenterPosition()))
+            / 2.0f);
 
         if (this->payload.index() == 0)
         {

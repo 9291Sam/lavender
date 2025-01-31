@@ -697,11 +697,9 @@ namespace voxel
         u32 hashed_value = Empty;
     };
 
-    template<class N>
-    inline u32 calculateLODBasedOnDistance(N distance)
-        requires (std::same_as<N, float> || std::same_as<N, u32>)
+    inline u32 calculateLODBasedOnDistance(f32 distance)
     {
-        if (!std::isnormal(distance) && distance > static_cast<N>(0.000001f))
+        if (!std::isnormal(distance) || distance < 0.01f)
         {
             util::panic("tried to get the LOD of {}", distance);
         }
