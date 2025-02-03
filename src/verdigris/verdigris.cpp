@@ -152,9 +152,9 @@ namespace verdigris
 
         this->absolute_scroll_y += this->game->getRenderer()->getWindow()->getScrollDelta().y;
 
-        this->absolute_scroll_y = std::clamp(this->absolute_scroll_y, -1.0f, 12.0f);
+        this->absolute_scroll_y = std::clamp(this->absolute_scroll_y, -1.0f, 120.0f);
 
-        const float moveScale = std::max({std::exp(this->absolute_scroll_y), 64.0f});
+        const float moveScale = std::max({std::exp(this->absolute_scroll_y / 4.0f), 64.0f});
 
         flySpeed.store(moveScale);
 

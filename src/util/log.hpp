@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstdint>
 #include <format>
+#include <glm/gtx/hash.hpp>
 #include <source_location>
 #include <string>
 #include <utility>
