@@ -93,7 +93,7 @@ namespace voxel
         {
             std::array<std::unique_ptr<Node>, 8>* const children = std::get_if<1>(&this->payload);
 
-            if (this->entire_bounds.lod < desiredLOD)
+            if (this->entire_bounds.lod <= desiredLOD)
             {
                 *children = {};
 

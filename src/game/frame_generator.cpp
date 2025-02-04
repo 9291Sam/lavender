@@ -577,29 +577,27 @@ namespace game
             recordablesByPass;
 
         game::FrameGenerator::RecordObject skyboxObj {
-            .transform {camera.getTransform()},
+            .transform {},
             .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},
             .pipeline {this->skybox_pipeline},
             .descriptors {this->game->getGlobalInfoDescriptorSet(), nullptr, nullptr, nullptr},
-            .record_func {[this](vk::CommandBuffer cb, vk::PipelineLayout layout, u32 id)
+            .record_func {[this](vk::CommandBuffer cb, vk::PipelineLayout layout, u32)
                           {
                               struct PushConstants
                               {
-                                  glm::mat4 model_matrix;
-                                  glm::vec4 camera_position;
-                                  glm::vec4 camera_normal;
-                                  u32       mvp_matricies_id;
-                                  u32       draw_id;
-                                  f32       time;
+                                  glm::vec4 camera_forward;
+                                  glm::vec4 camera_right;
+                                  glm::vec4 camera_up;
+                                  f32       aspect_ratio;
+                                  f32       fov_y;
                               };
 
                               PushConstants pc {
-                                  .model_matrix {camera.getModelMatrix()},
-                                  .camera_position {glm::vec4 {camera.getPosition(), 0.0}},
-                                  .camera_normal {glm::vec4 {camera.getForwardVector(), 0.0}},
-                                  .mvp_matricies_id {id},
-                                  .draw_id {0},
-                                  .time {4.53f}};
+                                  .camera_forward {glm::vec4 {camera.getForwardVector(), 0.0f}},
+                                  .camera_right {glm::vec4 {camera.getRightVector(), 0.0f}},
+                                  .camera_up {glm::vec4 {camera.getUpVector(), 0.0f}},
+                                  .aspect_ratio {this->game->getAspectRatio()},
+                                  .fov_y {this->game->getFovYRadians()}};
 
                               cb.pushConstants(
                                   layout,
