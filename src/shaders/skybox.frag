@@ -244,21 +244,8 @@ vec4 render(in vec3 rd, in float iTime)
     return vec4(col, 1.0);
 }
 
-// layout(location = 0) in vec3 in_frag_position_world;
-
-// layout(location = 0) out vec4 out_color;
-
-// void main()
-// {
-//     const vec3 dir = normalize(in_frag_position_world - in_global_info.camera_position.xyz);
-
-//     // out_color = vec4((dir /2 + 0.5), 1.0);
-//     out_color    = render(dir, in_global_info.time_alive);
-//     gl_FragDepth = 0.9999999;
-// }
-
-layout(location = 0) in vec2 fragUV;
-layout(location = 0) out vec4 outColor;
+layout(location = 0) in vec2 ndc;
+layout(location = 0) out vec4 out_color;
 
 layout(push_constant) uniform Camera
 {
@@ -272,20 +259,12 @@ in_push_constants;
 
 void main()
 {
-    // Convert fragUV to NDC space (-1 to 1)
-    vec2 ndc = fragUV * 2.0 - 1.0;
+    const float fovScale = tan(in_push_constants.fov * 0.5);
 
-    // Convert FOV to scale factor
-    float fovScale = tan(in_push_constants.fov * 0.5);
-
-    // Compute ray direction in world space
-    vec3 rayDir = normalize(
+    const vec3 rayDir = normalize(
         vec3(in_push_constants.camForward)
         + ndc.x * vec3(in_push_constants.camRight) * in_push_constants.aspectRatio * fovScale
         + ndc.y * vec3(in_push_constants.camUp) * fovScale);
 
-    // Sample the skybox
-
-    outColor     = render(rayDir, in_global_info.time_alive);
-    gl_FragDepth = 0.9999999;
+    out_color = render(rayDir, in_global_info.time_alive);
 }
