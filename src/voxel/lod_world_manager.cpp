@@ -52,7 +52,7 @@ namespace voxel
             glm::distance(
                 camera.getPosition(),
                 static_cast<glm::f32vec3>(this->entire_bounds.getCenterPosition()))
-            / 2.5f);
+            / 2.0f);
 
         if (this->payload.index() == 0)
         {
@@ -60,8 +60,6 @@ namespace voxel
 
             if (this->entire_bounds.lod > desiredLOD)
             {
-                chunk->markShouldNotGenerate();
-
                 std::array<std::unique_ptr<Node>, 8> newChildren {};
                 std::array<glm::ivec3, 8>            newChildrenRoots =
                     generateChildrenRootPositions(this->entire_bounds);

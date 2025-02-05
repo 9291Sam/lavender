@@ -21,12 +21,12 @@ namespace ecs
     class UniqueEntity;
 
     // I have absolutely no idea, thank you @melak47 NOLINT
-    template<typename Derived, template<auto> class BaseTemplate>
+    template<typename Derived, template<class D, auto> class BaseTemplate>
     struct IsDerivedFromAutoBase
     {
     private:
-        template<auto Arg>
-        static std::true_type test(BaseTemplate<Arg>*);
+        template<class T, auto Arg>
+        static std::true_type test(BaseTemplate<Derived, Arg>*);
 
         static std::false_type test(...);
 
@@ -34,7 +34,7 @@ namespace ecs
         static constexpr bool Value = decltype(test(std::declval<Derived*>()))::value;
     };
 
-    template<typename T, template<auto> class BaseTemplate>
+    template<typename T, template<class D, auto> class BaseTemplate>
     concept DerivedFromAutoBase = IsDerivedFromAutoBase<T, BaseTemplate>::Value;
 
     enum class TryAddComponentResult
@@ -118,8 +118,10 @@ namespace ecs
         EntityComponentSystemManager& operator= (EntityComponentSystemManager&&)      = delete;
 
         template<class T, class... Args>
-            requires DerivedFromAutoBase<T, InherentEntityBase>
-                  && std::is_constructible_v<T, UniqueEntity, Args...>
+            requires
+            // DerivedFromAutoBase<T, InherentEntityBase>
+            //       &&
+            std::is_constructible_v<T, UniqueEntity, Args...>
         [[nodiscard]] T* allocateRawInherentEntity(Args&&...) const;
         template<class T>
         void freeRawInherentEntity(T*) const;

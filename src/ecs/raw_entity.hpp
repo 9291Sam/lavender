@@ -107,14 +107,16 @@ namespace ecs
         }
     };
 
-    template<auto O>
-    struct InherentEntityBase : public EntityComponentOperationsCRTPBase<InherentEntityBase<O>>
+    class UniqueEntity;
+
+    template<class Derived, auto O>
+    struct InherentEntityBase
+        : public EntityComponentOperationsCRTPBase<InherentEntityBase<Derived, O>>
     {
-        static constexpr std::size_t offset()
+        static constexpr UniqueEntity Derived::* offset()
         {
             return O(0);
         }
-
         [[nodiscard]] RawEntity getRawEntity() const
         {
             return *reinterpret_cast<const RawEntity*>(               // NOLINT
@@ -158,14 +160,14 @@ namespace ecs
 // NOLINTNEXTLINE
 #define DERIVE_INHERENT_ENTITY(type, name)                                                         \
     public ::ecs::InherentEntityBase<                                                              \
+        type,                                                                                      \
         [](auto dummy)                                                                             \
         {                                                                                          \
             using T = ::ecs::DependentT<type, decltype(dummy)>;                                    \
             static_assert(                                                                         \
                 std::same_as<::ecs::UniqueEntity, decltype(T::name)>,                              \
                 "The field pointed to must be an instance of RawEntity");                          \
-            static_assert(std::is_final_v<T>, "Inherent Entities must be marked final");           \
-            return offsetof(T, name);                                                              \
+            return &T::name;                                                                       \
         }>
 
 } // namespace ecs

@@ -1,8 +1,6 @@
 
 #include "verdigris.hpp"
-#include "ecs/entity.hpp"
 #include "ecs/entity_component_system_manager.hpp"
-#include "ecs/raw_entity.hpp"
 #include "game/frame_generator.hpp"
 #include "game/game.hpp"
 #include "game/transform.hpp"
@@ -34,57 +32,57 @@ namespace verdigris
     Verdigris::Verdigris(game::Game* game_)
         : game {game_}
         , triangle {ecs::createEntity()}
-        , lod_world_manager {this->game}
         , absolute_scroll_y {0.0}
+        , lod_world_manager {this->game}
         , time_alive {0.0f}
 
     {
-        // this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
-        //     gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
-        //         .stages {{
-        //             gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-        //                 .stage {vk::ShaderStageFlagBits::eVertex},
-        //                 .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
-        //                     staticFilesystem::loadShader("triangle.vert"),
-        //                     "Triangle Vertex Shader")},
-        //                 .entry_point {"main"},
-        //             },
-        //             gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
-        //                 .stage {vk::ShaderStageFlagBits::eFragment},
-        //                 .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
-        //                     staticFilesystem::loadShader("triangle.frag"),
-        //                     "Triangle Fragment Shader")},
-        //                 .entry_point {"main"},
-        //             },
-        //         }},
-        //         .vertex_attributes {},
-        //         .vertex_bindings {},
-        //         .topology {vk::PrimitiveTopology::eTriangleList},
-        //         .discard_enable {false},
-        //         .polygon_mode {vk::PolygonMode::eFill},
-        //         .cull_mode {vk::CullModeFlagBits::eNone},
-        //         .front_face {vk::FrontFace::eClockwise},
-        //         .depth_test_enable {true},
-        //         .depth_write_enable {true},
-        //         .depth_compare_op {vk::CompareOp::eLess},
-        //         .color_format {gfx::Renderer::ColorFormat.format},
-        //         .depth_format {gfx::Renderer::DepthFormat},
-        //         .blend_enable {true},
-        //         .layout {this->game->getRenderer()->getAllocator()->cachePipelineLayout(
-        //             gfx::vulkan::CacheablePipelineLayoutCreateInfo {
-        //                 .descriptors {{this->game->getGlobalInfoDescriptorSetLayout()}},
-        //                 .push_constants {vk::PushConstantRange {
-        //                     .stageFlags {vk::ShaderStageFlagBits::eVertex},
-        //                     .offset {0},
-        //                     .size {64}}},
-        //                 .name {"Triangle Pipeline Layout"}})},
-        //         .name {"Triangle Pipeline"}});
+        this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
+            gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
+                .stages {{
+                    gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                        .stage {vk::ShaderStageFlagBits::eVertex},
+                        .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
+                            staticFilesystem::loadShader("triangle.vert"),
+                            "Triangle Vertex Shader")},
+                        .entry_point {"main"},
+                    },
+                    gfx::vulkan::CacheablePipelineShaderStageCreateInfo {
+                        .stage {vk::ShaderStageFlagBits::eFragment},
+                        .shader {this->game->getRenderer()->getAllocator()->cacheShaderModule(
+                            staticFilesystem::loadShader("triangle.frag"),
+                            "Triangle Fragment Shader")},
+                        .entry_point {"main"},
+                    },
+                }},
+                .vertex_attributes {},
+                .vertex_bindings {},
+                .topology {vk::PrimitiveTopology::eTriangleList},
+                .discard_enable {false},
+                .polygon_mode {vk::PolygonMode::eFill},
+                .cull_mode {vk::CullModeFlagBits::eNone},
+                .front_face {vk::FrontFace::eClockwise},
+                .depth_test_enable {true},
+                .depth_write_enable {true},
+                .depth_compare_op {vk::CompareOp::eGreater},
+                .color_format {gfx::Renderer::ColorFormat.format},
+                .depth_format {gfx::Renderer::DepthFormat},
+                .blend_enable {true},
+                .layout {this->game->getRenderer()->getAllocator()->cachePipelineLayout(
+                    gfx::vulkan::CacheablePipelineLayoutCreateInfo {
+                        .descriptors {{this->game->getGlobalInfoDescriptorSetLayout()}},
+                        .push_constants {vk::PushConstantRange {
+                            .stageFlags {vk::ShaderStageFlagBits::eVertex},
+                            .offset {0},
+                            .size {64}}},
+                        .name {"Triangle Pipeline Layout"}})},
+                .name {"Triangle Pipeline"}});
 
-        // this->triangle.addComponent(TriangleComponent {.transform {
-        //     .translation {glm::vec3 {6.323123, 26.3232123f, 33.8473f}},
-        //     .scale {glm::vec3 {1.0f, 1.0f, 1.0f}}}});
+        this->triangle.addComponent(TriangleComponent {.transform {
+            .translation {glm::vec3 {6.323123, 26.3232123f, 33.8473f}},
+            .scale {glm::vec3 {1399.0f, 1399.0f, 1399.0f}}}});
 
-        this->camera.addPosition({79.606, 42.586, -9.784});
+        this->camera.addPosition({79.606, 2222.586, -9.784});
         this->camera.addPitch(0.397f);
         this->camera.addYaw(5.17f);
 
@@ -180,9 +178,9 @@ namespace verdigris
         }
 
         // TODO: make not static lol
-        // static float verticalVelocity = 0.0f;    // Initial velocity for gravity
-        // const float  gravity          = -512.0f; // Gravitational acceleration (m/s²)
-        // const float  maxFallSpeed     = -512.0f; // Terminal velocity
+        static float verticalVelocity = 0.0f;    // Initial velocity for gravity
+        const float  gravity          = -512.0f; // Gravitational acceleration (m/s²)
+        const float  maxFallSpeed     = -512.0f; // Terminal velocity
 
         glm::vec3 previousPosition = this->camera.getPosition();
 
@@ -230,16 +228,16 @@ namespace verdigris
         //         &this->voxel_world});
         // }
 
-        // if (this->game->getRenderer()->getWindow()->isActionActive(
-        //         gfx::Window::Action::PlayerMoveUp))
-        // {
-        //     if (verticalVelocity == 0.0f)
-        //     {
-        //         verticalVelocity += 128.0f;
-        //     }
-        // }
+        if (this->game->getRenderer()->getWindow()->isActionActive(
+                gfx::Window::Action::PlayerMoveUp))
+        {
+            if (verticalVelocity == 0.0f)
+            {
+                verticalVelocity += 128.0f;
+            }
+        }
 
-        // newPosition.y = previousPosition.y;
+        newPosition.y = previousPosition.y;
 
         // for (Flyer& f : this->fliers)
         // {
@@ -249,10 +247,10 @@ namespace verdigris
         glm::vec3 currentPosition = this->camera.getPosition();
         glm::vec3 displacement    = newPosition - currentPosition;
 
-        // verticalVelocity += gravity * deltaTime;
-        // verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
+        verticalVelocity += gravity * deltaTime;
+        verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
 
-        // displacement.y += verticalVelocity * deltaTime;
+        displacement.y += verticalVelocity * deltaTime;
 
         // HACK: just prevent it from mattering lol
         // if (glm::length(displacement) > 1.0f)
@@ -264,8 +262,8 @@ namespace verdigris
 
         auto readVoxelOpacity = [&](voxel::WorldPosition p)
         {
-            // return p.y < 16;
-            return false;
+            return p.y < 16;
+            // return false;
         };
 
         glm::vec3 testPositionX = resolvedPosition + glm::vec3(displacement.x, 0.0f, 0.0f);
@@ -281,7 +279,7 @@ namespace verdigris
         }
         else
         {
-            // verticalVelocity = 0.0f;
+            verticalVelocity = 0.0f;
 
             glm::vec3 upwardPosition = glm::floor(newPosition);
             bool      tooFar         = false;

@@ -57,8 +57,10 @@ namespace ecs
     };
 
     template<class T, class... Args>
-        requires DerivedFromAutoBase<T, InherentEntityBase>
-              && std::is_constructible_v<T, UniqueEntity, Args...>
+        requires
+        // DerivedFromAutoBase<T, InherentEntityBase>
+        //       &&
+        std::is_constructible_v<T, UniqueEntity, Args...>
     T* EntityComponentSystemManager::allocateRawInherentEntity(Args&&... args) const
     {
         // TODO: dont use system allocator

@@ -927,7 +927,7 @@ namespace voxel
                 }();
 
 #warning handle
-                if (/* is chunk aligned chunk */; true)
+                /* is chunk aligned chunk */
                 {
                     alignedChunksToPutInHashMap.push_back(
                         {HashedGpuChunkLocation {chunkPosition}, chunkId});
@@ -1084,22 +1084,22 @@ namespace voxel
                     {
                         const u32 numberOfFaces = this->voxel_face_allocator.getSizeOfAllocation(a);
 
-                        const glm::vec3 normalVector = static_cast<glm::vec3>(
-                            getDirFromDirection(static_cast<VoxelFaceDirection>(normal)));
+                        // const glm::vec3 normalVector = static_cast<glm::vec3>(
+                        //     getDirFromDirection(static_cast<VoxelFaceDirection>(normal)));
                         const glm::vec3 toChunkVector =
                             glm::normalize(chunkCenterPosition - camera.getPosition());
                         const glm::vec3 forwardVector = camera.getForwardVector();
 
-                        const glm::i32vec3 chunkCenterInteger =
-                            static_cast<glm::i32vec3>(chunkCenterPosition);
-                        const glm::i32vec3 cameraCenterInteger =
-                            static_cast<glm::i32vec3>(camera.getPosition());
+                    // const glm::i32vec3 chunkCenterInteger =
+                    //     static_cast<glm::i32vec3>(chunkCenterPosition);
+                    // const glm::i32vec3 cameraCenterInteger =
+                    //     static_cast<glm::i32vec3>(camera.getPosition());
 
-                        const glm::i32vec3 cameraCoordinate =
-                            cameraCenterInteger / static_cast<i32>(voxel::VoxelsPerChunkEdge);
+                    // const glm::i32vec3 cameraCoordinate =
+                    //     cameraCenterInteger / static_cast<i32>(voxel::VoxelsPerChunkEdge);
 
 #warning fix
-                        const bool doesChunkShareAxis = false;
+                        // const bool doesChunkShareAxis = false;
                         // glm::any(glm::equal(chunkCoordinate, cameraCoordinate));
 
                         // TODO: refine bounds on axies
@@ -1225,25 +1225,25 @@ namespace voxel
                 }
             };
 
-            auto readChunkHashTable = [&](HashedGpuChunkLocation position) -> u16
-            {
-                const u32 key = position.hashed_value;
+            // auto readChunkHashTable = [&](HashedGpuChunkLocation position) -> u16
+            // {
+            //     const u32 key = position.hashed_value;
 
-                uint32_t slot = key % MaxChunkHashNodes;
+            //     uint32_t slot = key % MaxChunkHashNodes;
 
-                while (true)
-                {
-                    if (keys[slot].hashed_value == key)
-                    {
-                        return values[slot];
-                    }
-                    if (keys[slot].hashed_value == HashedGpuChunkLocation::Empty)
-                    {
-                        return 65535;
-                    }
-                    slot = (slot + 1) % MaxChunkHashNodes;
-                }
-            };
+            //     while (true)
+            //     {
+            //         if (keys[slot].hashed_value == key)
+            //         {
+            //             return values[slot];
+            //         }
+            //         if (keys[slot].hashed_value == HashedGpuChunkLocation::Empty)
+            //         {
+            //             return 65535;
+            //         }
+            //         slot = (slot + 1) % MaxChunkHashNodes;
+            //     }
+            // };
 
             for (const auto [key, value] : alignedChunksToPutInHashMap)
             {

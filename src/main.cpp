@@ -1,20 +1,11 @@
+
 #include "ecs/entity.hpp"
 #include "ecs/entity_component_system_manager.hpp"
 #include "ecs/raw_entity.hpp"
 #include "game/game.hpp"
 #include "util/log.hpp"
-#include "util/misc.hpp"
 #include "util/thread_pool.hpp"
 #include "verdigris/verdigris.hpp"
-#include "voxel/structures.hpp"
-#include <atomic>
-#include <boost/unordered/concurrent_flat_map.hpp>
-#include <cassert>
-#include <ctti/type_id.hpp>
-#include <glm/gtx/hash.hpp>
-#include <mutex>
-#include <string_view>
-#include <utility>
 
 //
 
@@ -37,38 +28,38 @@
 // Entity -> Component Map
 // Component Data Storage
 
-// class ConcreteEntity final : DERIVE_INHERENT_ENTITY(ConcreteEntity, entity)
-// {
-// public:
-//     explicit ConcreteEntity(ecs::UniqueEntity entity_, int health_ = 100)
-//         : name {"Unknown"}
-//         , health {health_}
-//         , entity {std::move(entity_)}
-//     {}
+class ConcreteEntity : DERIVE_INHERENT_ENTITY(ConcreteEntity, entity)
+{
+public:
+    explicit ConcreteEntity(int health_ = 100)
+        : name {"Unknown"}
+        , health {health_}
+        , entity {ecs::createEntity()}
+    {}
 
-//     [[nodiscard]] int getHealth() const
-//     {
-//         return this->health;
-//     }
-//     void setHealth(int health_)
-//     {
-//         this->health = health_;
-//     }
+    [[nodiscard]] int getHealth() const
+    {
+        return this->health;
+    }
+    void setHealth(int health_)
+    {
+        this->health = health_;
+    }
 
-//     [[nodiscard]] std::string_view getName() const
-//     {
-//         return this->name;
-//     }
-//     void setName(std::string_view newName)
-//     {
-//         this->name = newName;
-//     }
+    [[nodiscard]] std::string_view getName() const
+    {
+        return this->name;
+    }
+    void setName(std::string_view newName)
+    {
+        this->name = newName;
+    }
 
-// private:
-//     std::string       name;
-//     int               health;
-//     ecs::UniqueEntity entity;
-// };
+private:
+    std::string       name;
+    int               health;
+    ecs::UniqueEntity entity;
+};
 
 int main()
 {
@@ -77,8 +68,11 @@ int main()
     ecs::installGlobalECSManagerRacy();
 
     try
+
     {
-        int f = 0;
+        ConcreteEntity c {};
+
+        int f = std::bit_cast<long long>(c.offset());
 
         util::logLog(
             "starting lavender {}.{}.{}.{}{} {}",
