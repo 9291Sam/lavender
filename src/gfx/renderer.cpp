@@ -19,6 +19,12 @@ namespace gfx
 
     Renderer::Renderer()
     {
+        if constexpr (__APPLE__)
+        {
+            // NOLINTNEXTLINE(concurrency-mt-unsafe)
+            ::setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "1", 1);
+        }
+
         this->window = std::make_unique<Window>(
             std::map<gfx::Window::Action, gfx::Window::ActionInformation> {
                 {Window::Action::PlayerMoveForward,

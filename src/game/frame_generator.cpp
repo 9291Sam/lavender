@@ -404,7 +404,7 @@ namespace game
                   .front_face {vk::FrontFace::eClockwise},
                   .depth_test_enable {true},
                   .depth_write_enable {false},
-                  .depth_compare_op {vk::CompareOp::eLess},
+                  .depth_compare_op {vk::CompareOp::eGreater},
                   .color_format {gfx::Renderer::ColorFormat.format},
                   .depth_format {gfx::Renderer::DepthFormat},
                   .blend_enable {true},
@@ -1051,7 +1051,7 @@ namespace game
                 .loadOp {vk::AttachmentLoadOp::eClear},
                 .storeOp {vk::AttachmentStoreOp::eStore},
                 .clearValue {
-                    .depthStencil {vk::ClearDepthStencilValue {.depth {1.0}, .stencil {0}}},
+                    .depthStencil {vk::ClearDepthStencilValue {.depth {0.0}, .stencil {0}}},
                 }};
 
             const vk::RenderingInfo voxelRenderPassInfo {

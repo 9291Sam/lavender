@@ -23,10 +23,26 @@ namespace game
     // clang-format on
     {}
 
+    glm::mat4 InfiniteReversedPerspective(float fov, float aspectRatio, float nearPlane)
+    {
+        float f = 1.0f / tan(fov * 0.5f);
+
+        glm::mat4 result = glm::mat4(0.0f);
+        result[0][0]     = f / aspectRatio;
+        result[1][1]     = f;
+        result[2][2]     = 0.0f; // This makes the depth buffer reversed
+        result[2][3]     = -1.0f;
+        result[3][2]     = nearPlane; // Pushing near plane to zero
+        result[3][3]     = 0.0f;
+
+        return result;
+    }
+
     glm::mat4 Camera::getPerspectiveMatrix(const Game& game, const Transform& transform_) const
     {
         const glm::mat4 projection =
-            glm::infinitePerspective(game.getFovYRadians(), game.getAspectRatio(), 0.1f);
+            InfiniteReversedPerspective(game.getFovYRadians(), game.getAspectRatio(), 0.1f);
+        // glm::infinitePerspective(game.getFovYRadians(), game.getAspectRatio(), 5.0f);
 
         return projection * this->getViewMatrix() * transform_.asModelMatrix();
     }

@@ -52,7 +52,7 @@ namespace voxel
             glm::distance(
                 camera.getPosition(),
                 static_cast<glm::f32vec3>(this->entire_bounds.getCenterPosition()))
-            / 2.0f);
+            / 2.5f);
 
         if (this->payload.index() == 0)
         {

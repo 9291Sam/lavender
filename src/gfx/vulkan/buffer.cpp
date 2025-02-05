@@ -84,11 +84,6 @@ namespace gfx::vulkan
             this->overflow_transfers.lock(
                 [&](std::vector<OverflowTransfer>& overflowTransfers)
                 {
-                    util::logWarn(
-                        "overflowing {} on staging buffer! of size {}",
-                        overflowTransfers.size(),
-                        dataToWrite.size_bytes());
-
                     overflowTransfers.push_back({OverflowTransfer {
                         .buffer {buffer},
                         .offset {offset},
@@ -180,6 +175,11 @@ namespace gfx::vulkan
 
         {
             std::vector<OverflowTransfer> overflows = this->overflow_transfers.moveInner();
+
+            if (!overflows.empty())
+            {
+                util::logWarn("{} buffer transfer overflows this frame!", overflows.size());
+            }
 
             for (OverflowTransfer& t : overflows)
             {

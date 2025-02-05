@@ -625,7 +625,7 @@ namespace voxel
                   .front_face {vk::FrontFace::eCounterClockwise},
                   .depth_test_enable {true},
                   .depth_write_enable {true},
-                  .depth_compare_op {vk::CompareOp::eLess},
+                  .depth_compare_op {vk::CompareOp::eGreater},
                   .color_format {vk::Format::eR32Uint},
                   .depth_format {gfx::Renderer::DepthFormat},
                   .blend_enable {false},
