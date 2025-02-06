@@ -170,6 +170,8 @@ namespace voxel
         LodWorldManager& operator= (const LodWorldManager&) = delete;
         LodWorldManager& operator= (LodWorldManager&&)      = delete;
 
+        bool readIsPositionOccupied(glm::ivec3) const;
+
         [[nodiscard]] std::vector<game::FrameGenerator::RecordObject>
         onFrameUpdate(const game::Camera&, gfx::profiler::TaskGenerator&);
     private:
