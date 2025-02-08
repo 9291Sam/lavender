@@ -83,17 +83,17 @@ namespace verdigris
             .translation {glm::vec3 {6.323123, 26.3232123f, 33.8473f}},
             .scale {glm::vec3 {1399.0f, 1399.0f, 1399.0f}}}});
 
-        this->camera.addPosition({79.606, 2222.586, -9.784});
-        this->camera.addPitch(0.397f);
-        this->camera.addYaw(5.17f);
+        this->camera.addPosition({3.606, 120.586, 199.784});
+        this->camera.addPitch(0.5343f);
+        this->camera.addYaw(0.417f);
 
         this->laser_handle = this->laser_particle_system.createParticleSystem(
             render::LaserParticleSystem::ParticleSystemConfiguration {
                 .start {34.0f, 29.0f, 14.0f},
-                .end {583.0f, 449.3f, 383.0f},
-                .density {1000.0f},
-                .spread {1.0f},
-                .scale {0.05f},
+                .end {4583.0f, 4449.3f, 4383.0f},
+                .density {10.0f},
+                .spread {132.0f},
+                .scale {1.0f},
                 .color {0.75f, 0.68f, 0.0f, 1.0f}});
 
         // voxel::MaterialBrick brick {};
@@ -177,12 +177,12 @@ namespace verdigris
             this->game->getRenderer()->getWindow()->toggleCursor();
         }
 
-        if (this->game->getRenderer()->getFrameNumber() == 4
-            || this->game->getRenderer()->getWindow()->isActionActive(
-                gfx::Window::Action::ResetPlayPosition))
-        {
-            this->camera.setPosition({79.606, 75.586, 16.78});
-        }
+        // if (this->game->getRenderer()->getFrameNumber() == 4
+        //     || this->game->getRenderer()->getWindow()->isActionActive(
+        //         gfx::Window::Action::ResetPlayPosition))
+        // {
+        //     this->camera.setPosition({79.606, 75.586, 16.78});
+        // }
 
         // TODO: make not static lol
         static float verticalVelocity = 0.0f;    // Initial velocity for gravity

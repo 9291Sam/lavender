@@ -68,6 +68,8 @@ namespace world
 
         auto height     = gen2D(static_cast<float>(integerScale) * 0.001f, this->seed + 487484);
         auto bumpHeight = gen2D(static_cast<float>(integerScale) * 0.01f, this->seed + 7373834);
+        auto mountainHeight =
+            gen2D(static_cast<float>(integerScale) * 1.0f / 16384.0f, (this->seed * 3884) - 83483);
         // auto mainRock    = gen3D(static_cast<float>(integerScale) * 0.001f, this->seed - 747875);
         // auto pebblesRock = gen3D(static_cast<float>(integerScale) * 0.01f, this->seed -
         // 52649274); auto pebbles     = gen3D(static_cast<float>(integerScale) * 0.05f, this->seed
@@ -83,17 +85,19 @@ namespace world
                 // const i32 unscaledWorldHeight =
                 //     static_cast<i32>(std::exp2((*height)[j][i] * 12.0f));
 
-                const i32 unscaledWorldHeight =
-                    static_cast<i32>((*height)[j][i] * 32.0f + (*bumpHeight)[j][i] * 2.0f);
+                const i32 unscaledWorldHeight = static_cast<i32>(
+                    (*height)[j][i] * 32.0f + (*bumpHeight)[j][i] * 2.0f
+                    + (*mountainHeight)[j][i] * 1024.0f);
 
                 for (u8 h = 0; h < 64; ++h)
                 {
                     const i32 worldHeightOfVoxel =
                         static_cast<i32>(h * gpu_calculateChunkVoxelSizeUnits(chunkRoot.lod))
                         + root.y;
-                    const i32 relativeDistanceToHeight = (worldHeightOfVoxel - unscaledWorldHeight);
+                    const i32 relativeDistanceToHeight =
+                        (worldHeightOfVoxel - unscaledWorldHeight) + (4 * integerScale);
 
-                    if (relativeDistanceToHeight < 0)
+                    if (relativeDistanceToHeight < 0 * integerScale)
                     {
                         out.push_back(voxel::ChunkLocalUpdate {
                             voxel::ChunkLocalPosition {{i, h, j}},
@@ -106,7 +110,7 @@ namespace world
                             voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
                             voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
                     }
-                    else if (relativeDistanceToHeight < 2)
+                    else if (relativeDistanceToHeight < 2 * integerScale)
                     {
                         out.push_back(voxel::ChunkLocalUpdate {
                             voxel::ChunkLocalPosition {{i, h, j}},
@@ -114,7 +118,8 @@ namespace world
                             voxel::ChunkLocalUpdate::ShadowUpdate::ShadowCasting,
                             voxel::ChunkLocalUpdate::CameraVisibleUpdate::CameraVisible});
                     }
-                    else if (relativeDistanceToHeight < 3)
+                    else if (relativeDistanceToHeight < 3 * integerScale)
+
                     {
                         out.push_back(voxel::ChunkLocalUpdate {
                             voxel::ChunkLocalPosition {{i, h, j}},

@@ -136,6 +136,12 @@ namespace voxel
                         12.0f}},
                     .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 256}}}));
         }
+
+        this->temporary_raytraced_lights.push_back(
+            this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
+                .position_and_half_intensity_distance {
+                    glm::vec4 {16384.0f, 16384.0f, 16384.0f, 8192.0f}},
+                .color_and_power {glm::vec4 {1.0f, 1.0f, 1.0f, 256.0f}}}));
     }
 
     LodWorldManager::~LodWorldManager()
