@@ -1,8 +1,10 @@
 
 
 #include "lazily_generated_chunk.hpp"
+#include <atomic>
 #include <chrono>
 #include <future>
+#include <memory>
 
 namespace voxel
 {
@@ -65,6 +67,10 @@ namespace voxel
                 this->is_meshing_complete =
                     this->chunk_render_manager->updateChunk(this->chunk, realUpdates);
             }
+            else
+            {
+                this->is_meshing_complete = std::make_shared<std::atomic_bool>(true);
+            }
         }
 
         if (!extraUpdates.empty() && extraUpdates.data() != nullptr)
@@ -75,10 +81,9 @@ namespace voxel
 
     bool LazilyGeneratedChunk::isFullyLoaded() const
     {
-        if (this->is_meshing_complete.valid())
+        if (this->is_meshing_complete != nullptr)
         {
-            return this->is_meshing_complete.wait_for(std::chrono::years {})
-                == std::future_status::ready;
+            return this->is_meshing_complete->load();
         }
         else
         {

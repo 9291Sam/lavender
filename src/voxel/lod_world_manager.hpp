@@ -12,6 +12,7 @@
 #include "world/generator.hpp"
 #include <glm/geometric.hpp>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -91,6 +92,12 @@ namespace voxel
                     chunk->markShouldNotGenerate();
                 }
             }
+
+            Node(const Node&)             = delete;
+            Node(Node&&)                  = default;
+            Node& operator= (const Node&) = delete;
+            Node& operator= (Node&&)      = default;
+
             voxel::ChunkLocation                                                     entire_bounds;
             std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>> payload;
             std::optional<std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>>>
@@ -103,61 +110,6 @@ namespace voxel
                 world::WorldGenerator*);
 
             [[nodiscard]] bool isNodeFullyLoaded() const;
-
-            // void update(const world::WorldGenerator& worldGenerator, glm::vec3 cameraPosition)
-            // {
-            //     const u32 desiredLOD =
-            //     calculateLODBasedOnDistance(static_cast<f32>(glm::distance(
-            //         static_cast<glm::f64vec3>(cameraPosition),
-            //         static_cast<glm::f64vec3>(this->entire_bounds.getCenterPosition()))));
-
-            //     switch (this->payload.index())
-            //     {
-            //     case 0: {
-            //         LazilyGeneratedChunk* const chunk =
-            //             std::get_if<LazilyGeneratedChunk>(&this->payload);
-
-            //         if (desiredLOD == this->entire_bounds.lod)
-            //         { /* do nothing */
-            //         }
-            //         else if (desiredLOD > this->entire_bounds.lod)
-            //         { // we shouldn't exist
-            //             util::logWarn("we shouldn't exist!");
-            //         }
-            //         else
-            //         { // Subdivide
-            //             chunk->leak();
-
-            //             this->payload.emplace(this->generateChildren(worldGenerator));
-            //             // we're too far, we shouldn;t exist
-            //         }
-            //         break;
-            //     }
-            //     case 1: {
-            //         std::array<std::unique_ptr<Node>, 8>* const nodes =
-            //             std::get_if<std::array<std::unique_ptr<Node>, 8>>(&this->payload);
-
-            //         if (desiredLOD == this->entire_bounds.lod)
-            //         {
-            //             this->generateSingle(worldGenerator);
-            //         }
-            //         else if (desiredLOD > this->entire_bounds.lod)
-            //         { // we shouldn't exist
-            //             util::logWarn("we shouldn't exist!");
-            //         }
-            //         else
-            //         { // Subdivide
-            //             chunk->leak();
-
-            //             this->payload.emplace(this->generateChildren());
-            //             // we're too far, we shouldn;t exist
-            //         }
-            //         break;
-            //     }
-            //     default:
-            //         std::unreachable();
-            //     }
-            // }
         };
 
         Node root;

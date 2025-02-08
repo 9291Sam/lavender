@@ -44,6 +44,6 @@ namespace voxel
         std::shared_ptr<std::atomic<bool>> should_still_generate;
 
         std::future<std::vector<voxel::ChunkLocalUpdate>> updates;
-        std::future<void>                                 is_meshing_complete;
+        std::shared_ptr<std::atomic_bool>                 is_meshing_complete;
     };
 } // namespace voxel

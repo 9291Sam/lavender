@@ -43,11 +43,10 @@ namespace voxel
         void                         destroyRaytracedLight(RaytracedLight);
 
         // Returns a future to when the meshing of this chunk is actually completed
-        std::future<void> updateChunk(
+        std::shared_ptr<std::atomic_bool> updateChunk(
             const Chunk&,
             std::span<const ChunkLocalUpdate>,
-            bool requestResultSemaphore = false,
-            std::source_location        = std::source_location::current());
+            std::source_location = std::source_location::current());
 
         std::vector<game::FrameGenerator::RecordObject>
         processUpdatesAndGetDrawObjects(const game::Camera&, gfx::profiler::TaskGenerator&);

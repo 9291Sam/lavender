@@ -15,6 +15,7 @@
 #include "util/thread_pool.hpp"
 #include "util/timer.hpp"
 #include "voxel/material_manager.hpp"
+#include <atomic>
 #include <boost/dynamic_bitset/dynamic_bitset.hpp>
 #include <future>
 #include <glm/geometric.hpp>
@@ -880,10 +881,9 @@ namespace voxel
         this->raytraced_light_allocator.free(std::move(light));
     }
 
-    std::future<void> ChunkRenderManager::updateChunk(
+    std::shared_ptr<std::atomic_bool> ChunkRenderManager::updateChunk(
         const Chunk&                      chunk,
         std::span<const ChunkLocalUpdate> chunkUpdates,
-        bool                              requestResultSemaphore,
         std::source_location              location)
     {
         util::assertFatal<>(!chunk.isNull(), "Tried to update null chunk!", location);
@@ -895,16 +895,9 @@ namespace voxel
         // this is literally a 3x improvement over a loop
         chunkData.updates.append_range(chunkUpdates);
 
-        chunkData.maybe_async_mesh_caller_result = {};
+        chunkData.maybe_async_mesh_caller_result = std::make_shared<std::atomic_bool>(false);
 
-        if (requestResultSemaphore)
-        {
-            return chunkData.maybe_async_mesh_caller_result.get_future();
-        }
-        else
-        {
-            return {};
-        }
+        return chunkData.maybe_async_mesh_caller_result;
     }
 
     std::vector<game::FrameGenerator::RecordObject>
@@ -1087,8 +1080,7 @@ namespace voxel
 
                     thisChunkData.active_draw_allocations = allocations;
 
-                    thisChunkData.maybe_async_mesh_caller_result.set_value();
-                    thisChunkData.maybe_async_mesh_caller_result = {};
+                    thisChunkData.maybe_async_mesh_caller_result->store(true);
                 }
             });
 

@@ -643,9 +643,9 @@ namespace voxel
         std::optional<util::RangeAllocation>                active_brick_range_allocation;
         std::optional<std::array<util::RangeAllocation, 6>> active_draw_allocations;
 
-        std::vector<ChunkLocalUpdate> updates;
-        std::future<ChunkAsyncMesh>   maybe_async_mesh;
-        std::promise<void>            maybe_async_mesh_caller_result;
+        std::vector<ChunkLocalUpdate>     updates;
+        std::future<ChunkAsyncMesh>       maybe_async_mesh;
+        std::shared_ptr<std::atomic_bool> maybe_async_mesh_caller_result;
     };
 
     struct VisibleFaceIdBrickHashMapStorage
