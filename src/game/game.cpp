@@ -1,9 +1,12 @@
 #include "game.hpp"
 #include "camera.hpp"
 #include "frame_generator.hpp"
+#include "gfx/profiler/profiler.hpp"
+#include "gfx/profiler/task_generator.hpp"
 #include "util/static_filesystem.hpp"
 #include "util/thread_pool.hpp"
 #include "util/threads.hpp"
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -114,10 +117,15 @@ namespace game
 
                         std::chrono::duration<float> diff = end - start;
 
+                        std::vector<gfx::profiler::ProfilerTask> tasks =
+                            package.generator.getTasks();
+
+                        std::ranges::reverse(tasks);
+
                         this->frame_generator->generateFrame(
                             package.main_scene_camera,
                             std::move(package.record_objects),
-                            package.generator.getTasks());
+                            std::move(tasks));
 
                         isFirstIterationAfterGameStateChange = false;
                     }
