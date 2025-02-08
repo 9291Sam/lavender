@@ -13,9 +13,9 @@ namespace voxel
         ~LazilyGeneratedChunk();
 
         LazilyGeneratedChunk(const LazilyGeneratedChunk&)             = delete;
-        LazilyGeneratedChunk(LazilyGeneratedChunk&&)                  = delete;
+        LazilyGeneratedChunk(LazilyGeneratedChunk&&)                  = default;
         LazilyGeneratedChunk& operator= (const LazilyGeneratedChunk&) = delete;
-        LazilyGeneratedChunk& operator= (LazilyGeneratedChunk&&)      = delete;
+        LazilyGeneratedChunk& operator= (LazilyGeneratedChunk&&)      = default;
 
         void markShouldNotGenerate()
         {
@@ -31,6 +31,8 @@ namespace voxel
         void updateAndFlushUpdates(
             std::span<const voxel::ChunkLocalUpdate> extraUpdates, std::size_t& updatesOcurred);
 
+        [[nodiscard]] bool isFullyLoaded() const;
+
         [[nodiscard]] const ChunkRenderManager::Chunk* getChunk() const
         {
             return &this->chunk;
@@ -42,5 +44,6 @@ namespace voxel
         std::shared_ptr<std::atomic<bool>> should_still_generate;
 
         std::future<std::vector<voxel::ChunkLocalUpdate>> updates;
+        std::future<void>                                 is_meshing_complete;
     };
 } // namespace voxel

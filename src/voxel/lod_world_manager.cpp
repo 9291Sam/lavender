@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <random>
 
 namespace voxel
@@ -78,7 +79,15 @@ namespace voxel
                         worldGenerator);
                 }
 
-                this->payload = std::move(newChildren);
+                // this->payload -> previous_payload_lifetime_extension
+                // newChildren -> this->payload
+
+                std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>> temp =
+                    std::move(newChildren);
+
+                std::swap(temp, this->payload);
+
+                this->previous_payload_lifetime_extension = std::move(temp);
             }
             else
             {
@@ -95,8 +104,13 @@ namespace voxel
             {
                 *children = {};
 
-                this->payload.emplace<LazilyGeneratedChunk>(
-                    threadPool, chunkRenderManager, worldGenerator, this->entire_bounds);
+                std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>> temp =
+                    LazilyGeneratedChunk {
+                        threadPool, chunkRenderManager, worldGenerator, this->entire_bounds};
+
+                std::swap(temp, this->payload);
+
+                this->previous_payload_lifetime_extension = std::move(temp);
             }
             else
             {
@@ -108,6 +122,58 @@ namespace voxel
                     }
                 }
             }
+        }
+
+        if (this->previous_payload_lifetime_extension.has_value())
+        {
+            if (this->payload.index() == 0)
+            {
+                LazilyGeneratedChunk* const chunk = std::get_if<0>(&this->payload);
+
+                std::size_t _ = 0;
+
+                chunk->updateAndFlushUpdates({}, _);
+            }
+            else
+            {
+                const std::array<std::unique_ptr<Node>, 8>* const children =
+                    std::get_if<1>(&this->payload);
+
+                for (const std::unique_ptr<Node>& p : *children)
+                {
+                    p->update(camera, threadPool, chunkRenderManager, worldGenerator);
+                }
+            }
+
+            if (this->isNodeFullyLoaded())
+            {
+                this->previous_payload_lifetime_extension = std::nullopt;
+            }
+        }
+    }
+
+    bool VoxelChunkOctree::Node::isNodeFullyLoaded() const
+    {
+        if (this->payload.index() == 0)
+        {
+            const LazilyGeneratedChunk* const chunk = std::get_if<0>(&this->payload);
+
+            return chunk->isFullyLoaded();
+        }
+        else
+        {
+            const std::array<std::unique_ptr<Node>, 8>* const children =
+                std::get_if<1>(&this->payload);
+
+            for (const std::unique_ptr<Node>& p : *children)
+            {
+                if (!p->isNodeFullyLoaded())
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 

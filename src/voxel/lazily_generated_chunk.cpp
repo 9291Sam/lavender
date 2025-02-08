@@ -1,6 +1,8 @@
 
 
 #include "lazily_generated_chunk.hpp"
+#include <chrono>
+#include <future>
 
 namespace voxel
 {
@@ -60,7 +62,8 @@ namespace voxel
 
             if (!realUpdates.empty())
             {
-                this->chunk_render_manager->updateChunk(this->chunk, realUpdates);
+                this->is_meshing_complete =
+                    this->chunk_render_manager->updateChunk(this->chunk, realUpdates);
             }
         }
 
@@ -69,4 +72,18 @@ namespace voxel
             this->chunk_render_manager->updateChunk(this->chunk, extraUpdates);
         }
     }
+
+    bool LazilyGeneratedChunk::isFullyLoaded() const
+    {
+        if (this->is_meshing_complete.valid())
+        {
+            return this->is_meshing_complete.wait_for(std::chrono::years {})
+                == std::future_status::ready;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
 } // namespace voxel

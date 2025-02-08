@@ -93,12 +93,16 @@ namespace voxel
             }
             voxel::ChunkLocation                                                     entire_bounds;
             std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>> payload;
+            std::optional<std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>>>
+                previous_payload_lifetime_extension;
 
             void update(
                 const game::Camera&,
                 util::ThreadPool&,
                 ChunkRenderManager*,
                 world::WorldGenerator*);
+
+            [[nodiscard]] bool isNodeFullyLoaded() const;
 
             // void update(const world::WorldGenerator& worldGenerator, glm::vec3 cameraPosition)
             // {
@@ -162,7 +166,7 @@ namespace voxel
     class LodWorldManager
     {
     public:
-        explicit LodWorldManager(const game::Game*, u32 dimension = 2u << 20u);
+        explicit LodWorldManager(const game::Game*, u32 dimension = 1024);
         ~LodWorldManager();
 
         LodWorldManager(const LodWorldManager&)             = delete;

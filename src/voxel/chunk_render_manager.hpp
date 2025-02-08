@@ -9,6 +9,7 @@
 #include "util/opaque_integer_handle.hpp"
 #include "util/range_allocator.hpp"
 #include <boost/dynamic_bitset.hpp>
+#include <semaphore>
 #include <source_location>
 #include <span>
 #include <vulkan/vulkan_handles.hpp>
@@ -41,10 +42,12 @@ namespace voxel
         [[nodiscard]] RaytracedLight createRaytracedLight(GpuRaytracedLight);
         void                         destroyRaytracedLight(RaytracedLight);
 
-        void updateChunk(
+        // Returns a future to when the meshing of this chunk is actually completed
+        std::future<void> updateChunk(
             const Chunk&,
             std::span<const ChunkLocalUpdate>,
-            std::source_location = std::source_location::current());
+            bool requestResultSemaphore = false,
+            std::source_location        = std::source_location::current());
 
         std::vector<game::FrameGenerator::RecordObject>
         processUpdatesAndGetDrawObjects(const game::Camera&, gfx::profiler::TaskGenerator&);

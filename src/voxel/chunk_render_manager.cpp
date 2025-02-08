@@ -880,19 +880,31 @@ namespace voxel
         this->raytraced_light_allocator.free(std::move(light));
     }
 
-    void ChunkRenderManager::updateChunk(
+    std::future<void> ChunkRenderManager::updateChunk(
         const Chunk&                      chunk,
         std::span<const ChunkLocalUpdate> chunkUpdates,
+        bool                              requestResultSemaphore,
         std::source_location              location)
     {
         util::assertFatal<>(!chunk.isNull(), "Tried to update null chunk!", location);
         util::assertWarn<>(!chunkUpdates.empty(), "Tried to do zero updates to a chunk!", location);
 
-        std::vector<ChunkLocalUpdate>& updatesQueue =
-            this->cpu_chunk_data[this->chunk_id_allocator.getValueOfHandle(chunk)].updates;
+        CpuChunkData& chunkData =
+            this->cpu_chunk_data[this->chunk_id_allocator.getValueOfHandle(chunk)];
 
         // this is literally a 3x improvement over a loop
-        updatesQueue.append_range(chunkUpdates);
+        chunkData.updates.append_range(chunkUpdates);
+
+        chunkData.maybe_async_mesh_caller_result = {};
+
+        if (requestResultSemaphore)
+        {
+            return chunkData.maybe_async_mesh_caller_result.get_future();
+        }
+        else
+        {
+            return {};
+        }
     }
 
     std::vector<game::FrameGenerator::RecordObject>
@@ -1074,6 +1086,9 @@ namespace voxel
                     }
 
                     thisChunkData.active_draw_allocations = allocations;
+
+                    thisChunkData.maybe_async_mesh_caller_result.set_value();
+                    thisChunkData.maybe_async_mesh_caller_result = {};
                 }
             });
 

@@ -645,6 +645,7 @@ namespace voxel
 
         std::vector<ChunkLocalUpdate> updates;
         std::future<ChunkAsyncMesh>   maybe_async_mesh;
+        std::promise<void>            maybe_async_mesh_caller_result;
     };
 
     struct VisibleFaceIdBrickHashMapStorage
