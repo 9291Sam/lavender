@@ -13,6 +13,7 @@
 #include <gfx/vulkan/device.hpp>
 #include <gfx/window.hpp>
 #include <memory>
+#include <random>
 #include <util/log.hpp>
 #include <vulkan/vulkan_structs.hpp>
 
@@ -80,6 +81,8 @@ namespace game
 
         bool isFirstIterationAfterGameStateChange = true;
 
+        std::mt19937 drawShuffler {std::random_device {}()};
+
         while (!this->renderer->shouldWindowClose() && !this->should_game_close.load())
         {
             this->active_game_state.lock(
@@ -103,6 +106,11 @@ namespace game
                         auto                         start   = std::chrono::steady_clock::now();
                         GameState::OnFrameReturnData package = state->onFrame(deltaTime);
                         auto                         end     = std::chrono::steady_clock::now();
+
+                        std::shuffle(
+                            package.record_objects.begin(),
+                            package.record_objects.end(),
+                            drawShuffler);
 
                         std::chrono::duration<float> diff = end - start;
 

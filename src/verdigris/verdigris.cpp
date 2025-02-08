@@ -8,6 +8,7 @@
 #include "gfx/renderer.hpp"
 #include "gfx/vulkan/allocator.hpp"
 #include "gfx/window.hpp"
+#include "laser_particle_system.hpp"
 #include "triangle_component.hpp"
 #include "util/misc.hpp"
 #include "util/static_filesystem.hpp"
@@ -34,8 +35,8 @@ namespace verdigris
         , triangle {ecs::createEntity()}
         , absolute_scroll_y {0.0}
         , lod_world_manager {this->game}
+        , laser_particle_system(this->game->getRenderer())
         , time_alive {0.0f}
-
     {
         this->triangle_pipeline = this->game->getRenderer()->getAllocator()->cachePipeline(
             gfx::vulkan::CacheableGraphicsPipelineCreateInfo {
@@ -85,6 +86,15 @@ namespace verdigris
         this->camera.addPosition({79.606, 2222.586, -9.784});
         this->camera.addPitch(0.397f);
         this->camera.addYaw(5.17f);
+
+        this->laser_handle = this->laser_particle_system.createParticleSystem(
+            render::LaserParticleSystem::ParticleSystemConfiguration {
+                .start {34.0f, 29.0f, 14.0f},
+                .end {583.0f, 449.3f, 383.0f},
+                .density {1000.0f},
+                .spread {1.0f},
+                .scale {0.05f},
+                .color {0.75f, 0.68f, 0.0f, 1.0f}});
 
         // voxel::MaterialBrick brick {};
 
@@ -136,10 +146,7 @@ namespace verdigris
 
     Verdigris::~Verdigris()
     {
-        // for (auto& [pos, o] : this->cubes)
-        // {
-        //     this->voxel_world.destroyVoxelObject(std::move(o));
-        // }
+        this->laser_particle_system.destroyParticleSystem(std::move(this->laser_handle));
     }
 
     game::Game::GameState::OnFrameReturnData Verdigris::onFrame(float deltaTime) const
@@ -356,25 +363,27 @@ namespace verdigris
 
         profilerTaskGenerator.stamp("update block");
 
-        ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
-            [&](ecs::RawEntity, const TriangleComponent& c)
-            {
-                draws.push_back(game::FrameGenerator::RecordObject {
-                    .transform {c.transform},
-                    .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},
-                    .pipeline {this->triangle_pipeline},
-                    .descriptors {
-                        {this->game->getGlobalInfoDescriptorSet(), nullptr, nullptr, nullptr}},
-                    .record_func {
-                        [](vk::CommandBuffer commandBuffer, vk::PipelineLayout layout, u32 id)
-                        {
-                            commandBuffer.pushConstants(
-                                layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(u32), &id);
+        // ecs::getGlobalECSManager()->iterateComponents<TriangleComponent>(
+        //     [&](ecs::RawEntity, const TriangleComponent& c)
+        //     {
+        //         draws.push_back(game::FrameGenerator::RecordObject {
+        //             .transform {c.transform},
+        //             .render_pass {game::FrameGenerator::DynamicRenderingPass::SimpleColor},
+        //             .pipeline {this->triangle_pipeline},
+        //             .descriptors {
+        //                 {this->game->getGlobalInfoDescriptorSet(), nullptr, nullptr, nullptr}},
+        //             .record_func {
+        //                 [](vk::CommandBuffer commandBuffer, vk::PipelineLayout layout, u32 id)
+        //                 {
+        //                     commandBuffer.pushConstants(
+        //                         layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(u32), &id);
 
-                            commandBuffer.draw(3, 1, 0, 0);
-                        }},
-                });
-            });
+        //                     commandBuffer.draw(3, 1, 0, 0);
+        //                 }},
+        //         });
+        //     });
+
+        draws.push_back(this->laser_particle_system.getRecordObject(realCamera, *this->game));
 
         profilerTaskGenerator.stamp("Triangle Propagation");
 

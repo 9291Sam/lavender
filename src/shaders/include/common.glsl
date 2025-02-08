@@ -7,6 +7,8 @@
 #include "util/misc.hpp"
 #include <glm/gtx/hash.hpp>
 using glm::ivec3;
+using glm::vec3;
+using glm::vec4;
 
 #else
 
@@ -15,6 +17,7 @@ using glm::ivec3;
 
 #endif // __cplusplus
 
+// https://nullprogram.com/blog/2018/07/31/
 GLSL_INLINE u32 gpu_hashU32(u32 x)
 {
     x ^= x >> 17;
@@ -72,6 +75,38 @@ GLSL_INLINE u32 gpu_calculateChunkWidthUnits(u32 lod)
 GLSL_INLINE u32 gpu_calculateChunkVoxelSizeUnits(u32 lod)
 {
     return 1u << lod;
+}
+
+GLSL_INLINE u32 gpu_linearToSRGB(vec4 color)
+{
+    vec3 t;
+    t.x = pow(color.x, 1.0f / 2.2f);
+    t.y = pow(color.y, 1.0f / 2.2f);
+    t.z = pow(color.z, 1.0f / 2.2f);
+
+    u32 result = 0;
+    result |= (0xFF & u32(t.x * 255.0f));
+    result |= ((0xFF & u32(t.y * 255.0f)) << 8);
+    result |= ((0xFF & u32(t.z * 255.0f)) << 16);
+    result |= ((0xFF & u32(color.w * 255.0f)) << 24);
+
+    return result;
+}
+
+GLSL_INLINE vec4 gpu_srgbToLinear(u32 srgb)
+{
+    vec4 result;
+    result.x = f32(srgb & 0xFF) / 255.0f;
+    result.y = f32((srgb >> 8) & 0xFF) / 255.0f;
+    result.z = f32((srgb >> 16) & 0xFF) / 255.0f;
+
+    result.x = pow(result.x, 2.2f);
+    result.y = pow(result.y, 2.2f);
+    result.z = pow(result.z, 2.2f);
+
+    result.w = f32((srgb >> 24) & 0xFF) / 255.0f;
+
+    return result;
 }
 
 #endif // SRC_SHADERS_INCLUDE_COMMON_GLSL

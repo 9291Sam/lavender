@@ -69,6 +69,8 @@ find_package(Freetype REQUIRED)
 add_executable(lavender
     src/main.cpp
 
+    src/laser_particle_system.cpp
+
     src/ecs/entity_component_storage.cpp
     src/ecs/raw_entity.cpp
     
@@ -297,6 +299,8 @@ compile_shader(lavender
     FORMAT bin
     INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/src/shaders/include"
     SOURCES
+    src/shaders/laser.vert
+    src/shaders/laser.frag
     src/shaders/triangle.vert
     src/shaders/triangle.frag
     src/shaders/voxel_color_calculation.comp
@@ -317,6 +321,8 @@ cmrc_add_resource_library(
     NAMESPACE lav
     build/src/shaders/triangle.frag.bin
     build/src/shaders/triangle.vert.bin
+    build/src/shaders/laser.frag.bin
+    build/src/shaders/laser.vert.bin
     build/src/shaders/voxel_color_calculation.comp.bin
     build/src/shaders/voxel_color_transfer.vert.bin
     build/src/shaders/voxel_color_transfer.frag.bin
