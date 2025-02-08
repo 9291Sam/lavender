@@ -72,16 +72,13 @@ int main()
     {
         ConcreteEntity c {};
 
-        int f = std::bit_cast<long long>(c.offset());
-
         util::logLog(
-            "starting lavender {}.{}.{}.{}{} {}",
+            "starting lavender {}.{}.{}.{}{}",
             LAVENDER_VERSION_MAJOR,
             LAVENDER_VERSION_MINOR,
             LAVENDER_VERSION_PATCH,
             LAVENDER_VERSION_TWEAK,
-            util::isDebugBuild() ? " | Debug Build" : "",
-            f);
+            util::isDebugBuild() ? " | Debug Build" : "");
 
         game::Game game {};
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gfx/profiler/profiler.hpp"
+#include <algorithm>
 #include <chrono>
 namespace gfx::profiler
 {

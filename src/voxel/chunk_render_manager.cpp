@@ -980,8 +980,16 @@ namespace voxel
                                 localNewUpdates);
                         });
                 }
-                else if (
-                    thisChunkData.maybe_async_mesh.valid()
+            });
+
+        profilerTaskGenerator.stamp("Spawn Meshes");
+
+        this->chunk_id_allocator.iterateThroughAllocatedElements(
+            [&](const u16 chunkId) // NOLINT
+            {
+                CpuChunkData& thisChunkData = this->cpu_chunk_data[chunkId];
+
+                if (thisChunkData.maybe_async_mesh.valid()
                     && thisChunkData.maybe_async_mesh.wait_for(std::chrono::years {0})
                            == std::future_status::ready)
                 {
@@ -1067,6 +1075,27 @@ namespace voxel
 
                     thisChunkData.active_draw_allocations = allocations;
                 }
+            });
+
+        profilerTaskGenerator.stamp("Integrate Mesh");
+
+        this->chunk_id_allocator.iterateThroughAllocatedElements(
+            [&](const u16 chunkId) // NOLINT
+            {
+                CpuChunkData& thisChunkData = this->cpu_chunk_data[chunkId];
+
+                const ChunkLocation chunkPosition = [&]
+                {
+                    const PerChunkGpuData& gpuData = this->gpu_chunk_data.read(chunkId);
+
+                    return ChunkLocation {
+                        glm::i32vec3 {
+                            gpuData.world_offset_x,
+                            gpuData.world_offset_y,
+                            gpuData.world_offset_z,
+                        },
+                        gpuData.lod};
+                }();
 
                 bool isChunkInFrustum = true;
 
@@ -1137,7 +1166,7 @@ namespace voxel
                     }
                 }
             });
-        profilerTaskGenerator.stamp("Cull and Spawn Meshes");
+        profilerTaskGenerator.stamp("Cull Meshes");
 
         // Update Debug Menu
         ::numberOfChunksAllocated.store(this->chunk_id_allocator.getNumberAllocated());
