@@ -32,6 +32,7 @@ namespace voxel
                       return {};
                   }
               })}
+        , is_meshing_complete {std::make_shared<std::atomic_bool>(false)}
     {}
 
     LazilyGeneratedChunk::~LazilyGeneratedChunk()

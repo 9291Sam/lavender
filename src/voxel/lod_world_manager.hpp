@@ -118,7 +118,7 @@ namespace voxel
     class LodWorldManager
     {
     public:
-        explicit LodWorldManager(const game::Game*, u32 dimension = 1024);
+        explicit LodWorldManager(const game::Game*, u32 dimension = 2u << 20u);
         ~LodWorldManager();
 
         LodWorldManager(const LodWorldManager&)             = delete;

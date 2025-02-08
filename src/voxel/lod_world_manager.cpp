@@ -102,8 +102,6 @@ namespace voxel
 
             if (this->entire_bounds.lod <= desiredLOD)
             {
-                *children = {};
-
                 std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>> temp =
                     LazilyGeneratedChunk {
                         threadPool, chunkRenderManager, worldGenerator, this->entire_bounds};
