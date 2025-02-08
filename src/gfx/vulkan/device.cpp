@@ -185,7 +185,7 @@ namespace gfx::vulkan
             numberOfGraphicsQueues, numberOfAsyncComputeQueues, numberOfAsyncTransferQueues};
 
         std::array requiredExtensions {
-            "VK_KHR_dynamic_rendering",
+            vk::KHRDynamicRenderingExtensionName,
             vk::KHRSwapchainExtensionName,
 #ifdef __APPLE__
             "VK_KHR_portability_subset",

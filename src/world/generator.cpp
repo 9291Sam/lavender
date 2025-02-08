@@ -20,11 +20,6 @@ namespace world
     {
         const voxel::WorldPosition root {chunkRoot.root_position};
 
-        // if (root.x == 0 && root.z == 0)
-        // {
-        //     return {};
-        // }
-
         const i32 integerScale = static_cast<i32>(gpu_calculateChunkVoxelSizeUnits(chunkRoot.lod));
 
         auto gen2D =

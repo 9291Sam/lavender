@@ -92,7 +92,7 @@ namespace verdigris
                 .start {34.0f, 29.0f, 14.0f},
                 .end {4583.0f, 4449.3f, 4383.0f},
                 .density {10.0f},
-                .spread {132.0f},
+                .spread {16.0f},
                 .scale {1.0f},
                 .color {0.75f, 0.68f, 0.0f, 1.0f}});
 
