@@ -56,13 +56,20 @@ namespace game
             : command_buffer {commandBuffer}
             , color_index {0}
         {
-            const vk::DebugUtilsLabelEXT label = this->generateNextLabel(renderpassName.c_str());
+            if constexpr (util::isDebugBuild())
+            {
+                const vk::DebugUtilsLabelEXT label =
+                    this->generateNextLabel(renderpassName.c_str());
 
-            this->command_buffer.beginDebugUtilsLabelEXT(&label);
+                this->command_buffer.beginDebugUtilsLabelEXT(&label);
+            }
         }
         ~DebugLabelStamper()
         {
-            this->command_buffer.endDebugUtilsLabelEXT();
+            if constexpr (util::isDebugBuild())
+            {
+                this->command_buffer.endDebugUtilsLabelEXT();
+            }
         }
 
         DebugLabelStamper(const DebugLabelStamper&)             = delete;
@@ -72,28 +79,38 @@ namespace game
 
         void stamp(const std::string& name)
         {
-            const vk::DebugUtilsLabelEXT label = this->generateNextLabel(name.c_str());
+            if constexpr (util::isDebugBuild())
+            {
+                const vk::DebugUtilsLabelEXT label = this->generateNextLabel(name.c_str());
 
-            this->command_buffer.insertDebugUtilsLabelEXT(&label);
+                this->command_buffer.insertDebugUtilsLabelEXT(&label);
+            }
         }
 
     private:
 
         vk::DebugUtilsLabelEXT generateNextLabel(const char* name)
         {
-            const std::size_t thisColorIndex = this->color_index;
+            if constexpr (util::isDebugBuild())
+            {
+                const std::size_t thisColorIndex = this->color_index;
 
-            this->color_index += 1;
+                this->color_index += 1;
 
-            const glm::vec4 color = gpu_srgbToLinear(
-                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-                gfx::profiler::Colors[thisColorIndex & gfx::profiler::Colors.size()]);
+                const glm::vec4 color = gpu_srgbToLinear(
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+                    gfx::profiler::Colors[thisColorIndex & gfx::profiler::Colors.size()]);
 
-            return vk::DebugUtilsLabelEXT {
-                .sType      = vk::StructureType::eDebugUtilsLabelEXT,
-                .pNext      = nullptr,
-                .pLabelName = name,
-                .color      = std::array<float, 4> {color.x, color.y, color.z, color.a}};
+                return vk::DebugUtilsLabelEXT {
+                    .sType      = vk::StructureType::eDebugUtilsLabelEXT,
+                    .pNext      = nullptr,
+                    .pLabelName = name,
+                    .color      = std::array<float, 4> {color.x, color.y, color.z, color.a}};
+            }
+            else
+            {
+                return {};
+            }
         }
 
         vk::CommandBuffer command_buffer;
@@ -552,7 +569,7 @@ namespace game
                                               "Imgui ResultCheckFailed {}",
                                               vk::to_string(vk::Result {err}));
                                       }},
-                    .MinAllocationSize {1024 * 1024}};
+                    .MinAllocationSize {UINT64_C(1024) * 1024}};
 
                 ImGui_ImplVulkan_Init(&initInfo);
 

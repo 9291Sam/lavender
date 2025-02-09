@@ -230,6 +230,10 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "Ap
         # target_link_options(lavender PUBLIC -fsanitize=address)
     endif ()
 
+
+        # target_compile_options(lavender PUBLIC -fsanitize=address)
+        # target_link_options(lavender PUBLIC -fsanitize=address)
+
     target_compile_options(library_target PRIVATE -w) # Disable all warnings
 
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
