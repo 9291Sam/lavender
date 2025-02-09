@@ -106,35 +106,13 @@ namespace voxel
             {
                 for (const std::unique_ptr<Node>& c : *children)
                 {
-                    if (c != nullptr)
-                    {
-                        c->update(camera, threadPool, chunkRenderManager, worldGenerator);
-                    }
+                    c->update(camera, threadPool, chunkRenderManager, worldGenerator);
                 }
             }
         }
 
         if (this->previous_payload_lifetime_extension.has_value())
         {
-            if (this->payload.index() == 0)
-            {
-                LazilyGeneratedChunk* const chunk = std::get_if<0>(&this->payload);
-
-                std::size_t _ = 0;
-
-                chunk->updateAndFlushUpdates({}, _);
-            }
-            else
-            {
-                const std::array<std::unique_ptr<Node>, 8>* const children =
-                    std::get_if<1>(&this->payload);
-
-                for (const std::unique_ptr<Node>& p : *children)
-                {
-                    p->update(camera, threadPool, chunkRenderManager, worldGenerator);
-                }
-            }
-
             if (this->isNodeFullyLoaded())
             {
                 this->previous_payload_lifetime_extension = std::nullopt;

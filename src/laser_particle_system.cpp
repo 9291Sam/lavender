@@ -96,8 +96,8 @@ namespace render
                                   | vk::ShaderStageFlagBits::eFragment},
                               .offset {0},
                               .size {128}}},
-                          .name {"Skybox Pipeline Layout"}})},
-                  .name {"Skybox Pipeline"}})}
+                          .name {"Laser Pipeline Layout"}})},
+                  .name {"Laser Pipeline"}})}
     {
         const vk::DescriptorBufferInfo bufferInfo {
             .buffer {*this->particles_buffer}, .offset {0}, .range {vk::WholeSize}};

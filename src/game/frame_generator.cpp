@@ -6,6 +6,7 @@
 #include "gfx/vulkan/device.hpp"
 #include "gfx/vulkan/frame_manager.hpp"
 #include "gfx/vulkan/image.hpp"
+#include "shaders/include/common.glsl"
 #include "util/log.hpp"
 #include "util/misc.hpp"
 #include "util/static_filesystem.hpp"
@@ -47,6 +48,58 @@ std::atomic<u32> f32TickDeltaTime = 0; // NOLINT
 
 namespace game
 {
+    class DebugLabelStamper
+    {
+    public:
+        explicit DebugLabelStamper(
+            vk::CommandBuffer commandBuffer, const std::string& renderpassName)
+            : command_buffer {commandBuffer}
+            , color_index {0}
+        {
+            const vk::DebugUtilsLabelEXT label = this->generateNextLabel(renderpassName.c_str());
+
+            this->command_buffer.beginDebugUtilsLabelEXT(&label);
+        }
+        ~DebugLabelStamper()
+        {
+            this->command_buffer.endDebugUtilsLabelEXT();
+        }
+
+        DebugLabelStamper(const DebugLabelStamper&)             = delete;
+        DebugLabelStamper(DebugLabelStamper&&)                  = delete;
+        DebugLabelStamper& operator= (const DebugLabelStamper&) = delete;
+        DebugLabelStamper& operator= (DebugLabelStamper&&)      = delete;
+
+        void stamp(const std::string& name)
+        {
+            const vk::DebugUtilsLabelEXT label = this->generateNextLabel(name.c_str());
+
+            this->command_buffer.insertDebugUtilsLabelEXT(&label);
+        }
+
+    private:
+
+        vk::DebugUtilsLabelEXT generateNextLabel(const char* name)
+        {
+            const std::size_t thisColorIndex = this->color_index;
+
+            this->color_index += 1;
+
+            const glm::vec4 color = gpu_srgbToLinear(
+                // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
+                gfx::profiler::Colors[thisColorIndex & gfx::profiler::Colors.size()]);
+
+            return vk::DebugUtilsLabelEXT {
+                .sType      = vk::StructureType::eDebugUtilsLabelEXT,
+                .pNext      = nullptr,
+                .pLabelName = name,
+                .color      = std::array<float, 4> {color.x, color.y, color.z, color.a}};
+        }
+
+        vk::CommandBuffer command_buffer;
+        std::size_t       color_index;
+    };
+
     FrameGenerator::GlobalInfoDescriptors FrameGenerator::makeGlobalDescriptors(
         const gfx::Renderer* renderer, vk::DescriptorSet globalDescriptorSet)
     {
@@ -755,6 +808,8 @@ namespace game
                                 vk::RenderingInfo                      info,
                                 std::function<void(vk::CommandBuffer)> extraCommands = {}) // NOLINT
         {
+            DebugLabelStamper s {commandBuffer, dynamicRenderingPassGetName(p)};
+
             clearBindings();
 
             commandBuffer.beginRendering(info);
@@ -780,6 +835,7 @@ namespace game
 
         auto doComputePass = [&](DynamicRenderingPass p)
         {
+            DebugLabelStamper s {commandBuffer, dynamicRenderingPassGetName(p)};
             clearBindings();
 
             for (const auto [o, matrixId] :
@@ -793,6 +849,8 @@ namespace game
 
         auto doTransferPass = [&](DynamicRenderingPass p)
         {
+            DebugLabelStamper s {commandBuffer, dynamicRenderingPassGetName(p)};
+
             for (const auto [o, matrixId] :
                  recordablesByPass[static_cast<std::size_t>(p)]) // NOLINT
             {

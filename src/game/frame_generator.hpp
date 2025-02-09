@@ -52,7 +52,7 @@ namespace game
     {
     public:
         // TODO: there's better ways to write this, but this works for now
-        enum class DynamicRenderingPass
+        enum class DynamicRenderingPass : u8
         {
             // Outside of renderpass, put your transfer operations here
             PreFrameUpdate               = 0,
@@ -70,6 +70,29 @@ namespace game
             SimpleColor                  = 6,
             DynamicRenderingPassMaxValue = 7,
         };
+
+        static std::string dynamicRenderingPassGetName(DynamicRenderingPass p)
+        {
+            switch (p)
+            {
+            case DynamicRenderingPass::PreFrameUpdate:
+                return "PreFrameUpdate";
+            case DynamicRenderingPass::VoxelRenderer:
+                return "VoxelRenderer";
+            case DynamicRenderingPass::VoxelVisibilityDetection:
+                return "VoxelVisibilityDetection";
+            case DynamicRenderingPass::VoxelColorCalculation:
+                return "VoxelColorCalculation";
+            case DynamicRenderingPass::VoxelColorTransfer:
+                return "VoxelColorTransfer";
+            case DynamicRenderingPass::MenuRender:
+                return "MenuRender";
+            case DynamicRenderingPass::SimpleColor:
+                return "SimpleColor";
+            case DynamicRenderingPass::DynamicRenderingPassMaxValue:
+                return "DynamicRenderingPassMaxValue";
+            }
+        }
 
         struct RecordObject
         {
