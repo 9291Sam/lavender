@@ -254,10 +254,10 @@ namespace verdigris
         glm::vec3 currentPosition = this->camera.getPosition();
         glm::vec3 displacement    = newPosition - currentPosition;
 
-        // verticalVelocity += gravity * deltaTime;
-        // verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
+        verticalVelocity += gravity * deltaTime;
+        verticalVelocity = std::max(verticalVelocity, maxFallSpeed);
 
-        // displacement.y += verticalVelocity * deltaTime;
+        displacement.y += verticalVelocity * deltaTime;
 
         // HACK: just prevent it from mattering lol
         // if (glm::length(displacement) > 1.0f)

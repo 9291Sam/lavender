@@ -32,7 +32,7 @@ namespace util
         {
             T* const newT = this->pool.malloc();
 
-            if (newT == 0)
+            if (newT == nullptr)
             {
                 util::panic("Overallocate Pool");
             }
