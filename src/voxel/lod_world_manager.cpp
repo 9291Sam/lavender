@@ -7,8 +7,8 @@
 #include "voxel/chunk_render_manager.hpp"
 #include "voxel/lazily_generated_chunk.hpp"
 #include "voxel/structures.hpp"
+#include <algorithm>
 #include <cstddef>
-#include <cstdint>
 #include <future>
 #include <memory>
 #include <optional>
@@ -46,7 +46,7 @@ namespace voxel
         this->root.update(camera, threadPool, chunkRenderManager, worldGenerator, &this->node_pool);
     }
 
-    void VoxelChunkOctree::Node::update(
+    void VoxelChunkOctree::Node::update( // NOLINT(misc-no-recursion)
         const game::Camera&              camera,
         util::ThreadPool&                threadPool,
         util::Mutex<ChunkRenderManager>* chunkRenderManager,
@@ -124,7 +124,7 @@ namespace voxel
         }
     }
 
-    bool VoxelChunkOctree::Node::isNodeFullyLoaded() const
+    bool VoxelChunkOctree::Node::isNodeFullyLoaded() const // NOLINT(misc-no-recursion)
     {
         if (this->payload.index() == 0)
         {
@@ -137,15 +137,12 @@ namespace voxel
             const std::array<util::ObjectPool<Node>::UniqueT, 8>* const children =
                 std::get_if<1>(&this->payload);
 
-            for (const util::ObjectPool<Node>::UniqueT& p : *children)
-            {
-                if (!p->isNodeFullyLoaded())
+            return std::ranges::all_of(
+                *children,
+                [](const auto& p)
                 {
-                    return false;
-                }
-            }
-
-            return true;
+                    return p->isNodeFullyLoaded();
+                });
         }
     }
 
