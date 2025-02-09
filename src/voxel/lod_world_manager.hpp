@@ -24,7 +24,10 @@ namespace voxel
     {
     public:
         explicit VoxelChunkOctree(
-            util::ThreadPool&, ChunkRenderManager*, world::WorldGenerator*, u32 dimension);
+            util::ThreadPool&,
+            util::Mutex<ChunkRenderManager>*,
+            world::WorldGenerator*,
+            u32 dimension);
         ~VoxelChunkOctree() = default;
 
         VoxelChunkOctree(const VoxelChunkOctree&)             = delete;
@@ -32,8 +35,11 @@ namespace voxel
         VoxelChunkOctree& operator= (const VoxelChunkOctree&) = delete;
         VoxelChunkOctree& operator= (VoxelChunkOctree&&)      = delete;
 
-        void
-        update(const game::Camera&, util::ThreadPool&, ChunkRenderManager*, world::WorldGenerator*);
+        void update(
+            const game::Camera&,
+            util::ThreadPool&,
+            util::Mutex<ChunkRenderManager>*,
+            world::WorldGenerator*);
 
     private:
         enum class OctreeNodePosition : std::uint8_t
@@ -71,10 +77,10 @@ namespace voxel
         struct Node
         {
             Node(
-                voxel::ChunkLocation   bounds,
-                util::ThreadPool&      threadPool,
-                ChunkRenderManager*    chunkRenderManager,
-                world::WorldGenerator* worldGenerator)
+                voxel::ChunkLocation             bounds,
+                util::ThreadPool&                threadPool,
+                util::Mutex<ChunkRenderManager>* chunkRenderManager,
+                world::WorldGenerator*           worldGenerator)
                 : entire_bounds {bounds}
                 , payload {
                       std::in_place_index<0>,
@@ -106,7 +112,7 @@ namespace voxel
             void update(
                 const game::Camera&,
                 util::ThreadPool&,
-                ChunkRenderManager*,
+                util::Mutex<ChunkRenderManager>*,
                 world::WorldGenerator*);
 
             [[nodiscard]] bool isNodeFullyLoaded() const;
@@ -133,9 +139,9 @@ namespace voxel
     private:
         std::vector<voxel::ChunkRenderManager::RaytracedLight> temporary_raytraced_lights;
 
-        util::ThreadPool      chunk_generation_thread_pool;
-        ChunkRenderManager    chunk_render_manager;
-        world::WorldGenerator generator;
+        util::ThreadPool                chunk_generation_thread_pool;
+        util::Mutex<ChunkRenderManager> chunk_render_manager;
+        world::WorldGenerator           generator;
 
         std::unique_ptr<VoxelChunkOctree> tree;
 

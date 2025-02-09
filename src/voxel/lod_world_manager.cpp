@@ -16,10 +16,10 @@
 namespace voxel
 {
     VoxelChunkOctree::VoxelChunkOctree(
-        util::ThreadPool&      threadPool,
-        ChunkRenderManager*    chunkRenderManager,
-        world::WorldGenerator* worldGenerator,
-        u32                    dimension)
+        util::ThreadPool&                threadPool,
+        util::Mutex<ChunkRenderManager>* chunkRenderManager,
+        world::WorldGenerator*           worldGenerator,
+        u32                              dimension)
         : root {
               voxel::ChunkLocation {Gpu_ChunkLocation {
                   .root_position {glm::ivec3 {
@@ -36,19 +36,19 @@ namespace voxel
     {}
 
     void VoxelChunkOctree::update(
-        const game::Camera&    camera,
-        util::ThreadPool&      threadPool,
-        ChunkRenderManager*    chunkRenderManager,
-        world::WorldGenerator* worldGenerator)
+        const game::Camera&              camera,
+        util::ThreadPool&                threadPool,
+        util::Mutex<ChunkRenderManager>* chunkRenderManager,
+        world::WorldGenerator*           worldGenerator)
     {
         this->root.update(camera, threadPool, chunkRenderManager, worldGenerator);
     }
 
     void VoxelChunkOctree::Node::update(
-        const game::Camera&    camera,
-        util::ThreadPool&      threadPool,
-        ChunkRenderManager*    chunkRenderManager,
-        world::WorldGenerator* worldGenerator)
+        const game::Camera&              camera,
+        util::ThreadPool&                threadPool,
+        util::Mutex<ChunkRenderManager>* chunkRenderManager,
+        world::WorldGenerator*           worldGenerator)
     {
         const u32 desiredLOD = calculateLODBasedOnDistance(
             glm::distance(
@@ -169,7 +169,7 @@ namespace voxel
 
     LodWorldManager::LodWorldManager(const game::Game* game, u32 dimension)
         : chunk_generation_thread_pool {4}
-        , chunk_render_manager {game}
+        , chunk_render_manager {ChunkRenderManager {game}}
         , generator {UINT64_C(879123897234897243)}
         , tree {std::make_unique<VoxelChunkOctree>(
               this->chunk_generation_thread_pool,
@@ -181,23 +181,27 @@ namespace voxel
         std::uniform_real_distribution<f32> dist {0.0f, 1.0f};
         std::uniform_real_distribution<f32> distN {-1.0f, 1.0f};
 
-        for (int i = 0; i < 32; ++i)
-        {
-            this->temporary_raytraced_lights.push_back(
-                this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
-                    .position_and_half_intensity_distance {glm::vec4 {
-                        util::map(dist(gen), 0.0f, 1.0f, -64.0f, 128.0f),
-                        util::map(dist(gen), 0.0f, 1.0f, 0.0f, 64.0f),
-                        util::map(dist(gen), 0.0f, 1.0f, -64.0f, 128.0f),
-                        12.0f}},
-                    .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 256}}}));
-        }
+        this->chunk_render_manager.lock(
+            [&](ChunkRenderManager& manager)
+            {
+                for (int i = 0; i < 32; ++i)
+                {
+                    this->temporary_raytraced_lights.push_back(
+                        manager.createRaytracedLight(voxel::GpuRaytracedLight {
+                            .position_and_half_intensity_distance {glm::vec4 {
+                                util::map(dist(gen), 0.0f, 1.0f, -64.0f, 128.0f),
+                                util::map(dist(gen), 0.0f, 1.0f, 0.0f, 64.0f),
+                                util::map(dist(gen), 0.0f, 1.0f, -64.0f, 128.0f),
+                                12.0f}},
+                            .color_and_power {glm::vec4 {dist(gen), dist(gen), dist(gen), 256}}}));
+                }
 
-        this->temporary_raytraced_lights.push_back(
-            this->chunk_render_manager.createRaytracedLight(voxel::GpuRaytracedLight {
-                .position_and_half_intensity_distance {
-                    glm::vec4 {16384.0f, 16384.0f, 16384.0f, 8192.0f}},
-                .color_and_power {glm::vec4 {1.0f, 1.0f, 1.0f, 256.0f}}}));
+                this->temporary_raytraced_lights.push_back(
+                    manager.createRaytracedLight(voxel::GpuRaytracedLight {
+                        .position_and_half_intensity_distance {
+                            glm::vec4 {16384.0f, 16384.0f, 16384.0f, 8192.0f}},
+                        .color_and_power {glm::vec4 {1.0f, 1.0f, 1.0f, 256.0f}}}));
+            });
     }
 
     LodWorldManager::~LodWorldManager()
@@ -212,10 +216,15 @@ namespace voxel
 
         util::logTrace("Destroying everything else");
 
-        for (voxel::ChunkRenderManager::RaytracedLight& l : this->temporary_raytraced_lights)
-        {
-            this->chunk_render_manager.destroyRaytracedLight(std::move(l));
-        }
+        this->chunk_render_manager.lock(
+            [&](ChunkRenderManager& manager)
+            {
+                for (voxel::ChunkRenderManager::RaytracedLight& l :
+                     this->temporary_raytraced_lights)
+                {
+                    manager.destroyRaytracedLight(std::move(l));
+                }
+            });
     }
 
     std::vector<game::FrameGenerator::RecordObject> LodWorldManager::onFrameUpdate(
@@ -235,11 +244,14 @@ namespace voxel
                         &this->generator);
                 });
         }
-        util::logWarn("data race!");
 
         taskGenerator.stamp("update tree");
 
-        return this->chunk_render_manager.processUpdatesAndGetDrawObjects(camera, taskGenerator);
+        return this->chunk_render_manager.lock(
+            [&](ChunkRenderManager& manager)
+            {
+                return manager.processUpdatesAndGetDrawObjects(camera, taskGenerator);
+            });
     }
 
 } // namespace voxel

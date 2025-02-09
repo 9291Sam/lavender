@@ -10,12 +10,16 @@ namespace voxel
 {
 
     LazilyGeneratedChunk::LazilyGeneratedChunk(
-        util::ThreadPool&      pool,
-        ChunkRenderManager*    chunkRenderManager,
-        world::WorldGenerator* worldGenerator,
-        voxel::ChunkLocation   location)
+        util::ThreadPool&                pool,
+        util::Mutex<ChunkRenderManager>* chunkRenderManager,
+        world::WorldGenerator*           worldGenerator,
+        voxel::ChunkLocation             location)
         : chunk_render_manager {chunkRenderManager}
-        , chunk {this->chunk_render_manager->createChunk(location)}
+        , chunk {this->chunk_render_manager->lock(
+              [&](ChunkRenderManager& manager)
+              {
+                  return manager.createChunk(location);
+              })}
         , should_still_generate(std::make_shared<std::atomic<bool>>(true))
         , updates {pool.executeOnPool(
               [wg  = worldGenerator,
@@ -49,7 +53,11 @@ namespace voxel
 
         if (!this->chunk.isNull())
         {
-            this->chunk_render_manager->destroyChunk(std::move(this->chunk));
+            this->chunk_render_manager->lock(
+                [&](ChunkRenderManager& manager)
+                {
+                    manager.destroyChunk(std::move(this->chunk));
+                });
         }
     }
 
@@ -65,8 +73,11 @@ namespace voxel
 
             if (!realUpdates.empty())
             {
-                this->is_meshing_complete =
-                    this->chunk_render_manager->updateChunk(this->chunk, realUpdates);
+                this->is_meshing_complete = this->chunk_render_manager->lock(
+                    [&](ChunkRenderManager& manager)
+                    {
+                        return manager.updateChunk(this->chunk, realUpdates);
+                    });
             }
             else
             {
@@ -76,7 +87,11 @@ namespace voxel
 
         if (!extraUpdates.empty() && extraUpdates.data() != nullptr)
         {
-            this->chunk_render_manager->updateChunk(this->chunk, extraUpdates);
+            this->chunk_render_manager->lock(
+                [&](ChunkRenderManager& manager)
+                {
+                    manager.updateChunk(this->chunk, extraUpdates);
+                });
         }
     }
 

@@ -31,7 +31,7 @@ namespace voxel
         ~ChunkRenderManager();
 
         ChunkRenderManager(const ChunkRenderManager&)             = delete;
-        ChunkRenderManager(ChunkRenderManager&&)                  = delete;
+        ChunkRenderManager(ChunkRenderManager&&)                  = default;
         ChunkRenderManager& operator= (const ChunkRenderManager&) = delete;
         ChunkRenderManager& operator= (ChunkRenderManager&&)      = delete;
 

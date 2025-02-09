@@ -9,7 +9,10 @@ namespace voxel
     {
     public:
         explicit LazilyGeneratedChunk(
-            util::ThreadPool&, ChunkRenderManager*, world::WorldGenerator*, voxel::ChunkLocation);
+            util::ThreadPool&,
+            util::Mutex<ChunkRenderManager>*,
+            world::WorldGenerator*,
+            voxel::ChunkLocation);
         ~LazilyGeneratedChunk();
 
         LazilyGeneratedChunk(const LazilyGeneratedChunk&)             = delete;
@@ -39,7 +42,7 @@ namespace voxel
         }
 
     private:
-        ChunkRenderManager*                chunk_render_manager;
+        util::Mutex<ChunkRenderManager>*   chunk_render_manager;
         ChunkRenderManager::Chunk          chunk;
         std::shared_ptr<std::atomic<bool>> should_still_generate;
 
