@@ -3,6 +3,7 @@
 #include "game/game.hpp"
 #include "gfx/profiler/task_generator.hpp"
 #include "shaders/include/common.glsl"
+#include "util/object_pool.hpp"
 #include "voxel/chunk_render_manager.hpp"
 #include "voxel/lazily_generated_chunk.hpp"
 #include "voxel/structures.hpp"
@@ -20,7 +21,8 @@ namespace voxel
         util::Mutex<ChunkRenderManager>* chunkRenderManager,
         world::WorldGenerator*           worldGenerator,
         u32                              dimension)
-        : root {
+        : node_pool {4096, 65536}
+        , root {
               voxel::ChunkLocation {Gpu_ChunkLocation {
                   .root_position {glm::ivec3 {
                       -static_cast<i32>(dimension / 2),
@@ -41,14 +43,15 @@ namespace voxel
         util::Mutex<ChunkRenderManager>* chunkRenderManager,
         world::WorldGenerator*           worldGenerator)
     {
-        this->root.update(camera, threadPool, chunkRenderManager, worldGenerator);
+        this->root.update(camera, threadPool, chunkRenderManager, worldGenerator, &this->node_pool);
     }
 
     void VoxelChunkOctree::Node::update(
         const game::Camera&              camera,
         util::ThreadPool&                threadPool,
         util::Mutex<ChunkRenderManager>* chunkRenderManager,
-        world::WorldGenerator*           worldGenerator)
+        world::WorldGenerator*           worldGenerator,
+        util::ObjectPool<Node>*          nodePool)
     {
         const u32 desiredLOD = calculateLODBasedOnDistance(
             glm::distance(
@@ -62,14 +65,14 @@ namespace voxel
 
             if (this->entire_bounds.lod > desiredLOD)
             {
-                std::array<std::unique_ptr<Node>, 8> newChildren {};
-                std::array<glm::ivec3, 8>            newChildrenRoots =
+                std::array<util::ObjectPool<Node>::UniqueT, 8> newChildren {};
+                std::array<glm::ivec3, 8>                      newChildrenRoots =
                     generateChildrenRootPositions(this->entire_bounds);
 
                 for (std::size_t i = 0; i < 8; ++i)
                 {
                     // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
-                    newChildren[i] = std::make_unique<Node>(
+                    newChildren[i] = nodePool->allocate(
                         voxel::ChunkLocation {Gpu_ChunkLocation {
                             // NOLINTNEXTLINE(cppcoreguidelines-pro-bounds-constant-array-index)
                             .root_position {newChildrenRoots[i]},
@@ -93,7 +96,8 @@ namespace voxel
         }
         else
         {
-            std::array<std::unique_ptr<Node>, 8>* const children = std::get_if<1>(&this->payload);
+            std::array<util::ObjectPool<Node>::UniqueT, 8>* const children =
+                std::get_if<1>(&this->payload);
 
             if (this->entire_bounds.lod <= desiredLOD)
             {
@@ -104,9 +108,9 @@ namespace voxel
             }
             else
             {
-                for (const std::unique_ptr<Node>& c : *children)
+                for (const util::ObjectPool<Node>::UniqueT& c : *children)
                 {
-                    c->update(camera, threadPool, chunkRenderManager, worldGenerator);
+                    c->update(camera, threadPool, chunkRenderManager, worldGenerator, nodePool);
                 }
             }
         }
@@ -130,10 +134,10 @@ namespace voxel
         }
         else
         {
-            const std::array<std::unique_ptr<Node>, 8>* const children =
+            const std::array<util::ObjectPool<Node>::UniqueT, 8>* const children =
                 std::get_if<1>(&this->payload);
 
-            for (const std::unique_ptr<Node>& p : *children)
+            for (const util::ObjectPool<Node>::UniqueT& p : *children)
             {
                 if (!p->isNodeFullyLoaded())
                 {

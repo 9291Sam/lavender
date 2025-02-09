@@ -6,6 +6,7 @@
 #include "gfx/profiler/task_generator.hpp"
 #include "lazily_generated_chunk.hpp"
 #include "shaders/include/common.glsl"
+#include "util/object_pool.hpp"
 #include "util/thread_pool.hpp"
 #include "voxel/chunk_render_manager.hpp"
 #include "voxel/structures.hpp"
@@ -22,7 +23,10 @@ namespace voxel
 
     class VoxelChunkOctree
     {
+    private:
+        struct Node;
     public:
+
         explicit VoxelChunkOctree(
             util::ThreadPool&,
             util::Mutex<ChunkRenderManager>*,
@@ -104,19 +108,24 @@ namespace voxel
             Node& operator= (const Node&) = delete;
             Node& operator= (Node&&)      = default;
 
-            voxel::ChunkLocation                                                     entire_bounds;
-            std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>> payload;
-            std::optional<std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>>>
+            voxel::ChunkLocation entire_bounds;
+            std::variant<LazilyGeneratedChunk, std::array<util::ObjectPool<Node>::UniqueT, 8>>
+                payload;
+            std::optional<
+                std::variant<LazilyGeneratedChunk, std::array<util::ObjectPool<Node>::UniqueT, 8>>>
                 previous_payload_lifetime_extension;
 
             void update(
                 const game::Camera&,
                 util::ThreadPool&,
                 util::Mutex<ChunkRenderManager>*,
-                world::WorldGenerator*);
+                world::WorldGenerator*,
+                util::ObjectPool<Node>*);
 
             [[nodiscard]] bool isNodeFullyLoaded() const;
         };
+
+        util::ObjectPool<Node> node_pool;
 
         Node root;
     };
