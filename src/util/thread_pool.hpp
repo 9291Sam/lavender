@@ -1,5 +1,6 @@
 #pragma once
 
+#include "timer.hpp"
 #include <blockingconcurrentqueue.h>
 #include <functional>
 #include <future>
@@ -20,16 +21,18 @@ namespace util
         ThreadPool& operator= (ThreadPool&&)      = delete;
 
         template<class Fn, class R = std::invoke_result_t<Fn>>
-        std::future<R> executeOnPool(Fn func) const
+        std::future<R> executeOnPool(Fn&& func) const
             requires std::is_invocable_v<Fn>
         {
-            std::shared_ptr<std::packaged_task<R()>> task {new std::packaged_task<R()> {func}};
-            std::future<R>                           future = task->get_future();
+            std::shared_ptr<std::packaged_task<R()>> task {
+                new std::packaged_task<R()> {std::forward<Fn>(func)}};
+            std::future<R> future = task->get_future();
 
-            this->function_queue.enqueue(std::function<void()> {[localTask = task]() mutable
-                                                                {
-                                                                    (*localTask)();
-                                                                }});
+            this->function_queue.enqueue(
+                std::function<void()> {[localTask = std::move(task)]() mutable
+                                       {
+                                           (*localTask)();
+                                       }});
 
             return future;
         }

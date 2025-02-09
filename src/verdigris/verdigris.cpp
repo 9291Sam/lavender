@@ -334,10 +334,10 @@ namespace verdigris
         this->camera.addYaw(xDelta * rotateSpeedScale);
         this->camera.addPitch(yDelta * rotateSpeedScale);
 
-        profilerTaskGenerator.stamp("Camera Update");
-
         auto realCamera = this->camera;
         realCamera.addPosition({0.0, 32.0f, 0.0});
+
+        profilerTaskGenerator.stamp("Camera Update");
 
         std::vector<game::FrameGenerator::RecordObject> draws {
             this->lod_world_manager.onFrameUpdate(realCamera, profilerTaskGenerator)};

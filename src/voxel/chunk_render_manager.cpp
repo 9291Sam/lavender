@@ -941,12 +941,14 @@ namespace voxel
                 // we need to spawn a new mesh task
                 if (!thisChunkData.updates.empty() && !thisChunkData.maybe_async_mesh.valid())
                 {
-                    const PerChunkGpuData oldGpuData = this->gpu_chunk_data.read(chunkId);
+                    // TODO: HACK: bad replace with unique_ptr once run async has move only function
+                    std::shared_ptr<PerChunkGpuData> oldGpuData =
+                        std::make_shared<PerChunkGpuData>(this->gpu_chunk_data.read(chunkId));
 
                     const std::size_t oldBricksPerChunk = [&]() -> std::size_t
                     {
                         const std::optional<u16> maxValidOffset =
-                            oldGpuData.data.getMaxValidOffset();
+                            oldGpuData->data.getMaxValidOffset();
 
                         if (maxValidOffset.has_value())
                         {
@@ -960,12 +962,12 @@ namespace voxel
 
                     const std::span<const MaterialBrick> spanOldMaterialBricks =
                         this->material_bricks.read(
-                            oldGpuData.brick_allocation_offset, oldBricksPerChunk);
+                            oldGpuData->brick_allocation_offset, oldBricksPerChunk);
                     const std::span<const ShadowBrick> spanOldShadowBricks =
                         this->shadow_bricks.read(
-                            oldGpuData.brick_allocation_offset, oldBricksPerChunk);
+                            oldGpuData->brick_allocation_offset, oldBricksPerChunk);
                     const std::span<const PrimaryRayBrick> spanOldPrimaryRayBricks {
-                        &this->primary_ray_bricks[oldGpuData.brick_allocation_offset],
+                        &this->primary_ray_bricks[oldGpuData->brick_allocation_offset],
                         oldBricksPerChunk};
 
                     thisChunkData.maybe_async_mesh = util::runAsync(
@@ -978,7 +980,7 @@ namespace voxel
                         {
                             return doMesh(
                                 chunkId,
-                                localOldGpuData,
+                                *localOldGpuData,
                                 localOldMaterialBricks,
                                 localOldShadowBricks,
                                 localOldPrimaryRayBricks,

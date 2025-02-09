@@ -39,6 +39,11 @@ namespace util
         return 0;
     }
 
+    void Timer::setName(std::string str)
+    {
+        this->name = std::move(str);
+    }
+
     MultiTimer::MultiTimer(std::source_location location_)
         : previous_stamp_time {std::chrono::steady_clock::now()}
         , location {location_}

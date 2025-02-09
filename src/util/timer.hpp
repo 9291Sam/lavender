@@ -21,6 +21,7 @@ namespace util
 
         /// Returns the number of microseconds this action took
         std::size_t end(bool shouldPrint = true);
+        void        setName(std::string);
 
     private:
         std::string                                        name;

@@ -138,5 +138,7 @@ namespace voxel
         world::WorldGenerator generator;
 
         std::unique_ptr<VoxelChunkOctree> tree;
+
+        std::future<void> maybe_tree_process_future;
     };
 } // namespace voxel

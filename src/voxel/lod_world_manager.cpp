@@ -8,6 +8,7 @@
 #include "voxel/structures.hpp"
 #include <cstddef>
 #include <cstdint>
+#include <future>
 #include <memory>
 #include <optional>
 #include <random>
@@ -79,15 +80,9 @@ namespace voxel
                         worldGenerator);
                 }
 
-                // this->payload -> previous_payload_lifetime_extension
-                // newChildren -> this->payload
+                this->previous_payload_lifetime_extension = std::move(this->payload);
 
-                std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>> temp =
-                    std::move(newChildren);
-
-                std::swap(temp, this->payload);
-
-                this->previous_payload_lifetime_extension = std::move(temp);
+                this->payload = std::move(newChildren);
             }
             else
             {
@@ -102,13 +97,10 @@ namespace voxel
 
             if (this->entire_bounds.lod <= desiredLOD)
             {
-                std::variant<LazilyGeneratedChunk, std::array<std::unique_ptr<Node>, 8>> temp =
-                    LazilyGeneratedChunk {
-                        threadPool, chunkRenderManager, worldGenerator, this->entire_bounds};
+                this->previous_payload_lifetime_extension = std::move(this->payload);
 
-                std::swap(temp, this->payload);
-
-                this->previous_payload_lifetime_extension = std::move(temp);
+                this->payload.emplace<LazilyGeneratedChunk>(
+                    threadPool, chunkRenderManager, worldGenerator, this->entire_bounds);
             }
             else
             {
@@ -210,6 +202,11 @@ namespace voxel
 
     LodWorldManager::~LodWorldManager()
     {
+        if (this->maybe_tree_process_future.valid())
+        {
+            this->maybe_tree_process_future.get();
+        }
+
         util::logTrace("Destroying world octree");
         this->tree.reset();
 
@@ -224,11 +221,23 @@ namespace voxel
     std::vector<game::FrameGenerator::RecordObject> LodWorldManager::onFrameUpdate(
         const game::Camera& camera, gfx::profiler::TaskGenerator& taskGenerator)
     {
-        this->tree->update(
-            camera,
-            this->chunk_generation_thread_pool,
-            &this->chunk_render_manager,
-            &this->generator);
+        if (!this->maybe_tree_process_future.valid()
+            || this->maybe_tree_process_future.wait_for(std::chrono::years {0})
+                   == std::future_status::ready)
+        {
+            this->maybe_tree_process_future = this->chunk_generation_thread_pool.executeOnPool(
+                [this, c = game::Camera {camera}]
+                {
+                    this->tree->update(
+                        c,
+                        this->chunk_generation_thread_pool,
+                        &this->chunk_render_manager,
+                        &this->generator);
+                });
+        }
+        util::logWarn("data race!");
+
+        taskGenerator.stamp("update tree");
 
         return this->chunk_render_manager.processUpdatesAndGetDrawObjects(camera, taskGenerator);
     }
