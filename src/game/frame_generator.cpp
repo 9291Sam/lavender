@@ -522,7 +522,8 @@ namespace game
 
             return ptr;
         };
-        ImGui_ImplVulkan_LoadFunctions(lambda, &getFn);
+        ImGui_ImplVulkan_LoadFunctions(
+            this->game->getRenderer()->getInstance()->getVulkanVersion(), lambda, &getFn);
 
         this->game->getRenderer()->getWindow()->initializeImgui();
 
